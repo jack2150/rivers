@@ -27,7 +27,7 @@ class Statement(models.Model):
     Commissions/Fees YTD,$159.08
     Futures Commissions YTD,$0.00 <-- skip futures
     """
-    date = models.DateField()
+    date = models.DateField(unique=True)
 
     net_liquid = models.DecimalField(max_digits=20, decimal_places=2)
     stock_bp = models.DecimalField(max_digits=20, decimal_places=2)

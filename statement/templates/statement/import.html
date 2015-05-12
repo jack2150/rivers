@@ -1,11 +1,37 @@
 {% if files %}
   <table class="table">
     {% for file in files %}
+    {% if forloop.first %}
+      <tr>
+        <th>No.</th>
+        <th>Date</th>
+        <th>Filename</th>
+        <th>Net Liquid</th>
+        <th>Stock BP</th>
+        <th>Option BP</th>
+        <th>C. YTD</th>
+        <th>Cash Balance</th>
+        <th>Account Order</th>
+        <th>Account Trade</th>
+        <th>Holding Equity</th>
+        <th>Holding Option</th>
+        <th>Profit Loss</th>
+      </tr>
+    {% endif %}
       <tr>
         <td>{{ forloop.counter }}</td>
         <td>{{ file.date }}</td>
-        <td>{{ file.path }}</td>
         <td>{{ file.fname }}</td>
+        <td>{{ file.net_liquid }}</td>
+        <td>{{ file.stock_bp }}</td>
+        <td>{{ file.option_bp }}</td>
+        <td>{{ file.commission_ytd }}</td>
+        <td>{{ file.cash_balance }}</td>
+        <td>{{ file.account_order }}</td>
+        <td>{{ file.account_trade }}</td>
+        <td>{{ file.holding_equity }}</td>
+        <td>{{ file.holding_option }}</td>
+        <td>{{ file.profit_loss }}</td>
       </tr>
     {% endfor %}
   </table>

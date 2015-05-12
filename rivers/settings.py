@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = (
     'adminplus',
-    'django_admin_bootstrapped',
+    'django_admin_bootstrapped',  # version 2.3.5 for django 1.6
 
     'django.contrib.admin',
     'django.contrib.auth',
@@ -42,6 +42,9 @@ INSTALLED_APPS = (
 
     'statement',
 )
+
+# for django-admin-bootsrapped
+#DAB_FIELD_RENDERER = 'django_admin_bootstrapped.renderers.BootstrapFieldRenderer'
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',

@@ -26,13 +26,9 @@ def statement_import(request):
         # duplicate date
         if Statement.objects.filter(date=date).exists():
             continue  # skip below and next file
-        else:
+        #else:
             # print 'run: ', fpath
-            files.append(dict(
-                path=fpath,
-                fname=os.path.basename(fpath),
-                date=date
-            ))
+
 
         lines = [
             str(re.sub('[\r\n]', '', line)) for line in
@@ -147,10 +143,26 @@ def statement_import(request):
 
                     #print df.to_string(line_width=200)
 
+        files.append(dict(
+            #path=fpath,
+            fname=os.path.basename(fpath),
+            date=date,
+            net_liquid=statement.net_liquid,
+            stock_bp=statement.stock_bp,
+            option_bp=statement.option_bp,
+            commission_ytd=statement.commission_ytd,
+            cash_balance=statement.cashbalance_set.count(),
+            account_order=statement.accountorder_set.count(),
+            account_trade=statement.accounttrade_set.count(),
+            holding_equity=statement.holdingequity_set.count(),
+            holding_option=statement.holdingoption_set.count(),
+            profit_loss=statement.profitloss_set.count(),
+        ))
+
     parameters = dict(
         files=files
     )
 
-    return render(request, template, parameters)
+    #Statement.objects.all().delete()
 
-    # todo: back into django 1.6
+    return render(request, template, parameters)
