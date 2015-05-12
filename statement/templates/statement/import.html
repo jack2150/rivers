@@ -1,0 +1,12 @@
+{% if files %}
+  <table class="table">
+    {% for file in files %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ file.date }}</td>
+        <td>{{ file.path }}</td>
+        <td>{{ file.fname }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endif %}
