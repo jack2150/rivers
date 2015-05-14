@@ -66,6 +66,11 @@ class Statement(models.Model):
             columns=['Net Liquid', 'Stock BP', 'Option BP', 'Commission YTD']
         )
 
+    def __unicode__(self):
+        return 'Statement {date}'.format(
+            date=self.date
+        )
+
 
 class CashBalance(models.Model):
     """
@@ -76,7 +81,7 @@ class CashBalance(models.Model):
     time = models.TimeField()
     name = models.CharField(max_length=20)
     ref_no = models.BigIntegerField(null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
+    description = models.CharField(max_length=200, null=True, blank=True)
     fee = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     commission = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     amount = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
@@ -126,9 +131,7 @@ class AccountOrder(models.Model):
     ,,1/29/15 14:45:15,VERTICAL,SELL,-2,TO OPEN,EBAY,MAR 15,55,CALL,.73,LMT,DAY,CANCELED
     ,,,,BUY,+2,TO OPEN,EBAY,MAR 15,57.5,CALL,,,,
     """
-    # todo: remove re row, fill below row if no re, do not save future and forex, fill stock carefully
-
-    time_placed = models.TimeField()
+    time = models.TimeField()
     spread = models.CharField(max_length=50)
     side = models.CharField(max_length=4)
     qty = models.CharField(max_length=100)
@@ -140,7 +143,7 @@ class AccountOrder(models.Model):
     price = models.DecimalField(max_digits=20, decimal_places=2)
     order = models.CharField(max_length=20)
     tif = models.CharField(max_length=20)
-    status = models.TextField()
+    status = models.CharField(max_length=500)
 
     statement = models.ForeignKey(Statement, null=True)
 
@@ -153,7 +156,7 @@ class AccountOrder(models.Model):
         line = replace_dash_in_quote(line)
         values = line.split(',')
 
-        self.time_placed = values[2].split(' ')[1]
+        self.time = values[2].split(' ')[1]
         self.spread = values[3]
         self.side = values[4]
         self.qty = values[5]
@@ -174,7 +177,7 @@ class AccountOrder(models.Model):
         :return: DataFrame
         """
         return DataFrame(
-            data=[[self.time_placed, self.spread, self.side, self.qty, self.pos_effect,
+            data=[[self.time, self.spread, self.side, self.qty, self.pos_effect,
                    self.symbol, self.exp, self.strike if self.strike else '',
                    self.contract, self.price, self.order, self.tif, self.status]],
             index=[self.statement.date],
@@ -189,9 +192,7 @@ class AccountTrade(models.Model):
     ,1/29/15 15:43:06,VERTICAL,SELL,-2,TO OPEN,EBAY,MAR 15,55,CALL,1.33,.80,LMT
     ,,,BUY,+2,TO OPEN,EBAY,MAR 15,57.5,CALL,.53,CREDIT,
     """
-    # todo: remember to fill empty field in csv line, if stock, fill last 3 empty field only
-
-    exec_time = models.TimeField()
+    time = models.TimeField()
     spread = models.CharField(max_length=50)
     side = models.CharField(max_length=4)
     qty = models.IntegerField()
@@ -215,7 +216,7 @@ class AccountTrade(models.Model):
         line = replace_dash_in_quote(line)
         values = line.split(',')
 
-        self.exec_time = values[1].split(' ')[1]
+        self.time = values[1].split(' ')[1]
         self.spread = values[2]
         self.side = values[3]
         self.qty = values[4]
@@ -235,7 +236,7 @@ class AccountTrade(models.Model):
         :return: DataFrame
         """
         return DataFrame(
-            data=[[self.exec_time, self.spread, self.side, self.qty, self.pos_effect,
+            data=[[self.time, self.spread, self.side, self.qty, self.pos_effect,
                    self.symbol, self.exp, self.strike if self.strike else '',
                    self.contract, self.price, self.net_price, self.order_type]],
             index=[self.statement.date],
@@ -250,7 +251,7 @@ class HoldingEquity(models.Model):
     XOM,EXXON MOBIL CORPORATION COM,-100,87.05,87.58,"($8,758.00)"
     """
     symbol = models.CharField(max_length=20)
-    description = models.TextField(max_length=500)
+    description = models.CharField(max_length=200)
     qty = models.IntegerField()
     trade_price = models.DecimalField(max_digits=20, decimal_places=2)
     close_price = models.DecimalField(max_digits=20, decimal_places=2)
@@ -349,13 +350,12 @@ class HoldingOption(models.Model):
 
 
 class ProfitLoss(models.Model):
-    # todo: skip no trading, no pl day with no bp, futures
     """
     Symbol,Description,P/L Open,P/L %,P/L Day,P/L YTD,P/L Diff,Margin Req,Close Value
     XOM,EXXON MOBIL CORPORATION COM,($28.00),-0.31%,($28.00),($28.00),$0.00,"$1,313.70","($8,995.00)"
     """
     symbol = models.CharField(max_length=20)
-    description = models.TextField(max_length=500)
+    description = models.CharField(max_length=200)
     pl_open = models.DecimalField(max_digits=20, decimal_places=2)
     pl_pct = models.DecimalField(max_digits=20, decimal_places=2)
     pl_day = models.DecimalField(max_digits=20, decimal_places=2)
@@ -378,14 +378,17 @@ class ProfitLoss(models.Model):
             for x in [x.replace('$', '') for x in line.split(',')]
         ]
 
-        self.symbol = values[0]
-        self.description = values[1]
-        self.pl_open = values[2]
-        self.pl_pct = values[3][:-1]
-        self.pl_day = values[4]
-        self.pl_ytd = values[5]
-        self.margin_req = values[6]
-        self.close_value = values[7]
+        if float(values[4]) or (float(values[6]) and float(values[7])):
+            self.symbol = values[0]
+            self.description = values[1]
+            self.pl_open = values[2]
+            self.pl_pct = values[3][:-1]
+            self.pl_day = values[4]
+            self.pl_ytd = values[5]
+            self.margin_req = values[6]
+            self.close_value = values[7]
+        else:
+            raise ValueError('Non trading symbol.')
 
         return self
 

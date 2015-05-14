@@ -1,0 +1,79 @@
+{% load bootstrapped_goodies_tags %}
+{% load admintags %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a data-toggle="collapse" data-parent="#accordion" href="#collapse{{ forloop.counter }}">{{ fieldset.name }}</a>
+    </h4>
+  </div>
+  <div id="collapse{{ forloop.counter }}" class="panel-collapse collapse in">
+    <div class="panel-body">
+      {% if fieldset.description %}
+        <div class="description">{{ fieldset.description|safe }}</div>
+      {% endif %}
+      {% for line in fieldset %}
+        <div class="row">
+          <div class="control-group {% if line.fields|length_is:'1' and line.errors %} error{% endif %}{% for field in line %}{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% endfor %}">
+            {% for field in line %}
+              <div class="col-md-{{ group_column_width }} form-group {% if not line.fields|length_is:'1' %} field-box{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% if not field.is_readonly and field.errors %} errors{% endif %}{% endif %}">
+                {% if field.is_checkbox %}
+                  <div class="control-label col-md-3">
+                    {{ field.label_tag }}
+                  </div>
+                  <div class="controls col-md-9">
+                    <div class="checkbox">
+                      {% dab_field_rendering field.field %} {% if field.field.help_text %}
+                      <span class="help-block">{{ field.field.help_text|safe }}</span>{% endif %}
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="control-label col-md-3">
+                    {{ field.label_tag }}
+                  </div>
+                  <div class="controls col-md-9">
+                    {% if field.is_readonly %}
+                      <p>{{ field.contents }}</p>
+                    {% else %}
+                      {% if field|admin_field_type == 'AdminTextareaWidget' %}
+                        {% dab_field_rendering field.field %}
+                      {% elif field|admin_field_type == 'AdminTimeWidget' %}
+                        <div class="row">
+                          <span class="col-xs-4">
+                            <div class='input-group date' id='id_{{ field.field.name }}'>
+                              <input type='text' class="form-control" value="{{ field.field.value }}"/>
+                              <span class="input-group-addon">
+                                  <span class="glyphicon glyphicon-time"></span>
+                              </span>
+                            </div>
+                            <script type="text/javascript">
+                              $(function () {
+                                $('#id_' + '{{ field.field.name }}').datetimepicker({
+                                  pickDate: false
+                                });
+                              });
+                            </script>
+                          </span>
+                        </div>
+                      {% else %}
+                        <div class="row">
+                          <span class="col-xs-4">
+                            {% dab_field_rendering field.field %}
+                          </span>
+                        </div>
+                      {% endif %}
+                    {% endif %}
+                    {% if not field.is_readonly and field.errors %}<span class="text-danger">
+                      {{ field.errors|striptags }}</span>{% endif %}
+                    {% if field.field.help_text %}
+                      <span class="help-block">{{ field.field.help_text|safe }}</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

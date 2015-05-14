@@ -59,7 +59,7 @@ def statement_import(request):
 
             try:
                 # skip future and forex
-                if values[7] and values[3] not in ('FUTURE', 'FOREX') and values[11] != '':
+                if values[7] and values[10] not in ('FUTURE', 'FOREX') and values[11] != '':
                     if values[2] == '':  # no time in row
                         for i in range(len(values)):
                             if values[i] == '':
@@ -87,7 +87,7 @@ def statement_import(request):
         for line in lines[at_index + 2:last_index(at_index, lines)]:
             values = line.split(',')
 
-            if values[2] not in ('FUTURE', 'FOREX'):  # skip future and forex
+            if values[9] not in ('FUTURE', 'FOREX'):  # skip future and forex
                 if values[1] == '':
                     for i in range(len(values)):
                         if values[i] == '' or values[i] in ('DEBIT', 'CREDIT'):
@@ -133,20 +133,24 @@ def statement_import(request):
         for line in lines[pl_index + 2:last_index(pl_index, lines) - 1]:
             values = line.split(',')
             if '/' not in values[0]:  # skip future
-                if values[0] and values[6] and values[7]:  # only have margin req and close value
-                    profit_loss = ProfitLoss()
-                    profit_loss.statement = statement
-                    profit_loss.load_csv(line)
-                    profit_loss.save()
 
-                    #df = df.append(profit_loss.to_hdf())
+                if values[0]:  # only have margin req and close value
+                    try:
+                        profit_loss = ProfitLoss()
+                        profit_loss.statement = statement
+                        profit_loss.load_csv(line)
+                        profit_loss.save()
+                    except ValueError:
+                        continue
+
+                #df = df.append(profit_loss.to_hdf())
 
                     #print df.to_string(line_width=200)
 
         files.append(dict(
             #path=fpath,
             fname=os.path.basename(fpath),
-            date=date,
+            #date=date,
             net_liquid=statement.net_liquid,
             stock_bp=statement.stock_bp,
             option_bp=statement.option_bp,
@@ -160,6 +164,7 @@ def statement_import(request):
         ))
 
     parameters = dict(
+        title='Statement Import',
         files=files
     )
 

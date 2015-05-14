@@ -1,38 +1,79 @@
-{% if files %}
-  <table class="table">
-    {% for file in files %}
-    {% if forloop.first %}
-      <tr>
-        <th>No.</th>
-        <th>Date</th>
-        <th>Filename</th>
-        <th>Net Liquid</th>
-        <th>Stock BP</th>
-        <th>Option BP</th>
-        <th>C. YTD</th>
-        <th>Cash Balance</th>
-        <th>Account Order</th>
-        <th>Account Trade</th>
-        <th>Holding Equity</th>
-        <th>Holding Option</th>
-        <th>Profit Loss</th>
-      </tr>
-    {% endif %}
-      <tr>
-        <td>{{ forloop.counter }}</td>
-        <td>{{ file.date }}</td>
-        <td>{{ file.fname }}</td>
-        <td>{{ file.net_liquid }}</td>
-        <td>{{ file.stock_bp }}</td>
-        <td>{{ file.option_bp }}</td>
-        <td>{{ file.commission_ytd }}</td>
-        <td>{{ file.cash_balance }}</td>
-        <td>{{ file.account_order }}</td>
-        <td>{{ file.account_trade }}</td>
-        <td>{{ file.holding_equity }}</td>
-        <td>{{ file.holding_option }}</td>
-        <td>{{ file.profit_loss }}</td>
-      </tr>
-    {% endfor %}
-  </table>
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags %}
+
+{% block extrahead %}
+  {{ block.super }}
+  {{ media.js }}
+  {% if action_form %}{% if actions_on_top or actions_on_bottom %}
+    <script type="text/javascript">
+      (function ($) {
+        $(document).ready(function ($) {
+          $("tr input.action-select").actions();
+        });
+      })(django.jQuery);
+    </script>
+  {% endif %}{% endif %}
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'statement' %}">Statement</a></li>
+      <li>Import</li>
+    </ul>
+  {% endblock %}
 {% endif %}
+
+
+{% block content %}
+  {% if files %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#accordion"
+             href="#collapse_statement_import">Statement Import</a>
+        </h4>
+      </div>
+      <div id="collapse_statement_import" class="panel-collapse collapse in">
+        <div class="panel-body">
+          <table class="table">
+            {% for file in files %}
+              {% if forloop.first %}
+                <tr>
+                  <th>No.</th>
+                  <th>Filename</th>
+                  <th>Net Liquid</th>
+                  <th>C. YTD</th>
+                  <th>Cash Balance</th>
+                  <th>Account Order</th>
+                  <th>Account Trade</th>
+                  <th>Holding Equity</th>
+                  <th>Holding Option</th>
+                  <th>Profit Loss</th>
+                </tr>
+              {% endif %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ file.fname }}</td>
+                <td>{{ file.net_liquid }}</td>
+                <td>{{ file.commission_ytd }}</td>
+                <td>{{ file.cash_balance }}</td>
+                <td>{{ file.account_order }}</td>
+                <td>{{ file.account_trade }}</td>
+                <td>{{ file.holding_equity }}</td>
+                <td>{{ file.holding_option }}</td>
+                <td>{{ file.profit_loss }}</td>
+              </tr>
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-warning">
+      <a href="#" class="close" data-dismiss="alert">&times;</a>
+      <strong>Warning!</strong> No new statement to import.
+    </div>
+  {% endif %}
+{% endblock %}

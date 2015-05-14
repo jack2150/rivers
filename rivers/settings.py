@@ -31,7 +31,9 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = (
     'adminplus',
+
     'django_admin_bootstrapped',  # version 2.3.5 for django 1.6
+    'bootstrap3_datetime',
 
     'django.contrib.admin',
     'django.contrib.auth',
@@ -44,7 +46,7 @@ INSTALLED_APPS = (
 )
 
 # for django-admin-bootsrapped
-#DAB_FIELD_RENDERER = 'django_admin_bootstrapped.renderers.BootstrapFieldRenderer'
+DAB_FIELD_RENDERER = 'django_admin_bootstrapped.renderers.BootstrapFieldRenderer'
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -94,4 +96,12 @@ TEMPLATE_DIRS = (
     os.path.join(BASE_DIR,  'templates'),
 )
 
+# fixtures
 FIXTURE_DIRS = [os.path.join(BASE_DIR, 'fixtures')]
+
+# cache
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+}

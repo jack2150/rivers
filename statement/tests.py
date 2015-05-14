@@ -170,7 +170,7 @@ class TestStatementModels(TestSetUp):
         self.account_order = AccountOrder.objects.get(id=self.account_order.id)
 
         self.assertTrue(self.account_order.id)
-        self.assertEqual(self.account_order.time_placed,
+        self.assertEqual(self.account_order.time,
                          datetime.strptime('14:42:59', '%H:%M:%S').time())
         self.assertEqual(self.account_order.spread, 'COVERED')
         self.assertEqual(self.account_order.side, 'SELL')
@@ -222,7 +222,7 @@ class TestStatementModels(TestSetUp):
         df = self.account_trade.to_hdf()
 
         self.assertTrue(self.account_trade.id)
-        self.assertEqual(self.account_trade.exec_time,
+        self.assertEqual(self.account_trade.time,
                          datetime.strptime('14:41:40', '%H:%M:%S').time())
         self.assertEqual(self.account_trade.spread, 'VERTICAL')
         self.assertEqual(self.account_trade.side, 'SELL')
