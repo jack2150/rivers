@@ -15,6 +15,9 @@ class StatementInline(admin.TabularInline):
     extra = 0
     ordering = ('time', )
 
+    def date(self, obj):
+        return obj.statement.date
+
     def has_add_permission(self, request):
         return False
 
@@ -25,38 +28,38 @@ class StatementInline(admin.TabularInline):
 class CashBalanceInline(StatementInline):
     model = CashBalance
 
-    fields = ('time', 'name', 'ref_no', 'description',
+    fields = ('date', 'time', 'name', 'ref_no', 'description',
               'fee', 'commission', 'amount', 'balance')
-    readonly_fields = ('time', 'name', 'ref_no', 'description',
+    readonly_fields = ('date', 'time', 'name', 'ref_no', 'description',
                        'fee', 'commission', 'amount', 'balance')
 
 
 class AccountOrderInline(StatementInline):
     model = AccountOrder
 
-    fields = ('time', 'spread', 'side', 'qty', 'pos_effect', 'symbol',
+    fields = ('date', 'time', 'spread', 'side', 'qty', 'pos_effect', 'symbol',
               'exp', 'strike', 'contract', 'price', 'order', 'tif', 'status')
 
-    readonly_fields = ('time', 'spread', 'side', 'qty', 'pos_effect', 'symbol',
+    readonly_fields = ('date', 'time', 'spread', 'side', 'qty', 'pos_effect', 'symbol',
                        'exp', 'strike', 'contract', 'price', 'order', 'tif', 'status')
 
 
 class AccountTradeInline(StatementInline):
     model = AccountTrade
 
-    fields = ('time', 'spread', 'side', 'qty', 'pos_effect', 'symbol', 'exp',
+    fields = ('date', 'time', 'spread', 'side', 'qty', 'pos_effect', 'symbol', 'exp',
               'strike', 'contract', 'price', 'net_price', 'order_type')
 
-    readonly_fields = ('time', 'spread', 'side', 'qty', 'pos_effect', 'symbol', 'exp',
+    readonly_fields = ('date', 'time', 'spread', 'side', 'qty', 'pos_effect', 'symbol', 'exp',
                        'strike', 'contract', 'price', 'net_price', 'order_type')
 
 
 class HoldingEquityInline(StatementInline):
     model = HoldingEquity
 
-    fields = ('symbol', 'description', 'qty', 'trade_price', 'close_price', 'close_value')
+    fields = ('date', 'symbol', 'description', 'qty', 'trade_price', 'close_price', 'close_value')
 
-    readonly_fields = ('symbol', 'description', 'qty', 'trade_price', 'close_price', 'close_value')
+    readonly_fields = ('date', 'symbol', 'description', 'qty', 'trade_price', 'close_price', 'close_value')
 
     ordering = ('symbol', )
 
@@ -64,10 +67,10 @@ class HoldingEquityInline(StatementInline):
 class HoldingOptionInline(StatementInline):
     model = HoldingOption
 
-    fields = ('symbol', 'option_code', 'exp', 'strike', 'contract',
+    fields = ('date', 'symbol', 'option_code', 'exp', 'strike', 'contract',
               'qty', 'trade_price', 'close_price', 'close_value')
 
-    readonly_fields = ('symbol', 'option_code', 'exp', 'strike', 'contract',
+    readonly_fields = ('date', 'symbol', 'option_code', 'exp', 'strike', 'contract',
                        'qty', 'trade_price', 'close_price', 'close_value')
 
     ordering = ('symbol', )
@@ -76,10 +79,10 @@ class HoldingOptionInline(StatementInline):
 class ProfitLossInline(StatementInline):
     model = ProfitLoss
 
-    fields = ('symbol', 'description', 'pl_open', 'pl_pct',
+    fields = ('date', 'symbol', 'description', 'pl_open', 'pl_pct',
               'pl_day', 'pl_ytd', 'margin_req', 'close_value')
 
-    readonly_fields = ('symbol', 'description', 'pl_open', 'pl_pct',
+    readonly_fields = ('date', 'symbol', 'description', 'pl_open', 'pl_pct',
                        'pl_day', 'pl_ytd', 'margin_req', 'close_value')
 
     ordering = ('symbol', )
@@ -129,7 +132,7 @@ class CashBalanceAdmin(StatementModelAdmin):
     fieldsets = (
         ('Foreign Keys', {
             'fields': (
-                'statement',
+                'statement', 'position'
             )
         }),
         ('Primary Fields', {
@@ -146,6 +149,24 @@ class CashBalanceAdmin(StatementModelAdmin):
     list_per_page = 20
 
 
+class SpreadFilter(admin.SimpleListFilter):
+    """
+    Remove re, oco, trg spread
+    """
+    title = ('Spread', )
+    parameter_name = 'spread'
+
+    def lookups(self, request, model_admin):
+        spreads = set([(ao.spread, ao.spread) for ao in model_admin.model.objects.all()])
+        return [(s[0], s[1]) for s in spreads if '#' not in s[0]]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(spread=self.value())
+        else:
+            return queryset
+
+
 class AccountOrderAdmin(StatementModelAdmin):
     form = StatementForm  # enable bootstrap datetime js
 
@@ -157,7 +178,7 @@ class AccountOrderAdmin(StatementModelAdmin):
     fieldsets = (
         ('Foreign Keys', {
             'fields': (
-                'statement',
+                'statement', 'position'
             )
         }),
         ('Primary Fields', {
@@ -171,7 +192,7 @@ class AccountOrderAdmin(StatementModelAdmin):
     search_fields = ('statement__date', 'time', 'spread', 'pos_effect', 'symbol', 'exp',
                      'strike', 'contract', 'price', 'order', 'tif', 'status')
 
-    list_filter = ('spread', 'pos_effect', 'contract', 'order', 'tif')
+    list_filter = (SpreadFilter, 'pos_effect', 'contract', 'order', 'tif')
 
     list_per_page = 20
 
@@ -187,7 +208,7 @@ class AccountTradeAdmin(StatementModelAdmin):
     fieldsets = (
         ('Foreign Keys', {
             'fields': (
-                'statement',
+                'statement', 'position'
             )
         }),
         ('Primary Fields', {
@@ -216,7 +237,7 @@ class HoldingEquityAdmin(StatementModelAdmin):
     fieldsets = (
         ('Foreign Keys', {
             'fields': (
-                'statement',
+                'statement', 'position'
             )
         }),
         ('Primary Fields', {
@@ -242,7 +263,7 @@ class HoldingOptionAdmin(StatementModelAdmin):
     fieldsets = (
         ('Foreign Keys', {
             'fields': (
-                'statement',
+                'statement', 'position'
             )
         }),
         ('Primary Fields', {
@@ -268,7 +289,7 @@ class ProfitLossAdmin(StatementModelAdmin):
     fieldsets = (
         ('Foreign Keys', {
             'fields': (
-                'statement',
+                'statement', 'position'
             )
         }),
         ('Primary Fields', {
@@ -284,9 +305,30 @@ class ProfitLossAdmin(StatementModelAdmin):
     list_per_page = 20
 
 
+class PositionAdmin(admin.ModelAdmin):
+    inlines = (CashBalanceInline, AccountOrderInline, AccountTradeInline, HoldingEquityInline,
+               HoldingOptionInline, ProfitLossInline)
+
+    list_display = ('symbol', 'name', 'spread', 'status', 'start', 'stop')
+
+    search_fields = ('symbol', 'name', 'spread', 'status', 'start', 'stop')
+    list_per_page = 20
+
+    fieldsets = (
+
+        ('Primary Fields', {
+            'fields': ('symbol', 'name', 'spread', 'status', 'start', 'stop')
+        }),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+
 admin.site.app_index_template = 'statement/index.html'
 
 admin.site.register(Statement, StatementAdmin)
+admin.site.register(Position, PositionAdmin)
 admin.site.register(CashBalance, CashBalanceAdmin)
 admin.site.register(AccountOrder, AccountOrderAdmin)
 admin.site.register(AccountTrade, AccountTradeAdmin)

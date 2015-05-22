@@ -36,38 +36,36 @@
         </h4>
       </div>
       <div id="collapse_statement_import" class="panel-collapse collapse in">
-        <div class="panel-body">
-          <table class="table">
-            {% for file in files %}
-              {% if forloop.first %}
-                <tr>
-                  <th>No.</th>
-                  <th>Filename</th>
-                  <th>Net Liquid</th>
-                  <th>C. YTD</th>
-                  <th>Cash Balance</th>
-                  <th>Account Order</th>
-                  <th>Account Trade</th>
-                  <th>Holding Equity</th>
-                  <th>Holding Option</th>
-                  <th>Profit Loss</th>
-                </tr>
-              {% endif %}
+        <table class="table">
+          {% for file in files %}
+            {% if forloop.first %}
               <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ file.fname }}</td>
-                <td>{{ file.net_liquid }}</td>
-                <td>{{ file.commission_ytd }}</td>
-                <td>{{ file.cash_balance }}</td>
-                <td>{{ file.account_order }}</td>
-                <td>{{ file.account_trade }}</td>
-                <td>{{ file.holding_equity }}</td>
-                <td>{{ file.holding_option }}</td>
-                <td>{{ file.profit_loss }}</td>
+                <th>No.</th>
+                <th>Filename</th>
+                <th>Net Liquid</th>
+                <th>C. YTD</th>
+                <th>Cash Balance</th>
+                <th>Account Order</th>
+                <th>Account Trade</th>
+                <th>Holding Equity</th>
+                <th>Holding Option</th>
+                <th>Profit Loss</th>
               </tr>
-            {% endfor %}
-          </table>
-        </div>
+            {% endif %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ file.fname }}</td>
+              <td>{{ file.net_liquid }}</td>
+              <td>{{ file.commission_ytd }}</td>
+              <td>{{ file.cash_balance }}</td>
+              <td>{{ file.account_order }}</td>
+              <td>{{ file.account_trade }}</td>
+              <td>{{ file.holding_equity }}</td>
+              <td>{{ file.holding_option }}</td>
+              <td>{{ file.profit_loss }}</td>
+            </tr>
+          {% endfor %}
+        </table>
       </div>
     </div>
   {% else %}

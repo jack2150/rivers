@@ -1,5 +1,6 @@
 from decimal import Decimal
 from datetime import datetime
+from pprint import pprint
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
@@ -72,6 +73,104 @@ class TestStatementModels(TestSetUp):
             self.cash_balance = CashBalance.objects.get(id=self.cash_balance.id)
 
             df = df.append(self.cash_balance.to_hdf())
+
+        print df.to_string(line_width=200)
+
+    def test_account_order(self):
+        self.test_statement(output=False)
+
+        line = ',,1/29/15 14:42:59,COVERED,SELL,-1,TO OPEN,PG,MAR 15,87.5,CALL,84.70,LMT,DAY,FILLED'
+
+        self.account_order = AccountOrder()
+        self.account_order.statement = self.statement
+        self.account_order.load_csv(line)
+        self.account_order.save()
+        self.account_order = AccountOrder.objects.get(id=self.account_order.id)
+
+        self.assertTrue(self.account_order.id)
+        self.assertEqual(self.account_order.time,
+                         datetime.strptime('14:42:59', '%H:%M:%S').time())
+        self.assertEqual(self.account_order.spread, 'COVERED')
+        self.assertEqual(self.account_order.side, 'SELL')
+        self.assertEqual(self.account_order.qty, '-1')
+        self.assertEqual(self.account_order.pos_effect, 'TO OPEN')
+        self.assertEqual(self.account_order.symbol, 'PG')
+        self.assertEqual(self.account_order.exp, 'MAR 15')
+        self.assertEqual(self.account_order.strike, Decimal('87.5'))
+        self.assertEqual(self.account_order.contract, 'CALL')
+        self.assertEqual(self.account_order.price, '84.70')
+        self.assertEqual(self.account_order.order, 'LMT')
+        self.assertEqual(self.account_order.tif, 'DAY')
+        self.assertEqual(self.account_order.status, 'FILLED')
+
+        df = self.account_order.to_hdf()
+
+        lines = [
+            ',,1/29/15 14:50:15,STOCK,SELL,-100,TO OPEN,KO,,,STOCK,42.20,LMT,DAY,EXPIRED',
+            ',,1/29/15 14:41:12,VERTICAL,SELL,-2,TO OPEN,JPM,MAR 15,55,PUT,.70,LMT,DAY,FILLED',
+            ',,1/29/15 14:41:12,VERTICAL,BUY,+2,TO OPEN,JPM,MAR 15,52.5,PUT,.70,LMT,DAY,FILLED',
+            ',,1/29/15 14:40:29,STOCK,BUY,+200,TO OPEN,RSX,,,ETF,14.92,LMT,DAY,FILLED',
+            ',,1/29/15 14:44:47,COVERED,SELL,-1,TO OPEN,SNDK,MAR 15,75,PUT,79.68,LMT,DAY,FILLED',
+            ',,1/29/15 14:44:47,COVERED,SELL,-100,TO OPEN,SNDK,,,STOCK,79.6,LMT,DAY,FILLED',
+            ',,1/29/15 14:42:25,STOCK,SELL,-100,TO OPEN,KO,,,STOCK,42.04,LMT,DAY,CANCELED'
+        ]
+
+        for line in lines:
+            self.account_order = AccountOrder()
+            self.account_order.statement = self.statement
+            self.account_order.load_csv(line)
+            self.account_order.save()
+            self.account_order = AccountOrder.objects.get(id=self.account_order.id)
+
+            df = df.append(self.account_order.to_hdf())
+
+        print df.to_string(line_width=200)
+
+    def test_account_trade(self):
+        self.test_statement(output=False)
+
+        line = ',1/29/15 14:41:40,VERTICAL,SELL,-3,TO OPEN,SPY,MAR 15,201,PUT,5.18,.75,LMT'
+
+        self.account_trade = AccountTrade()
+        self.account_trade.statement = self.statement
+        self.account_trade.load_csv(line)
+        self.account_trade.save()
+        self.account_trade = AccountTrade.objects.get(id=self.account_trade.id)
+
+        df = self.account_trade.to_hdf()
+
+        self.assertTrue(self.account_trade.id)
+        self.assertEqual(self.account_trade.time,
+                         datetime.strptime('14:41:40', '%H:%M:%S').time())
+        self.assertEqual(self.account_trade.spread, 'VERTICAL')
+        self.assertEqual(self.account_trade.side, 'SELL')
+        self.assertEqual(self.account_trade.qty, -3)
+        self.assertEqual(self.account_trade.pos_effect, 'TO OPEN')
+        self.assertEqual(self.account_trade.symbol, 'SPY')
+        self.assertEqual(self.account_trade.exp, 'MAR 15')
+        self.assertEqual(self.account_trade.strike, Decimal('201'))
+        self.assertEqual(self.account_trade.contract, 'PUT')
+        self.assertEqual(self.account_trade.price, Decimal('5.18'))
+        self.assertEqual(self.account_trade.net_price, Decimal('.75'))
+        self.assertEqual(self.account_trade.order_type, 'LMT')
+
+        lines = [
+            ',1/29/15 14:41:41,VERTICAL,BUY,+1,TO OPEN,TSLA,MAR 15,205,CALL,13.95,2.40,LMT',
+            ',1/29/15 14:41:41,VERTICAL,SELL,-1,TO OPEN,TSLA,MAR 15,210,CALL,11.55,2.40,LMT',
+            ',1/29/15 14:41:40,VERTICAL,SELL,-3,TO OPEN,SPY,MAR 15,201,PUT,5.18,-.75,LMT',
+            ',1/29/15 14:41:40,VERTICAL,BUY,+3,TO OPEN,SPY,MAR 15,199,PUT,4.43,-.75,LMT',
+            ',1/29/15 14:40:29,STOCK,BUY,+200,TO OPEN,RSX,,,ETF,14.92,14.92,LMT',
+            ',1/29/15 14:40:07,STOCK,BUY,+200,TO OPEN,EWU,,,ETF,18.33,18.33,LMT',
+        ]
+
+        for line in lines:
+            self.account_trade = AccountTrade()
+            self.account_trade.statement = self.statement
+            self.account_trade.load_csv(line)
+            self.account_trade.save()
+            self.account_trade = AccountTrade.objects.get(id=self.account_trade.id)
+
+            df = df.append(self.account_trade.to_hdf())
 
         print df.to_string(line_width=200)
 
@@ -158,104 +257,6 @@ class TestStatementModels(TestSetUp):
 
         print df.to_string(line_width=200)
 
-    def test_account_order(self):
-        self.test_statement(output=False)
-
-        line = ',,1/29/15 14:42:59,COVERED,SELL,-1,TO OPEN,PG,MAR 15,87.5,CALL,84.70,LMT,DAY,FILLED'
-
-        self.account_order = AccountOrder()
-        self.account_order.statement = self.statement
-        self.account_order.load_csv(line)
-        self.account_order.save()
-        self.account_order = AccountOrder.objects.get(id=self.account_order.id)
-
-        self.assertTrue(self.account_order.id)
-        self.assertEqual(self.account_order.time,
-                         datetime.strptime('14:42:59', '%H:%M:%S').time())
-        self.assertEqual(self.account_order.spread, 'COVERED')
-        self.assertEqual(self.account_order.side, 'SELL')
-        self.assertEqual(self.account_order.qty, '-1')
-        self.assertEqual(self.account_order.pos_effect, 'TO OPEN')
-        self.assertEqual(self.account_order.symbol, 'PG')
-        self.assertEqual(self.account_order.exp, 'MAR 15')
-        self.assertEqual(self.account_order.strike, Decimal('87.5'))
-        self.assertEqual(self.account_order.contract, 'CALL')
-        self.assertEqual(self.account_order.price, Decimal('84.70'))
-        self.assertEqual(self.account_order.order, 'LMT')
-        self.assertEqual(self.account_order.tif, 'DAY')
-        self.assertEqual(self.account_order.status, 'FILLED')
-
-        df = self.account_order.to_hdf()
-
-        lines = [
-            ',,1/29/15 14:50:15,STOCK,SELL,-100,TO OPEN,KO,,,STOCK,42.20,LMT,DAY,EXPIRED',
-            ',,1/29/15 14:41:12,VERTICAL,SELL,-2,TO OPEN,JPM,MAR 15,55,PUT,.70,LMT,DAY,FILLED',
-            ',,1/29/15 14:41:12,VERTICAL,BUY,+2,TO OPEN,JPM,MAR 15,52.5,PUT,.70,LMT,DAY,FILLED',
-            ',,1/29/15 14:40:29,STOCK,BUY,+200,TO OPEN,RSX,,,ETF,14.92,LMT,DAY,FILLED',
-            ',,1/29/15 14:44:47,COVERED,SELL,-1,TO OPEN,SNDK,MAR 15,75,PUT,79.68,LMT,DAY,FILLED',
-            ',,1/29/15 14:44:47,COVERED,SELL,-100,TO OPEN,SNDK,,,STOCK,79.6,LMT,DAY,FILLED',
-            ',,1/29/15 14:42:25,STOCK,SELL,-100,TO OPEN,KO,,,STOCK,42.04,LMT,DAY,CANCELED'
-        ]
-
-        for line in lines:
-            self.account_order = AccountOrder()
-            self.account_order.statement = self.statement
-            self.account_order.load_csv(line)
-            self.account_order.save()
-            self.account_order = AccountOrder.objects.get(id=self.account_order.id)
-
-            df = df.append(self.account_order.to_hdf())
-
-        print df.to_string(line_width=200)
-
-    def test_account_trade(self):
-        self.test_statement(output=False)
-
-        line = ',1/29/15 14:41:40,VERTICAL,SELL,-3,TO OPEN,SPY,MAR 15,201,PUT,5.18,.75,LMT'
-
-        self.account_trade = AccountTrade()
-        self.account_trade.statement = self.statement
-        self.account_trade.load_csv(line)
-        self.account_trade.save()
-        self.account_trade = AccountTrade.objects.get(id=self.account_trade.id)
-
-        df = self.account_trade.to_hdf()
-
-        self.assertTrue(self.account_trade.id)
-        self.assertEqual(self.account_trade.time,
-                         datetime.strptime('14:41:40', '%H:%M:%S').time())
-        self.assertEqual(self.account_trade.spread, 'VERTICAL')
-        self.assertEqual(self.account_trade.side, 'SELL')
-        self.assertEqual(self.account_trade.qty, -3)
-        self.assertEqual(self.account_trade.pos_effect, 'TO OPEN')
-        self.assertEqual(self.account_trade.symbol, 'SPY')
-        self.assertEqual(self.account_trade.exp, 'MAR 15')
-        self.assertEqual(self.account_trade.strike, Decimal('201'))
-        self.assertEqual(self.account_trade.contract, 'PUT')
-        self.assertEqual(self.account_trade.price, Decimal('5.18'))
-        self.assertEqual(self.account_trade.net_price, Decimal('.75'))
-        self.assertEqual(self.account_trade.order_type, 'LMT')
-
-        lines = [
-            ',1/29/15 14:41:41,VERTICAL,BUY,+1,TO OPEN,TSLA,MAR 15,205,CALL,13.95,2.40,LMT',
-            ',1/29/15 14:41:41,VERTICAL,SELL,-1,TO OPEN,TSLA,MAR 15,210,CALL,11.55,2.40,LMT',
-            ',1/29/15 14:41:40,VERTICAL,SELL,-3,TO OPEN,SPY,MAR 15,201,PUT,5.18,-.75,LMT',
-            ',1/29/15 14:41:40,VERTICAL,BUY,+3,TO OPEN,SPY,MAR 15,199,PUT,4.43,-.75,LMT',
-            ',1/29/15 14:40:29,STOCK,BUY,+200,TO OPEN,RSX,,,ETF,14.92,14.92,LMT',
-            ',1/29/15 14:40:07,STOCK,BUY,+200,TO OPEN,EWU,,,ETF,18.33,18.33,LMT',
-        ]
-
-        for line in lines:
-            self.account_trade = AccountTrade()
-            self.account_trade.statement = self.statement
-            self.account_trade.load_csv(line)
-            self.account_trade.save()
-            self.account_trade = AccountTrade.objects.get(id=self.account_trade.id)
-
-            df = df.append(self.account_trade.to_hdf())
-
-        print df.to_string(line_width=200)
-
     def test_profit_loss(self):
         self.test_statement(output=False)
 
@@ -303,16 +304,313 @@ class TestStatementModels(TestSetUp):
         print df.to_string(line_width=200)
 
 
+class TestPosition(TestSetUp):
+    def setUp(self):
+        TestSetUp.setUp(self)
+        self.position = Position()
+
+        self.statement = Statement()
+        self.statement.date = '2015-01-29'
+        self.statement.load_csv([
+            'Net Liquidating Value, "$49,141.69"', 'Stock Buying Power, "$36,435.34"',
+            'Option Buying Power, "$36,435.34"', 'Commissions / Fees YTD,$159.08',
+        ])
+        self.statement.save()
+
+        self.account_trade = AccountTrade()
+        self.account_trade.statement = self.statement
+        self.account_trade.load_csv(
+            ',1/29/15 14:40:29,STOCK,BUY,+200,TO OPEN,RSX,,,ETF,14.92,14.92,LMT'
+        )
+        self.account_trade.save()
+
+    def test_set_open(self, output=True):
+        """
+        Test open a new position
+        """
+        self.position.set_open(trades=AccountTrade.objects.all())
+        self.position.save()
+
+        if output:
+            print 'open position:', self.position
+
+        self.assertTrue(self.position.id)
+        self.assertEqual(self.position.status, 'OPEN')
+        self.assertEqual(self.position.name, 'STOCK')
+        self.assertEqual(self.position.spread, 'LONG_STOCK')
+
+    def test_set_close(self):
+        """
+        Test close a existing position
+        """
+        self.test_set_open(output=False)
+
+        self.position.set_close(date='2015-04-29')
+        self.position.save()
+
+        print 'position status:', self.position.status
+        print 'position stop:', self.position.stop
+
+        self.assertEqual(self.position.status, 'CLOSE')
+        self.assertEqual(self.position.stop, '2015-04-29')
+
+    def test_set_expire(self):
+        """
+        Test position set expire
+        """
+        self.test_set_open(output=False)
+        self.position.set_expire(date='2015-04-29')
+
+        print 'position status:', self.position.status
+
+        self.assertEqual(self.position.status, 'EXPIRE')
+
+    def test_set_custom(self):
+        """
+        Test position set custom
+        """
+        self.position.set_custom()
+
+        print 'position name:', self.position.name
+        print 'position spread:', self.position.spread
+
+        self.assertEqual(self.position.name, 'CUSTOM')
+        self.assertEqual(self.position.spread, 'CUSTOM')
+
+    def test_conditions1(self):
+        """
+        Test create conditions from position stage
+        """
+        self.test_set_open(output=False)
+
+        self.position.positionstage_set.add(PositionStage(
+            price=100.0,
+            gt_stage='PROFIT', gt_amount=None,
+            e_stage='EVEN', e_amount=None,
+            lt_stage='LOSS', lt_amount=None
+        ))
+
+        print 'run make conditions...'
+        conditions = self.position.make_conditions()
+        print 'condition list:'
+        pprint(conditions)
+
+        self.assertTrue(eval(conditions[0][1].format(x=90)))
+        self.assertTrue(eval(conditions[1][1].format(x=100)))
+        self.assertTrue(eval(conditions[2][1].format(x=110)))
+
+        self.assertEqual(len(conditions), 3)
+
+        # test current stage
+        self.assertEqual(self.position.current_stage(price=99), 'LOSS')
+        self.assertEqual(self.position.current_stage(price=100), 'EVEN')
+        self.assertEqual(self.position.current_stage(price=101), 'PROFIT')
+
+    def test_conditions2(self):
+        self.test_set_open(output=False)
+        self.position.positionstage_set.add(PositionStage(
+            price=110.0,
+            gt_stage='MAX_PROFIT', gt_amount=250,
+            e_stage='MAX_PROFIT', e_amount=250,
+            lt_stage='PROFIT', lt_amount=None
+        ))
+
+        self.position.positionstage_set.add(PositionStage(
+            price=100.0,
+            gt_stage='PROFIT', gt_amount=None,
+            e_stage='EVEN', e_amount=0.0,
+            lt_stage='LOSS', lt_amount=None
+        ))
+
+        self.position.positionstage_set.add(PositionStage(
+            price=95.0,
+            gt_stage='LOSS', gt_amount=None,
+            e_stage='MAX_LOSS', e_amount=-180,
+            lt_stage='MAX_LOSS', lt_amount=-180
+        ))
+
+        print 'run make conditions...'
+
+        conditions = self.position.make_conditions()
+        print 'condition list:'
+        pprint(conditions)
+
+        self.assertTrue(eval(conditions[0][1].format(x=90)))
+        self.assertTrue(eval(conditions[0][1].format(x=95)))
+        self.assertTrue(eval(conditions[1][1].format(x=96)))
+        self.assertTrue(eval(conditions[1][1].format(x=99)))
+        self.assertTrue(eval(conditions[2][1].format(x=100)))
+        self.assertTrue(eval(conditions[3][1].format(x=101)))
+        self.assertTrue(eval(conditions[3][1].format(x=109)))
+        self.assertTrue(eval(conditions[4][1].format(x=110)))
+        self.assertTrue(eval(conditions[4][1].format(x=120)))
+
+        self.assertEqual(len(conditions), 5)
+
+        # test current stage
+        self.assertEqual(self.position.current_stage(price=90), 'MAX_LOSS')
+        self.assertEqual(self.position.current_stage(price=95), 'MAX_LOSS')
+        self.assertEqual(self.position.current_stage(price=96), 'LOSS')
+        self.assertEqual(self.position.current_stage(price=99), 'LOSS')
+        self.assertEqual(self.position.current_stage(price=100), 'EVEN')
+        self.assertEqual(self.position.current_stage(price=101), 'PROFIT')
+        self.assertEqual(self.position.current_stage(price=109), 'PROFIT')
+        self.assertEqual(self.position.current_stage(price=110), 'MAX_PROFIT')
+        self.assertEqual(self.position.current_stage(price=120), 'MAX_PROFIT')
+
+    def test_create_stages(self):
+        """
+        Test create stage using trades
+        """
+        self.position.set_open(trades=AccountTrade.objects.all())
+        self.position.save()
+
+        print 'run create_stages...'
+        self.position.create_stages(trades=AccountTrade.objects.all())
+
+        self.assertTrue(self.position.positionstage_set.exists())
+
+        for stage in self.position.positionstage_set.all():
+            print stage
+
+
+class TestPositionStage(TestSetUp):
+    def setUp(self):
+        TestSetUp.setUp(self)
+
+        self.position = Position()
+        self.position.name = 'STOCK'
+        self.position.spread = 'LONG_STOCK'
+        self.position.start = '2015-04-29'
+        self.position.save()
+
+        self.stage = PositionStage()
+        self.stage.position = self.position
+
+    def test_stage(self, output=True):
+        """
+        Test create stage
+        """
+        self.stage.price = 29.6
+
+        self.stage.gt_stage = 'PROFIT'
+        self.stage.e_stage = 'EVEN'
+        self.stage.lt_stage = 'LOSS'
+        self.stage.save()
+
+        self.assertTrue(self.stage.id)
+        self.assertEqual(self.stage.gt_stage, 'PROFIT')
+        self.assertFalse(self.stage.gt_amount)
+        self.assertEqual(self.stage.e_stage, 'EVEN')
+        self.assertFalse(self.stage.e_amount)
+        self.assertEqual(self.stage.lt_stage, 'LOSS')
+        self.assertFalse(self.stage.lt_amount)
+
+        if output:
+            print self.stage.to_hdf()
+
+    def test_check(self):
+        """
+        Test check price for stage
+        """
+        self.test_stage(output=False)
+
+        prices = [30, 29.6, 29]
+        expects = ['PROFIT', 'EVEN', 'LOSS']
+
+        for price, expect in zip(prices, expects):
+            result = self.stage.check(price)
+            self.assertEqual(result, expect)
+            print 'price: %.2f, result: %s' % (price, result)
+
+
 class TestStatementImport(TestSetUp):
     def test_statement_import(self):
         User.objects.create_superuser('root', 'a@a.a', '123456')
         self.client.login(username='root', password='123456')
 
+        print 'run client get statement import view...'
         response = self.client.get(reverse('admin:statement_import'))
 
-        # print response
-        # todo: write test, unable test
-        # todo: reset statement
+        title = response.context['title']
+        files = response.context['files']
+
+        self.assertEqual(title, 'Statement Import')
+        self.assertGreater(len(files), 1)
+
+        print 'statement:', Statement.objects.count()
+        print 'account order:', AccountOrder.objects.count()
+        print 'account trade:', AccountTrade.objects.count()
+        print 'holding equity:', HoldingEquity.objects.count()
+        print 'holding option:', HoldingOption.objects.count()
+        print 'profit loss:', ProfitLoss.objects.count()
+
+        self.assertTrue(Statement.objects.count())
+        self.assertTrue(AccountOrder.objects.count())
+        self.assertTrue(AccountTrade.objects.count())
+        self.assertTrue(HoldingEquity.objects.count())
+        self.assertTrue(HoldingOption.objects.count())
+        self.assertTrue(ProfitLoss.objects.count())
+
+
+class TestStatementController(TestSetUp):
+    fixtures = ('statement.json', )
+
+    def setUp(self):
+        TestSetUp.setUp(self)
+
+        self.statement = Statement.objects.order_by('date').first()
+
+    def test_position_trades(self):
+        """
+        Test open positions using statement account trades
+        03-23 statement symbol 'so' position wrong system csv, remember modify it
+        """
+        print 'get all statement...'
+        print 'then run add_relations, position_trades, position_expires'
+        print 'for each statement...\n'
+        for statement in Statement.objects.all():
+            statement.controller.add_relations()
+            statement.controller.position_trades()
+            statement.controller.position_expires()
+
+        for position in Position.objects.all():
+            print position
+
+            print 'cash balance:', position.cashbalance_set.count()
+            print 'account order:', position.accountorder_set.count()
+            print 'account trade:', position.accounttrade_set.count()
+            print 'holding equity:', position.holdingequity_set.count()
+            print 'holding option:', position.holdingoption_set.count()
+            print 'profit loss:', position.profitloss_set.count(), '\n'
+
+            self.assertGreater(position.cashbalance_set.count(), 0)
+            self.assertGreater(position.accounttrade_set.count(), 0)
+            self.assertGreater(position.accountorder_set.count(), 0)
+            if position.start != position.stop:  # day trade maybe no pl because multi positions
+                self.assertTrue(position.holdingequity_set.exists() or position.holdingoption_set.exists())
+                self.assertGreater(position.profitloss_set.count(), 0)
+
+        print '\n\n' + '.' * 100 + '\n\n'
+
+        print 'total position:', Position.objects.count()
+        print 'total open position:', Position.objects.filter(status='OPEN').count()
+        print 'total close position:', Position.objects.filter(status='CLOSE').count()
+        print 'total expire position:', Position.objects.filter(status='EXPIRE').count()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -2,6 +2,7 @@ import glob
 import os
 import codecs
 import re
+import numpy as np
 from django.shortcuts import render
 from rivers.settings import BASE_DIR
 from statement.models import *
@@ -20,18 +21,18 @@ def statement_import(request):
     files = list()
     fpaths = glob.glob(os.path.join(BASE_DIR, 'files', 'statements', 'tests', '*.csv'))
 
-    for fpath in fpaths:  # [f for f in fpaths if '04-24' in f]:
+    #for fpath in [f for f in fpaths if '05-11' in f]:
+    for fpath in fpaths:  #
         date = os.path.basename(fpath)[:10]
 
         # duplicate date
         if Statement.objects.filter(date=date).exists():
             continue  # skip below and next file
         #else:
-            # print 'run: ', fpath
-
+        #    print 'saving statement: ', fpath
 
         lines = [
-            str(re.sub('[\r\n]', '', line)) for line in
+            replace_dash_in_quote(str(re.sub('[\r\n]', '', line))) for line in  # replace dash
             codecs.open(fpath, encoding="ascii", errors="ignore").readlines()
         ]
 
@@ -45,64 +46,76 @@ def statement_import(request):
 
         # cash balance
         cb_index = lines.index('Cash Balance')
-        for line in lines[cb_index + 2:last_index(cb_index, lines) - 2]:
-            cash_balance = CashBalance()
-            cash_balance.statement = statement
-            cash_balance.load_csv(line)
-            cash_balance.save()
-
-        # account order
-        ao_index = lines.index('Account Order History')
-        last = list()
-        for line in lines[ao_index + 2:last_index(ao_index, lines)]:
+        for line in lines[cb_index + 2:last_index(cb_index, lines) - 1]:
             values = line.split(',')
+            if values[2]:  # go type
+                cash_balance = CashBalance()
+                cash_balance.statement = statement
+                cash_balance.load_csv(line)
+                cash_balance.save()
 
-            try:
-                # skip future and forex
-                if values[7] and values[10] not in ('FUTURE', 'FOREX') and values[11] != '':
-                    if values[2] == '':  # no time in row
-                        for i in range(len(values)):
-                            if values[i] == '':
-                                values[i] = last[i]
-                        else:
-                            if 'RE #' in values[3]:  # skip re
-                                values[3] = last[3]
+        # account order, more than 14 split
+        ao_index = lines.index('Account Order History')
+        ao_lines = list()
+        for key, line in enumerate(lines[ao_index + 2:last_index(ao_index, lines)]):
+            if len(line.split(',')) >= 14:
+                values = line.split(',')
 
-                            if values[10] == 'STOCK':  # stock no exp and strike
-                                values[8] = ''
-                                values[9] = ''
+                if 'REJECTED' in values[14]:
+                    values[14] = 'REJECTED'
 
-                    account_order = AccountOrder()
-                    account_order.statement = statement
-                    account_order.load_csv(','.join(values))
-                    account_order.save()
+                values = values[:15]
+                ao_lines.append(values)
 
-                    last = values
-            except IndexError:
-                pass
+        if len(ao_lines):
+            df = DataFrame(ao_lines, columns=lines[ao_index + 1].split(','))
+            #df['Spread'] = df.apply(lambda x: np.nan if 'RE #' in x['Spread'] else x['Spread'], axis=1)
+            df = df.replace('', np.nan).fillna(method='pad')  # fill empty
+            df['Exp'] = df.apply(
+                lambda x: np.nan if 'STOCK' in (x['Spread'], x['Type']) else x['Exp'], axis=1
+            )
+            df['Strike'] = df.apply(
+                lambda x: np.nan if 'STOCK' in (x['Spread'], x['Type']) else x['Strike'], axis=1
+            )
+            df = df[df.apply(lambda x: False if '/' in x['Symbol'] else True, axis=1)]  # no future forex
+
+            ao_lines = df.drop(df.columns[0], axis=1).to_csv().split('\n')[1:-1]  # back into csv lines
+
+            for line in ao_lines:
+                account_order = AccountOrder()
+                account_order.statement = statement
+                account_order.load_csv(line)
+                account_order.save()
 
         # account trade
         at_index = lines.index('Account Trade History')
-        last = list()
-        for line in lines[at_index + 2:last_index(at_index, lines)]:
-            values = line.split(',')
+        at_lines = [line.split(',') for line in lines[at_index + 2:last_index(at_index, lines)]]
+        if len(at_lines):
+            df = DataFrame(at_lines, columns=lines[at_index+1].split(','))
+            df = df.replace('', np.nan).replace('DEBIT', np.nan).fillna(method='pad')  # remove debit
+            df['Exp'] = df.apply(
+                lambda x: np.nan if 'STOCK' in (x['Spread'], x['Type']) else x['Exp'], axis=1
+            )
+            df['Strike'] = df.apply(
+                lambda x: np.nan if 'STOCK' in (x['Spread'], x['Type']) else x['Strike'], axis=1
+            )
 
-            if values[9] not in ('FUTURE', 'FOREX'):  # skip future and forex
-                if values[1] == '':
-                    for i in range(len(values)):
-                        if values[i] == '' or values[i] in ('DEBIT', 'CREDIT'):
-                            values[i] = last[i]
-                    else:
-                        if values[9] == 'STOCK':  # stock no exp and strike
-                            values[7] = ''
-                            values[8] = ''
+            for symbol in df['Symbol'].unique():  # remove credit
+                df_symbol = df[df['Symbol'] == symbol]
+                net_price = float(df_symbol.loc[df_symbol.index.values[0], 'Net Price'])
 
+                if len(df_symbol[df_symbol['Net Price'] == 'CREDIT']):
+                    df.loc[df['Symbol'] == symbol, 'Net Price'] = net_price * -1
+
+            # drop future and forex
+            df = df[df.apply(lambda x: False if '/' in x['Symbol'] else True, axis=1)]
+            at_lines = df.drop('', 1).to_csv().split('\n')[1:-1]  # back into csv lines
+
+            for line in at_lines:
                 account_trade = AccountTrade()
                 account_trade.statement = statement
-                account_trade.load_csv(','.join(values))
+                account_trade.load_csv(line)
                 account_trade.save()
-
-                last = values
 
         # holding equity
         try:
@@ -133,7 +146,6 @@ def statement_import(request):
         for line in lines[pl_index + 2:last_index(pl_index, lines) - 1]:
             values = line.split(',')
             if '/' not in values[0]:  # skip future
-
                 if values[0]:  # only have margin req and close value
                     try:
                         profit_loss = ProfitLoss()
@@ -141,16 +153,17 @@ def statement_import(request):
                         profit_loss.load_csv(line)
                         profit_loss.save()
                     except ValueError:
-                        continue
+                        pass
 
-                #df = df.append(profit_loss.to_hdf())
-
-                    #print df.to_string(line_width=200)
+        # create positions
+        #statement.controller.add_relations()
+        #statement.controller.position_trades()
+        #statement.controller.position_expires()
 
         files.append(dict(
             #path=fpath,
+            # date=date,
             fname=os.path.basename(fpath),
-            #date=date,
             net_liquid=statement.net_liquid,
             stock_bp=statement.stock_bp,
             option_bp=statement.option_bp,
