@@ -32,7 +32,7 @@ def statement_import(request):
         #    print 'saving statement: ', fpath
 
         lines = [
-            replace_dash_in_quote(str(re.sub('[\r\n]', '', line))) for line in  # replace dash
+            remove_comma(str(re.sub('[\r\n]', '', line))) for line in  # replace dash
             codecs.open(fpath, encoding="ascii", errors="ignore").readlines()
         ]
 
@@ -118,6 +118,7 @@ def statement_import(request):
                 account_trade.save()
 
         # holding equity
+        symbols = list()
         try:
             he_index = lines.index('Equities')
 
@@ -126,6 +127,8 @@ def statement_import(request):
                 holding_equity.statement = statement
                 holding_equity.load_csv(line)
                 holding_equity.save()
+
+                symbols.append(holding_equity.symbol)
         except ValueError:
             pass
 
@@ -137,28 +140,33 @@ def statement_import(request):
                 holding_option.statement = statement
                 holding_option.load_csv(line)
                 holding_option.save()
+
+                symbols.append(holding_option.symbol)
         except ValueError:
             pass
 
         # profit loss
         # df = DataFrame()
+        symbols = set(symbols)
         pl_index = lines.index('Profits and Losses ')
         for line in lines[pl_index + 2:last_index(pl_index, lines) - 1]:
             values = line.split(',')
             if '/' not in values[0]:  # skip future
-                if values[0]:  # only have margin req and close value
-                    try:
-                        profit_loss = ProfitLoss()
-                        profit_loss.statement = statement
+                profit_loss = ProfitLoss()
+                profit_loss.statement = statement
+                if values[0] in symbols:  # symbol in holdings
+                    profit_loss.load_csv(line)
+                    profit_loss.save()
+                elif len(values[0]):
+                    f = lambda x: float((x[1:-1] if '(' in x else x).replace('$', ''))
+                    if f(values[4]) or (f(values[6]) and f(values[7])):
                         profit_loss.load_csv(line)
                         profit_loss.save()
-                    except ValueError:
-                        pass
 
         # create positions
-        #statement.controller.add_relations()
-        #statement.controller.position_trades()
-        #statement.controller.position_expires()
+        statement.controller.add_relations()
+        statement.controller.position_trades()
+        statement.controller.position_expires()
 
         files.append(dict(
             #path=fpath,
@@ -182,5 +190,41 @@ def statement_import(request):
     )
 
     #Statement.objects.all().delete()
+
+    return render(request, template, parameters)
+
+
+def position_spreads(request, date):
+    """
+    Import all statement in folders
+    :param request: request
+    :return: render
+    """
+    template = 'statement/position/spreads.html'
+
+    if date:
+        statement = Statement.objects.get(date=date)
+        """:type: Statement"""
+    else:
+        statement = Statement.objects.order_by('date').last()
+        """:type: Statement"""
+
+    positions = Position.objects.filter(
+        id__in=[p[0] for p in statement.profitloss_set.values_list('position')]
+    ).order_by('symbol')
+
+    spreads = list()
+    for position in positions:
+        spreads.append(dict(
+            position=position,
+            profit_loss=position.profitloss_set.get(statement__date=date),
+        ))
+
+    # todo: no price on option spread, do data first
+
+    parameters = dict(
+        title='Position Spreads',
+        spreads=spreads
+    )
 
     return render(request, template, parameters)

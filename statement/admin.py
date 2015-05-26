@@ -11,6 +11,7 @@ class StatementForm(forms.ModelForm):
                                        "pickTime": False}))
 
 
+# noinspection PyMethodMayBeStatic
 class StatementInline(admin.TabularInline):
     extra = 0
     ordering = ('time', )
@@ -125,9 +126,13 @@ class CashBalanceAdmin(StatementModelAdmin):
     form = StatementForm  # enable bootstrap datetime js
 
     list_display = [
+
         'date', 'time', 'name', 'ref_no', 'description',
-        'fee', 'commission', 'amount', 'balance'
-    ]
+        'fee', 'commission', 'amount', 'balance',
+        'position',
+        # todo: remove this after position is set all in cash balance
+        # todo: 5-08 re-download
+        ]
 
     fieldsets = (
         ('Foreign Keys', {
@@ -305,7 +310,15 @@ class ProfitLossAdmin(StatementModelAdmin):
     list_per_page = 20
 
 
+class PositionForm(forms.ModelForm):
+    start = forms.DateField(widget=DateTimePicker(
+        options={"format": "YYYY-MM-DD", "pickTime": False}))
+    stop = forms.DateField(widget=DateTimePicker(
+        options={"format": "YYYY-MM-DD", "pickTime": False}))
+
+
 class PositionAdmin(admin.ModelAdmin):
+    form = PositionForm
     inlines = (CashBalanceInline, AccountOrderInline, AccountTradeInline, HoldingEquityInline,
                HoldingOptionInline, ProfitLossInline)
 
@@ -315,7 +328,6 @@ class PositionAdmin(admin.ModelAdmin):
     list_per_page = 20
 
     fieldsets = (
-
         ('Primary Fields', {
             'fields': ('symbol', 'name', 'spread', 'status', 'start', 'stop')
         }),
@@ -325,10 +337,33 @@ class PositionAdmin(admin.ModelAdmin):
         return False
 
 
-admin.site.app_index_template = 'statement/index.html'
+class PositionStageAdmin(admin.ModelAdmin):
+    list_display = ('position', 'price', 'lt_stage', 'lt_amount',
+                    'e_stage', 'e_amount', 'gt_stage', 'gt_amount')
 
+    search_fields = ('position__symbol', 'position__name', 'position__spread', 'position__status',
+                     'price', 'lt_stage', 'lt_amount', 'e_stage', 'e_amount', 'gt_stage', 'gt_amount')
+    list_per_page = 20
+
+    fieldsets = (
+        ('Foreign Keys', {
+            'fields': ('position', )
+        }),
+        ('Primary Fields', {
+            'fields': ('price', 'lt_stage', 'lt_amount',
+                       'e_stage', 'e_amount', 'gt_stage', 'gt_amount')
+        }),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+
+#admin.site.app_index_template = 'statement/index.html'
+# admin models
 admin.site.register(Statement, StatementAdmin)
 admin.site.register(Position, PositionAdmin)
+admin.site.register(PositionStage, PositionStageAdmin)
 admin.site.register(CashBalance, CashBalanceAdmin)
 admin.site.register(AccountOrder, AccountOrderAdmin)
 admin.site.register(AccountTrade, AccountTradeAdmin)
@@ -336,8 +371,17 @@ admin.site.register(HoldingEquity, HoldingEquityAdmin)
 admin.site.register(HoldingOption, HoldingOptionAdmin)
 admin.site.register(ProfitLoss, ProfitLossAdmin)
 
+# custom admin view
 admin.site.register_view(
     'statement/import',
     urlname='statement_import',
     view=statement_import
 )
+
+admin.site.register_view(
+    'statement/position/spreads/(?P<date>\d{4}-\d{2}-\d{2})/$',
+    urlname='position_spreads',
+    view=position_spreads
+)
+
+# todo: a lot cash balance no ref, please import 05-08

@@ -1,20 +1,15 @@
-{% extends 'admin/app_index.html' %}
-{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags %}
-
-{% block object-tools %}
-  <div id="content-navbar-collapse" class="navbar-collapse collapse">
-    <div class="nav navbar-nav navbar-right">
-      <button id="statement_import" type="button" class="btn btn-primary">
-        {% trans "Statement Import" %}
-      </button>
-    </div>
+<div id="content-navbar-collapse" class="navbar-collapse collapse">
+  <div class="nav navbar-nav navbar-right">
+    <button id="statement_import" type="button" class="btn btn-primary">
+      Statement Import
+    </button>
   </div>
+</div>
 
-  <script type="text/javascript">
-    $("#statement_import").click(function () {
-      $(location).attr("href", "{% url 'admin:statement_import' %}");
-    });
-  </script>
-{% endblock %}
+<script type="text/javascript">
+  $("#statement_import").click(function () {
+    $(location).attr("href", "{% url 'admin:statement_import' %}");
+  });
+</script>
 
 

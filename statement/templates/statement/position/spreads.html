@@ -1,0 +1,29 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+  <ul class="breadcrumb">
+    <li><a href="{% url 'admin:index' %}">Home</a></li>
+    <li><a href="{% url 'admin:app_list' 'statement' %}">Statement</a></li>
+    <li><a href="{% url 'admin:statement_position_changelist' %}">Position</a></li>
+    <li>Spreads</li>
+  </ul>
+{% endblock %}
+
+{% block content %}
+  <table class="table">
+  {% for spread in spreads %}
+    <tr>
+      <td>{{ spread.position.symbol }}</td>
+      <td>{{ spread.position.name }}</td>
+      <td>{{ spread.position.spread }}</td>
+      <td>stage</td>
+      <td>{{ spread.profit_loss.pl_open }}</td>
+      <td>{{ spread.profit_loss.pl_pct }}</td>
+      <td>{{ spread.profit_loss.pl_day }}</td>
+      <td>{{ spread.profit_loss.pl_ytd }}</td>
+      <td>{{ spread.profit_loss.margin_req }}</td>
+      <td>{{ spread.profit_loss.close_value }}</td>
+    </tr>
+  {% endfor %}
+  </table>
+{% endblock %}

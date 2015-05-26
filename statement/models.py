@@ -2,22 +2,7 @@ from importlib import import_module
 from django.db import models
 from django.db.models import Q
 from pandas import DataFrame
-
-
-def replace_dash_in_quote(line):
-    """
-    Replace dash inside quote value
-    :param line: str
-    :return: str
-    """
-    if '"' in line:
-        line = line.split('"')
-        for k, i in enumerate(line):
-            if k % 2 and ',' in i:
-                line[k] = i.replace(',', '')
-
-        line = ''.join(line)
-    return line
+from base.ufunc import remove_comma
 
 
 class Statement(models.Model):
@@ -114,6 +99,7 @@ class Statement(models.Model):
                             self.add_relations(symbol=symbol, time=time)
                     elif pos_effect == 'TO CLOSE':
                         if self.open_positions.filter(symbol=symbol).exists():
+                            self.add_relations(symbol=symbol, time=time)
                             position = self.open_positions.get(symbol=symbol)
                             position.set_close(self.statement.date)
                             position.save()
@@ -172,6 +158,8 @@ class Statement(models.Model):
                     values = cash_balance.description.split(' ')[:5]
                     if position.symbol in values and time == cash_balance.time:
                         position.cashbalance_set.add(cash_balance)
+
+
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
@@ -273,7 +261,7 @@ class Position(models.Model):
                 for stage in stages:
                     self.positionstage_set.add(stage)
 
-                print self.spread, stages
+                #print self.spread, stages
 
             except (AttributeError, ImportError):
                 pass
@@ -467,7 +455,7 @@ class CashBalance(models.Model):
         :param line: str
         :return: CashBalance
         """
-        line = replace_dash_in_quote(line)
+        line = remove_comma(line)
 
         values = map(
             lambda x: 0 if x == '' else x, line.split(',')
@@ -529,7 +517,7 @@ class AccountOrder(models.Model):
         :param line: str
         :return: HoldingEquity
         """
-        line = replace_dash_in_quote(line)
+        line = remove_comma(line)
         values = line.split(',')
 
         self.time = values[2].split(' ')[1]
@@ -604,7 +592,7 @@ class AccountTrade(models.Model):
         :param line: str
         :return: HoldingEquity
         """
-        line = replace_dash_in_quote(line)
+        line = remove_comma(line)
         values = line.split(',')
 
         self.time = values[1].split(' ')[1]
@@ -671,7 +659,7 @@ class HoldingEquity(models.Model):
         :param line: str
         :return: HoldingEquity
         """
-        line = replace_dash_in_quote(line)
+        line = remove_comma(line)
 
         values = [
             ('-' + x[1:-1] if x[0] == '(' and x[-1] == ')' else x)
@@ -731,7 +719,7 @@ class HoldingOption(models.Model):
         :param line: str
         :return: HoldingEquity
         """
-        line = replace_dash_in_quote(line)
+        line = remove_comma(line)
 
         values = [
             ('-' + x[1:-1] if x[0] == '(' and x[-1] == ')' else x)
@@ -795,24 +783,21 @@ class ProfitLoss(models.Model):
         :param line: str
         :return: ProfitLoss
         """
-        line = replace_dash_in_quote(line)
+        line = remove_comma(line)
 
         values = [
             ('-' + x[1:-1] if x[0] == '(' and x[-1] == ')' else x)
             for x in [x.replace('$', '') for x in line.split(',')]
         ]
 
-        if float(values[4]) or (float(values[6]) and float(values[7])):
-            self.symbol = values[0]
-            self.description = values[1]
-            self.pl_open = values[2]
-            self.pl_pct = values[3][:-1]
-            self.pl_day = values[4]
-            self.pl_ytd = values[5]
-            self.margin_req = values[6]
-            self.close_value = values[7]
-        else:
-            raise ValueError('Non trading symbol.')
+        self.symbol = values[0]
+        self.description = values[1]
+        self.pl_open = values[2]
+        self.pl_pct = values[3][:-1]
+        self.pl_day = values[4]
+        self.pl_ytd = values[5]
+        self.margin_req = values[6]
+        self.close_value = values[7]
 
         return self
 
@@ -833,3 +818,4 @@ class ProfitLoss(models.Model):
             symbol=self.symbol,
             pl_open=self.pl_open
         )
+

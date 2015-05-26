@@ -577,11 +577,11 @@ class TestStatementController(TestSetUp):
         for position in Position.objects.all():
             print position
 
-            print 'cash balance:', position.cashbalance_set.count()
-            print 'account order:', position.accountorder_set.count()
-            print 'account trade:', position.accounttrade_set.count()
-            print 'holding equity:', position.holdingequity_set.count()
-            print 'holding option:', position.holdingoption_set.count()
+            print 'cash balance:', position.cashbalance_set.count(),
+            print 'account order:', position.accountorder_set.count(),
+            print 'account trade:', position.accounttrade_set.count(),
+            print 'holding equity:', position.holdingequity_set.count(),
+            print 'holding option:', position.holdingoption_set.count(),
             print 'profit loss:', position.profitloss_set.count(), '\n'
 
             self.assertGreater(position.cashbalance_set.count(), 0)
@@ -597,6 +597,20 @@ class TestStatementController(TestSetUp):
         print 'total open position:', Position.objects.filter(status='OPEN').count()
         print 'total close position:', Position.objects.filter(status='CLOSE').count()
         print 'total expire position:', Position.objects.filter(status='EXPIRE').count()
+
+
+class TestPositionSpreads(TestSetUp):
+    fixtures = ('position.json', )
+
+    def test_view(self):
+        User.objects.create_superuser('root', 'a@a.a', '123456')
+        self.client.login(username='root', password='123456')
+
+        #for date in [s[0] for s in Statement.objects.values_list('date')][:1]:
+        response = self.client.get(reverse('admin:position_spreads', args=('2015-01-29', )))
+
+        #print response.context['position']
+
 
 
 

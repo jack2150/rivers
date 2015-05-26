@@ -51,8 +51,6 @@ class StageProtectiveCall(Stage):
         stage2.gt_amount = ((abs(self.sell_stocks[0].net_price) - self.buy_calls[0].strike)
                             * self.sell_stocks[0].qty * -1)
 
-        print self.sell_stocks[0].net_price, self.buy_calls[0].strike
-
         return [stage1, stage2]
 
 
@@ -65,15 +63,15 @@ class StageCoveredPut(Stage):
         stage1 = PositionStage()
         stage1.price = self.sell_puts[0].strike
         stage1.lt_stage = 'MAX_PROFIT'
-        stage1.lt_amount = ((self.sell_puts[0].strike - self.sell_stocks[0].net_price)
+        stage1.lt_amount = ((self.sell_puts[0].strike - abs(self.sell_stocks[0].net_price))
                             * self.sell_stocks[0].qty)
         stage1.e_stage = 'MAX_PROFIT'
-        stage1.e_amount = ((self.sell_puts[0].strike - self.sell_stocks[0].net_price)
+        stage1.e_amount = ((self.sell_puts[0].strike - abs(self.sell_stocks[0].net_price))
                            * self.sell_stocks[0].qty)
         stage1.gt_stage = 'PROFIT'
 
         stage2 = PositionStage()
-        stage2.price = self.sell_stocks[0].net_price
+        stage2.price = abs(self.sell_stocks[0].net_price)
         stage2.lt_stage = 'PROFIT'
         stage2.e_stage = 'EVEN'
         stage2.e_amount = 0.0

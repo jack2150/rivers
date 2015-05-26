@@ -31,7 +31,6 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = (
     'adminplus',
-
     'django_admin_bootstrapped',  # version 2.3.5 for django 1.6
     'bootstrap3_datetime',
 
@@ -42,7 +41,10 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'base',
+    'data',
     'statement',
+
 )
 
 # for django-admin-bootsrapped
@@ -69,8 +71,24 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    },
+    'quote': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'quote',
+        'USER': 'admin',
+        'PASSWORD': 'qwer1234',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
+    },
 }
+"""
+'quote': {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': os.path.join(BASE_DIR, 'quote.db'),
+},
+"""
+
+DATABASE_ROUTERS = ['rivers.router.DataRouter']
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/
