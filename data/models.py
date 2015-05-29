@@ -160,6 +160,8 @@ class Option(models.Model):
     intrinsic = models.DecimalField(max_digits=10, decimal_places=2)
     extrinsic = models.DecimalField(max_digits=10, decimal_places=2)
 
+    unique_together = (('option_contract', 'date'),)
+
     def load_dict(self, values):
         """
         Set stock dict into model field
@@ -226,11 +228,106 @@ class Dividend(models.Model):
     record_date = models.DateField()
     payable_date = models.DateField()
 
+    def load_csv(self, line):
+        """
+        Load csv line split into values and save data
+        :param line: str
+        :return: Dividend
+        """
+        values = line.rstrip().split(',')
+
+        self.symbol = values[0]
+        self.amount = float(values[1].replace('$', ''))
+        self.announce_date = pd.datetime.strptime(values[2], '%m/%d/%y').date()
+        self.expire_date = pd.datetime.strptime(values[3], '%m/%d/%y').date()
+        self.record_date = pd.datetime.strptime(values[4], '%m/%d/%y').date()
+        self.payable_date = pd.datetime.strptime(values[5], '%m/%d/%y').date()
+
+        return self
+
+    def to_hdf(self):
+        """
+        :return: DataFrame
+        """
+        return DataFrame(
+            data=[[self.symbol, self.amount, self.announce_date, self.expire_date,
+                   self.record_date, self.payable_date]],
+            index=[self.expire_date],
+            columns=['Symbol', 'Amount', 'Announced Date', 'Expire Date',
+                     'Record Date', 'Payable Date']
+        )
+
+    def __unicode__(self):
+        """
+        Output explain this model
+        """
+        return '{symbol} {expire_date} {amount}'.format(
+            symbol=self.symbol,
+            expire_date=self.expire_date,
+            amount=self.amount
+        )
 
 
+class Earning(models.Model):
+    """
+    Date est,Date act,Time est,Time act,Symbol,Quarter,EPS est,EPS act,Status
+    11/17/09,,During Market,,GRZ,Q3,,,Unconfirmed
+    11/17/09,11/17/09,Before Market,5:00:00 AM CST,COV,Q4,0.699,0.11,Verified
+    """
+    date_est = models.DateField()
+    date_act = models.DateField(null=True)
+    release = models.CharField(max_length=20)
+    time = models.TimeField(null=True)
+    symbol = models.CharField(max_length=20)
+    quarter = models.CharField(max_length=2)
+    esp_est = models.FloatField(null=True)
+    esp_act = models.FloatField(null=True)
+    status = models.CharField(max_length=20)
 
+    unique_together = (('date_est', 'symbol', 'status'),)
 
+    def load_csv(self, line):
+        """
+        Load csv line split into values and save data
+        :param line: str
+        :return: Dividend
+        """
+        values = line.rstrip().split(',')
 
+        self.date_est = pd.datetime.strptime(values[0], '%m/%d/%y').date()
+        self.date_act = pd.datetime.strptime(values[1], '%m/%d/%y').date() if values[1] else None
+        self.release = values[2]
+        self.time = (pd.datetime.strptime(values[3][:values[3].rindex(' ')], '%I:%M:%S %p').time()
+                     if values[3] else None)
+        self.symbol = values[4]
+        self.quarter = values[5]
+        self.esp_est = float(values[6]) if values[6] else None
+        self.esp_act = float(values[7]) if values[7] else None
+        self.status = values[8]
+
+        return self
+
+    def to_hdf(self):
+        """
+        :return: DataFrame
+        """
+        return DataFrame(
+            data=[[self.date_est, self.date_act, self.release, self.time,
+                   self.symbol, self.quarter, self.esp_est, self.esp_act, self.status]],
+            index=[self.date_est],
+            columns=['Date Est', 'Date Act', 'Time Est', 'Time Act',
+                     'Symbol', 'Quarter', 'ESP Est', 'ESP Act', 'Status']
+        )
+
+    def __unicode__(self):
+        """
+        Output explain this model
+        """
+        return '{symbol} {date_est} {esp_act}'.format(
+            symbol=self.symbol,
+            date_est=self.date_est,
+            esp_act=self.esp_act
+        )
 
 
 

@@ -32,7 +32,8 @@ def statement_import(request):
         #    print 'saving statement: ', fpath
 
         lines = [
-            remove_comma(str(re.sub('[\r\n]', '', line))) for line in  # replace dash
+            #remove_comma(str(re.sub('[\r\n]', '', line))) for line in  # replace dash
+            remove_comma(str(line.rstrip())) for line in  # replace dash
             codecs.open(fpath, encoding="ascii", errors="ignore").readlines()
         ]
 
@@ -148,7 +149,7 @@ def statement_import(request):
         # profit loss
         # df = DataFrame()
         symbols = set(symbols)
-        pl_index = lines.index('Profits and Losses ')
+        pl_index = lines.index('Profits and Losses')
         for line in lines[pl_index + 2:last_index(pl_index, lines) - 1]:
             values = line.split(',')
             if '/' not in values[0]:  # skip future

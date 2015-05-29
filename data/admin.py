@@ -26,9 +26,9 @@ class UnderlyingAdmin(admin.ModelAdmin):
                '<a href="{yahoo_link}">Yahoo</a>'
 
         return href.format(
-            tb_link=reverse('admin:csv_import', args=(self.symbol.lower(), )),
-            google_link=reverse('admin:web_import', args=('google', self.symbol.lower())),
-            yahoo_link=reverse('admin:web_import', args=('yahoo', self.symbol.lower())),
+            tb_link=reverse('admin:csv_quote_import', args=(self.symbol.lower(), )),
+            google_link=reverse('admin:web_quote_import', args=('google', self.symbol.lower())),
+            yahoo_link=reverse('admin:web_quote_import', args=('yahoo', self.symbol.lower())),
         )
 
     data_import.short_description = 'Import from Source'
@@ -93,26 +93,102 @@ class OptionContractAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
+
+class DividendForm(forms.ModelForm):
+    announce_date = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
+    expire_date = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
+    record_date = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
+    payable_date = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
+
+class DividendAdmin(admin.ModelAdmin):
+    form = DividendForm
+    list_display = ('symbol', 'amount', 'announce_date', 'expire_date',
+                    'record_date', 'payable_date')
+
+    fieldsets = (
+        ('Primary Fields', {
+            'fields': ('symbol', 'amount', 'announce_date', 'expire_date',
+                       'record_date', 'payable_date')
+        }),
+    )
+
+    search_fields = ('symbol', 'amount', 'announce_date', 'expire_date',
+                     'record_date', 'payable_date')
+
+    list_per_page = 20
+    ordering = ('-expire_date', )
+
+    def has_add_permission(self, request):
+        return False
+
+
+class EarningForm(forms.ModelForm):
+    date_est = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
+    date_act = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
+
+class EarningAdmin(admin.ModelAdmin):
+    form = EarningForm
+    list_display = ('date_est', 'date_act', 'release', 'time',
+                    'symbol', 'quarter', 'esp_est', 'esp_act', 'status')
+
+    fieldsets = (
+        ('Primary Fields', {
+            'fields': ('date_est', 'date_act', 'release', 'time',
+                       'symbol', 'quarter', 'esp_est', 'esp_act', 'status')
+        }),
+    )
+
+    search_fields = ('date_est', 'release', 'symbol', 'quarter', 'status')
+    list_filter = ('release', 'quarter', 'status')
+
+    list_per_page = 20
+    ordering = ('-date_est', )
+
+    def has_add_permission(self, request):
+        return False
+
+
 # admin model
 admin.site.register(Underlying, UnderlyingAdmin)
 admin.site.register(Stock, StockAdmin)
 admin.site.register(OptionContract, OptionContractAdmin)
+admin.site.register(Dividend, DividendAdmin)
+admin.site.register(Earning, EarningAdmin)
 
 # custom admin view
 admin.site.register_view(
     'data/import/web/(?P<source>\w+)/(?P<symbol>\w+)/$',
-    urlname='web_import', view=web_import
+    urlname='web_quote_import', view=web_quote_import
 )
 
 admin.site.register_view(
-    'data/import/csv/(?P<symbol>\w+)/$',
-    urlname='csv_import', view=csv_import
+    'data/import/csv/(?P<symbol>\w+)/$', urlname='csv_quote_import', view=csv_quote_import
 )
 
 admin.site.register_view(
-    'data/import/daily/csv/$',
-    urlname='csv_daily_import', view=csv_daily_import
+    'data/import/daily/quote/$', urlname='daily_quote_import', view=daily_quote_import
 )
 
-# todo: export earnings
+admin.site.register_view(
+    'data/import/(?P<event>\w+)/$', urlname='csv_calendar_import', view=csv_calendar_import
+)
+
 # todo: position spread view

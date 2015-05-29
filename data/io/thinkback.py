@@ -31,7 +31,7 @@ class ThinkBack(object):
         self.symbol = self.fname.split('-StockAndOptionQuoteFor').pop()[:-4]
 
         self.lines = [
-            remove_comma(str(re.sub('[\r\n]', '', l))) for l in
+            remove_comma(str(l.rstrip())) for l in
             codecs.open(fpath, encoding="ascii", errors="ignore").readlines()
         ]
 

@@ -1,3 +1,4 @@
+import codecs
 from datetime import datetime
 from glob import glob
 import os
@@ -13,7 +14,7 @@ from data.models import *
 from rivers.settings import BASE_DIR
 
 
-def web_import(request, source, symbol):
+def web_quote_import(request, source, symbol):
     """
     Web import quote for a single symbol
     :param source: str
@@ -36,7 +37,7 @@ def web_import(request, source, symbol):
     try:
         last_date = s.last().date
         start = last_date if last_date > start else start
-    except ObjectDoesNotExist:
+    except (ObjectDoesNotExist, AttributeError):
         pass
 
     # get data function and get data
@@ -84,7 +85,8 @@ def web_import(request, source, symbol):
     # Stock.objects.all().delete()
     template = 'data/import_web.html'
     parameters = dict(
-        title='{source} Web Import: {symbol}'.format(
+        site_title='Web import',
+        title='{source} Web import: {symbol}'.format(
             source=source.capitalize(), symbol=symbol
         ),
         symbol=symbol.lower(),
@@ -95,7 +97,7 @@ def web_import(request, source, symbol):
     return render(request, template, parameters)
 
 
-def csv_import(request, symbol):
+def csv_quote_import(request, symbol):
     """
     CSV import thinkback files into db
     :param request: request
@@ -256,7 +258,8 @@ def csv_import(request, symbol):
 
     template = 'data/import_csv.html'
     parameters = dict(
-        title='Thinkback CSV Import: {symbol}'.format(symbol=symbol.upper()),
+        site_title='Csv import',
+        title='Thinkback Csv import: {symbol}'.format(symbol=symbol.upper()),
         symbol=symbol,
         files=saved[:5] + [None] + saved[-5:] if len(saved) > 10 else saved,
         missing=','.join(missing)
@@ -265,7 +268,8 @@ def csv_import(request, symbol):
     return render(request, template, parameters)
 
 
-def csv_daily_import(request):
+# noinspection PyUnresolvedReferences
+def daily_quote_import(request):
     """
     Import csv in daily folder and put all csv into correct folder
     :param request: request
@@ -346,7 +350,6 @@ def csv_daily_import(request):
                     symbols=symbol, start=date, end=date, adjust_price=True
                 ).ix[date]).items()
             }
-
             yahoo_data = {
                 key.lower(): value for key, value in
                 dict(get_data_yahoo(
@@ -355,6 +358,7 @@ def csv_daily_import(request):
             }
 
             google_data['date'] = date
+            print google_data
             stock = Stock()
             stock.symbol = symbol
             stock.source = 'google'
@@ -375,11 +379,107 @@ def csv_daily_import(request):
             underlying.stop = date
             underlying.save()
 
-
-    template = 'data/import_csv_daily.html'
+    template = 'data/import_daily.html'
     parameters = dict(
-        title='Daily CSV Import',
+        site_title='Daily import',
+        title='Daily import',
         files=saved
     )
 
     return render(request, template, parameters)
+
+
+# noinspection PyUnresolvedReferences
+def csv_calendar_import(request, event):
+    """
+    Import dividend using csv files in calendar folder
+    :param request: request
+    :return: render
+    """
+    if event == 'dividend':
+        folder_name = 'dividends'
+        obj_class = Dividend
+    elif event == 'earning':
+        folder_name = 'earnings'
+        obj_class = Earning
+    else:
+        raise ValueError('Calender event can only be "dividend" or "earning".')
+
+    path = os.path.join(BASE_DIR, 'files', 'calendars', folder_name)
+
+    files = sorted(glob(os.path.join(path, '*.csv')))
+
+    saved = list()
+    events = list()
+    for f in files:
+        lines = codecs.open(f, encoding="ascii", errors="ignore").readlines()
+
+        # skip duplicate files
+        date = datetime.strptime(lines[2].rstrip(), '%m/%d/%y').date()
+
+        # make condition
+        if event == 'dividend':
+            c = Q(expire_date=date)
+        else:
+            #c = Q(date_est=date) & (Q(date_act__lte=date) | Q(date_act__isnull=True))
+            c = Q(date_est__gte=date) & (Q(date_act=date) | Q(date_act__isnull=True))
+
+        if obj_class.objects.filter(c).exists():
+            #print 'skip: ', f
+            continue
+        else:
+            print 'running:', f
+
+        for line in lines[4:]:
+            event_obj = obj_class()
+            event_obj.load_csv(line)
+            events.append(event_obj)
+
+        if len(events) > 500:
+            # every time insert 500 dividends
+            obj_class.objects.bulk_create(events)
+            events = list()
+
+        saved.append(dict(
+            fname=f,
+            date=date,
+            event=len(lines)
+        ))
+    else:
+        if len(events):
+            obj_class.objects.bulk_create(events)
+
+    #Dividend.objects.all().delete()
+    template = 'data/import_calendar.html'
+    parameters = dict(
+        site_title='{event} import'.format(event=event.capitalize()),
+        title='{event} import'.format(event=event.capitalize()),
+        event=event,
+        files=saved[:5] + [None] + saved[-5:] if len(saved) > 10 else saved,
+    )
+
+    return render(request, template, parameters)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

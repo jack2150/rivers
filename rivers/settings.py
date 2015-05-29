@@ -69,8 +69,13 @@ WSGI_APPLICATION = 'rivers.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'rivers',
+        'USER': 'admin',
+        'PASSWORD': 'qwer1234',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
+        'CONN_MAX_AGE': 10
     },
     'quote': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -79,13 +84,18 @@ DATABASES = {
         'PASSWORD': 'qwer1234',
         'HOST': '127.0.0.1',
         'PORT': '5432',
+        'CONN_MAX_AGE': 10
     },
 }
 """
-'quote': {
-    'ENGINE': 'django.db.backends.sqlite3',
-    'NAME': os.path.join(BASE_DIR, 'quote.db'),
-},
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    },
+    'quote': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'quote.db'),
+    },
 """
 
 DATABASE_ROUTERS = ['rivers.router.DataRouter']

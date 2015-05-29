@@ -1,14 +1,30 @@
 <div id="content-navbar-collapse" class="navbar-collapse collapse">
   <div class="nav navbar-nav navbar-right">
-    <button id="csv_daily_import" type="button" class="btn btn-primary">
-      Csv Daily Import
+    <button id="csv_earning_import" type="button" class="btn btn-primary">
+      Import Earning
+    </button>
+
+    <button id="csv_dividend_import" type="button" class="btn btn-primary">
+      Import Dividend
+    </button>
+
+    <button id="daily_import" type="button" class="btn btn-primary">
+      Daily Import
     </button>
   </div>
 </div>
 
 <script type="text/javascript">
-  $("#csv_daily_import").click(function () {
-    $(location).attr("href", "{% url 'admin:csv_daily_import' %}");
+  $("#daily_import").click(function () {
+    $(location).attr("href", "{% url 'admin:daily_quote_import' %}");
+  });
+
+  $("#csv_dividend_import").click(function () {
+    $(location).attr("href", "{% url 'admin:csv_calendar_import' 'dividend' %}");
+  });
+
+  $("#csv_earning_import").click(function () {
+    $(location).attr("href", "{% url 'admin:csv_calendar_import' 'earning' %}");
   });
 </script>
 

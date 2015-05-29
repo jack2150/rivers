@@ -32,13 +32,13 @@
 
   <script type="text/javascript">
     $("#import_thinkback").click(function () {
-      $(location).attr("href", "{% url 'admin:csv_import' symbol %}");
+      $(location).attr("href", "{% url 'admin:csv_quote_import' symbol %}");
     });
     $("#import_google").click(function () {
-      $(location).attr("href", "{% url 'admin:web_import' 'google' symbol %}");
+      $(location).attr("href", "{% url 'admin:web_quote_import' 'google' symbol %}");
     });
     $("#import_yahoo").click(function () {
-      $(location).attr("href", "{% url 'admin:web_import' 'yahoo' symbol %}");
+      $(location).attr("href", "{% url 'admin:web_quote_import' 'yahoo' symbol %}");
     });
   </script>
 {% endblock %}

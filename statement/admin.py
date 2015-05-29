@@ -125,14 +125,8 @@ class StatementModelAdmin(admin.ModelAdmin):
 class CashBalanceAdmin(StatementModelAdmin):
     form = StatementForm  # enable bootstrap datetime js
 
-    list_display = [
-
-        'date', 'time', 'name', 'ref_no', 'description',
-        'fee', 'commission', 'amount', 'balance',
-        'position',
-        # todo: remove this after position is set all in cash balance
-        # todo: 5-08 re-download
-        ]
+    list_display = ['date', 'time', 'name', 'ref_no', 'description',
+                    'fee', 'commission', 'amount', 'balance',]
 
     fieldsets = (
         ('Foreign Keys', {
@@ -383,5 +377,3 @@ admin.site.register_view(
     urlname='position_spreads',
     view=position_spreads
 )
-
-# todo: a lot cash balance no ref, please import 05-08
