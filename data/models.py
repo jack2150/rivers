@@ -1,6 +1,6 @@
 from django.db import models
 import pandas as pd
-from pandas.util.testing import DataFrame
+from pandas.util.testing import DataFrame, Series
 
 
 class Underlying(models.Model):
@@ -330,7 +330,117 @@ class Earning(models.Model):
         )
 
 
+class TreasuryInstrument(models.Model):
+    """
+    us.gov.security
+    constant.maturity.nominal.1year.annual
 
+    "Series Description","Market yield on U.S. Treasury securities at 1-year   constant maturity, quoted on investment basis"
+    "Unit:","Percent:_Per_Year"
+    "Multiplier:","1"
+    "Currency:","NA"
+    "Unique Identifier: ","H15/H15/RIFLGFCY01_N.A"
+    "Time Period","RIFLGFCY01_N.A"
+    1962,3.10
+
+    annual as 360 days, monthly as 30 days, weekly as 5 days
+    """
+    name = models.CharField(max_length=200)
+    instrument = models.CharField(max_length=200, null=True)
+    maturity = models.CharField(max_length=10)
+
+    description = models.TextField()
+    unit = models.CharField(max_length=200)
+    multiplier = models.FloatField()
+    currency = models.CharField(max_length=10)
+    unique_identifier = models.CharField(max_length=200, unique=True)
+    time_period = models.CharField(max_length=200)
+
+    time_frame = models.CharField(max_length=20)
+
+    def load_csv(self, lines):
+        """
+        Load csv lines data into values
+        :param lines: str
+        :return: TreasuryInstrument
+        """
+        values = [line.rstrip().split('","')[1].replace('"', '') for line in lines]
+
+        self.description = values[0]
+        self.unit = values[1]
+        self.multiplier = float(values[2])
+        self.currency = values[3]
+        self.unique_identifier = values[4]
+        self.time_period = values[5]
+
+        return self
+
+    def to_hdf(self):
+        """
+        :return: DataFrame
+        """
+        return DataFrame(
+            data=[[self.name, self.instrument, self.time_frame, self.unit, self.multiplier,
+                   self.currency, self.time_period, self.description]],
+            index=[self.unique_identifier],
+            columns=['Name', 'Instrument', 'Time Frame', 'Unit',
+                     'Multiplier', 'Currency', 'Time Period', 'Description']
+        )
+
+    def __unicode__(self):
+        """
+        Output explain this model
+        """
+        return '{name} {instrument} {maturity} {time_frame}'.format(
+            name=self.name, instrument=self.instrument if self.instrument else '',
+            maturity=self.maturity, time_frame=self.time_frame,
+        )
+
+
+class TreasuryInterest(models.Model):
+    """
+    1962-02-20,3.31
+    2008,1.83
+    2009,0.47
+    """
+    treasury = models.ForeignKey(TreasuryInstrument, null=True)
+
+    date = models.DateField()
+    interest = models.FloatField(null=True)
+
+    def load_csv(self, line):
+        """
+        Load csv data into values
+        :param line: str
+        :return: TreasuryInterest
+        """
+        date_format = {
+            'Annual': '%Y',
+            'Monthly': '%Y-%m',
+            'Weekly': '%Y-%m-%d',
+            'Bdays': '%Y-%m-%d',
+        }
+
+        values = line.rstrip().split(',')
+
+        self.date = pd.datetime.strptime(values[0], date_format[str(self.treasury.time_frame)]).date()
+        self.interest = None if values[1] == 'ND' else float(values[1])
+
+        return self
+
+    def to_hdf(self):
+        """
+        :return: Series
+        """
+        return Series([self.interest], index=[self.date])
+
+    def __unicode__(self):
+        """
+        Output explain this model
+        """
+        return '{treasury} {date} {interest}'.format(
+            treasury=self.treasury, date=self.date, interest=self.interest
+        )
 
 
 

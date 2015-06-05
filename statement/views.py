@@ -165,9 +165,9 @@ def statement_import(request):
                         profit_loss.save()
 
         # create positions
-        statement.controller.add_relations()
-        statement.controller.position_trades()
-        statement.controller.position_expires()
+        #statement.controller.add_relations()
+        #statement.controller.position_trades()
+        #statement.controller.position_expires()
 
         files.append(dict(
             #path=fpath,

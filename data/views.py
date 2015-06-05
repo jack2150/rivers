@@ -461,8 +461,70 @@ def csv_calendar_import(request, event):
     return render(request, template, parameters)
 
 
+def treasury_import(request):
+    """
+    Import treasury csv data from
+    http://www.federalreserve.gov/releases/h15/data.htm
+    :param request: request
+    :return: render
+    """
+    saved = list()
+    for root, _, fnames in os.walk(os.path.join(BASE_DIR, 'files', 'treasury')):
+        for f in fnames:
+            if len(root.split(os.sep)) == 7:
+                name, instrument, maturity = root.split(os.sep)[4:]
+            else:
+                name, maturity = root.split(os.sep)[4:]
+                instrument = None
 
+            lines = codecs.open(os.path.join(root, f), encoding="ascii", errors="ignore").readlines()
 
+            try:
+                treasury_instrument = TreasuryInstrument.objects.get(
+                    unique_identifier=lines[4].rstrip().split('","')[1].replace('"', '')
+                )
+            except ObjectDoesNotExist:
+                treasury_instrument = TreasuryInstrument()
+                treasury_instrument.name = name
+                treasury_instrument.instrument = instrument
+                treasury_instrument.maturity = maturity
+                treasury_instrument.time_frame = f[:-4].capitalize()
+                treasury_instrument.load_csv(lines[:6])
+                treasury_instrument.save()
+
+            exist_dates = [v[0] for v in treasury_instrument.treasuryinterest_set.values_list('date')]
+
+            interests = list()
+            for line in lines[6:]:
+                treasury_interest = TreasuryInterest()
+                treasury_interest.treasury = treasury_instrument
+                treasury_interest.load_csv(line)
+
+                if treasury_interest.date not in exist_dates:
+                    interests.append(treasury_interest)
+
+            if interests:
+                TreasuryInterest.objects.bulk_create(interests)
+
+                saved.append(dict(
+                    fname=os.path.join(root, f),
+                    treasury=treasury_instrument,
+                    interests=len(interests),
+                    start=interests[0].date,
+                    end=interests[-1].date
+                ))
+
+    # when testing
+    #TreasuryInstrument.objects.all().delete()
+
+    template = 'data/import_treasury.html'
+    parameters = dict(
+        site_title='Treasury import',
+        title='Treasury import',
+        files=saved
+    )
+
+    return render(request, template, parameters)
 
 
 

@@ -149,6 +149,79 @@ class TestData(TestSetUp):
 
         print df.to_string(line_width=200)
 
+    def test_treasury_instrument(self, output=True):
+        """
+        Test load csv lines, save data and output dataFrame
+        """
+        lines = [
+            '"Series Description","12-MONTH AUCTION HIGH BILL RATE BY ISSUE DATE"',
+            '"Unit:","Percent:_Per_Year"',
+            '"Multiplier:","1"',
+            '"Currency:","NA"',
+            '"Unique Identifier: ","H15/discontinued/H0.RIFSGFPIY01_N.A"',
+            '"Time Period","H0.RIFSGFPIY01_N.A"',
+        ]
+
+        treasury_instrument = TreasuryInstrument()
+        treasury_instrument.name = 'US Gov Security'
+        treasury_instrument.instrument = 'Constant Maturity Nominal'
+        treasury_instrument.maturity = '1 Year'
+        treasury_instrument.time_frame = 'Annual'
+        treasury_instrument.load_csv(lines)
+        treasury_instrument.save()
+
+        if output:
+            df = treasury_instrument.to_hdf()
+            print df.to_string(line_width=300)
+
+        self.assertTrue(treasury_instrument.id)
+
+    def test_treasury_interest(self):
+        """
+        Test treasury interest load csv, save data and outpu data frame
+        """
+        self.test_treasury_instrument(output=False)
+        treasury_instrument = TreasuryInstrument.objects.first()
+
+        time_frames = ['Annual', 'Monthly', 'Weekly', 'Bday']
+        lines = ['2014,3.10', '1988-05,2.48', '1993-01-26,3.26', '2006-08-02,3.22']
+
+        interest = Series()
+        for time_frame, line in zip(time_frames, lines):
+            print 'set data:', time_frame, line
+            # set time frame
+            treasury_instrument.time_frame = time_frame
+
+            # set interest data
+            treasury_interest = TreasuryInterest()
+            treasury_interest.treasury = treasury_instrument
+            treasury_interest.load_csv(line)
+            treasury_interest.save()
+
+            interest = interest.append(treasury_interest.to_hdf())
+            self.assertTrue(treasury_interest.id)
+
+        print '.' * 60
+        print interest
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class TestDataImport(TestSetUp):
     def setUp(self):
@@ -327,6 +400,24 @@ class TestDataImport(TestSetUp):
 
         self.assertGreater(Earning.objects.count(), 50)
 
+    def test_treasury_import(self):
+        """
+        Test import treasury files into db
+        """
+        print 'run treasury import view...'
+        response = self.client.get(reverse('admin:treasury_import'))
+
+        treasury_instruments = TreasuryInstrument.objects.all()
+
+        df_treasury = DataFrame()
+        for treasury_instrument in treasury_instruments:
+            df_treasury = df_treasury.append(treasury_instrument.to_hdf())
+
+            self.assertGreaterEqual(treasury_instrument.treasuryinterest_set.count(), 10)
+
+        print df_treasury.to_string(line_width=300)
+
+        self.assertGreaterEqual(len(df_treasury), 8)
 
 
 

@@ -11,6 +11,10 @@
     <button id="daily_import" type="button" class="btn btn-primary">
       Daily Import
     </button>
+
+    <button id="treasury_import" type="button" class="btn btn-primary">
+      Import Treasury
+    </button>
   </div>
 </div>
 
@@ -25,6 +29,10 @@
 
   $("#csv_earning_import").click(function () {
     $(location).attr("href", "{% url 'admin:csv_calendar_import' 'earning' %}");
+  });
+
+  $("#treasury_import").click(function () {
+    $(location).attr("href", "{% url 'admin:treasury_import' %}");
   });
 </script>
 

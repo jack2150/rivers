@@ -166,21 +166,79 @@ class EarningAdmin(admin.ModelAdmin):
         return False
 
 
+# todo: next
+class TreasuryInstrumentAdmin(admin.ModelAdmin):
+    list_display = ('unique_identifier','name', 'instrument', 'maturity',
+                    'unit', 'multiplier', 'currency', 'time_frame')
+    fieldsets = (
+        ('Primary Fields', {
+            'fields': ('name', 'instrument', 'maturity', 'description',
+                       'unit', 'multiplier', 'currency', 'unique_identifier',
+                       'time_period', 'time_frame')
+        }),
+    )
+
+    search_fields = ('name', 'instrument', 'maturity', 'description',
+                     'unit', 'multiplier', 'currency', 'unique_identifier',
+                     'time_period', 'time_frame')
+    list_filter = ('name', 'maturity', 'unit', 'multiplier', 'time_frame')
+
+    list_per_page = 20
+    ordering = ('name', )
+
+    def has_add_permission(self, request):
+        return False
+
+
+class TreasuryInterestForm(forms.ModelForm):
+    date = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
+
+class TreasuryInterestAdmin(admin.ModelAdmin):
+    form = TreasuryInterestForm
+    list_display = ('treasury', 'date', 'interest')
+    fieldsets = (
+        ('Foreign Keys', {
+            'fields': ('treasury',)
+        }),
+        ('Primary Fields', {
+            'fields': ('date', 'interest')
+        }),
+    )
+
+    search_fields = ('treasury__name', 'treasury__instrument', 'treasury__maturity',
+                     'treasury__description', 'treasury__unit', 'treasury__multiplier',
+                     'treasury__currency', 'treasury__unique_identifier',
+                     'treasury__time_period', 'treasury__time_frame')
+    list_filter = ('treasury__name', 'treasury__maturity', 'treasury__unit',
+                   'treasury__multiplier', 'treasury__time_frame')
+
+    list_per_page = 20
+    ordering = ('treasury__name', '-date', )
+
+    def has_add_permission(self, request):
+        return False
+
+
 # admin model
 admin.site.register(Underlying, UnderlyingAdmin)
 admin.site.register(Stock, StockAdmin)
 admin.site.register(OptionContract, OptionContractAdmin)
 admin.site.register(Dividend, DividendAdmin)
 admin.site.register(Earning, EarningAdmin)
+admin.site.register(TreasuryInstrument, TreasuryInstrumentAdmin)
+admin.site.register(TreasuryInterest, TreasuryInterestAdmin)
 
 # custom admin view
 admin.site.register_view(
-    'data/import/web/(?P<source>\w+)/(?P<symbol>\w+)/$',
+    'data/import/quote/web/(?P<source>\w+)/(?P<symbol>\w+)/$',
     urlname='web_quote_import', view=web_quote_import
 )
 
 admin.site.register_view(
-    'data/import/csv/(?P<symbol>\w+)/$', urlname='csv_quote_import', view=csv_quote_import
+    'data/import/quote/csv/(?P<symbol>\w+)/$', urlname='csv_quote_import', view=csv_quote_import
 )
 
 admin.site.register_view(
@@ -191,4 +249,9 @@ admin.site.register_view(
     'data/import/(?P<event>\w+)/$', urlname='csv_calendar_import', view=csv_calendar_import
 )
 
+admin.site.register_view(
+    'data/import/treasury/$', urlname='treasury_import', view=treasury_import
+)
+
 # todo: position spread view
+# todo: manager stock direct pandas sql io

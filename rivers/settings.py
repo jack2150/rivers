@@ -33,6 +33,7 @@ INSTALLED_APPS = (
     'adminplus',
     'django_admin_bootstrapped',  # version 2.3.5 for django 1.6
     'bootstrap3_datetime',
+    'django_extensions',
 
     'django.contrib.admin',
     'django.contrib.auth',
