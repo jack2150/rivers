@@ -1,7 +1,6 @@
 import glob
 import os
 import codecs
-import re
 import numpy as np
 from django.shortcuts import render
 from rivers.settings import BASE_DIR

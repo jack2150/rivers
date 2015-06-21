@@ -1,0 +1,61 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}"/>
+  <link rel="stylesheet" type="text/css" href="/static/admin/css/overrides.css"/>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'quant' %}">Quant</a></li>
+      <li>Stock</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block bodyclass %}change-form{% endblock %}
+
+{% block content %}
+  <form class="form-horizontal" action='#' method='post'>
+  <div class="panel panel-default">
+    <div class="panel-heading">Primary Field</div>
+    <div class="panel-body">
+      <div class="row">
+        <div class="control-group field-symbol">
+            {% csrf_token %}
+            {% for field in form %}
+              <div class="control-group field-start">
+              <div class="col-md-12 form-group ">
+                <div class="control-label col-md-3">
+                  <b>{{ field.label }}:</b>
+                </div>
+                {% if field|form_field_type == 'Textarea' %}
+                  <div class="controls col-md-9">
+                    {{ field }}
+                  </div>
+                {% else %}
+                  <div class="controls col-md-6">
+                    {{ field }}
+                  </div>
+                {% endif %}
+              </div>
+              </div>
+            {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <div class="pull-left"></div>
+    <div class="pull-right">
+      <input class="btn btn-default" type="submit" name="_continue" value="Save and run analysis">
+      <input class="btn btn-primary default" type="submit" name="_save" value="Save">
+    </div>
+  </div>
+  </form>
+{% endblock %}
