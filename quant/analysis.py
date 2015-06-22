@@ -65,6 +65,23 @@ class Quant(object):
 
         self.data = pd.Panel(data)
 
+    @staticmethod
+    def max_dd(percents):
+        """
+        Calculate max drawdown effect
+        :param percents: list or Series
+        :return: float
+        """
+        dd_list = []
+        max_pct = 0
+        for pct in percents:
+            if pct > max_pct:
+                max_pct = pct
+
+            dd_list.append(pct - max_pct)
+
+        return np.round(min(dd_list), 2)
+
     def report(self, df_stock, df_signal):
         """
         Using both stock and signal data frame
@@ -80,7 +97,7 @@ class Quant(object):
 
         df0 = df_stock.set_index('date')
 
-        buy_hold = 0.0
+        bh_sum = 0.0
         data = list()
         for date0, date1 in zip(df_signal['date0'], df_signal['date1']):
             try:
@@ -92,11 +109,18 @@ class Quant(object):
                 df_temp['spy_pct_chg'] = spy_return
                 df_temp['rf_pct_chg'] = rf_return
 
-                close0 = df_temp['spy_close'][df_temp.index.values[-1]]
-                close1 = df_temp['spy_close'][df_temp.index.values[0]]
-                buy_hold += (close1 - close0) / close0
+                close0 = df_temp['close'][df_temp.index.values[0]]
+                close1 = df_temp['close'][df_temp.index.values[-1]]
+                bh_sum += (close1 - close0) / close0
 
                 data.append(df_temp.to_csv())
+
+                # fill missing data
+                df_temp['pct_chg'] = df_temp['pct_chg'].fillna(0)
+                df_temp['pl'] = df_temp['pl'].fillna(0)
+                df_temp['spy_close'] = df_temp['spy_close'].ffill()
+                df_temp['spy_pct_chg'] = df_temp['spy_pct_chg'].ffill()
+                df_temp['rf_pct_chg'] = df_temp['rf_pct_chg'].ffill()
             except ValueError:
                 pass  # skip not enough data for date
         else:
@@ -105,8 +129,33 @@ class Quant(object):
                 data2 += '\n'.join(d.split('\n')[1:])
 
         df1 = pd.read_csv(StringIO(data2), index_col=0)
-        df1 = df1.dropna()
+        df1 = df1.dropna()  # wait drop nan
 
+        # drawdown section
+        # max bnh drawdown, wrong
+        max_bh_dd = self.max_dd(df1['pct_chg'] + 1)
+
+        # max algorithm drawdown
+        max_dd = self.max_dd(df1['pl'] + 1)
+
+        # rolling max bnh drawdown
+        df1['pct_r_max'] = pd.rolling_max(df1['pct_chg'] + 1, 20)
+        df1['pct_r_min'] = pd.rolling_min(df1['pct_chg'] + 1, 20)
+        df1['r_pct_dd'] = (df1['pct_r_min'] - df1['pct_r_max']) / df1['pct_r_max']
+        r_max_bh_dd = df1['r_pct_dd'].min()
+
+        # rolling max algorithm drawdown
+        df1['pl_r_max'] = pd.rolling_max(df1['pl'] + 1, 20)
+        df1['pl_r_min'] = pd.rolling_min(df1['pl'] + 1, 20)
+        df1['r_pl_dd'] = (df1['pl_r_min'] - df1['pl_r_max']) / df1['pl_r_max']
+        r_max_dd = df1['r_pl_dd'].min()
+
+        #print df1.to_string(line_width=300)
+        #print max_dd, max_bh_dd
+        # buy hold cumprod
+        bh_cumprod = np.cumprod(df1['pct_chg'] + 1)[df1.index.values[-1]]
+
+        # sharpe ratio, sortino ratio
         df1['excess_return1'] = df1['pl'] - df1['rf_pct_chg']
         df1['excess_return2'] = df1['pl'] - df1['spy_pct_chg']
 
@@ -137,16 +186,12 @@ class Quant(object):
 
         # return, trade, buy and hold
         trades = df_signal['pct_chg'].count()
-        total_pl = df_signal['pct_chg'].sum()
-        avg_pl = df_signal['pct_chg'].mean()
-        cumprod_pl = np.cumprod(df_signal['pct_chg'] + 1)[df_signal.index.values[-1]]
+        pl_sum = df_signal['pct_chg'].sum()
+        pl_mean = df_signal['pct_chg'].mean()
+        pl_cumprod = np.cumprod(df_signal['pct_chg'] + 1)[df_signal.index.values[-1]]
 
         max_profit = df_signal['pct_chg'].max()
         max_loss = df_signal['pct_chg'].min()
-
-        first = df_stock.ix[df_signal.index.values[0]]['close']
-        last = df_stock.ix[df_signal.index.values[-1]]['close']
-        buy_hold = np.round((last - first) / first, 2)
 
         # value at risk
         mean = df1['pl'].mean()
@@ -166,7 +211,8 @@ class Quant(object):
             sharpe_spy=round(np.float(avg2 / std2), 6),
             sortino_rf=round(np.float(avg1 / downside_risk1), 6),
             sortino_spy=round(np.float(avg2 / downside_risk2), 6),
-            buy_hold=buy_hold,
+            bh_sum=round(np.float(bh_sum), 2),
+            bh_cumprod=np.round(bh_cumprod, 2),
             trades=trades,
             profit_trades=profit_trades,
             profit_prob=round(profit_prob, 2),
@@ -174,11 +220,15 @@ class Quant(object):
             loss_prob=round(loss_prob, 2),
             max_profit=round(max_profit, 2),
             max_loss=round(max_loss, 2),
-            sum_result=round(total_pl, 2),
-            cumprod_result=round(cumprod_pl, 2),
-            mean_result=round(avg_pl, 2),
+            pl_sum=round(pl_sum, 2),
+            pl_cumprod=round(pl_cumprod, 2),
+            pl_mean=round(pl_mean, 2),
             var_pct99=round(value_at_risk99, 4),
-            var_pct95=round(value_at_risk95, 4)
+            var_pct95=round(value_at_risk95, 4),
+            max_dd=np.round(max_dd, 2),
+            r_max_dd=np.round(r_max_dd, 2),
+            max_bh_dd=np.round(max_bh_dd, 2),
+            r_max_bh_dd=np.round(r_max_bh_dd, 2)
         )
 
     def handle_data(self, df):

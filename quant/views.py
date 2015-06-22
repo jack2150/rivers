@@ -58,8 +58,7 @@ class AlgorithmAnalysisForm(forms.Form):
         # special case like sp500 all symbols not yet include
         symbol = cleaned_data.get('symbol')
         if symbol is not None:
-
-            if symbol is 'ALL':
+            if symbol.upper() == 'ALL':
                 pass
             else:
                 if ',' in symbol:
@@ -161,7 +160,8 @@ class AlgorithmAnalysisForm(forms.Form):
             if symbols == 'ALL':
                 # special case, all symbols, postgre support distinct
                 symbols = [s[0] for s in Stock.objects.distinct('symbol').values_list('symbol')
-                           if s[0] is not 'SPY']
+                           if s[0] != 'SPY']
+                print symbols
             else:
                 symbols = [symbols]
 
@@ -174,11 +174,7 @@ class AlgorithmAnalysisForm(forms.Form):
         algorithm = Algorithm.objects.get(id=self.cleaned_data['algorithm_id'])
 
         # import function
-        path = 'quant.algorithm.{category}.{method}.{fname}'.format(
-            category=algorithm.category,
-            method=algorithm.method,
-            fname=algorithm.fname.replace('.py', '')
-        )
+        path = 'quant.algorithm.{path}'.format(path=algorithm.path)
 
         module = import_module(path)
         handle_data = getattr(module, 'handle_data')

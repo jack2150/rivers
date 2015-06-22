@@ -13,7 +13,7 @@ class TestReadyAlgorithm(TestSetUp):
             date='2015-06-19',
             category='technical',
             method='ewma',
-            fname='cd.py',
+            path='cd.py',
             description='',
         )
         self.algorithm.save()

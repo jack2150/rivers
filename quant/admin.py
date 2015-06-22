@@ -30,17 +30,16 @@ class AlgorithmAdmin(admin.ModelAdmin):
     analysis_button.allow_tags = True
 
     form = AlgorithmForm
-    list_display = ('rule', 'date', 'category', 'method',
-                    'fname', 'formula', 'analysis_button')
+    list_display = ('rule', 'date', 'category', 'method', 'formula', 'analysis_button')
 
     fieldsets = (
         ('Primary Fields', {
             'fields': ('rule', 'formula', 'date', 'category',
-                       'method', 'fname', 'description')
+                       'method', 'path', 'description')
         }),
     )
 
-    search_fields = ('rule', 'formula', 'date', 'category', 'method', 'fname')
+    search_fields = ('rule', 'formula', 'date', 'category', 'method')
     list_per_page = 20
 
 
@@ -56,7 +55,10 @@ class AlgorithmResultAdmin(admin.ModelAdmin):
     form = AlgorithmForm
     list_display = (
         'symbol', 'date', 'algorithm', 'short_arguments', 'sharpe_spy',
-        'buy_hold', 'trades', 'profit_prob', 'loss_prob', 'sum_result', 'var_pct99'
+        'bh_sum', 'pl_sum',
+        'bh_cumprod', 'pl_cumprod',
+        'trades', 'profit_prob', 'loss_prob',
+        'max_dd', 'var_pct99'
     )
 
     fieldsets = (
@@ -66,10 +68,13 @@ class AlgorithmResultAdmin(admin.ModelAdmin):
         ('Primary Fields', {
             'fields': (
                 'sharpe_rf', 'sharpe_spy', 'sortino_rf', 'sortino_spy',
-                'buy_hold', 'trades', 'profit_trades', 'profit_prob',
+                'buy_hold', 'bh_cumprod',
+                'trades', 'profit_trades', 'profit_prob',
                 'loss_trades', 'loss_prob', 'max_profit', 'max_loss',
-                'sum_result', 'cumprod_result', 'mean_result',
-                'var_pct99', 'var_pct95', 'signals')
+                'pl_sum', 'pl_cumprod', 'pl_mean',
+                'var_pct99', 'var_pct95',
+                'max_dd', 'r_max_dd', 'max_bh_dd', 'r_max_bh_dd',
+                'signals')
         }),
     )
 

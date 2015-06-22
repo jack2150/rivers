@@ -10,7 +10,7 @@ class TestQuant(TestUnitSetUp):
         TestUnitSetUp.setUp(self)
 
         self.symbol = 'AIG'  # can be a single symbol or list of symbols
-        self.algorithm = Algorithm.objects.get(id=1)
+        self.algorithm = Algorithm.objects.get(id=5)
         handle_data, create_signal = self.algorithm.get_module()
 
         self.quant = Quant()
@@ -75,7 +75,8 @@ class TestQuant(TestUnitSetUp):
         expected_keys = (
             'max_loss', 'sortino_rf', 'sharpe_rf', 'buy_hold', 'mean_result', 'profit_trades', 'loss_prob',
             'var_pct99', 'trades', 'sharpe_spy', 'sum_result', 'sortino_spy', 'cumprod_result',
-            'loss_trades', 'max_profit', 'var_pct95', 'profit_prob'
+            'loss_trades', 'max_profit', 'var_pct95', 'profit_prob',
+            'max_dd', 'r_max_dd', 'max_bh_dd', 'r_max_bh_dd'
         )
 
         for key in report.keys():
