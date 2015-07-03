@@ -15,3 +15,8 @@ def form_field_type(obj):
 @register.filter
 def field_name(obj):
     return ' '.join(obj.split('_'))
+
+
+@register.filter
+def field_name_last(obj):
+    return obj.split('_')[-1].capitalize()

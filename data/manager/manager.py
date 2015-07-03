@@ -53,6 +53,3 @@ class StockManager(object):
         df_stocks['Earning'] = [date in earning_dates for date in df_stocks.index.values]
 
         return df_stocks
-
-
-# todo: dividend may also wrong, verify, download all of it

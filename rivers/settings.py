@@ -45,7 +45,8 @@ INSTALLED_APPS = (
     'base',
     'data',
     'statement',
-    'quant',
+    'quantitative',
+    'simulation',
 )
 
 # for django-admin-bootsrapped
