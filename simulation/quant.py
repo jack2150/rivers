@@ -185,7 +185,7 @@ class StrategyQuant(object):
 
         df_trade['roi'] = (df_trade['amount1'] - df_trade['amount0']
                            - df_trade['fee1'] - df_trade['fee0'])
-        df_trade['roi_pct'] = np.round(df_trade['roi'] / df_trade['capital'], 4)
+        df_trade['roi_pct_chg'] = np.round(df_trade['roi'] / df_trade['capital'], 4)
 
         df_trade.drop(['sqm0', 'sqm1', 'oqm0', 'oqm1'], axis=1, inplace=True)
 
@@ -196,6 +196,8 @@ class StrategyQuant(object):
         df_trade['remain'] = np.round(df_trade['remain'], 2)
         df_trade['roi'] = np.round(df_trade['roi'], 2)
 
+        print df_trade
+
         return df_trade
 
     def make_trade_cumprod(self, **kwargs):
@@ -205,13 +207,12 @@ class StrategyQuant(object):
         """
         # make order
         df_order = self.strategy.make_order(self.df_stock, self.df_signal, **kwargs)
-        df_trade = df_order.copy()
 
         # calc fees
-        df_trade['fee0'] = df_trade.apply(
+        df_order['fee0'] = df_order.apply(
             lambda x: self.calc_fees(x['sqm0'], x['oqm0']), axis=1
         )
-        df_trade['fee1'] = df_trade.apply(
+        df_order['fee1'] = df_order.apply(
             lambda x: self.calc_fees(x['sqm1'], x['oqm1']), axis=1
         )
 
@@ -228,7 +229,7 @@ class StrategyQuant(object):
         )
 
         rolling_cap = self.capital
-        for index, trade in df_trade.iterrows():
+        for index, trade in df_order.iterrows():
             data['capital'].append(rolling_cap)
 
             sqty0, oqty0 = self.calc_qty(
@@ -251,13 +252,13 @@ class StrategyQuant(object):
 
             rolling_cap = rolling_cap + roi + remain - trade['fee0'] - trade['fee1']
         else:
-            df_cumprod = pd.DataFrame(data, index=df_trade.index.values)
-            df_cumprod['roi_pct'] = np.round(df_cumprod['roi'] / df_cumprod['capital'], 4)
+            df_cumprod = pd.DataFrame(data, index=df_order.index.values)
 
-        df_trade = df_trade.join(df_cumprod).reindex_axis(
+        df_order['roi_pct_chg'] = np.round(df_cumprod['roi'] / df_cumprod['capital'], 4)
+        df_trade = df_order.join(df_cumprod).reindex_axis(
             ['date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding', 'pct_chg',
              'time1', 'sqm0', 'sqm1', 'oqm0', 'oqm1', 'fee0', 'fee1', 'sqty0', 'oqty0',
-             'sqty1', 'oqty1', 'capital', 'amount0', 'amount1', 'remain', 'roi', 'roi_pct'],
+             'sqty1', 'oqty1', 'capital', 'amount0', 'amount1', 'remain', 'roi'],
             axis=1
         )
         df_trade.drop(['sqm0', 'sqm1', 'oqm0', 'oqm1'], axis=1, inplace=True)
@@ -271,39 +272,31 @@ class StrategyQuant(object):
 
         return df_trade
 
-    def report(self, df_trade, cumprod=False):
+    def report(self, df_trade, df_cumprod):
         """
         Maker report using class df_stock and df_trade
         :param df_trade: DataFrame
-        :param cumprod: bool
+        :param df_cumprod: DataFrame
         :return: dict
         """
-        report = self.quant.report(self.df_stock, df_trade)
+        report = dict()
 
         report['capital0'] = self.capital
         report['remain_mean'] = df_trade['remain'].mean()
+        report['cp_remain_mean'] = df_cumprod['remain'].mean()
 
-        if cumprod:
-            report['capital1'] = (
-                np.abs(df_trade['amount1']) - df_trade['fee0'] - df_trade['fee1']
-            ).ix[df_trade.index.values[-1]]
-        else:
-            report['capital1'] = self.capital + df_trade['roi'].sum()
+        report['capital1'] = self.capital + df_trade['roi'].sum()
+        report['cumprod1'] = self.capital + df_cumprod['roi'].sum()
 
         report['roi_sum'] = df_trade['roi'].sum()
         report['roi_mean'] = df_trade['roi'].mean()
-
-        report['roi_pct_sum'] = df_trade['roi_pct'].sum()
-        report['roi_pct_mean'] = df_trade['roi_pct'].mean()
-        report['roi_pct_max'] = df_trade['roi_pct'].max()
-        report['roi_pct_min'] = df_trade['roi_pct'].min()
-        report['roi_pct_std'] = df_trade['roi_pct'].std()
+        report['cp_roi_sum'] = df_cumprod['roi'].sum()
+        report['cp_roi_mean'] = df_cumprod['roi'].mean()
 
         report['fee_sum'] = (df_trade['fee0'] + df_trade['fee1']).sum()
         report['fee_mean'] = (df_trade['fee0'] + df_trade['fee1']).mean()
 
-        report['cumprod'] = cumprod
-
+        report.update(self.quant.report(self.df_stock, df_trade))
         return report
 
     def make_reports(self):
@@ -321,17 +314,14 @@ class StrategyQuant(object):
             df_cumprod = self.make_trade_cumprod(**arg)
 
             # create report
-            report0 = self.report(df_trade, cumprod=False)
-            report0['signals'] = df_trade.to_csv()
-            report1 = self.report(df_cumprod, cumprod=True)
-            report1['signals'] = df_cumprod.to_csv()
+            report = self.report(df_trade, df_cumprod)
+            report['df_trade'] = df_trade.to_csv()
+            report['df_cumprod'] = df_cumprod.to_csv()
 
             # add args
-            report0['arguments'] = arg.__str__()
-            report1['arguments'] = arg.__str__()
+            report['arguments'] = arg.__str__()
 
             # append into list
-            reports.append(report0)
-            reports.append(report1)
+            reports.append(report)
 
         return reports

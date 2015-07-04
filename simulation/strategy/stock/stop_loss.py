@@ -122,7 +122,7 @@ def create_order(df_stock, df_signal, order=('gtc', 'close'), percent=0):
 
     f = lambda x: x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg']
     df['pct_chg'] = (df['close1'] - df['close0']) / df['close0']
-    df['pct_chg'] = np.round(df.apply(f, axis=1), 2)
+    df['pct_chg'] = np.round(df.apply(f, axis=1), 4)
 
     # for stock option quantity multiply
     f = lambda x: -1 if x['signal0'] == 'SELL' else 1

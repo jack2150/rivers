@@ -3,6 +3,7 @@ from simulation.views import *
 import pandas as pd
 
 
+# noinspection PyArgumentList
 class TestStrategy(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
@@ -47,14 +48,14 @@ class TestStrategy(TestUnitSetUp):
 
         expected_columns = [
             'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1',
-            'holding', 'pct_chg', 'time1'
+            'holding', 'pct_chg', 'time1', 'sqm0', 'sqm1', 'oqm0', 'oqm1'
         ]
         for column in df_order.columns:
             self.assertIn(column, expected_columns)
 
         expected_dtypes = [
             'object', 'object', 'object', 'object', np.float64, np.float64,
-            np.int32, np.float64, 'object'
+            np.int32, np.float64, 'object', np.int64, np.int64, np.int64, np.int64
         ]
 
         print '\n' + 'checking data types...'
@@ -68,7 +69,7 @@ class TestStrategyAnalysisForm1(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.algorithm_result = AlgorithmResult.objects.get(id=1)
+        self.algorithm_result = AlgorithmResult.objects.first()
 
         self.data = {
             'algorithmresult_id': self.algorithm_result.id,
@@ -122,7 +123,7 @@ class TestStrategyQuant(TestUnitSetUp):
 
         self.algorithm_result = AlgorithmResult.objects.first()
         self.strategy = Strategy.objects.get(name='Stop Loss')
-        self.commission = Commission.objects.get(id=1)
+        self.commission = Commission.objects.first()
         self.capital = 10000.00
 
         self.strategy_quant = StrategyQuant(
@@ -210,7 +211,7 @@ class TestStrategyQuant(TestUnitSetUp):
 
         expected_columns = (
             'amount0', 'amount1', 'capital', 'close0', 'close1', 'date0', 'date1', 'fee0', 'fee1',
-            'holding', 'oqty0', 'oqty1', 'pct_chg', 'remain', 'roi', 'roi_pct', 'signal0', 'signal1',
+            'holding', 'oqty0', 'oqty1', 'pct_chg', 'remain', 'roi', 'signal0', 'signal1',
             'sqty0', 'sqty1', 'time1'
         )
 
@@ -229,7 +230,7 @@ class TestStrategyQuant(TestUnitSetUp):
 
         expected_columns = (
             'amount0', 'amount1', 'capital', 'close0', 'close1', 'date0', 'date1', 'fee0', 'fee1',
-            'holding', 'oqty0', 'oqty1', 'pct_chg', 'remain', 'roi', 'roi_pct', 'signal0', 'signal1',
+            'holding', 'oqty0', 'oqty1', 'pct_chg', 'remain', 'roi', 'signal0', 'signal1',
             'sqty0', 'sqty1', 'time1'
         )
 
@@ -243,33 +244,32 @@ class TestStrategyQuant(TestUnitSetUp):
         df_trade = self.strategy_quant.make_trade(**self.args)
         df_cumprod = self.strategy_quant.make_trade_cumprod(**self.args)
 
-        for df, cumprod in ((df_trade, False), (df_cumprod, True)):
-            report = self.strategy_quant.report(df, cumprod)
-            self.assertEqual(type(report), dict)
+        report = self.strategy_quant.report(df_trade, df_cumprod)
+        self.assertEqual(type(report), dict)
 
-            print list(report.keys())
+        print list(report.keys())
 
-            expected_keys = (
-                'capital0', 'capital1', 'remain_mean', 'fee_mean', 'fee_sum', 'roi_mean',
-                'roi_pct_max', 'roi_pct_mean', 'roi_pct_min', 'roi_pct_std', 'roi_pct_sum', 'roi_sum'
-            )
+        expected_keys = (
+            'capital0', 'capital1', 'remain_mean',
+            'fee_mean', 'fee_sum', 'roi_mean', 'roi_sum'
+        )
 
-            for key in expected_keys:
-                self.assertIn(key, report.keys())
+        for key in expected_keys:
+            self.assertIn(key, report.keys())
 
-            print pd.Series(report)
+        print pd.Series(report)
 
-            # try save
-            print '\n' + 'test save...'
-            strategy_result = StrategyResult(**report)
-            strategy_result.symbol = self.algorithm_result.symbol
-            strategy_result.algorithm_result = self.algorithm_result
-            strategy_result.strategy = self.strategy
-            strategy_result.arguments = self.args.__str__()
-            strategy_result.commission = self.commission
-            strategy_result.save()
-            self.assertTrue(strategy_result.id)
-            strategy_result.delete()
+        # try save
+        print '\n' + 'test save...'
+        strategy_result = StrategyResult(**report)
+        strategy_result.symbol = self.algorithm_result.symbol
+        strategy_result.algorithm_result = self.algorithm_result
+        strategy_result.strategy = self.strategy
+        strategy_result.arguments = self.args.__str__()
+        strategy_result.commission = self.commission
+        strategy_result.save()
+        self.assertTrue(strategy_result.id)
+        strategy_result.delete()
 
     def test_make_reports(self):
         """
@@ -278,7 +278,7 @@ class TestStrategyQuant(TestUnitSetUp):
         """
         self.strategy_quant.set_args({
             'order': 'gtc',
-            'percent': '10:20:5'
+            'percent': '10:15:5'
         })
 
         reports = self.strategy_quant.make_reports()
@@ -300,7 +300,7 @@ class TestStrategyAnalysisForm2(TestUnitSetUp):
         self.algorithm_result = AlgorithmResult.objects.first()
         """:type: AlgorithmResult"""
         self.strategy = Strategy.objects.get(name='Stop Loss')
-        self.commission = Commission.objects.get(id=1)
+        self.commission = Commission.objects.first()
         self.capital = 13721.25
 
         self.data = {
@@ -346,7 +346,7 @@ class TestStrategyAnalysisForm2(TestUnitSetUp):
         self.assertFalse(self.form.is_valid())
         self.assertIn('Percent value can only be positive.',
                       self.form.errors['percent'].__str__())
-        self.assertIn('Invalid Order field value.',
+        self.assertIn('KeyError Order field value.',
                       self.form.errors['order'].__str__())
 
         for key, error in self.form.errors.items():
@@ -371,20 +371,29 @@ class TestStrategyAnalysisForm2(TestUnitSetUp):
             strategy_results.delete()
 
 
-class TestStrategyAnalysis1(TestUnitSetUp):
+class TestStrategyAnalysis(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
         self.algorithm_result = AlgorithmResult.objects.first()
         self.strategy = Strategy.objects.get(name='Stop Loss')
+        self.commission = Commission.objects.first()
+        self.capital = 13721.25
 
-    def test_view(self):
+        self.args = {
+            'order': 'gtc',
+            'percent': 7
+        }
+
+    def test_view1(self):
         """
         Test strategy analysis form 1 that all form field is valid
         """
         response = self.client.get(reverse('admin:strategy_analysis1', kwargs={
             'algorithmresult_id': self.algorithm_result.id
         }))
+
+        self.assertEqual(response.status_code, 200)
 
         self.assertEqual(int(response.context['form']['algorithmresult_id'].value()),
                          self.algorithm_result.id)
@@ -395,32 +404,86 @@ class TestStrategyAnalysis1(TestUnitSetUp):
         for field in response.context['form'].fields:
             print field, response.context['form'][field].value()
 
+        # test form submit
+        response = self.client.post(reverse('admin:strategy_analysis1', kwargs={
+            'algorithmresult_id': self.algorithm_result.id
+        }), data={
+            'algorithmresult_id': self.algorithm_result.id,
+            'strategy': self.strategy.id,
+            'symbol': self.algorithm_result.symbol,
+            'algorithm_id': self.algorithm_result.algorithm.id,
+            'algorithm_rule': self.algorithm_result.algorithm.rule,
+            'algorithm_args': self.algorithm_result.arguments,
+            'sharpe_ratio': self.algorithm_result.sharpe_spy,
+            'probability': 'Profit: {profit} ; Loss: {loss}'.format(
+                profit=self.algorithm_result.profit_prob,
+                loss=self.algorithm_result.loss_prob
+            ),
+            'profit_loss': 'Sum: {pl_sum}, CP: {pl_cumprod}, Mean: {pl_mean}'.format(
+                pl_sum=self.algorithm_result.pl_sum,
+                pl_cumprod=self.algorithm_result.pl_cumprod,
+                pl_mean=self.algorithm_result.pl_mean,
+            ),
+            'risk': 'Max DD: {max_dd}, VaR 99%: {var99}'.format(
+                max_dd=self.algorithm_result.max_dd,
+                var99=self.algorithm_result.var_pct99
+            )
+        })
 
+        # check redirect work
+        self.assertIn(
+            reverse('admin:strategy_analysis2', kwargs={
+                'algorithmresult_id': self.algorithm_result.id,
+                'strategy_id': self.strategy.id
+            }),
+            response.url
+        )
+        self.assertEqual(response.status_code, 302)
 
+    def test_view2(self):
+        """
+        Test strategy analysis form 1 that all form field is valid
+        """
+        response = self.client.get(reverse('admin:strategy_analysis2', kwargs={
+            'algorithmresult_id': self.algorithm_result.id,
+            'strategy_id': self.strategy.id
+        }))
 
+        self.assertEqual(response.status_code, 200)
 
+        self.assertEqual(int(response.context['form']['algorithmresult_id'].value()),
+                         self.algorithm_result.id)
+        self.assertEqual(response.context['form']['strategy_id'].value(), self.strategy.id)
 
+        for field in response.context['form'].fields:
+            print field, response.context['form'][field].value()
 
+        response = self.client.post(reverse('admin:strategy_analysis2', kwargs={
+            'algorithmresult_id': self.algorithm_result.id,
+            'strategy_id': self.strategy.id
+        }), data={
+            'symbol': self.algorithm_result.symbol,
+            'algorithmresult_id': self.algorithm_result.id,
+            'algorithm_id': self.algorithm_result.algorithm.id,
+            'algorithm_name': self.algorithm_result.algorithm.rule,
+            'algorithm_args': self.algorithm_result.arguments,
+            'strategy_id': self.strategy.id,
+            'strategy': self.strategy.name,
+            'capital': self.capital,
+            'commission': self.commission.id,
+            'order': self.args['order'],
+            'percent': self.args['percent']
+        })
 
+        # check redirect work
+        self.assertIn(
+            reverse('admin:simulation_strategyresult_changelist'),
+            response.url
+        )
+        self.assertEqual(response.status_code, 302)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        # remove test strategy result
+        strategy_results = StrategyResult.objects.filter(capital0=self.capital)
+        self.assertGreaterEqual(strategy_results.count(), 1)
+        for strategy_result in strategy_results:
+            strategy_result.delete()

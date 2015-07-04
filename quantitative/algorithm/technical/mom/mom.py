@@ -36,7 +36,7 @@ def create_signal(df):
     # apply algorithm result
     f = lambda x: x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg']
     df2['pct_chg'] = df2.apply(f, axis=1)
-    df2['pct_chg'] = df2['pct_chg']
+    #df2['pct_chg'] = np.round(df2['pct_chg'], 4)
 
     return df2.copy()
 

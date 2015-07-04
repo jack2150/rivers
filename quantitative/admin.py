@@ -100,7 +100,7 @@ class AlgorithmResultForm(forms.ModelForm):
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
     )
 
-    signals = forms.CharField(
+    df_signal = forms.CharField(
         widget=AdminTextareaWidget(attrs={
             'class': 'form-control vLargeTextField', 'rows': 8, 'cols': 40, 'wrap': 'off'
         })
@@ -133,7 +133,7 @@ class AlgorithmResultAdmin(admin.ModelAdmin):
     strategy_analysis.allow_tags = True
 
     list_display = (
-        'symbol', 'algorithm', 'short_arguments', 'sharpe_spy',
+        'algorithm', 'short_arguments', 'symbol', 'sharpe_spy',
         'bh_sum', 'pl_sum',
         'bh_cumprod', 'pl_cumprod',
         'trades', 'profit_prob', 'loss_prob',
@@ -161,7 +161,7 @@ class AlgorithmResultAdmin(admin.ModelAdmin):
                 'max_dd', 'r_max_dd', 'max_bh_dd', 'r_max_bh_dd',
                 'pct_mean', 'pct_median', 'pct_max', 'pct_min', 'pct_std',
                 'day_profit_mean', 'day_loss_mean',
-                'signals')
+                'df_signal')
         }),
     )
 

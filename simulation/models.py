@@ -36,8 +36,11 @@ class Strategy(models.Model):
         max_length=100, help_text='Instrument for this strategy.'
     )
     category = models.CharField(max_length=200, help_text='Strategy category.')
-    description = models.TextField(help_text='Explain how this strategy work.')
+    description = models.TextField(null=True, blank=True, default='',
+                                   help_text='Explain how this strategy work.')
     path = models.CharField(max_length=200, help_text='Path to strategy module.')
+    arguments = models.TextField(null=True, blank=True, default='',
+                                 help_text='Default arguments.')
 
     def get_args(self):
         """
@@ -126,21 +129,19 @@ class StrategyResult(models.Model):
     day_profit_mean = models.FloatField()
     day_loss_mean = models.FloatField()
 
-    signals = models.TextField()
+    df_trade = models.TextField()
+    df_cumprod = models.TextField()
 
     capital0 = models.DecimalField(max_digits=10, decimal_places=2)
     capital1 = models.DecimalField(max_digits=10, decimal_places=2)
-    cumprod = models.BooleanField(default=False, verbose_name='CP')
+    cumprod1 = models.DecimalField(max_digits=10, decimal_places=2)
     remain_mean = models.DecimalField(max_digits=10, decimal_places=2)
+    cp_remain_mean = models.DecimalField(max_digits=10, decimal_places=2)
 
     roi_sum = models.DecimalField(max_digits=10, decimal_places=2)
     roi_mean = models.DecimalField(max_digits=10, decimal_places=2)
-
-    roi_pct_sum = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='R Sum')
-    roi_pct_mean = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='R Mean')
-    roi_pct_max = models.DecimalField(max_digits=10, decimal_places=2)
-    roi_pct_min = models.DecimalField(max_digits=10, decimal_places=2)
-    roi_pct_std = models.DecimalField(max_digits=10, decimal_places=2)
+    cp_roi_sum = models.DecimalField(max_digits=10, decimal_places=2)
+    cp_roi_mean = models.DecimalField(max_digits=10, decimal_places=2)
 
     fee_sum = models.DecimalField(max_digits=10, decimal_places=2)
     fee_mean = models.DecimalField(max_digits=10, decimal_places=2)

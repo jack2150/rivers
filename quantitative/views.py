@@ -136,7 +136,7 @@ class AlgorithmAnalysisForm(forms.Form):
         })
 
         algorithm.quant.seed_data(symbols)
-        reports = algorithm.quant.get_reports()
+        reports = algorithm.quant.make_reports()
 
         if reports.count():
             algorithm_results = list()

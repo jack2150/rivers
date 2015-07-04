@@ -6,6 +6,7 @@ from simulation.quant import StrategyQuant
 from simulation.models import *
 
 
+# noinspection PyUnusedLocal
 class StrategyAnalysisForm1(forms.Form):
     algorithmresult_id = forms.IntegerField(widget=forms.HiddenInput())
     symbol = forms.CharField(widget=forms.TextInput(
@@ -120,7 +121,7 @@ def strategy_analysis1(request, algorithmresult_id):
     return render(request, template, parameters)
 
 
-# noinspection PyUnresolvedReferences
+# noinspection PyUnresolvedReferences,PyUnusedLocal
 class StrategyAnalysisForm2(forms.Form):
     symbol = forms.CharField(widget=forms.TextInput(
         attrs={'class': 'form-control vTextField', 'readonly': 'readonly'}
@@ -211,7 +212,9 @@ class StrategyAnalysisForm2(forms.Form):
                     data = cleaned_data[arg]
 
                     if type(default) != tuple:
-                        if float(data) < 0:
+                        if ':' in data:
+                            [float(d) for d in data.split(':')]
+                        elif float(data) < 0:
                             self._errors[arg] = self.error_class(
                                 ['{arg} value can only be positive.'.format(
                                     arg=arg.capitalize()
@@ -219,11 +222,11 @@ class StrategyAnalysisForm2(forms.Form):
                             )
                 except KeyError:
                     self._errors[arg] = self.error_class(
-                        ['Invalid {arg} field value.'.format(arg=arg.capitalize())]
+                        ['KeyError {arg} field value.'.format(arg=arg.capitalize())]
                     )
                 except ValueError:
                     self._errors[arg] = self.error_class(
-                        ['Invalid {arg} field value.'.format(arg=arg.capitalize())]
+                        ['ValueError {arg} field value.'.format(arg=arg.capitalize())]
                     )
 
         # capital
@@ -314,17 +317,22 @@ def strategy_analysis2(request, algorithmresult_id, strategy_id):
         else:
             capital = 1000.00
 
+        initial = {
+            'symbol': algorithm_result.symbol,
+            'algorithmresult_id': algorithm_result.id,
+            'algorithm_name': algorithm_result.algorithm.rule,
+            'algorithm_args': algorithm_result.arguments,
+            'strategy_id': strategy.id,
+            'strategy': strategy.name,
+            'capital': capital
+        }
+
+        if len(strategy.arguments):
+            initial.update(eval(strategy.arguments))
+
         form = StrategyAnalysisForm2(
             arguments=arguments,
-            initial={
-                'symbol': algorithm_result.symbol,
-                'algorithmresult_id': algorithm_result.id,
-                'algorithm_name': algorithm_result.algorithm.rule,
-                'algorithm_args': algorithm_result.arguments,
-                'strategy_id': strategy.id,
-                'strategy': strategy.name,
-                'capital': capital
-            }
+            initial=initial
         )
 
     parameters = dict(
@@ -335,9 +343,3 @@ def strategy_analysis2(request, algorithmresult_id, strategy_id):
     )
 
     return render(request, template, parameters)
-
-# todo: arguments for strategy too
-
-
-
-

@@ -136,7 +136,7 @@ class AlgorithmResult(models.Model):
     day_profit_mean = models.FloatField()
     day_loss_mean = models.FloatField()
 
-    signals = models.TextField()
+    df_signal = models.TextField()
 
     def __unicode__(self):
         return 'AlgorithmResult: {sharpe_spy} {trades} {profit_prob}'.format(

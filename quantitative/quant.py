@@ -282,20 +282,22 @@ class AlgorithmQuant(object):
         # max algorithm drawdown
         max_dd = self.max_dd(df1['pl'] + 1)
 
-        # rolling max bnh drawdown
-        df1['pct_r_max'] = pd.rolling_max(df1['pct_chg'] + 1, 20)
-        df1['pct_r_min'] = pd.rolling_min(df1['pct_chg'] + 1, 20)
-        df1['r_pct_dd'] = (df1['pct_r_min'] - df1['pct_r_max']) / df1['pct_r_max']
-        r_max_bh_dd = df1['r_pct_dd'].min()
+        if df1['pct_chg'].count() > 20 and df1['pl'].count() > 20:
+            # rolling max bnh drawdown
+            df1['pct_r_max'] = pd.rolling_max(df1['pct_chg'] + 1, 20)
+            df1['pct_r_min'] = pd.rolling_min(df1['pct_chg'] + 1, 20)
+            df1['r_pct_dd'] = (df1['pct_r_min'] - df1['pct_r_max']) / df1['pct_r_max']
+            r_max_bh_dd = df1['r_pct_dd'].min()
 
-        # rolling max algorithm drawdown
-        df1['pl_r_max'] = pd.rolling_max(df1['pl'] + 1, 20)
-        df1['pl_r_min'] = pd.rolling_min(df1['pl'] + 1, 20)
-        df1['r_pl_dd'] = (df1['pl_r_min'] - df1['pl_r_max']) / df1['pl_r_max']
-        r_max_dd = df1['r_pl_dd'].min()
+            # rolling max algorithm drawdown
+            df1['pl_r_max'] = pd.rolling_max(df1['pl'] + 1, 20)
+            df1['pl_r_min'] = pd.rolling_min(df1['pl'] + 1, 20)
+            df1['r_pl_dd'] = (df1['pl_r_min'] - df1['pl_r_max']) / df1['pl_r_max']
+            r_max_dd = df1['r_pl_dd'].min()
+        else:
+            r_max_bh_dd = 0.0
+            r_max_dd = 0.0
 
-        #print df1.to_string(line_width=300)
-        #print max_dd, max_bh_dd
         # buy hold cumprod
         bh_cumprod = np.cumprod(df1['pct_chg'] + 1)[df1.index.values[-1]]
 
@@ -329,25 +331,28 @@ class AlgorithmQuant(object):
         std2 = df1['excess_return2'].std()
 
         # return, trade, buy and hold
-        trades = df_signal['pct_chg'].count()
-        pl_sum = df_signal['pct_chg'].sum()
-        pl_mean = df_signal['pct_chg'].mean()
-        pl_cumprod = np.cumprod(df_signal['pct_chg'] + 1)[df_signal.index.values[-1]]
+        pct_key = 'pct_chg'
+        if 'roi_pct_chg' in df_signal.columns:
+            pct_key = 'roi_pct_chg'
 
-        max_profit = df_signal['pct_chg'].max()
-        max_loss = df_signal['pct_chg'].min()
-
-        # value at risk
-        mean = df1['pl'].mean()
-        std = df1['pl'].std()
-        value_at_risk99 = norm.ppf(1 - 0.99, loc=mean, scale=std)
-        value_at_risk95 = norm.ppf(1 - 0.99, loc=mean, scale=std)
+        trades = df_signal[pct_key].count()
+        pl_sum = df_signal[pct_key].sum()
+        pl_mean = df_signal[pct_key].mean()
+        pl_cumprod = np.cumprod(df_signal[pct_key] + 1)[df_signal.index.values[-1]] - 1
+        max_profit = df_signal[pct_key].max()
+        max_loss = df_signal[pct_key].min()
 
         # profit loss trade
         profit_trades = df_signal[df_signal['pct_chg'] > 0]['pct_chg'].count()
         loss_trades = df_signal[df_signal['pct_chg'] < 0]['pct_chg'].count()
         profit_prob = profit_trades / df_signal['pct_chg'].count().astype(np.float)
         loss_prob = loss_trades / df_signal['pct_chg'].count().astype(np.float)
+
+        # value at risk
+        mean = df1['pl'].mean()
+        std = df1['pl'].std()
+        value_at_risk99 = norm.ppf(1 - 0.99, loc=mean, scale=std)
+        value_at_risk95 = norm.ppf(1 - 0.95, loc=mean, scale=std)
 
         # more for signal2
         df_signal2 = self.create_signal2(df_stock, df_signal)
@@ -375,8 +380,8 @@ class AlgorithmQuant(object):
             loss_prob=round(loss_prob, 2),
             max_profit=round(max_profit, 2),
             max_loss=round(max_loss, 2),
-            pl_sum=round(pl_sum, 2),
-            pl_cumprod=round(pl_cumprod, 2),
+            pl_sum=round(pl_sum, 4),
+            pl_cumprod=round(pl_cumprod, 4),
             pl_mean=round(pl_mean, 2),
             var_pct99=round(value_at_risk99, 4),
             var_pct95=round(value_at_risk95, 4),
@@ -393,7 +398,7 @@ class AlgorithmQuant(object):
             day_loss_mean=round(day_loss_mean, 2),
         )
 
-    def get_reports(self):
+    def make_reports(self):
         """
         Using data symbols and all args, generate a list of reports
         :return: list
@@ -416,7 +421,7 @@ class AlgorithmQuant(object):
                 report['date'] = pd.datetime.today().date()
                 report['algorithm'] = self.algorithm
                 report['arguments'] = arg.__str__()
-                report['signals'] = self.create_signal2(
+                report['df_signal'] = self.create_signal2(
                     df_stock, df_signal
                 ).to_csv()
 

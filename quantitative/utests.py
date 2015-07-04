@@ -130,13 +130,14 @@ class TestQuant(TestUnitSetUp):
             'var_pct99', 'var_pct95',
             'max_dd', 'r_max_dd', 'max_bh_dd', 'r_max_bh_dd',
             'pct_mean', 'pct_median', 'pct_max', 'pct_min', 'pct_std',
+            'day_profit_mean', 'day_loss_mean'
         )
 
         for key in report.keys():
             print key, report[key]
             self.assertIn(key, expected_keys)
 
-    def test_get_reports(self):
+    def test_make_reports(self):
         """
         Test get reports by running all symbols inside data and all arguments
         """
@@ -146,13 +147,13 @@ class TestQuant(TestUnitSetUp):
             'handle_data_previous': '20',
             'create_signal_holding': '30',
         })
-        reports = self.quant.get_reports()
+        reports = self.quant.make_reports()
         self.assertEqual(type(reports), pd.Series)
 
         for report in reports:
             print report
 
-            for key in ('symbol', 'date', 'algorithm', 'arguments', 'signals'):
+            for key in ('symbol', 'date', 'algorithm', 'arguments', 'df_signal'):
                 self.assertIn(key, report.keys())
 
 

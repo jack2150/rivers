@@ -26,14 +26,21 @@ class CommissionAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
+# noinspection PyMethodMayBeStatic
 class StrategyAdmin(admin.ModelAdmin):
+    def strategy_args(self, obj):
+        return eval(obj.arguments).values()
+
+    strategy_args.short_description = 'Args'
+    strategy_args.admin_order_field = 'arguments'
+
     list_display = (
-        'name', 'instrument', 'category', 'description', 'path'
+        'name', 'instrument', 'category', 'description', 'path', 'strategy_args'
     )
     fieldsets = (
         ('Primary Fields', {
             'fields': (
-                'name', 'instrument', 'category', 'description', 'path'
+                'name', 'instrument', 'category', 'description', 'path', 'arguments'
             )
         }),
     )
@@ -48,7 +55,13 @@ class StrategyResultForm(forms.ModelForm):
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
     )
 
-    signals = forms.CharField(
+    df_trade = forms.CharField(
+        widget=AdminTextareaWidget(attrs={
+            'class': 'form-control vLargeTextField', 'rows': 8, 'cols': 40, 'wrap': 'off'
+        })
+    )
+
+    df_cumprod = forms.CharField(
         widget=AdminTextareaWidget(attrs={
             'class': 'form-control vLargeTextField', 'rows': 8, 'cols': 40, 'wrap': 'off'
         })
@@ -82,20 +95,20 @@ class StrategyResultAdmin(admin.ModelAdmin):
     short_args.admin_order_field = 'arguments'
 
     list_display = (
-        'algorithm', 'algorithm_args', 'strategy', 'short_args',
-        'symbol', 'cumprod', 'sharpe_spy',
-        'roi_pct_sum', 'trades', 'profit_prob', 'loss_prob',
-        'roi_pct_mean', 'capital0', 'roi_mean'
+        'strategy', 'short_args', 'algorithm', 'algorithm_args',
+        'symbol', 'sharpe_spy', 'pl_sum',
+        'trades', 'profit_prob', 'loss_prob',
+        'capital0', 'roi_mean'
     )
     fieldsets = (
         ('Foreign Key', {
             'fields': (
-                'algorithm_result', 'strategy', 'commission', 'date'
+                'algorithm_result',  'commission', 'date'
             )
         }),
-        ('Arguments', {
+        ('Strategy Fields', {
             'fields': (
-                'arguments', 'cumprod'
+                'strategy', 'arguments'
             )
         }),
         ('Report Fields', {
@@ -109,15 +122,15 @@ class StrategyResultAdmin(admin.ModelAdmin):
                 'max_dd', 'r_max_dd', 'max_bh_dd', 'r_max_bh_dd',
                 'pct_mean', 'pct_median', 'pct_max', 'pct_min', 'pct_std',
                 'day_profit_mean', 'day_loss_mean',
-                'signals'
+                'df_trade', 'df_cumprod'
             )
         }),
         ('Trade Fields', {
             'fields': (
-                'capital0', 'capital1', 'remain_mean',
+                'capital0', 'capital1', 'cumprod1',
+                'remain_mean', 'cp_remain_mean',
                 'fee_mean', 'fee_sum',
-                'roi_mean', 'roi_sum',
-                'roi_pct_max', 'roi_pct_mean', 'roi_pct_min', 'roi_pct_std', 'roi_pct_sum',
+                'roi_mean', 'roi_sum', 'cp_roi_mean', 'cp_roi_sum',
             ),
         }),
     )
