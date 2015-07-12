@@ -29,19 +29,30 @@ class AlgorithmAnalysisForm(forms.Form):
         arguments = kwargs.pop('arguments')
         super(AlgorithmAnalysisForm, self).__init__(*args, **kwargs)
 
-        for arg in arguments:
-            self.fields[arg] = forms.CharField(
-                label=arg.capitalize(),
-                widget=forms.TextInput(attrs={
-                    'class': 'form-control vTextField',
-                    'required': 'required'
-                }),
-                help_text='Sample: 20:100:10 ; Method: {name}'.format(
-                    name=(
-                        arg[:11] if 'handle_data' in arg else arg[:13]
-                    ).replace('_', ' ').capitalize()
-                ),
-            )
+        print arguments
+
+        for arg, default in arguments:
+            print arg, default
+            if type(default) == tuple:
+                # choice field
+                self.fields[arg] = forms.ChoiceField(
+                    label=arg.capitalize(),
+                    widget=forms.Select(attrs={
+                        'class': 'form-control vTextField',
+                        'required': 'required'
+                    }),
+                    choices=[(key, value.upper()) for key, value in zip(default, default)]
+                )
+            else:
+                # text input
+                self.fields[arg] = forms.CharField(
+                    label=arg.capitalize(),
+                    widget=forms.TextInput(attrs={
+                        'class': 'form-control vTextField',
+                        'required': 'required'
+                    }),
+                    help_text='Sample: 20:100:10',
+                )
 
     def clean(self):
         """
@@ -78,9 +89,11 @@ class AlgorithmAnalysisForm(forms.Form):
                         self._errors['symbol'] = self.error_class(symbol_errors)
 
         # valid algorithm id
+        arguments = list()
         algorithm_id = cleaned_data.get('algorithm_id')
         try:
-            Algorithm.objects.get(id=algorithm_id)
+            algorithm = Algorithm.objects.get(id=algorithm_id)
+            arguments = algorithm.get_args()
         except ObjectDoesNotExist:
             self._errors['algorithm_id'] = self.error_class(
                 ['Algorithm id {algorithm_id} is not found.'.format(
@@ -88,9 +101,40 @@ class AlgorithmAnalysisForm(forms.Form):
                 )]
             )
 
-        # valid arguments
+        for arg, default in arguments:
+            try:
+                # note: select field already have choices validation
+                data = cleaned_data[arg]
+
+                if type(default) == tuple:
+                    if data not in default:
+                        self._errors[arg] = self.error_class(
+                            ['{arg} invalid choices.'.format(arg=arg.capitalize())]
+                        )
+                else:
+                    if ':' in data:
+                        [float(d) for d in data.split(':')]
+                    elif float(data) < 0:
+                        self._errors[arg] = self.error_class(
+                            ['{arg} value can only be positive.'.format(
+                                arg=arg.capitalize()
+                            )]
+                        )
+            except KeyError:
+                self._errors[arg] = self.error_class(
+                    ['KeyError {arg} field value.'.format(arg=arg.capitalize())]
+                )
+            except ValueError:
+                self._errors[arg] = self.error_class(
+                    ['ValueError {arg} field value.'.format(arg=arg.capitalize())]
+                )
+
+
+        """
         arguments = {key: value for key, value in self.cleaned_data.items()
                      if 'algorithm_' not in key and key is not 'symbol'}
+
+        print arguments
 
         for key, value in arguments.items():
             try:
@@ -104,6 +148,7 @@ class AlgorithmAnalysisForm(forms.Form):
                         key=key.capitalize(), value=value
                     )]
                 )
+        """
 
         return cleaned_data
 
@@ -156,9 +201,7 @@ def algorithm_analysis(request, algorithm_id, argument_id=0):
     algorithm = Algorithm.objects.get(id=algorithm_id)
 
     # extract arguments
-    hd_keys, cs_keys = algorithm.get_args()
-    arguments = ['handle_data_%s' % k for k in hd_keys] + \
-                ['create_signal_%s' % k for k in cs_keys]
+    arguments = algorithm.get_args()
 
     if request.method == 'POST':
         form = AlgorithmAnalysisForm(request.POST, arguments=arguments)

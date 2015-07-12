@@ -196,8 +196,6 @@ class StrategyQuant(object):
         df_trade['remain'] = np.round(df_trade['remain'], 2)
         df_trade['roi'] = np.round(df_trade['roi'], 2)
 
-        print df_trade
-
         return df_trade
 
     def make_trade_cumprod(self, **kwargs):

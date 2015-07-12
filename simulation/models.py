@@ -33,9 +33,12 @@ class Commission(models.Model):
 class Strategy(models.Model):
     name = models.CharField(max_length=100, help_text='Strategy name.')
     instrument = models.CharField(
-        max_length=100, help_text='Instrument for this strategy.'
+        max_length=10, help_text='Instrument for this strategy.',
+        choices=(('Stock', 'Stock'), ('Covered', 'Covered'), ('Option', 'Option'))
     )
-    category = models.CharField(max_length=200, help_text='Strategy category.')
+    category = models.CharField(
+        max_length=10, help_text='Strategy category.'
+    )
     description = models.TextField(null=True, blank=True, default='',
                                    help_text='Explain how this strategy work.')
     path = models.CharField(max_length=200, help_text='Path to strategy module.')
@@ -52,8 +55,9 @@ class Strategy(models.Model):
 
         specs = getargspec(create_order)
 
-        return [(key, value) for key, value in
-                zip(specs.args[-len(specs.defaults):], specs.defaults)]
+        arg_names = [a for a in specs.args if a not in ('df_stock', 'df_signal')]
+
+        return [(k, v) for k, v in zip(arg_names, specs.defaults)]
 
     def make_order(self, df_stock, df_signal, *args, **kwargs):
         """

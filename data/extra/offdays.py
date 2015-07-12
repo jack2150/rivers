@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, date
 
 market_offdays = (
+    '01/21/11',
     '01/21/11',
     '05/04/11',
     '08/12/11',
@@ -15,13 +16,20 @@ market_offdays = (
 )
 
 
-def offday(date):
+def offday(d):
     """
     Check date is market non trading day
-    :param date: str
+    :param d: str or datetime or date
     :return: boolean
     """
-    if type(date) == datetime:
-        date = date.strftime('%m/%d/%y')
+    if type(d) in (datetime, date):
+        d = d.strftime('%m/%d/%y')
 
-    return True if date in market_offdays else False
+    return True if d in market_offdays else False
+
+
+if __name__ == '__main__':
+    assert (offday('07/18/14') is True), "Date is not holiday."
+    assert (offday('04/04/15') is False), "Date is holiday."
+
+    assert (offday(datetime.strptime('2015-02-16', '%Y-%m-%d').date()) is True)

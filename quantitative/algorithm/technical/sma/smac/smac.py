@@ -7,7 +7,7 @@ from pandas import rolling_mean
 import numpy as np
 
 
-def handle_data(df, span0, span1):
+def handle_data(df, span0=0, span1=0):
     df['sma0'] = rolling_mean(df['close'], span0)  # shorter, example: 3 months
     df['sma1'] = rolling_mean(df['close'], span1)  # longer, example: 10 months
     df['sma_chg'] = df['sma1'] - df['sma0']

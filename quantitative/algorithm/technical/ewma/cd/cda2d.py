@@ -7,7 +7,7 @@ import numpy as np
 from pandas.stats.moments import ewma
 
 
-def handle_data(df, span, previous):
+def handle_data(df, span=0, previous=0):
     df['ema1'] = ewma(df['close'], span=span, min_periods=span)
     df['ema0'] = df['ema1'].shift(previous)
     df['ema_chg'] = df['ema1'] - df['ema0']
@@ -17,7 +17,7 @@ def handle_data(df, span, previous):
 
 
 # noinspection PyUnresolvedReferences
-def create_signal(df, after):
+def create_signal(df, after=0):
     df1 = df.copy()
     df1['date2'] = df1['date'].shift(-after)
     df1['close2'] = df1['close'].shift(-after)
@@ -47,13 +47,13 @@ def create_signal(df, after):
     ]
 
     df2['holding'] = df2['date1'] - df2['date0']
-    df2['holding'] = df2['holding'].apply(
+    df2['holding1'] = df2['holding'].apply(
         lambda x: int(x.astype('timedelta64[D]') / np.timedelta64(1, 'D'))
     )
 
     # apply only after days
-    df2 = df2[df2['holding'] >= after]
-    df2.drop(['date0', 'close0'], axis=1, inplace=True)
+    df2 = df2[df2['holding1'] >= after]
+    df2.drop(['date0', 'close0', 'holding1'], axis=1, inplace=True)
     df2.columns = ['date0', 'date1', 'signal0', 'signal1',
                    'close0', 'close1', 'holding']
 

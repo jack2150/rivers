@@ -8,7 +8,7 @@ import numpy as np
 from pandas.stats.moments import ewma
 
 
-def handle_data(df, span, previous):
+def handle_data(df, span=0, previous=0):
     df['ema1'] = ewma(df['close'], span=span, min_periods=span)
     df['ema0'] = df['ema1'].shift(previous)
     df['ema_chg'] = df['ema1'] - df['ema0']
@@ -17,7 +17,7 @@ def handle_data(df, span, previous):
     return df.copy()
 
 
-def create_signal(df, holding):
+def create_signal(df, holding=0):
     df1 = df.copy()
     df1['date1'] = df1['date'].shift(-holding)
     df1['close1'] = df1['close'].shift(-holding)

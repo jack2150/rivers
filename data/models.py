@@ -82,11 +82,17 @@ class OptionContract(models.Model):
     right = models.CharField(max_length=20)
     special = models.CharField(max_length=10)
     strike = models.DecimalField(max_length=4, max_digits=10, decimal_places=2)
-    contract = models.CharField(max_length=4)
+    name = models.CharField(max_length=4)
     option_code = models.CharField(max_length=200, unique=True)
     others = models.CharField(max_length=200, default='', blank='')
 
     source = models.CharField(max_length=20)
+
+    expire = models.BooleanField(default=False)
+    code_change = models.BooleanField(default=False)
+    split = models.BooleanField(default=False)
+    missing = models.IntegerField(default=0)
+    forfeit = models.BooleanField(default=False)
 
     def load_dict(self, values):
         """
@@ -98,9 +104,20 @@ class OptionContract(models.Model):
         self.right = values['right']
         self.special = values['special']
         self.strike = values['strike']
-        self.contract = values['contract']
-        self.option_code = values['option_code']
+        self.name = values['name']
         self.others = values['others']
+
+        # check code change
+        if self.option_code:
+            self.code_change = True
+        self.option_code = values['option_code']
+
+        # extend, check split
+        try:
+            int(self.right)
+            self.split = False
+        except ValueError:
+            self.split = True
 
     def to_hdf(self):
         """
@@ -108,10 +125,20 @@ class OptionContract(models.Model):
         """
         return DataFrame(
             data=[[self.right, self.special, self.ex_month, self.ex_year,
-                   self.strike, self.contract, self.others]],
+                   self.strike, self.name, self.others]],
             index=[self.option_code],
             columns=['Right', 'Special', 'Ex_Month', 'Ex_Year', 'Strike', 'Contract', 'Others']
         )
+
+    def add_errors(self, error):
+        """
+        Add errors into option contract
+        :param error: str
+        """
+        if self.errors == '':
+            self.errors = error
+        else:
+            self.errors += ', %s' % error
 
     def __unicode__(self):
         """
@@ -123,7 +150,7 @@ class OptionContract(models.Model):
             ex_month=self.ex_month,
             ex_year=self.ex_year,
             strike=self.strike,
-            contract=self.contract,
+            contract=self.name,
             others=' (%s)' % self.others if self.others else ''
         )
 
@@ -132,7 +159,7 @@ class Option(models.Model):
     """
     Tos option contract price only
     """
-    option_contract = models.ForeignKey(OptionContract)
+    contract = models.ForeignKey(OptionContract)
 
     date = models.DateField()
     dte = models.IntegerField(max_length=5)
@@ -160,7 +187,7 @@ class Option(models.Model):
     intrinsic = models.DecimalField(max_digits=10, decimal_places=2)
     extrinsic = models.DecimalField(max_digits=10, decimal_places=2)
 
-    unique_together = (('option_contract', 'date'),)
+    unique_together = (('contract', 'date'),)
 
     def load_dict(self, values):
         """
@@ -197,7 +224,7 @@ class Option(models.Model):
                    self.theo_price, self.impl_vol,
                    self.prob_itm, self.prob_otm, self.prob_touch,
                    self.volume, self.open_int, self.intrinsic, self.extrinsic]],
-            index=[[self.option_contract.option_code], [self.date]],
+            index=[[self.contract.option_code], [self.date]],
             columns=['DTE', 'Bid', 'Ask', 'Mark', 'Last',
                      'Delta', 'Gamma', 'Vega', 'Theta',
                      'Theo Price', 'Impl Vol',
@@ -211,7 +238,7 @@ class Option(models.Model):
         """
         return '{date} {option_contract}'.format(
             date=self.date,
-            option_contract=self.option_contract
+            option_contract=self.contract
         )    
 
 

@@ -7,7 +7,7 @@ Method: Change of momentum
 import numpy as np
 
 
-def handle_data(df, span):
+def handle_data(df, span=0):
     df['close0'] = df['close'].shift(span)
     df['net_chg'] = df['close'] - df['close0']
     f = lambda x: 'BUY' if x > 0 else ('SELL' if x < 0 else np.nan)

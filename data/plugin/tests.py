@@ -3,7 +3,7 @@ from datetime import datetime
 from glob import glob
 import os
 from base.tests import TestSetUp
-from data.io.thinkback import ThinkBack
+from data.plugin.thinkback import ThinkBack
 from data.models import *
 from rivers.settings import BASE_DIR
 
@@ -13,7 +13,7 @@ class TestThinkBack(TestSetUp):
         TestSetUp.setUp(self)
 
         self.symbol = 'AIG'
-        self.year = '2015'
+        self.year = '2011'
 
         self.dir_name = os.path.join(
             BASE_DIR, 'files', 'thinkback', self.symbol.lower(), self.year
@@ -53,22 +53,28 @@ class TestThinkBack(TestSetUp):
         print df
 
     def test_get_cycles(self):
-        for fpath in self.fpaths[:1]:
-            self.thinkback = ThinkBack(fpath=fpath)
+        """
+        Test get cycle on every top of option chain section
+        """
+        test_date = '2011-06-06'
+        for fpath in self.fpaths:
+            if test_date in fpath:
+                print fpath
+                self.thinkback = ThinkBack(fpath=fpath)
 
-            cycles = self.thinkback.get_cycles()
-            self.assertEqual(type(cycles), list)
+                cycles = self.thinkback.get_cycles()
+                self.assertEqual(type(cycles), list)
 
-            for cycle in cycles:
-                print cycle
-                self.assertEqual(type(cycle), dict)
+                for cycle in cycles:
+                    print cycle['data']
+                    self.assertEqual(type(cycle), dict)
 
-                self.assertEqual(len(cycle['data']), 5)
-                self.assertEqual(type(cycle['dte']), int)
-                self.assertGreaterEqual(cycle['dte'], 0)
-                self.assertEqual(type(cycle['line']), str)
-                self.assertGreater(cycle['start'], 10)
-                self.assertLess(cycle['start'], cycle['stop'])
+                    self.assertEqual(len(cycle['data']), 5)
+                    self.assertEqual(type(cycle['dte']), int)
+                    self.assertGreaterEqual(cycle['dte'], 0)
+                    self.assertEqual(type(cycle['line']), str)
+                    self.assertGreater(cycle['start'], 10)
+                    self.assertLess(cycle['start'], cycle['stop'])
 
     def test_get_cycle_options(self):
         """
@@ -78,7 +84,7 @@ class TestThinkBack(TestSetUp):
 
         contract_keys = [
             'ex_month', 'ex_year', 'right', 'special', 'others',
-            'strike', 'contract', 'option_code'
+            'strike', 'name', 'option_code'
         ]
 
         option_keys = [
@@ -118,8 +124,8 @@ class TestThinkBack(TestSetUp):
 
                     self.assertEqual(type(contract['right']), str)  # not int, str
 
-                    self.assertEqual(type(contract['contract']), str)
-                    self.assertIn(contract['contract'], ['CALL', 'PUT'])
+                    self.assertEqual(type(contract['name']), str)
+                    self.assertIn(contract['name'], ['CALL', 'PUT'])
 
                     self.assertEqual(type(contract['special']), str)
                     self.assertIn(contract['special'], ['Weeklys', 'Standard', 'Mini'])
@@ -150,7 +156,7 @@ class TestThinkBack(TestSetUp):
                     self.assertTrue(c.id)
 
                     o = Option()
-                    o.option_contract = c
+                    o.contract = c
                     o.load_dict(option)
                     o.save()
                     self.assertTrue(o.id)

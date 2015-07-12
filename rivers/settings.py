@@ -77,7 +77,7 @@ DATABASES = {
         'PASSWORD': 'qwer1234',
         'HOST': '127.0.0.1',
         'PORT': '5432',
-        'CONN_MAX_AGE': 10
+        'CONN_MAX_AGE': 60
     },
     'quote': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -86,7 +86,7 @@ DATABASES = {
         'PASSWORD': 'qwer1234',
         'HOST': '127.0.0.1',
         'PORT': '5432',
-        'CONN_MAX_AGE': 10
+        'CONN_MAX_AGE': 60
     },
 }
 """

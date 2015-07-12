@@ -7,7 +7,7 @@ from pandas import rolling_mean
 import numpy as np
 
 
-def handle_data(df, span):
+def handle_data(df, span=0):
     df['sma'] = rolling_mean(df['close'], span)
     df['p-sma'] = df['close'] - df['sma']
     f = lambda x: 'BUY' if x > 0 else ('SELL' if x < 0 else np.nan)

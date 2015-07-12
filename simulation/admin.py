@@ -26,10 +26,14 @@ class CommissionAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-# noinspection PyMethodMayBeStatic
+# noinspection PyMethodMayBeStatic,PyBroadException
 class StrategyAdmin(admin.ModelAdmin):
     def strategy_args(self, obj):
-        return eval(obj.arguments).values()
+        try:
+            args = sorted(eval(obj.arguments).values(), reverse=True)
+        except Exception:
+            args = []
+        return args
 
     strategy_args.short_description = 'Args'
     strategy_args.admin_order_field = 'arguments'
@@ -89,7 +93,11 @@ class StrategyResultAdmin(admin.ModelAdmin):
     algorithm_args.short_description = 'Args0'
 
     def short_args(self, obj):
-        return eval(obj.arguments).values()
+        try:
+            args = sorted(eval(obj.arguments).values(), reverse=True)
+        except AttributeError:
+            args = []
+        return args
 
     short_args.short_description = 'Args1'
     short_args.admin_order_field = 'arguments'
@@ -137,7 +145,8 @@ class StrategyResultAdmin(admin.ModelAdmin):
 
     search_fields = (
         'algorithm_result__algorithm__rule', 'algorithm_result__algorithm__id',
-        'algorithm_result__arguments', 'strategy__name', 'arguments'
+        'algorithm_result__arguments', 'algorithm_result__symbol',
+        'strategy__name', 'arguments'
     )
     list_filter = ('strategy__instrument', 'strategy__category')
     readonly_fields = ('algorithm_result', 'strategy', 'commission')

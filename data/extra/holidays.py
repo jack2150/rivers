@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import datetime, date
 
 market_holiday = [
     ("New Year's Day", '2015-01-01'),
-    ('Martin Luther King, Jr. Day', '2015-01-20'),
+    ('Martin Luther King, Jr. Day', '2015-01-19'),
     ("Washington's Birthday", '2015-02-17'),
     ('Good Friday', '2015-04-18'),
     ('Memorial Day', '2015-05-26'),
@@ -94,18 +94,20 @@ market_holiday = [
 ]
 
 
-def holiday(date):
+def holiday(d):
     """
     Return true if date is holiday
-    :param date: str
+    :param d: str or datetime or date
     :return: boolean
     """
-    if type(date) == datetime:
-        date = date.strftime('%Y-%m-%d')
+    if type(d) in (datetime, date):
+        d = d.strftime('%Y-%m-%d')
 
-    return True if date in [date for _, date in market_holiday] else False
+    return True if d in [h for _, h in market_holiday] else False
 
 
 if __name__ == '__main__':
     assert (holiday('2015-11-27') is True), "Date is not holiday."
     assert (holiday('2013-09-03') is False), "Date is holiday."
+
+    assert (holiday(datetime.strptime('2015-01-19', '%Y-%m-%d').date()) is True)

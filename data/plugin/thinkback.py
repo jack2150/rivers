@@ -15,7 +15,7 @@ class ThinkBack(object):
                   r'Prob.OTM,Prob.Touch,Volume,Open.Int,Intrinsic,Extrinsic,Option Code,,'
 
     CONTRACT_KEYS = ['ex_month', 'ex_year', 'right', 'special', 'others',
-                     'strike', 'contract', 'option_code']
+                     'strike', 'name', 'option_code']
 
     OPTION_KEYS = ['date', 'dte',
                    'last', 'mark', 'bid', 'ask', 'delta', 'gamma', 'theta', 'vega',
@@ -69,10 +69,15 @@ class ThinkBack(object):
                             line = line[:open_bracket]
                         elif line.count('(') == 2:
                             others = line[line.rindex('(') + 1:line.rindex(')')]
-                            if others not in ['Weeklys', 'Mini', 'Quarterly']:
+                            if others in ('Weeklys', 'Mini', 'Quarterly'):
+                                others = ''
+                            else:
                                 line = line[:open_bracket]
+
                 except ValueError:
                     others = ''
+
+                # todo: others and special problem
 
                 # get cycle data from line
                 data = map(remove_bracket, [l for l in line.split(' ') if l])
@@ -114,14 +119,14 @@ class ThinkBack(object):
 
             """Bid,Ask,Exp,Strike,Bid,Ask"""
             call_contract = make_dict(
-                self.CONTRACT_KEYS, cycle['data'] + [float(data[19]), 'CALL', data[15]]
+                self.CONTRACT_KEYS, cycle['data'] + [float(data[19]), 'CALL', data[15].strip()]
             )
             call_option = make_dict(
                 self.OPTION_KEYS, [self.date, cycle['dte']] + map(float, data[16:18] + data[:15])
             )
 
             put_contract = make_dict(
-                self.CONTRACT_KEYS, cycle['data'] + [float(data[19]), 'PUT', data[37]]
+                self.CONTRACT_KEYS, cycle['data'] + [float(data[19]), 'PUT', data[37].strip()]
             )
             put_option = make_dict(
                 self.OPTION_KEYS, [self.date, cycle['dte']] + map(float, data[20:37])

@@ -318,6 +318,12 @@ class TestStrategyAnalysisForm2(TestUnitSetUp):
 
         self.arguments = self.strategy.get_args()
 
+    def tearDown(self):
+        TestUnitSetUp.tearDown(self)
+
+        strategy_results = StrategyResult.objects.filter(capital0=self.capital).all()
+        strategy_results.delete()
+
     def test_is_valid(self):
         """
         Test strategy analysis form is valid
@@ -368,7 +374,6 @@ class TestStrategyAnalysisForm2(TestUnitSetUp):
             print strategy_result
             self.assertEqual(strategy_result.algorithm_result.id, self.algorithm_result.id)
             self.assertEqual(strategy_result.strategy.id, self.strategy.id)
-            strategy_results.delete()
 
 
 class TestStrategyAnalysis(TestUnitSetUp):

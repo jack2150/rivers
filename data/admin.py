@@ -3,6 +3,7 @@ from django import forms
 from django.contrib import admin
 from django.core.urlresolvers import reverse
 from data.views import *
+from data.views2 import csv_quote_import2
 import pandas as pd
 
 
@@ -76,17 +77,17 @@ class StockAdmin(admin.ModelAdmin):
 
 class OptionContractAdmin(admin.ModelAdmin):
     list_display = ('symbol', 'ex_month', 'ex_year', 'right', 'special',
-                    'strike', 'contract', 'option_code', 'others', 'source')
+                    'strike', 'name', 'option_code', 'others', 'source')
 
     fieldsets = (
         ('Primary Fields', {
             'fields': ('symbol', 'ex_month', 'ex_year', 'right', 'special',
-                       'strike', 'contract', 'option_code', 'others', 'source')
+                       'strike', 'name', 'option_code', 'others', 'source')
         }),
     )
 
     search_fields = ('symbol', 'ex_month', 'ex_year', 'right', 'special',
-                     'strike', 'contract', 'option_code', 'others')
+                     'strike', 'name', 'option_code', 'others')
 
     list_per_page = 20
 
@@ -166,7 +167,6 @@ class EarningAdmin(admin.ModelAdmin):
         return False
 
 
-# todo: next
 class TreasuryInstrumentAdmin(admin.ModelAdmin):
     list_display = ('unique_identifier','name', 'instrument', 'maturity',
                     'unit', 'multiplier', 'currency', 'time_frame')
@@ -238,7 +238,7 @@ admin.site.register_view(
 )
 
 admin.site.register_view(
-    'data/import/quote/csv/(?P<symbol>\w+)/$', urlname='csv_quote_import', view=csv_quote_import
+    'data/import/quote/csv/(?P<symbol>\w+)/$', urlname='csv_quote_import', view=csv_quote_import2
 )
 
 admin.site.register_view(
@@ -251,6 +251,10 @@ admin.site.register_view(
 
 admin.site.register_view(
     'data/import/treasury/$', urlname='treasury_import', view=treasury_import
+)
+
+admin.site.register_view(
+    'data/verify/options/(?P<symbol>\w+)/$', urlname='verify_options', view=verify_options
 )
 
 # todo: position spread view

@@ -12,11 +12,14 @@ class Algorithm(models.Model):
     formula = models.CharField(max_length=200)
     date = models.DateField()
 
-    category = models.CharField(max_length=200)
+    category = models.CharField(
+        max_length=10,
+        choices=(('Stock', 'Stock'), ('Covered', 'Covered'), ('Option', 'Option'))
+    )
     method = models.CharField(max_length=200)
     path = models.CharField(max_length=200)
 
-    description = models.TextField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True, default='')
 
     def __init__(self, *args, **kwargs):
         super(Algorithm, self).__init__(*args, **kwargs)
@@ -54,10 +57,23 @@ class Algorithm(models.Model):
         handle_data = getattr(module, 'handle_data')
         create_signal = getattr(module, 'create_signal')
 
-        hd_keys = [a for a in getargspec(handle_data).args if a not in ('self', 'df')]
-        cs_keys = [a for a in getargspec(create_signal).args if a not in ('self', 'df')]
+        hd_specs = getargspec(handle_data)
+        cs_specs = getargspec(create_signal)
 
-        return hd_keys, cs_keys
+        hd_names = [a for a in hd_specs.args if a not in ('df', 'df_stock', 'df_signal')]
+        try:
+            hd_args = [(k, v) for k, v in zip(hd_names, hd_specs.defaults)]
+        except TypeError:
+            hd_args = [(k, v) for k, v in zip(hd_names, range(len(cs_specs.args[1:])))]
+
+        cs_names = [a for a in cs_specs.args if a not in ('df', 'df_stock', 'df_signal')]
+        try:
+            cs_args = [(k, v) for k, v in zip(cs_names, cs_specs.defaults)]
+        except TypeError:
+            cs_args = [(k, v) for k, v in zip(cs_names, range(len(cs_specs.args[1:])))]
+
+        return ([('handle_data_%s' % k, v) for k, v in hd_args]
+                + [('create_signal_%s' % k, v) for k, v in cs_args])
 
     def __unicode__(self):
         return self.rule

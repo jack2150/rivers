@@ -1,3 +1,4 @@
+from django.db.models import Q
 from data.models import *
 from itertools import product
 import numpy as np
@@ -5,17 +6,11 @@ from scipy.stats import norm
 from StringIO import StringIO
 
 
-# noinspection PyMethodMayBeStatic,PyUnresolvedReferences
 class AlgorithmQuant(object):
     def __init__(self, algorithm):
         self.algorithm = algorithm
-        """:type: Algorithm"""
-
         self.data = None
-        """:type: Panel"""
-
         self.args = None
-        """:type: list of dict"""
 
     def set_args(self, fields):
         """
@@ -26,23 +21,32 @@ class AlgorithmQuant(object):
             'create_signal_holding': '30:60:30',
         }
         """
+        arguments = self.algorithm.get_args()
         args = dict()
 
-        for field in fields.keys():
-            if ':' in fields[field]:
-                data = [int(i) for i in fields[field].split(':')]
+        for arg, default in arguments:
+            if type(default) == tuple:
+                if fields[arg] in default:
+                    args[arg] = ['"%s"' % fields[arg]]
+                else:
+                    raise ValueError('')
+            elif ':' in fields[arg]:
+                data = [int(i) for i in fields[arg].split(':')]
                 try:
                     start, stop, step = [int(i) for i in data]
                 except ValueError:
                     start, stop = [int(i) for i in data]
                     step = 1
 
-                args[field] = np.arange(start, stop + 1, step)
+                args[arg] = np.arange(start, stop + 1, step)
             else:
-                try:
-                    args[field] = [int(fields[field])]
-                except ValueError:
-                    raise ValueError('Unable convert {arg} into int'.format(arg=field))
+                if arg in ('order', 'side'):
+                    args[arg] = ['"%s"' % fields[arg]]
+                else:
+                    try:
+                        args[arg] = [int(fields[arg])]
+                    except ValueError:
+                        raise ValueError('Unable convert {arg} into int'.format(arg=arg))
 
         # make it a list
         keys = sorted(args.keys())
@@ -68,6 +72,8 @@ class AlgorithmQuant(object):
 
         self.args = args1
 
+        print args1
+
     def handle_data(self, df, *args, **kwargs):
         """
         Handle data that apply algorithm and add new column into stock data
@@ -88,7 +94,8 @@ class AlgorithmQuant(object):
         """
         raise NotImplementedError('Import handle data from algorithm.')
 
-    def get_rf_return(self):
+    @staticmethod
+    def get_rf_return():
         """
         Get risk free rate series from db
         :return: Series
@@ -103,13 +110,16 @@ class AlgorithmQuant(object):
 
         return df['interest']
 
-    def make_df(self, symbol):
+    @staticmethod
+    def make_df(symbol):
         """
         Make data frame from objects data
         :param symbol: str
         :return: DataFrame
         """
-        df = pd.DataFrame(list(Stock.objects.filter(symbol=symbol).values()))
+        df = pd.DataFrame(list(Stock.objects.filter(
+            Q(symbol=symbol) & Q(source='google')
+        ).values()))
         df = df.reindex_axis(
             ['symbol', 'date', 'open', 'high', 'low', 'close', 'volume'],
             axis=1
@@ -161,7 +171,8 @@ class AlgorithmQuant(object):
 
         return np.round(min(dd_list), 2)
 
-    def create_signal2(self, df, df_signal):
+    @staticmethod
+    def create_signal2(df, df_signal):
         """
         Use df and df_signal and add more columns into df_signal
         :param df: DataFrame
@@ -241,23 +252,28 @@ class AlgorithmQuant(object):
         df0 = df_stock.set_index('date')
 
         bh_sum = 0.0
-        data = list()
+        csv_data = list()
 
-        for date0, date1 in zip(df_signal['date0'], df_signal['date1']):
+        for index, data in df_signal.iterrows():
             try:
-                df_temp = df0.ix[date0:date1][:-1]
-                df_temp['pct_chg'] = df_temp['close'].pct_change()
+                df_temp = df0.ix[data['date0']:data['date1']][:-1].copy()
+                df_temp['pct_chg'] = np.round(df_temp['close'].pct_change(), 4)
+
                 f = lambda x: x['pct_chg'] * -1 if x['signal'] == 'SELL' else x['pct_chg']
-                df_temp['pl'] = df_temp.apply(f, axis=1)
+                if 'pl' in df_temp.columns:
+                    df_temp['pl'] = df_temp.apply(f, axis=1)
+                else:
+                    df_temp['signal'] = data['signal0']
+                    df_temp['pl'] = df_temp.apply(f, axis=1)
                 df_temp['spy_close'] = df_spy['close']
-                df_temp['spy_pct_chg'] = spy_return
-                df_temp['rf_pct_chg'] = rf_return
+                df_temp['spy_pct_chg'] = np.round(spy_return, 4)
+                df_temp['rf_pct_chg'] = np.round(rf_return, 4)
 
                 close0 = df_temp['close'][df_temp.index.values[0]]
                 close1 = df_temp['close'][df_temp.index.values[-1]]
                 bh_sum += (close1 - close0) / close0
 
-                data.append(df_temp.to_csv())
+                csv_data.append(df_temp.to_csv())
 
                 # fill missing data
                 df_temp['pct_chg'] = df_temp['pct_chg'].fillna(0)
@@ -268,38 +284,55 @@ class AlgorithmQuant(object):
             except ValueError:
                 pass  # skip not enough data for date
         else:
-            data2 = data[0]
-            for d in data[1:]:
-                data2 += '\n'.join(d.split('\n')[1:])
+            csv_data2 = csv_data[0]
+            for d in csv_data[1:]:
+                csv_data2 += '\n'.join(d.split('\n')[1:])
 
-        df1 = pd.read_csv(StringIO(data2), index_col=0)
+        df1 = pd.read_csv(StringIO(csv_data2), index_col=0)
         df1 = df1.dropna()  # wait drop nan
+
+        # return, trade, buy and hold
+        pct_key = 'pct_chg'
+        if 'roi_pct_chg' in df_signal.columns:
+            pct_key = 'roi_pct_chg'
+
+        duplicated = any(pd.Series(df1.index.values).duplicated())
 
         # drawdown section
         # max bnh drawdown, wrong
-        max_bh_dd = self.max_dd(df1['pct_chg'] + 1)
-
-        # max algorithm drawdown
-        max_dd = self.max_dd(df1['pl'] + 1)
-
-        if df1['pct_chg'].count() > 20 and df1['pl'].count() > 20:
-            # rolling max bnh drawdown
-            df1['pct_r_max'] = pd.rolling_max(df1['pct_chg'] + 1, 20)
-            df1['pct_r_min'] = pd.rolling_min(df1['pct_chg'] + 1, 20)
-            df1['r_pct_dd'] = (df1['pct_r_min'] - df1['pct_r_max']) / df1['pct_r_max']
-            r_max_bh_dd = df1['r_pct_dd'].min()
-
-            # rolling max algorithm drawdown
-            df1['pl_r_max'] = pd.rolling_max(df1['pl'] + 1, 20)
-            df1['pl_r_min'] = pd.rolling_min(df1['pl'] + 1, 20)
-            df1['r_pl_dd'] = (df1['pl_r_min'] - df1['pl_r_max']) / df1['pl_r_max']
-            r_max_dd = df1['r_pl_dd'].min()
-        else:
+        if duplicated:
+            max_bh_dd = 0.0
+            max_dd = 0.0
             r_max_bh_dd = 0.0
             r_max_dd = 0.0
 
-        # buy hold cumprod
-        bh_cumprod = np.cumprod(df1['pct_chg'] + 1)[df1.index.values[-1]]
+            bh_cumprod = 0.0
+            pl_cumprod = 0.0
+        else:
+            max_bh_dd = self.max_dd(df1['pct_chg'] + 1)
+
+            # max algorithm drawdown
+            max_dd = self.max_dd(df1['pl'] + 1)
+
+            if df1['pct_chg'].count() > 20 and df1['pl'].count() > 20:
+                # rolling max bnh drawdown
+                df1['pct_r_max'] = pd.rolling_max(df1['pct_chg'] + 1, 20)
+                df1['pct_r_min'] = pd.rolling_min(df1['pct_chg'] + 1, 20)
+                df1['r_pct_dd'] = (df1['pct_r_min'] - df1['pct_r_max']) / df1['pct_r_max']
+                r_max_bh_dd = df1['r_pct_dd'].min()
+
+                # rolling max algorithm drawdown
+                df1['pl_r_max'] = pd.rolling_max(df1['pl'] + 1, 20)
+                df1['pl_r_min'] = pd.rolling_min(df1['pl'] + 1, 20)
+                df1['r_pl_dd'] = (df1['pl_r_min'] - df1['pl_r_max']) / df1['pl_r_max']
+                r_max_dd = df1['r_pl_dd'].min()
+            else:
+                r_max_bh_dd = 0.0
+                r_max_dd = 0.0
+
+            # buy hold cumprod
+            bh_cumprod = np.cumprod(df1['pct_chg'] + 1)[df1.index.values[-1]]
+            pl_cumprod = np.cumprod(df_signal[pct_key] + 1)[df_signal.index.values[-1]] - 1
 
         # sharpe ratio, sortino ratio
         df1['excess_return1'] = df1['pl'] - df1['rf_pct_chg']
@@ -330,15 +363,9 @@ class AlgorithmQuant(object):
         avg2 = df1['excess_return2'].mean()
         std2 = df1['excess_return2'].std()
 
-        # return, trade, buy and hold
-        pct_key = 'pct_chg'
-        if 'roi_pct_chg' in df_signal.columns:
-            pct_key = 'roi_pct_chg'
-
         trades = df_signal[pct_key].count()
         pl_sum = df_signal[pct_key].sum()
         pl_mean = df_signal[pct_key].mean()
-        pl_cumprod = np.cumprod(df_signal[pct_key] + 1)[df_signal.index.values[-1]] - 1
         max_profit = df_signal[pct_key].max()
         max_loss = df_signal[pct_key].min()
 

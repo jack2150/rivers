@@ -34,7 +34,7 @@
 
   <form class="form-horizontal" action='#' method='post'>
     <div class="panel panel-default">
-      <div class="panel-heading">Set strategy arguments</div>
+      <div class="panel-heading">Select Simulation Strategy</div>
       <div class="panel-body">
         <div class="row">
           <div class="control-group field-symbol">
@@ -56,8 +56,6 @@
                     </div>
                   </div>
                 {% endif %}
-
-
               </div>
             {% endfor %}
           </div>
@@ -66,26 +64,15 @@
     </div>
 
     <div class="form-actions">
-      <div class="pull-left">
-        <button id="btn_back" class="btn btn-default" type="button" name="_continue">
-          Back: select strategy
-        </button>
-      </div>
+      <div class="pull-left"></div>
       <div class="pull-right">
         <button class="btn btn-default" type="reset" name="reset">
           Reset
         </button>
         <button class="btn btn-primary default" type="submit" name="start">
-          Start: run simulation
+          Next: input arguments
         </button>
       </div>
     </div>
   </form>
-  <script type="text/javascript">
-    $('#btn_back').click(function () {
-      $(location).attr(
-          "href", "{% url 'admin:strategy_analysis1' algorithmresult_id %}"
-      );
-    })
-  </script>
 {% endblock %}

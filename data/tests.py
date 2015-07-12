@@ -2,8 +2,10 @@ from glob import glob
 import os
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db.backends.dummy.base import IntegrityError
 from base.tests import TestSetUp
 from data.models import *
+from data.views2 import get_dte
 from rivers.settings import BASE_DIR
 
 
@@ -95,7 +97,7 @@ class TestData(TestSetUp):
             option = Option()
             option.symbol = symbol
             option.date = '2015-04-24'
-            option.option_contract = option_contract
+            option.contract = option_contract
             option.load_dict(option_data)
             option.save()
 
@@ -168,7 +170,11 @@ class TestData(TestSetUp):
         treasury_instrument.maturity = '1 Year'
         treasury_instrument.time_frame = 'Annual'
         treasury_instrument.load_csv(lines)
-        treasury_instrument.save()
+
+        try:
+            treasury_instrument.save()
+        except IntegrityError:
+            print 'already exists...'
 
         if output:
             df = treasury_instrument.to_hdf()
@@ -205,28 +211,12 @@ class TestData(TestSetUp):
         print interest
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class TestDataImport(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
-        User.objects.create_superuser('root', 'a@a.a', '123456')
+        if not User.objects.filter(username='root').count():
+            User.objects.create_superuser('root', 'a@a.a', '123456')
+
         self.client.login(username='root', password='123456')
 
     def tearDown(self):
@@ -268,7 +258,7 @@ class TestDataImport(TestSetUp):
         """
         Test csv import file into db
         """
-        self.skipTest("Only test when needed...")
+        #self.skipTest("Only test when needed...")
 
         symbol = 'AIG'
 
@@ -278,6 +268,20 @@ class TestDataImport(TestSetUp):
 
         print 'run csv import view...'
         response = self.client.get(reverse('admin:csv_quote_import', args=(symbol, )))
+
+        contracts = OptionContract.objects.all()
+        print 'expired:', contracts.filter(expire=True).count()
+        print 'split', contracts.filter(split=True).count()
+        print 'code_change:', contracts.filter(code_change=True).count()
+        print 'others:', contracts.exclude(others='').count()
+        print [c['others'] for c in contracts.distinct('others').values('others')]
+        print 'special:', contracts.exclude(special='').count()
+        print [c['special'] for c in contracts.distinct('special').values('special')]
+
+        # todo: other and special is mess up
+
+        print 'missing:', contracts.filter(missing__gt=0).count()
+        print 'forfeit:', contracts.filter(forfeit=True).count()
 
         self.assertGreaterEqual(len(response.context['files']), 1)
 
@@ -308,11 +312,11 @@ class TestDataImport(TestSetUp):
             print '...'
             print '.' * 60
 
-        options = Option.objects.all()
+        contracts = Option.objects.all()
         #self.assertGreater(options.count(), 0)
-        print 'options count: %d' % options.count()
+        print 'options count: %d' % contracts.count()
 
-        for option in options[:5]:
+        for option in contracts[:5]:
             print option
         else:
             print '...'
@@ -322,6 +326,8 @@ class TestDataImport(TestSetUp):
         """
         Test csv import file into db
         """
+        self.skipTest("Only test when needed...")
+
         year = '2015'
         date = '2015-04-24'
         symbols = ('AAPL', 'AIG', 'BAC', 'C')
@@ -367,7 +373,7 @@ class TestDataImport(TestSetUp):
         """
         Test import dividend using csv files from tos calendars
         """
-        #self.skipTest("Only test when needed...")
+        self.skipTest("Only test when needed...")
 
         print 'run dividend import view...'
         response = self.client.get(reverse('admin:csv_calendar_import', args=('dividend',)))
@@ -387,6 +393,8 @@ class TestDataImport(TestSetUp):
         """
         Test import earning using csv files from tos calendars
         """
+        self.skipTest("Only test when needed...")
+
         print 'run earning import view...'
         response = self.client.get(reverse('admin:csv_calendar_import', args=('earning',)))
         self.assertLessEqual(len(response.context['files']), 11)
@@ -404,6 +412,8 @@ class TestDataImport(TestSetUp):
         """
         Test import treasury files into db
         """
+        self.skipTest("Only test when needed...")
+
         print 'run treasury import view...'
         response = self.client.get(reverse('admin:treasury_import'))
 
@@ -420,6 +430,17 @@ class TestDataImport(TestSetUp):
         self.assertGreaterEqual(len(df_treasury), 8)
 
 
+class TestCsvQuoteImport(TestSetUp):
+    def test_get_dte(self):
+        """
+
+        :return:
+        """
+        ex_month = 'MAY4'
+        ex_year = 15
+        date = get_dte(ex_month, ex_year)
+
+        print date
 
 
 

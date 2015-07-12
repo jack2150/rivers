@@ -6,6 +6,9 @@ from simulation.quant import StrategyQuant
 from simulation.models import *
 
 
+strategy_choices = Strategy.objects.values_list('id', 'name')
+
+
 # noinspection PyUnusedLocal
 class StrategyAnalysisForm1(forms.Form):
     algorithmresult_id = forms.IntegerField(widget=forms.HiddenInput())
@@ -38,7 +41,7 @@ class StrategyAnalysisForm1(forms.Form):
         widget=forms.Select(
             attrs={'class': 'form-control vTextField'}
         ),
-        choices=Strategy.objects.values_list('id', 'name')
+        choices=strategy_choices
     )
 
     def clean(self):
@@ -75,7 +78,7 @@ def strategy_analysis1(request, algorithmresult_id):
     :param algorithmresult_id: int
     :return: render
     """
-    template = 'simulation/analysis/select_strategy.html'
+    template = 'simulation/strategy/analysis1.html'
 
     algorithm_result = AlgorithmResult.objects.get(id=algorithmresult_id)
 
@@ -298,7 +301,7 @@ def strategy_analysis2(request, algorithmresult_id, strategy_id):
     :param strategy_id: int
     :return: render
     """
-    template = 'simulation/analysis/set_arguments.html'
+    template = 'simulation/strategy/analysis2.html'
 
     algorithm_result = AlgorithmResult.objects.get(id=algorithmresult_id)
     strategy = Strategy.objects.get(id=strategy_id)

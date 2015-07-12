@@ -12,12 +12,6 @@ class AlgorithmForm(forms.ModelForm):
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
     )
 
-    description = forms.CharField(
-        widget=AdminTextareaWidget(attrs={
-            'class': 'form-control vLargeTextField', 'rows': 8, 'cols': 40
-        })
-    )
-
 
 # noinspection PyMethodMayBeStatic
 class AlgorithmAdmin(admin.ModelAdmin):

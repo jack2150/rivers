@@ -1,5 +1,4 @@
 from base.utests import TestUnitSetUp
-from quantitative.quant import AlgorithmQuant
 from quantitative.models import Algorithm
 
 
