@@ -69,15 +69,13 @@ class ThinkBack(object):
                             line = line[:open_bracket]
                         elif line.count('(') == 2:
                             others = line[line.rindex('(') + 1:line.rindex(')')]
-                            if others in ('Weeklys', 'Mini', 'Quarterly'):
+                            if others in ('Weeklys', 'Mini', 'Quarterlys'):
                                 others = ''
                             else:
                                 line = line[:open_bracket]
 
                 except ValueError:
                     others = ''
-
-                # todo: others and special problem
 
                 # get cycle data from line
                 data = map(remove_bracket, [l for l in line.split(' ') if l])

@@ -311,6 +311,8 @@ class StrategyQuant(object):
             df_trade = self.make_trade(**arg)
             df_cumprod = self.make_trade_cumprod(**arg)
 
+            print df_cumprod
+
             # create report
             report = self.report(df_trade, df_cumprod)
             report['df_trade'] = df_trade.to_csv()

@@ -1,10 +1,7 @@
 from bootstrap3_datetime.widgets import DateTimePicker
-from django import forms
 from django.contrib import admin
-from django.core.urlresolvers import reverse
+from pandas.tseries.offsets import BDay
 from data.views import *
-from data.views2 import csv_quote_import2
-import pandas as pd
 
 
 class UnderlyingForm(forms.ModelForm):
@@ -14,32 +11,61 @@ class UnderlyingForm(forms.ModelForm):
     )
     stop = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False}),
-        initial=pd.datetime.today()
+        initial=datetime.date(
+            year=datetime.datetime.today().year,
+            month=datetime.datetime.today().month,
+            day=1
+        ) - BDay(1)
     )
 
 
 class UnderlyingAdmin(admin.ModelAdmin):
     form = UnderlyingForm
 
-    def data_import(self):
-        href = '<a href="{tb_link}">ThinkBack</a> | ' \
-               '<a href="{google_link}">Google</a> | ' \
+    def csv_import(self):
+        href = '<a href="{stock_link}">Stock</a> | ' \
+               '<a href="{option_link}">Options</a>'
+        return href.format(
+            stock_link=reverse('admin:csv_stock_import', kwargs={'symbol': self.symbol.lower()}),
+            option_link=reverse('admin:csv_option_import', kwargs={'symbol': self.symbol.lower()}),
+        )
+
+    csv_import.short_description = 'Csv'
+    csv_import.allow_tags = True
+
+    def web_import(self):
+        href = '<a href="{google_link}">Google</a> | ' \
                '<a href="{yahoo_link}">Yahoo</a>'
 
         return href.format(
-            tb_link=reverse('admin:csv_quote_import', args=(self.symbol.lower(), )),
             google_link=reverse('admin:web_quote_import', args=('google', self.symbol.lower())),
-            yahoo_link=reverse('admin:web_quote_import', args=('yahoo', self.symbol.lower())),
+            yahoo_link=reverse('admin:web_quote_import', args=('yahoo', self.symbol.lower()))
         )
 
-    data_import.short_description = 'Import from Source'
-    data_import.allow_tags = True
+    web_import.short_description = 'Web'
+    web_import.allow_tags = True
 
-    list_display = ('symbol', 'start', 'stop', 'thinkback', 'google', 'yahoo', data_import)
+    def data_manage(self):
+        href = '<a href="{truncate_link}">Truncate</a>'
+
+        return href.format(
+            truncate_link=reverse('admin:truncate_symbol', args=(self.symbol.lower(), ))
+        )
+
+    data_manage.short_description = 'Manage'
+    data_manage.allow_tags = True
+
+    list_display = (
+        'symbol', 'start', 'stop', 'thinkback', 'google', 'yahoo', 'updated', 'validated',
+        csv_import, web_import, data_manage
+    )
 
     fieldsets = (
         ('Primary Fields', {
-            'fields': ('symbol', 'start', 'stop', 'thinkback', 'google', 'yahoo')
+            'fields': (
+                'symbol', 'start', 'stop', 'thinkback', 'google', 'yahoo',
+                'updated', 'validated', 'missing_dates'
+            )
         }),
     )
 
@@ -76,17 +102,24 @@ class StockAdmin(admin.ModelAdmin):
 
 
 class OptionContractAdmin(admin.ModelAdmin):
-    list_display = ('symbol', 'ex_month', 'ex_year', 'right', 'special',
-                    'strike', 'name', 'option_code', 'others', 'source')
+    list_display = (
+        'symbol', 'ex_month', 'ex_year', 'right', 'special',
+        'strike', 'name', 'option_code', 'others', 'source',
+        'expire', 'code_change', 'missing'
+        # 'forfeit', 'split',
+    )
 
     fieldsets = (
         ('Primary Fields', {
-            'fields': ('symbol', 'ex_month', 'ex_year', 'right', 'special',
-                       'strike', 'name', 'option_code', 'others', 'source')
+            'fields': (
+                'symbol', 'ex_month', 'ex_year', 'right', 'special',
+                'strike', 'name', 'option_code', 'others', 'source',
+                'expire', 'code_change', 'split', 'missing', 'forfeit'
+            )
         }),
     )
 
-    search_fields = ('symbol', 'ex_month', 'ex_year', 'right', 'special',
+    search_fields = ('symbol', 'ex_month', 'ex_year', 'special',
                      'strike', 'name', 'option_code', 'others')
 
     list_per_page = 20
@@ -168,7 +201,7 @@ class EarningAdmin(admin.ModelAdmin):
 
 
 class TreasuryInstrumentAdmin(admin.ModelAdmin):
-    list_display = ('unique_identifier','name', 'instrument', 'maturity',
+    list_display = ('unique_identifier', 'name', 'instrument', 'maturity',
                     'unit', 'multiplier', 'currency', 'time_frame')
     fieldsets = (
         ('Primary Fields', {
@@ -238,15 +271,7 @@ admin.site.register_view(
 )
 
 admin.site.register_view(
-    'data/import/quote/csv/(?P<symbol>\w+)/$', urlname='csv_quote_import', view=csv_quote_import2
-)
-
-admin.site.register_view(
-    'data/import/daily/quote/$', urlname='daily_quote_import', view=daily_quote_import
-)
-
-admin.site.register_view(
-    'data/import/(?P<event>\w+)/$', urlname='csv_calendar_import', view=csv_calendar_import
+    'data/import/(?P<event>\w+)/$', urlname='event_import', view=event_import
 )
 
 admin.site.register_view(
@@ -254,8 +279,25 @@ admin.site.register_view(
 )
 
 admin.site.register_view(
-    'data/verify/options/(?P<symbol>\w+)/$', urlname='verify_options', view=verify_options
+    'data/thinkback/truncate/(?P<symbol>\w+)/$', urlname='truncate_symbol', view=truncate_symbol
 )
 
+# csv import
+admin.site.register_view(
+    'data/import/quote/csv/stock/(?P<symbol>\w+)/$',
+    urlname='csv_stock_import', view=csv_stock_import
+)
+
+admin.site.register_view(
+    'data/import/quote/csv/option/(?P<symbol>\w+)/$',
+    urlname='csv_option_import', view=csv_option_import
+)
+
+# set updated
+admin.site.register_view(
+    'data/underlying/set/(?P<symbol>\w+)/(?P<action>\w+)/$',
+    urlname='set_underlying', view=set_underlying
+)
+
+
 # todo: position spread view
-# todo: manager stock direct pandas sql io

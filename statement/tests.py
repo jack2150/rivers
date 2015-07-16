@@ -526,9 +526,6 @@ class TestPositionStage(TestSetUp):
 
 class TestStatementImport(TestSetUp):
     def test_statement_import(self):
-        User.objects.create_superuser('root', 'a@a.a', '123456')
-        self.client.login(username='root', password='123456')
-
         print 'run client get statement import view...'
         response = self.client.get(reverse('admin:statement_import'))
 
@@ -603,13 +600,7 @@ class TestPositionSpreads(TestSetUp):
     fixtures = ('position.json', )
 
     def test_view(self):
-        User.objects.create_superuser('root', 'a@a.a', '123456')
-        self.client.login(username='root', password='123456')
-
-        #for date in [s[0] for s in Statement.objects.values_list('date')][:1]:
-        response = self.client.get(reverse('admin:position_spreads', args=('2015-01-29', )))
-
-        #print response.context['position']
+        pass
 
 
 

@@ -7,11 +7,16 @@ class Underlying(models.Model):
     symbol = models.CharField(max_length=20, unique=True)
 
     start = models.DateField(default='2009-01-01')
-    stop = models.DateField(default=pd.datetime.today())
+    stop = models.DateField()
 
     thinkback = models.IntegerField(default=0)
     google = models.IntegerField(default=0)
     yahoo = models.IntegerField(default=0)
+
+    # for thinkback csv only
+    updated = models.BooleanField(default=False)   # is underlying up to date?
+    validated = models.BooleanField(default=False)  # is all import validate, especially options
+    missing_dates = models.TextField(default='', blank=True)  # all missing dates
 
     def __unicode__(self):
         return '{symbol} {stop}'.format(
@@ -108,7 +113,7 @@ class OptionContract(models.Model):
         self.others = values['others']
 
         # check code change
-        if self.option_code:
+        if self.option_code != values['option_code']:
             self.code_change = True
         self.option_code = values['option_code']
 
@@ -446,9 +451,11 @@ class TreasuryInterest(models.Model):
             'Monthly': '%Y-%m',
             'Weekly': '%Y-%m-%d',
             'Bdays': '%Y-%m-%d',
+            'Bday': '%Y-%m-%d',
         }
 
         values = line.rstrip().split(',')
+        print values
 
         self.date = pd.datetime.strptime(values[0], date_format[str(self.treasury.time_frame)]).date()
         self.interest = None if values[1] == 'ND' else float(values[1])

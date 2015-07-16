@@ -30,19 +30,3 @@ class TestStockManager(TestSetUp):
         result = StockManager.get(symbol='AIG', earning=True)
         print 'result count:', result.count()
         self.assertEqual(result.count(), stocks.count())
-
-        #print stock
-
-    def test2(self):
-        """
-
-        :return:
-        """
-        result = StockManager.second(symbol='AIG')
-
-        print result.to_string(line_width=200)
-
-
-        print 'done'
-
-

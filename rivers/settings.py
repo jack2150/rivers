@@ -10,6 +10,8 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+import sys
+
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
@@ -68,7 +70,6 @@ WSGI_APPLICATION = 'rivers.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -89,16 +90,6 @@ DATABASES = {
         'CONN_MAX_AGE': 60
     },
 }
-"""
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    },
-    'quote': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'quote.db'),
-    },
-"""
 
 DATABASE_ROUTERS = ['rivers.router.DataRouter']
 
@@ -110,11 +101,8 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
-
 USE_L10N = False
-
 USE_TZ = False
-
 DATE_FORMAT = 'Y-m-d'
 
 # Static files (CSS, JavaScript, Images)
@@ -135,3 +123,14 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
     }
 }
+
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'default.db')
+
+    }
+    DATABASES['quote'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'quote.db')
+    }

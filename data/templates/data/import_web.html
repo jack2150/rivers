@@ -12,37 +12,6 @@
   {% endblock %}
 {% endif %}
 
-
-{% block object-tools %}
-  <div id="content-navbar-collapse" class="navbar-collapse collapse">
-    <div class="nav navbar-nav navbar-right">
-      <button id="import_thinkback" type="button" class="btn btn-primary">
-        {% trans "Import Thinkback" %}
-      </button>
-
-      <button id="import_google" type="button" class="btn btn-primary">
-        {% trans "Import Google" %}
-      </button>
-
-      <button id="import_yahoo" type="button" class="btn btn-primary">
-        {% trans "Import Yahoo" %}
-      </button>
-    </div>
-  </div>
-
-  <script type="text/javascript">
-    $("#import_thinkback").click(function () {
-      $(location).attr("href", "{% url 'admin:csv_quote_import' symbol %}");
-    });
-    $("#import_google").click(function () {
-      $(location).attr("href", "{% url 'admin:web_quote_import' 'google' symbol %}");
-    });
-    $("#import_yahoo").click(function () {
-      $(location).attr("href", "{% url 'admin:web_quote_import' 'yahoo' symbol %}");
-    });
-  </script>
-{% endblock %}
-
 {% block content %}
   {% if stocks %}
     <div class="alert alert-success">

@@ -72,8 +72,6 @@ class AlgorithmQuant(object):
 
         self.args = args1
 
-        print args1
-
     def handle_data(self, df, *args, **kwargs):
         """
         Handle data that apply algorithm and add new column into stock data
@@ -105,6 +103,10 @@ class AlgorithmQuant(object):
                 treasury__unique_identifier='H15/H15/RIFLGFCY01_N.B'
             ).values()
         )
+
+        if not len(data):
+            raise LookupError('Risk free rate not found in db.')
+
         df = pd.DataFrame(data)
         df = df.set_index(df['date'])
 
@@ -126,10 +128,10 @@ class AlgorithmQuant(object):
         ).sort(['date'])
 
         # add earnings
-        earnings = [
-            e['date_act'] for e in Earning.objects.filter(symbol=symbol).values('date_act')
-        ]
-        df['earning'] = df['date'].isin(earnings)
+        #earnings = [
+        #    e['date_act'] for e in Earning.objects.filter(symbol=symbol).values('date_act')
+        #]
+        #df['earning'] = df['date'].isin(earnings)
 
         # change type
         df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(np.float)
@@ -169,7 +171,11 @@ class AlgorithmQuant(object):
 
             dd_list.append(pct - max_pct)
 
-        return np.round(min(dd_list), 2)
+        result = 0
+        if len(dd_list):
+            result = np.round(min(dd_list), 2)
+
+        return result
 
     @staticmethod
     def create_signal2(df, df_signal):
@@ -245,6 +251,9 @@ class AlgorithmQuant(object):
         :return: dict
         """
         df_spy = self.make_df(symbol='SPY')
+        if not df_spy['close'].count():
+            raise LookupError('SPY underlying not found in db.')
+
         df_spy = df_spy.set_index(df_spy['date'])
         spy_return = df_spy['close'].pct_change()
         rf_return = self.get_rf_return() / 100 / 360
@@ -300,7 +309,7 @@ class AlgorithmQuant(object):
 
         # drawdown section
         # max bnh drawdown, wrong
-        if duplicated:
+        if duplicated or not df1['pct_chg'].count():
             max_bh_dd = 0.0
             max_dd = 0.0
             r_max_bh_dd = 0.0

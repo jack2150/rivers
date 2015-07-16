@@ -1,0 +1,72 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'data' %}">Data</a></li>
+      <li><a href="{% url 'admin:data_underlying_changelist' %}">Underlyings</a></li>
+      <li>Csv Import</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div class="bs-example">
+    <div class="alert alert-success">
+      <a href="#" class="close" data-dismiss="alert">&times;</a>
+      <strong>Success!</strong> All thinkback csv have been saved.
+    </div>
+  </div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading">{{ symbol }} Statistics</div>
+    <div class="panel-body">
+      <div class="row">
+        <div class="col-md-4">
+          {% include 'data/import_csv_stock/complete_files.html' %}
+        </div>
+        <div class="col-md-4">
+          {% include 'data/import_csv_stock/missing_dates.html' %}
+        </div>
+        <div class="col-md-4">
+          <table class="table">
+            <caption>Stocks</caption>
+            <tr>
+              <th class="col-md-6">Count:</th>
+              <td>{{ stats.count }}</td>
+            </tr>
+            <tr>
+              <th class="col-md-6">Start:</th>
+              <td>{{ stats.start }}</td>
+            </tr>
+            <tr>
+              <th class="col-md-6">Stop:</th>
+              <td>{{ stats.stop }}</td>
+            </tr>
+            <tr>
+              <th class="col-md-6">Missing:</th>
+              <td>{{ missing_dates|length }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <div class="pull-left"></div>
+    <div class="pull-right">
+      <button id="updated" class="btn btn-success default" name="updated">
+        Set underlying updated
+      </button>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+  $('#updated').click(function () {
+    $(location).attr("href", "{% url 'admin:set_underlying' symbol|lower 'updated' %}");
+  });
+  </script>
+{% endblock %}

@@ -1,0 +1,5 @@
+<label for="missing_dates">Missing Dates:</label>
+<textarea id="missing_dates" class="form-control vLargeTextField" rows="20">
+{% for missing_date in missing_dates %}Date: {{ missing_date.date }}, Count: {{ missing_date.count }}
+{% endfor %}
+</textarea>

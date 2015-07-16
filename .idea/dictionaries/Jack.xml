@@ -5,6 +5,10 @@
       <w>cumprod</w>
       <w>drawdown</w>
       <w>ewma</w>
+      <w>fdate</w>
+      <w>fslr</w>
+      <w>moneyness</w>
+      <w>offday</w>
       <w>oqty</w>
       <w>postgre</w>
       <w>quant</w>

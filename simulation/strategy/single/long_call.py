@@ -6,38 +6,66 @@ from pandas.tseries.offsets import Day, BDay
 from data.models import *
 
 
-def get_option(options, moneyness, cycle, strike):
+def get_options2(options, date, dte, moneyness, cycle, strike):
     """
 
-    :param moneyness:
     :param options:
+    :param date:
+    :param dte:
+    :param moneyness:
     :param cycle:
     :param strike:
     :return:
     """
     option = None
-    cycles = [o['dte'] for o in options.distinct('dte').values('dte')]
+    for d in (date, date - BDay(1), date + BDay(1)):
+        # get cycles options
+        options1 = options.filter(Q(date=d) & Q(dte__gte=dte))
+        cycles = [o['dte'] for o in options1.distinct('dte').values('dte')]
 
-    # get cycles options
-    try:
-        options = options.filter(dte=cycles[cycle])
+        try:
+            options1 = options1.filter(date=d).filter(dte=cycles[cycle])
 
-        if moneyness == 'OTM':
-            options2 = options.filter(Q(intrinsic=0))
-            try:
-                option = options2[strike]
-            except IndexError:
-                # skip trade if strike not exists
-                print 'skip trade, no strike'
-        elif moneyness == 'ITM':
-            options2 = options.filter(Q(intrinsic__gt=0))
-        else:
-            # ATM
+            if moneyness == 'OTM':
+                options2 = options1.filter(Q(intrinsic=0))
+                try:
+                    option = options2[strike]
+                except IndexError:
+                    # if strike not exist, then skip
+                    pass
+            elif moneyness == 'ITM':
+                options2 = options1.filter(Q(intrinsic__gt=0))
+            else:
+                # ATM
+                pass
+        except IndexError:
+            # skip trade because no enough cycle data
+            option = None
+
+        if option:
+            break
+
+    return option
+
+
+def get_option1(contract, date):
+    """
+
+    :param contract:
+    :param date:
+    :return:
+    """
+    option = None
+    for d in (date, date - BDay(1), date + BDay(1)):
+        try:
+            option = Option.objects.get(
+                contract=contract,
+                date=d
+            )
+
+            break
+        except ObjectDoesNotExist:
             pass
-    except IndexError:
-        # skip trade because no enough cycle data
-        print 'skip trade, no cycle'
-
 
     return option
 
@@ -72,19 +100,30 @@ def create_order(df_stock, df_signal, moneyness=('ATM', 'ITM', 'OTM'), cycle=10,
         Q(contract__symbol=symbol)
         & Q(contract__name='CALL')
         & Q(contract__others='')
+        & Q(contract__others='')
+        & Q(contract__forfeit=False)
+        & Q(contract__missing__lt=5)
     )
 
-    for index, data in df_signal2.iterrows():
+    data = list()
+    for index, signal in df_signal2.iterrows():
+        holding = int(signal['holding'])
+
+        option0 = get_options2(options, signal['date0'], holding, moneyness, cycle, strike)
+
+        if option0:
+            option1 = get_option1(option0.contract, signal['date1'])
+        else:
+            option1 = None
+
+        print signal['date0'], option0
+        print signal['date1'], option1
+        print ''
 
 
-        holding = int(data['holding'])
-        option0 = get_option(
-            options=options.filter(Q(date=data['date0']) & Q(dte__gte=holding)),
-            moneyness=moneyness,
-            cycle=cycle,
-            strike=strike
-        )
 
+
+        """
         if option0:
             try:
                 option1 = options.get(
@@ -108,6 +147,7 @@ def create_order(df_stock, df_signal, moneyness=('ATM', 'ITM', 'OTM'), cycle=10,
                     print option1.date - option0.date, option0, '-> not found', option1
         else:
             print 'skip trade, option0 not found'
+        """
 
 
 
@@ -143,3 +183,4 @@ def create_order(df_stock, df_signal, moneyness=('ATM', 'ITM', 'OTM'), cycle=10,
 
 
 # todo: need to verify option
+# todo: fslr and bac missing dates

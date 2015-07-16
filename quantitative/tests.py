@@ -150,10 +150,6 @@ class TestQuant(TestUnitSetUp):
 
         self.assertEqual(type(data), pd.Panel)
         self.assertEqual(type(data[self.symbol]), pd.DataFrame)
-        self.assertGreaterEqual(
-            data[self.symbol][data[self.symbol]['earning']]['date'].count(),
-            26
-        )
 
     def test_create_signal2(self):
         """
@@ -206,7 +202,7 @@ class TestQuant(TestUnitSetUp):
         """
         Test get reports by running all symbols inside data and all arguments
         """
-        self.quant.seed_data([self.symbol, 'FSLR'])
+        self.quant.seed_data([self.symbol, 'AIG'])
         self.quant.set_args(fields={
             'handle_data_span': '20:40:20',
             'handle_data_previous': '20',

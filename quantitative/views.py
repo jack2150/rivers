@@ -29,10 +29,7 @@ class AlgorithmAnalysisForm(forms.Form):
         arguments = kwargs.pop('arguments')
         super(AlgorithmAnalysisForm, self).__init__(*args, **kwargs)
 
-        print arguments
-
         for arg, default in arguments:
-            print arg, default
             if type(default) == tuple:
                 # choice field
                 self.fields[arg] = forms.ChoiceField(
@@ -165,7 +162,6 @@ class AlgorithmAnalysisForm(forms.Form):
                 # special case, all symbols, postgre support distinct
                 symbols = [s[0] for s in Stock.objects.distinct('symbol').values_list('symbol')
                            if s[0] != 'SPY']
-                print symbols
             else:
                 symbols = [symbols]
 

@@ -1,0 +1,89 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'data' %}">Data</a></li>
+      <li><a href="{% url 'admin:data_underlying_changelist' %}">Underlyings</a></li>
+      <li>Csv Import</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div class="panel panel-default">
+    <div class="panel-heading">{{ symbol }} Statistics</div>
+    <div class="panel-body">
+      <div class="row">
+        <div class="col-md-4">
+          {% include 'data/import_csv_option/missing_dates.html' %}
+        </div>
+        <div class="col-md-4">
+          {% include 'data/import_csv_option/forfeit_contracts.html' %}
+        </div>
+        <div class="col-md-4">
+          <table class="table">
+            <caption>Contracts</caption>
+            <tr>
+              <th class="col-md-6">Count:</th>
+              <td>{{ stats.contracts.count }}</td>
+            </tr>
+            <tr>
+              <th>Expire:</th>
+              <td>{{ stats.contracts.expire }}</td>
+            </tr>
+            <tr>
+              <th>Split:</th>
+              <td>{{ stats.contracts.split }}</td>
+            </tr>
+            <tr>
+              <th>Code Change:</th>
+              <td>{{ stats.contracts.code_change }}</td>
+            </tr>
+            <tr>
+              <th>Others:</th>
+              <td>{{ stats.contracts.others }}</td>
+            </tr>
+            <tr>
+              <th>Others set:</th>
+              <td>{{ stats.contracts.others_set }}</td>
+            </tr>
+            <tr>
+              <th>Special:</th>
+              <td>{{ stats.contracts.special }}</td>
+            </tr>
+            <tr>
+              <th>Special set:</th>
+              <td>{{ stats.contracts.special_set }}</td>
+            </tr>
+          </table>
+
+          <table class="table">
+            <caption>Options</caption>
+            <tr>
+              <th class="col-md-6">Count:</th>
+              <td>{{ stats.options.count }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <div class="pull-left"></div>
+    <div class="pull-right">
+      <button id="validated" class="btn btn-success default" name="updated">
+        Set underlying validated
+      </button>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    $('#validated').click(function () {
+      $(location).attr("href", "{% url 'admin:set_underlying' symbol|lower 'validated' %}");
+    });
+  </script>
+{% endblock %}

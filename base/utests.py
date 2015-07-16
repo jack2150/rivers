@@ -1,17 +1,21 @@
 import os
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
+
 # noinspection PyUnresolvedReferences
 from rivers import settings
 from unittest import TestCase as UnitTestCase
 from django.test import Client
 from django.test.utils import setup_test_environment
+import sys
 
 
 class TestUnitSetUp(UnitTestCase):
     def setUp(self):
         UnitTestCase.setUp(self)
         setup_test_environment()
+
+        if 'utrunner' not in sys.argv[0]:
+            self.skipTest('Only can run with unittest.')
 
         self.client = Client()
         self.client.login(username='jack', password='qwer1234')

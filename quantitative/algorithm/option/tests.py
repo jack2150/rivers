@@ -16,7 +16,7 @@ class TestEWMAChangeDirection(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'SNDK'
+        self.symbol = 'AIG'
         self.hd_args = {'dte': 45}
         self.cs_args = {'side': 'buy'}
 

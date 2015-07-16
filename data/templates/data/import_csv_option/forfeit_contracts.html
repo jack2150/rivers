@@ -1,0 +1,6 @@
+<label for="forfeit_contracts">Forfeit contracts:</label>
+<textarea id="forfeit_contracts" class="form-control vLargeTextField" rows="20">
+  {% for contract in forfeit_contracts %}
+    Option code: {{ contract.option_code }}, Forfeit: {{ contract.forfeit }}
+  {% endfor %}
+</textarea>

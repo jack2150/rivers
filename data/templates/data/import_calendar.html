@@ -26,11 +26,11 @@
 
   <script type="text/javascript">
     $("#csv_earning_import").click(function () {
-      $(location).attr("href", "{% url 'admin:csv_calendar_import' 'earning' %}");
+      $(location).attr("href", "{% url 'admin:event_import' 'earning' %}");
     });
 
     $("#csv_dividend_import").click(function () {
-      $(location).attr("href", "{% url 'admin:csv_calendar_import' 'dividend' %}");
+      $(location).attr("href", "{% url 'admin:event_import' 'dividend' %}");
     });
   </script>
 

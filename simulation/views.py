@@ -6,7 +6,7 @@ from simulation.quant import StrategyQuant
 from simulation.models import *
 
 
-strategy_choices = Strategy.objects.values_list('id', 'name')
+#get_strategy = lambda: Strategy.objects.values_list('id', 'name')
 
 
 # noinspection PyUnusedLocal
@@ -40,9 +40,13 @@ class StrategyAnalysisForm1(forms.Form):
     strategy = forms.ChoiceField(
         widget=forms.Select(
             attrs={'class': 'form-control vTextField'}
-        ),
-        choices=strategy_choices
+        )
     )
+
+    def __init__(self, *args, **kwargs):
+        super(StrategyAnalysisForm1, self).__init__(*args, **kwargs)
+
+        self.fields['strategy'].choices = Strategy.objects.values_list('id', 'name')
 
     def clean(self):
         """
@@ -150,14 +154,17 @@ class StrategyAnalysisForm2(forms.Form):
     commission = forms.ChoiceField(
         widget=forms.Select(
             attrs={'class': 'form-control vTextField'}
-        ),
-        choices=[(commission.id, commission.__unicode__())
-                 for commission in Commission.objects.all()]
+        )
     )
 
     def __init__(self, *args, **kwargs):
         arguments = kwargs.pop('arguments')
         super(StrategyAnalysisForm2, self).__init__(*args, **kwargs)
+
+        self.fields['commission'].choices = [
+            (commission.id, commission.__unicode__())
+            for commission in Commission.objects.all()
+        ]
 
         for arg, default in arguments:
             #print arg, zip(value, value)

@@ -8,10 +8,6 @@
       Import Dividend
     </button>
 
-    <button id="daily_import" type="button" class="btn btn-primary">
-      Daily Import
-    </button>
-
     <button id="treasury_import" type="button" class="btn btn-primary">
       Import Treasury
     </button>
@@ -19,16 +15,12 @@
 </div>
 
 <script type="text/javascript">
-  $("#daily_import").click(function () {
-    $(location).attr("href", "{% url 'admin:daily_quote_import' %}");
-  });
-
   $("#csv_dividend_import").click(function () {
-    $(location).attr("href", "{% url 'admin:csv_calendar_import' 'dividend' %}");
+    $(location).attr("href", "{% url 'admin:event_import' 'dividend' %}");
   });
 
   $("#csv_earning_import").click(function () {
-    $(location).attr("href", "{% url 'admin:csv_calendar_import' 'earning' %}");
+    $(location).attr("href", "{% url 'admin:event_import' 'earning' %}");
   });
 
   $("#treasury_import").click(function () {

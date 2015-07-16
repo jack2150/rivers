@@ -32,3 +32,5 @@ class TestStrategyLongCall(TestUnitSetUp):
         df_signal = self.quant.create_signal(df_stock, **self.cs_args)
 
         self.strategy.make_order(df_stock, df_signal, **self.args)
+
+        # todo: until here

@@ -1,0 +1,6 @@
+<label for="missing_dates">Missing Dates:</label>
+<textarea id="missing_dates" class="form-control vLargeTextField" rows="20"
+    {% if missing_dates|length == 0 %}readonly="readonly"{% endif %}>
+{% for missing_date in missing_dates %}{{ missing_date }}
+{% endfor %}
+</textarea>

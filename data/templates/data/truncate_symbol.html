@@ -1,0 +1,130 @@
+{% extends "admin/base_site.html" %}
+{% load i18n l10n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}"/>
+  <link rel="stylesheet" type="text/css" href="/static/admin/css/overrides.css"/>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'data' %}">Data</a></li>
+      <li><a href="{% url 'admin:data_underlying_changelist' %}">Underlyings</a></li>
+      <li>Web Import</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block bodyclass %}change-form{% endblock %}
+
+{% block content %}
+  {% if form.errors %}
+    <div class="alert alert-danger fade in">
+      <a href="#" class="close" data-dismiss="alert">&times;</a>
+      <strong>Error!</strong>
+      {% for field in form %}
+        {% for error in field.errors %}
+          {{ error }}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form class="form-horizontal" action='#' method='post'>
+    {% csrf_token %}
+    {% for field in form %}
+      {{ field }}
+    {% endfor %}
+
+    {% if stats %}
+      <div class="panel panel-default">
+        <div class="panel-heading">{{ symbol }} Statistics</div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-4">
+              <table class="table">
+                <caption>Thinkback</caption>
+                <tr>
+                  <td>Stock:</td>
+                  <td>{{ stats.thinkback.stock|intcomma }}</td>
+                </tr>
+                <tr>
+                  <td>Date Start:</td>
+                  <td>{{ stats.thinkback.start }}</td>
+                </tr>
+                <tr>
+                  <td>Date Stop:</td>
+                  <td>{{ stats.thinkback.stop }}</td>
+                </tr>
+                <tr>
+                  <td>Contracts:</td>
+                  <td>{{ stats.thinkback.contract|intcomma }}</td>
+                </tr>
+                <tr>
+                  <td>Options:</td>
+                  <td>{{ stats.thinkback.option|intcomma }}</td>
+                </tr>
+              </table>
+            </div>
+            <div class="col-md-4">
+              <table class="table">
+                <caption>Google</caption>
+                <tr>
+                  <td>Stock:</td>
+                  <td>{{ stats.google.stock|intcomma }}</td>
+                </tr>
+                <tr>
+                  <td>Date Start:</td>
+                  <td>{{ stats.google.start }}</td>
+                </tr>
+                <tr>
+                  <td>Date Stop:</td>
+                  <td>{{ stats.google.stop }}</td>
+                </tr>
+              </table>
+            </div>
+            <div class="col-md-4">
+              <table class="table">
+                <caption>Yahoo</caption>
+                <tr>
+                  <td>Stock:</td>
+                  <td>{{ stats.yahoo.stock|intcomma }}</td>
+                </tr>
+                <tr>
+                  <td>Date Start:</td>
+                  <td>{{ stats.yahoo.start }}</td>
+                </tr>
+                <tr>
+                  <td>Date Stop:</td>
+                  <td>{{ stats.yahoo.stop }}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    {% endif %}
+
+    <div class="form-actions">
+      <div class="pull-left"></div>
+      <div class="pull-right">
+        <button id="back" class="btn btn-default" type="button" name="back">
+          Back
+        </button>
+        <button class="btn btn-danger default" type="submit" name="start">
+          Truncate Now
+        </button>
+      </div>
+    </div>
+  </form>
+  <script type="text/javascript">
+    $('#back').click(function () {
+      $(location).attr("href", "{% url 'admin:data_underlying_changelist' %}");
+    });
+  </script>
+{% endblock %}

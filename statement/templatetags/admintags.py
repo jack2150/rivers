@@ -20,3 +20,8 @@ def field_name(obj):
 @register.filter
 def field_name_last(obj):
     return obj.split('_')[-1].capitalize()
+
+
+@register.filter
+def intcomma(obj):
+    return '{:,}'.format(obj)
