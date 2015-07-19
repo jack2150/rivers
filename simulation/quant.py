@@ -34,6 +34,7 @@ class StrategyQuant(object):
         Set arguments that ready for strategy test
         :param fields: dict
         """
+        default = {k: v for k, v in self.strategy.get_args()}
         args = dict()
 
         for key in fields.keys():
@@ -51,7 +52,7 @@ class StrategyQuant(object):
                 # tuple is for string type only
                 args[key] = np.array(['"%s"' % f for f in fields[key]])
             else:
-                if key in ('order', 'side'):
+                if type(default[key]) == tuple:  # section is tuple
                     args[key] = ['"%s"' % fields[key]]
                 else:
                     try:
@@ -113,7 +114,7 @@ class StrategyQuant(object):
             stock_qty = np.int(f(capital / close0 / sqm)) * sqm
             option_qty = np.int(stock_qty / sqm)
         elif not sqm and oqm:
-            option_qty = np.int(f(capital / close0 / oqm / 100))
+            option_qty = np.int(np.floor(capital / close0 / oqm / 100))
 
         return stock_qty, option_qty
 
@@ -281,15 +282,19 @@ class StrategyQuant(object):
 
         report['capital0'] = self.capital
         report['remain_mean'] = df_trade['remain'].mean()
-        report['cp_remain_mean'] = df_cumprod['remain'].mean()
-
         report['capital1'] = self.capital + df_trade['roi'].sum()
-        report['cumprod1'] = self.capital + df_cumprod['roi'].sum()
-
         report['roi_sum'] = df_trade['roi'].sum()
         report['roi_mean'] = df_trade['roi'].mean()
-        report['cp_roi_sum'] = df_cumprod['roi'].sum()
-        report['cp_roi_mean'] = df_cumprod['roi'].mean()
+
+        report['cp_remain_mean'] = 0.0
+        report['cumprod1'] = 0.0
+        report['cp_roi_sum'] = 0.0
+        report['cp_roi_mean'] = 0.0
+        if len(df_cumprod):
+            report['cp_remain_mean'] = df_cumprod['remain'].mean()
+            report['cumprod1'] = self.capital + df_cumprod['roi'].sum()
+            report['cp_roi_sum'] = df_cumprod['roi'].sum()
+            report['cp_roi_mean'] = df_cumprod['roi'].mean()
 
         report['fee_sum'] = (df_trade['fee0'] + df_trade['fee1']).sum()
         report['fee_mean'] = (df_trade['fee0'] + df_trade['fee1']).mean()
@@ -309,9 +314,10 @@ class StrategyQuant(object):
         reports = list()
         for arg in self.args:
             df_trade = self.make_trade(**arg)
-            df_cumprod = self.make_trade_cumprod(**arg)
 
-            print df_cumprod
+            df_cumprod = pd.DataFrame()
+            if not self.algorithm_result.algorithm.optionable:
+                df_cumprod = self.make_trade_cumprod(**arg)
 
             # create report
             report = self.report(df_trade, df_cumprod)

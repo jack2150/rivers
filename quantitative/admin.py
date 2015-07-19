@@ -26,11 +26,13 @@ class AlgorithmAdmin(admin.ModelAdmin):
     analysis_button.allow_tags = True
 
     form = AlgorithmForm
-    list_display = ('rule', 'date', 'category', 'method', 'formula', 'analysis_button')
+    list_display = ('rule', 'date', 'category', 'method',
+                    'formula', 'optionable', 'analysis_button')
 
     fieldsets = (
         ('Primary Fields', {
-            'fields': ('rule', 'formula', 'date', 'category', 'method', 'path', 'description')
+            'fields': ('rule', 'formula', 'date', 'category',
+                       'method', 'path', 'optionable', 'description')
         }),
     )
 

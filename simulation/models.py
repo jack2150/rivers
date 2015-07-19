@@ -72,11 +72,12 @@ class Strategy(models.Model):
         df_order = create_order(df_stock, df_signal, *args, **kwargs)
 
         # format df_order
-        df_order['close0'] = df_order['close0'].astype(np.float64)
-        df_order['holding'] = df_order['holding'].apply(
-            lambda x: int(x.astype('timedelta64[D]') / np.timedelta64(1, 'D'))
-        )
-        df_order['holding'] = df_order['holding'].astype(np.int)
+        if len(df_order):
+            df_order['close0'] = df_order['close0'].astype(np.float64)
+            df_order['holding'] = df_order['holding'].apply(
+                lambda x: int(x.astype('timedelta64[D]') / np.timedelta64(1, 'D'))
+            )
+            df_order['holding'] = df_order['holding'].astype(np.int)
 
         return df_order
 

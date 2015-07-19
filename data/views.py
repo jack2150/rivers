@@ -594,11 +594,6 @@ def csv_option_import(request, symbol):
         codes0 = contracts.index
         keys = ('name', 'ex_month', 'ex_year', 'special', 'strike')
         dtypes = (str, str, int, str, float)
-        specs = pd.DataFrame(
-            [{key: dtype(getattr(contract, key)) for key, dtype in zip(keys, dtypes)}
-             for contract in contracts.values],
-            index=contracts.index
-        )
 
         # contract in option data
         exist_contracts = list()
@@ -608,8 +603,23 @@ def csv_option_import(request, symbol):
 
             if contract['option_code'] in codes0:
                 exist_contracts.append(data)
+
+                # check contract that need update
+                c = contracts[contract['option_code']]
+                if c.right != contract['right'] or c.others != contract['others']:
+                    print '----|UPDATE:', c, '->',
+                    c.load_dict(contract)
+                    print c
+                    c.save()
             else:
                 new_contracts.append(data)
+
+        # spec is here after update
+        specs = pd.DataFrame(
+            [{key: dtype(getattr(contract, key)) for key, dtype in zip(keys, dtypes)}
+             for contract in contracts.values],
+            index=contracts.index
+        )
 
         # loop new contracts only
         codes1 = np.array([c['option_code'] for c, o in exist_contracts])
@@ -623,9 +633,9 @@ def csv_option_import(request, symbol):
                     (specs['name'] == contract['name'])
                     & (specs['ex_month'] == contract['ex_month'])
                     & (specs['ex_year'] == contract['ex_year'])
-                    # & (specs2['others'] == contract['others'])
                     & (specs['special'] == contract['special'])
                     & (specs['strike'] == contract['strike'])
+                    # & (specs2['others'] == contract['others'])
                 ]
 
             # spec found in specs, possible change code
@@ -642,12 +652,13 @@ def csv_option_import(request, symbol):
                         if contract['right'] == contracts[index].right:
                             code = index
                             same = contracts[code]
+                            break
                 else:
                     code = indexes[0]
                     same = contracts[code]
 
                 # check old option code is not exist
-                if code in codes1:
+                if code in codes1 or contract['others'] != same.others:
                     # mean old code is still running today, no need change
                     # for today option code, it is new option code
                     #print 'current', contract['option_code'], 'old', option_code, 'old found in today'
@@ -658,17 +669,15 @@ def csv_option_import(request, symbol):
                     temp_contracts.append(c)
                 else:
                     #print same_contract
-                    if contract['others'] == same.others:
-                        if contract['right'] == same.right:
-                            # same right, so is code change
-                            print '--| CODE: CHANGE', code, '->', contract['option_code']
-                        else:
-                            # right no same, so is split
-                            print '--| CODE: SPLIT', code, '->', contract['option_code'],
-                            print ';', same.right, '->', contract['right']
+                    if contract['right'] == same.right:
+                        if contract['option_code'] in ('VTZMX', 'DIS110122C55', 'DIS110122P55'):
+                            print contract['right'], same.right, contract['others'], same.others
+                        # same right, so is code change
+                        print '--| CODE: CHANGE', code, '->', contract['option_code']
                     else:
-                        print '--| CODE: OTHERS', code, '->', contract['option_code'],
-                        print ';', same.others, '->', contract['others']
+                        # right no same, so is split
+                        print '--| CODE: SPLIT', code, '->', contract['option_code'],
+                        print ';', same.right, '->', contract['right']
 
                     # change code now
                     change_code(same, contract)

@@ -1,76 +1,8 @@
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
-import pandas as pd
-import numpy as np
-from pandas.tseries.offsets import Day, BDay
-from data.models import *
+from simulation.strategy.single.single import *
 
 
-def get_options2(options, date, dte, moneyness, cycle, strike):
-    """
-
-    :param options:
-    :param date:
-    :param dte:
-    :param moneyness:
-    :param cycle:
-    :param strike:
-    :return:
-    """
-    option = None
-    for d in (date, date - BDay(1), date + BDay(1)):
-        # get cycles options
-        options1 = options.filter(Q(date=d) & Q(dte__gte=dte))
-        cycles = [o['dte'] for o in options1.distinct('dte').values('dte')]
-
-        try:
-            options1 = options1.filter(date=d).filter(dte=cycles[cycle])
-
-            if moneyness == 'OTM':
-                options2 = options1.filter(Q(intrinsic=0))
-                try:
-                    option = options2[strike]
-                except IndexError:
-                    # if strike not exist, then skip
-                    pass
-            elif moneyness == 'ITM':
-                options2 = options1.filter(Q(intrinsic__gt=0))
-            else:
-                # ATM
-                pass
-        except IndexError:
-            # skip trade because no enough cycle data
-            option = None
-
-        if option:
-            break
-
-    return option
-
-
-def get_option1(contract, date):
-    """
-
-    :param contract:
-    :param date:
-    :return:
-    """
-    option = None
-    for d in (date, date - BDay(1), date + BDay(1)):
-        try:
-            option = Option.objects.get(
-                contract=contract,
-                date=d
-            )
-
-            break
-        except ObjectDoesNotExist:
-            pass
-
-    return option
-
-
-def create_order(df_stock, df_signal, moneyness=('ATM', 'ITM', 'OTM'), cycle=10, strike=0):
+def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
+                 cycle=0, strike=0, expire=(False, True)):
     """
     Long call option
     1. need data, but cannot get all data
@@ -85,102 +17,84 @@ def create_order(df_stock, df_signal, moneyness=('ATM', 'ITM', 'OTM'), cycle=10,
     d.
 
     """
-    # todo: some have 52 days, check why, maybe third week is wrong
     symbol = df_stock.ix[df_stock.index.values[0]]['symbol']
 
-    df_signal2 = df_signal.copy()
+    tb_closes = {
+        stock.date.strftime('%Y-%m-%d'): np.float(stock.close) for stock in
+        Stock.objects.filter(Q(symbol=symbol) & Q(source='thinkback'))
+    }
 
-    df_signal2['holding'] = df_signal2['holding'].apply(
-        lambda x: x / np.timedelta64(1, 'D')
-    ).astype(np.int)
-
-    #print df_signal2['holding'].unique()
-
-    options = Option.objects.filter(
-        Q(contract__symbol=symbol)
-        & Q(contract__name='CALL')
-        & Q(contract__others='')
-        & Q(contract__others='')
-        & Q(contract__forfeit=False)
-        & Q(contract__missing__lt=5)
-    )
+    holding = df_signal['holding'].apply(
+        lambda x: int(x / np.timedelta64(1, 'D'))
+    ).astype(np.int).min()
 
     data = list()
-    for index, signal in df_signal2.iterrows():
-        holding = int(signal['holding'])
+    dates0, options0 = get_options_by_cycle_strike(
+        symbol=symbol,
+        name='CALL',
+        dates0=df_signal['date0'],
+        dte=holding,
+        moneyness=moneyness,
+        cycle=cycle,
+        strike=strike
+    )
 
-        option0 = get_options2(options, signal['date0'], holding, moneyness, cycle, strike)
+    for date0, (index, signal) in zip(dates0, df_signal.iterrows()):
+        date1 = signal['date1']
 
-        if option0:
-            option1 = get_option1(option0.contract, signal['date1'])
-        else:
-            option1 = None
+        if date0:
+            option0 = options0.get(date=date0)
 
-        print signal['date0'], option0
-        print signal['date1'], option1
-        print ''
+            if option0:
+                date1, option1 = get_option_by_contract_date(option0.contract, date1)
 
-
-
-
-        """
-        if option0:
-            try:
-                option1 = options.get(
-                    Q(date=data['date1'])
-                    & Q(contract=option0.contract)
+        if option0 and option1:
+            if expire:
+                close1 = np.float(
+                    tb_closes[option1.date.strftime('%Y-%m-%d')]
+                    - np.float(option0.contract.strike)
                 )
+                close1 = close1 if close1 > 0 else 0.0
+            else:
+                date1 = option1.date
+                close1 = np.float(option1.bid)
 
-                #print option0, '->', option1
-            except ObjectDoesNotExist:
-                option1 = options.filter(
-                    #Q(date__range=(data['date1'] - BDay(3), data['date1'] + BDay(1)))
-                    Q(contract=option0.contract)
-                ).order_by('date').last()
+            data.append({
+                'date0': option0.date,
+                'date1': date1,
+                'date2': date1,
+                'signal0': 'BUY',
+                'signal1': 'SELL',
+                'stock0': np.float(signal['close0']),
+                'stock1': np.float(signal['close1']),
+                'close0': np.float(option0.ask),  # buy using ask
+                'close1': np.round(close1, 2),  # sell using bid
+                'option_code': option0.contract.option_code,
+                'strike': np.float(option0.contract.strike),
+                'dte0': np.int(option0.dte),
+                'dte1': np.int(option1.dte),
+                'intrinsic0': np.float(option0.intrinsic),
+                'intrinsic1': np.float(option1.intrinsic)
+            })
 
-                #print data['close0'], data['date0'], data['date1'], data['holding']
-                if (data['date1'] - BDay(3)).date() > option1.date:
+    df = DataFrame()
+    if len(data):
+        df = DataFrame(data, columns=[
+            'date0', 'date1', 'signal0', 'signal1',
+            'stock0', 'stock1', 'close0', 'close1',
+            'option_code', 'strike', 'dte0', 'dte1',
+            'intrinsic0', 'intrinsic1'
+        ])
 
-                    print option1.date - option0.date, option0, '-> skip trade', option1, '<<<'
-                    # todo: problem
-                else:
-                    print option1.date - option0.date, option0, '-> not found', option1
-        else:
-            print 'skip trade, option0 not found'
-        """
+        df['holding'] = df['date1'] - df['date0']
+        df['pct_chg'] = np.round((df['close1'] - df['close0']) / df['close0'], 2)
 
+        f = lambda x: np.round(x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg'], 2)
+        df['pct_chg'] = df.apply(f, axis=1)
 
+        df['sqm0'] = 0
+        df['sqm1'] = 0
+        df['oqm0'] = 1
+        df['oqm1'] = -1
 
-
-
-                #print cycles
-
-
-        """
-        holding = int(data['holding'])
-        if holding != 45:
-            print data['close0'], data['date0'], data['date1'], data['holding']
-            options = Option.objects.filter(
-                Q(contract__symbol=symbol)
-                & Q(contract__name='CALL')  # todo: need to change name
-            )
-
-            options = options.filter(
-                Q(date=data['date0'])
-                & Q(dte__range=(holding - 3, holding + 3))
-            )
-
-            print options.count()
-            #print options.distinct('dte').values('dte')
-            for option in options:
-                print option, option.dte
-        """
-
-
-
-
-    return df_signal
-
-
-# todo: need to verify option
-# todo: fslr and bac missing dates
+    return df

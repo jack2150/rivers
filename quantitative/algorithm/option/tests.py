@@ -33,7 +33,7 @@ class TestEWMAChangeDirection(TestUnitSetUp):
         print self.df_stock.to_string(line_width=400)
 
         new_columns = ('symbol', 'date', 'open', 'high', 'low', 'close',
-                       'volume', 'earning', 'enter', 'exit')
+                       'volume', 'enter', 'exit')
         for column in new_columns:
             self.assertIn(column, self.df_stock.columns)
 

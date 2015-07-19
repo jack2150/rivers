@@ -26,10 +26,12 @@ def handle_data(df, dte=0):
     # get expire date
     for year, month in df['date'].apply(lambda x: (x.year, x.month)).unique():
         c = calendar.monthcalendar(year, month)
-        if len(c) == 6 or (month == 2 and len(c) == 5):
-            day = calendar.monthcalendar(year, month)[3][-2]
+        for w in c:
+            if not any(w[1:6]):
+                del c[c.index(w)]
         else:
-            day = calendar.monthcalendar(year, month)[2][-2]
+            day = c[2][-2]
+
         expire_dates.append(date(year=year, month=month, day=day))
 
     # set start date in df

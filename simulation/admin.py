@@ -104,7 +104,7 @@ class StrategyResultAdmin(admin.ModelAdmin):
 
     list_display = (
         'strategy', 'short_args', 'algorithm', 'algorithm_args',
-        'symbol', 'sharpe_spy', 'pl_sum',
+        'symbol', 'pl_sum', # 'sharpe_spy',
         'trades', 'profit_prob', 'loss_prob',
         'capital0', 'roi_mean'
     )
@@ -121,12 +121,11 @@ class StrategyResultAdmin(admin.ModelAdmin):
         }),
         ('Report Fields', {
             'fields': (
+                'profit_prob', 'loss_prob', 'max_profit', 'max_loss', 'pl_sum', 'pl_mean',
                 'sharpe_rf', 'sharpe_spy', 'sortino_rf', 'sortino_spy',
                 'bh_sum', 'bh_cumprod',
-                'trades', 'profit_trades', 'profit_prob',
-                'loss_trades', 'loss_prob', 'max_profit', 'max_loss',
-                'pl_sum', 'pl_cumprod', 'pl_mean',
-                'var_pct99', 'var_pct95',
+                'trades', 'profit_trades', 'loss_trades',
+                'pl_cumprod', 'var_pct99', 'var_pct95',
                 'max_dd', 'r_max_dd', 'max_bh_dd', 'r_max_bh_dd',
                 'pct_mean', 'pct_median', 'pct_max', 'pct_min', 'pct_std',
                 'day_profit_mean', 'day_loss_mean',

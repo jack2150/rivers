@@ -1,6 +1,7 @@
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django.shortcuts import render, redirect
 from simulation.quant import StrategyQuant
 from simulation.models import *
@@ -46,7 +47,8 @@ class StrategyAnalysisForm1(forms.Form):
     def __init__(self, *args, **kwargs):
         super(StrategyAnalysisForm1, self).__init__(*args, **kwargs)
 
-        self.fields['strategy'].choices = Strategy.objects.values_list('id', 'name')
+        choices = Strategy.objects.order_by('id').reverse().values_list('id', 'name')
+        self.fields['strategy'].choices = choices
 
     def clean(self):
         """
@@ -119,6 +121,11 @@ def strategy_analysis1(request, algorithmresult_id):
             }
         )
 
+        if not algorithm_result.algorithm.optionable:
+            form.fields['strategy'].choices = Strategy.objects.exclude(
+                instrument='Option'
+            ).order_by('id').reverse().values_list('id', 'name')
+
     parameters = dict(
         site_title='Simulation analysis',
         title='Simulation analysis - select strategy',
@@ -169,6 +176,11 @@ class StrategyAnalysisForm2(forms.Form):
         for arg, default in arguments:
             #print arg, zip(value, value)
             if type(default) == tuple:
+                if all([type(d) == bool for d in default]):
+                    choices = [(int(key), str(value).upper()) for key, value in zip(default, default)]
+                else:
+                    choices = [(key, value.upper()) for key, value in zip(default, default)]
+
                 # choice field
                 self.fields[arg] = forms.ChoiceField(
                     label=arg.capitalize(),
@@ -176,7 +188,7 @@ class StrategyAnalysisForm2(forms.Form):
                         'class': 'form-control vTextField',
                         'required': 'required'
                     }),
-                    choices=[(key, value.upper()) for key, value in zip(default, default)]
+                    choices=choices
                 )
             else:
                 # text input
@@ -184,9 +196,10 @@ class StrategyAnalysisForm2(forms.Form):
                     label=arg.capitalize(),
                     widget=forms.TextInput(attrs={
                         'class': 'form-control vTextField',
-                        'required': 'required'
+                        'required': 'required',
                     }),
                     help_text='Sample: 20:100:10',
+                    initial=default
                 )
 
     def clean(self):
@@ -325,7 +338,7 @@ def strategy_analysis2(request, algorithmresult_id, strategy_id):
         if strategy.category.lower() == 'stock':
             capital = 10000.00
         else:
-            capital = 1000.00
+            capital = 2000.00
 
         initial = {
             'symbol': algorithm_result.symbol,

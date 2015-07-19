@@ -90,6 +90,8 @@ class OptionContract(models.Model):
     name = models.CharField(max_length=4)
     option_code = models.CharField(max_length=200, unique=True)
     others = models.CharField(max_length=200, default='', blank='')
+    # others: (AIGWS 53; US$ 100) aig longer term 10 year warrant for price 100
+    # most of them are not usable for normal trading
 
     source = models.CharField(max_length=20)
 

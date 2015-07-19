@@ -127,6 +127,9 @@ class AlgorithmQuant(object):
             axis=1
         ).sort(['date'])
 
+        if not df['close'].count():
+            raise LookupError('Symbol %s stock not found in db.' % symbol.upper())
+
         # add earnings
         #earnings = [
         #    e['date_act'] for e in Earning.objects.filter(symbol=symbol).values('date_act')

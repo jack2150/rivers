@@ -19,6 +19,7 @@ class Algorithm(models.Model):
     method = models.CharField(max_length=200)
     path = models.CharField(max_length=200)
 
+    optionable = models.BooleanField(default=False)
     description = models.TextField(null=True, blank=True, default='')
 
     def __init__(self, *args, **kwargs):

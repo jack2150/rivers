@@ -415,10 +415,10 @@ class TestTruncateSymbol(TestSetUp):
 class TestCsvImport(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
-        self.symbol = 'AIG'
+        self.symbol = 'DIS'
         self.underlying = Underlying(symbol=self.symbol)
-        self.underlying.start = '2015-04-01'
-        self.underlying.stop = '2015-04-15'
+        self.underlying.start = '2010-01-01'
+        self.underlying.stop = '2010-12-31'
         self.underlying.save()
 
     def tearDown(self):
