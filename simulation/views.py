@@ -1,3 +1,4 @@
+from StringIO import StringIO
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
@@ -335,7 +336,7 @@ def strategy_analysis2(request, algorithmresult_id, strategy_id):
             return redirect(reverse('admin:simulation_strategyresult_changelist'))
     else:
         # determine capital
-        if strategy.category.lower() == 'stock':
+        if strategy.category.lower() in ('stock', 'covered'):
             capital = 10000.00
         else:
             capital = 2000.00
@@ -366,3 +367,46 @@ def strategy_analysis2(request, algorithmresult_id, strategy_id):
     )
 
     return render(request, template, parameters)
+
+
+def df_html_view(request, strategyresult_id):
+    """
+    Dataframe view in html
+    :param request: request
+    :param strategyresult_id: int
+    :return: render
+    """
+    strategy_result = StrategyResult.objects.get(id=strategyresult_id)
+
+    df = pd.read_csv(StringIO(strategy_result.df_trade), index_col=0)
+
+    data = list()
+    columns = list(df.columns)
+    for index, trade in df.iterrows():
+        data.append({c: trade[c] for c in columns})
+
+    template = 'simulation/strategy_result/html_view.html'
+    parameters = dict(
+        site_title='Dataframe html view',
+        title='Strategy Result: %s, Arg: %s' % (
+            strategy_result.strategy.name,
+            strategy_result.arguments
+        ),
+        data=data,
+        columns=columns
+    )
+
+    return render(request, template, parameters)
+
+
+
+
+
+
+
+
+
+
+
+
+

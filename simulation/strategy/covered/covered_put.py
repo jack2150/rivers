@@ -4,7 +4,8 @@ from simulation.strategy.single.single import *
 def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
                  cycle=0, strike=0, expire=(False, True)):
     """
-    Create long call strategy using, BUY (ask), SELL (bid)
+    Create covered put strategy using,
+    SELL stock SELL option (ask) -> BUY stock BUY option (bid)
     :param df_stock: DataFrame
     :param df_signal: DataFrame
     :param moneyness: str
@@ -27,7 +28,7 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
     data = list()
     dates0, options0 = get_options_by_cycle_strike(
         symbol=symbol,
-        name='CALL',
+        name='PUT',
         dates0=df_signal['date0'],
         dte=holding,
         moneyness=moneyness,
@@ -42,28 +43,39 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
             option0 = options0.get(date=date0)
 
             option1 = None
-            if option0 and option0.ask > 0:
+            if option0 and option0.bid > 0:
                 date1, option1 = get_option_by_contract_date(option0.contract, date1)
 
             if option0 and option1:
+                stock0 = tb_closes[option0.date.strftime('%Y-%m-%d')]
+                close0 = stock0 + np.float(option0.bid)
+
+                ask1 = 0
                 if expire:
-                    close1 = np.float(
-                        tb_closes[option1.date.strftime('%Y-%m-%d')]
-                        - np.float(option0.contract.strike)
+                    ask1 = np.float(
+                        np.float(option0.contract.strike)
+                        - tb_closes[option1.date.strftime('%Y-%m-%d')]
                     )
-                    close1 = close1 if close1 > 0 else 0.0
+                    ask1 = ask1 if ask1 > 0 else 0.0
+
+                    date1 = option1.date
+                    stock1 = tb_closes[option1.date.strftime('%Y-%m-%d')]
+                    close1 = stock1 + np.float(ask1)
                 else:
                     date1 = option1.date
-                    close1 = np.float(option1.bid)
+                    stock1 = tb_closes[option1.date.strftime('%Y-%m-%d')]
+                    close1 = stock1 + np.float(option1.ask)
 
                 data.append({
                     'date0': option0.date,
                     'date1': date1,
-                    'signal0': 'BUY',
-                    'signal1': 'SELL',
-                    'stock0': np.float(signal['close0']),
-                    'stock1': np.float(signal['close1']),
-                    'close0': np.float(option0.ask),  # buy using ask
+                    'signal0': 'SELL',
+                    'signal1': 'BUY',
+                    'stock0': stock0,
+                    'stock1': stock1,
+                    'option0': option0.bid,
+                    'option1': ask1 if expire else option1.ask,
+                    'close0': np.round(close0, 2),  # buy using ask
                     'close1': np.round(close1, 2),  # sell using bid
                     'option_code': option0.contract.option_code,
                     'strike': np.float(option0.contract.strike),
@@ -77,7 +89,7 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
     if len(data):
         df = DataFrame(data, columns=[
             'date0', 'date1', 'signal0', 'signal1',
-            'stock0', 'stock1', 'close0', 'close1',
+            'stock0', 'stock1', 'option0', 'option1', 'close0', 'close1',
             'option_code', 'strike', 'dte0', 'dte1',
             'intrinsic0', 'intrinsic1'
         ])
@@ -88,9 +100,9 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
         f = lambda x: np.round(x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg'], 2)
         df['pct_chg'] = df.apply(f, axis=1)
 
-        df['sqm0'] = 0
-        df['sqm1'] = 0
-        df['oqm0'] = 1
-        df['oqm1'] = -1
+        df['sqm0'] = 100
+        df['sqm1'] = -100
+        df['oqm0'] = -1
+        df['oqm1'] = 1
 
     return df

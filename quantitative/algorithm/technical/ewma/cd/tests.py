@@ -24,7 +24,7 @@ class TestEWMAChangeDirection(TestUnitSetUp):
         self.cs_args = {}
 
         self.quant = None
-        self.algorithm_analysis('EWMA change direction')
+        self.algorithm_analysis('Ewma Chg D')
 
     def test_handle_data(self):
         """
@@ -61,7 +61,7 @@ class TestEWMAChangeDirectionReverse(TestEWMAChangeDirection):
     def setUp(self):
         TestEWMAChangeDirection.setUp(self)
 
-        self.algorithm_analysis('EWMA change direction - R')
+        self.algorithm_analysis('Ewma Chg D - R')
 
 
 # noinspection PyArgumentList
@@ -70,9 +70,9 @@ class TestEWMAChangeDirectionHoldingPeriod(TestEWMAChangeDirection):
         TestEWMAChangeDirection.setUp(self)
 
         self.hd_args = {'span': 120, 'previous': 20}
-        self.cs_args = {'holding_period': 20}
+        self.cs_args = {'holding': 20}
 
-        self.algorithm_analysis('EWMA change direction - H')
+        self.algorithm_analysis('Ewma Chg D - H')
 
 
 # noinspection PyArgumentList
@@ -80,7 +80,7 @@ class TestEWMAChangeDirectionUpOnly(TestEWMAChangeDirection):
     def setUp(self):
         TestEWMAChangeDirection.setUp(self)
 
-        self.algorithm_analysis('EWMA change direction - UP')
+        self.algorithm_analysis('Ewma Chg D - UP')
 
 
 # noinspection PyArgumentList
@@ -88,7 +88,7 @@ class TestEWMAChangeDirectionDownOnly(TestEWMAChangeDirection):
     def setUp(self):
         TestEWMAChangeDirection.setUp(self)
 
-        self.algorithm_analysis('EWMA change direction - DW')
+        self.algorithm_analysis('Ewma Chg D - DW')
 
 
 # noinspection PyArgumentList
@@ -96,7 +96,7 @@ class TestEWMAChangeDirectionAfter2Days(TestEWMAChangeDirection):
     def setUp(self):
         TestEWMAChangeDirection.setUp(self)
 
-        self.algorithm_analysis('EWMA change direction - AD')
+        self.algorithm_analysis('Ewma Chg D - AD')
         self.cs_args = {'after': 5}
 
     def test_create_signal(self):
@@ -104,3 +104,14 @@ class TestEWMAChangeDirectionAfter2Days(TestEWMAChangeDirection):
 
         for holding in self.df_signal['holding']:
             self.assertGreaterEqual(holding, self.cs_args['after'])
+
+
+# noinspection PyArgumentList
+class TestEWMAChangeDirectionUpHolding(TestEWMAChangeDirection):
+    def setUp(self):
+        TestEWMAChangeDirection.setUp(self)
+
+        self.hd_args = {'span': 120, 'previous': 20}
+        self.cs_args = {'holding': 20}
+
+        self.algorithm_analysis('Ewma Chg D - UP H')

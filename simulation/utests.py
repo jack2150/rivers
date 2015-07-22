@@ -108,11 +108,11 @@ class TestStrategyQuant(TestUnitSetUp):
         """
         Test calculate fees for each trade in df_order
         """
-        quantities = [(1, 0), (100, 1), (0, 1)]
-        expected = [15.99, 17.49, 1.5]
+        quantities = [(1, 0), (100, 1), (0, 1), (0, 15)]
+        expected = [15.99, 17.49, 1.5, 22.5]
 
         for quantity, expect in zip(quantities, expected):
-            fees = self.strategy_quant.calc_fees(quantity[0], quantity[1])
+            fees = self.strategy_quant.calc_fee(quantity[0], quantity[1])
             print 'value: %s, fees: %s' % (quantity, fees)
 
             self.assertEqual(float(fees), expect)
@@ -122,8 +122,8 @@ class TestStrategyQuant(TestUnitSetUp):
         Test calculate quantity for each trade in df_order
         """
         closes = [6.78, 6.55, 1.96]
-        quantities = [(1, 0), (100, 1), (0, 1)]
-        expected = [(1474, 0), (1500, 15), (0, 52)]
+        quantities = [(1, 0), (0, 1), (100, 1)]
+        expected = [(1472, 0), (0, 15), (5000, 50)]
 
         for close, quantity, expect in zip(closes, quantities, expected):
             qty = self.strategy_quant.calc_qty(close, quantity[0], quantity[1])

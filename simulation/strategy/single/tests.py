@@ -20,7 +20,7 @@ class TestStrategyLongCall(TestUnitSetUp):
         #self.hd_args = {'span': 60, 'previous': 20}
         #self.cs_args = {'holding': 20}
 
-        self.strategy = Strategy.objects.get(name='Long Call')
+        self.strategy = Strategy.objects.get(name='Long Call by Cycle Strike')
         self.args = {
             'moneyness': 'OTM',
             'cycle': 0,
@@ -127,7 +127,40 @@ class TestGetSingleOption(TestUnitSetUp):
         self.assertEqual(option1.date, date1)
 
 
+class TestStrategyLongPut(TestStrategyLongCall):
+    def setUp(self):
+        TestStrategyLongCall.setUp(self)
 
+        self.strategy = Strategy.objects.get(name='Long Put by Cycle Strike')
+        self.args = {
+            'moneyness': 'OTM',
+            'cycle': 0,
+            'strike': 0
+        }
+
+
+class TestStrategyNakedCall(TestStrategyLongCall):
+    def setUp(self):
+        TestStrategyLongCall.setUp(self)
+
+        self.strategy = Strategy.objects.get(name='Naked Call by Cycle Strike')
+        self.args = {
+            'moneyness': 'OTM',
+            'cycle': 0,
+            'strike': 0
+        }
+
+
+class TestStrategyNakedPut(TestStrategyLongCall):
+    def setUp(self):
+        TestStrategyLongCall.setUp(self)
+
+        self.strategy = Strategy.objects.get(name='Naked Put by Cycle Strike')
+        self.args = {
+            'moneyness': 'OTM',
+            'cycle': 0,
+            'strike': 0
+        }
 
 
 # todo: seed data can use date range

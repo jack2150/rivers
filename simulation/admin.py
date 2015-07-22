@@ -102,11 +102,21 @@ class StrategyResultAdmin(admin.ModelAdmin):
     short_args.short_description = 'Args1'
     short_args.admin_order_field = 'arguments'
 
+    def html_view(self, obj):
+        return '<a href="{link}">DF</a>'.format(
+            link=reverse('admin:df_html_view', kwargs={
+                'strategyresult_id': obj.id
+            })
+        )
+
+    html_view.short_description = ''
+    html_view.allow_tags = True
+
     list_display = (
         'strategy', 'short_args', 'algorithm', 'algorithm_args',
         'symbol', 'pl_sum', # 'sharpe_spy',
         'trades', 'profit_prob', 'loss_prob',
-        'capital0', 'roi_mean'
+        'capital0', 'roi_mean', 'html_view'
     )
     fieldsets = (
         ('Foreign Key', {
@@ -160,7 +170,13 @@ admin.site.register_view(
     'simulation/strategy/analysis/select/(?P<algorithmresult_id>\d+)/$',
     urlname='strategy_analysis1', view=strategy_analysis1
 )
+
 admin.site.register_view(
     'simulation/strategy/analysis/args/(?P<algorithmresult_id>\d+)/(?P<strategy_id>\d+)/$',
     urlname='strategy_analysis2', view=strategy_analysis2
+)
+
+admin.site.register_view(
+    'simulation/strategyresult/df_html_view/(?P<strategyresult_id>\d+)/$',
+    urlname='df_html_view', view=df_html_view
 )

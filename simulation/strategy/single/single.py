@@ -46,7 +46,7 @@ def get_options_by_cycle_strike(symbol, name, dates0, dte, moneyness, cycle, str
         & Q(date__in=set(dates0))
         & Q(dte__gte=dte)
         & m_query
-    ).values('id', 'date', 'dte', 'contract__strike')))
+    ).values('id', 'date', 'dte', 'bid', 'ask', 'contract__strike')))
 
     # find missing dates
     missing_dates = [d1 for d1 in dates0 if d1 not in list(df_options['date'])]
@@ -59,7 +59,7 @@ def get_options_by_cycle_strike(symbol, name, dates0, dte, moneyness, cycle, str
             & Q(date__in=drange)
             & Q(dte__gte=dte)
             & m_query
-        ).values('id', 'date', 'dte', 'contract__strike')))
+        ).values('id', 'date', 'dte', 'bid', 'ask', 'contract__strike')))
 
         for d2 in drange:
             try:
@@ -88,12 +88,16 @@ def get_options_by_cycle_strike(symbol, name, dates0, dte, moneyness, cycle, str
             cycles = np.sort(df['dte'].unique())
             strikes = np.sort(df[df['dte'] == cycles[cycle]]['contract__strike'].unique())[::order]
 
-            ids.append(
-                df.loc[
-                    (df['dte'] == cycles[cycle])
-                    & (df['contract__strike'] == strikes[strike])
-                ]['id'].values[0]
-            )
+            df_found = df.loc[
+                (df['dte'] == cycles[cycle])
+                & (df['contract__strike'] == strikes[strike])
+            ]
+
+            # only have
+            if df_found['bid'].values[0] or df_found['ask'].values[0]:
+                ids.append(
+                    df_found['id'].values[0]
+                )
         except IndexError:
             # when cycle or strike not found, skip
             print symbol, date, cycle, strike, 'cycle or strike not found.'

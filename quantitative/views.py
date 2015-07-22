@@ -11,7 +11,8 @@ class AlgorithmAnalysisForm(forms.Form):
     symbol = forms.CharField(
         widget=forms.TextInput(attrs={
             'class': 'form-control vTextField',
-            'required': 'required'
+            'required': 'required',
+            'style': 'text-transform:uppercase'
         }),
         help_text='Sample: ALL, "SPY,AIG", SP500...'
     )
@@ -59,9 +60,9 @@ class AlgorithmAnalysisForm(forms.Form):
 
         # check symbol exists
         # special case like sp500 all symbols not yet include
-        symbol = cleaned_data.get('symbol')
+        symbol = cleaned_data.get('symbol').upper()
         if symbol is not None:
-            if symbol.upper() == 'ALL':
+            if symbol == 'ALL':
                 pass
             else:
                 if ',' in symbol:

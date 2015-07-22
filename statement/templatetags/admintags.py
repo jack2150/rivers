@@ -25,3 +25,8 @@ def field_name_last(obj):
 @register.filter
 def intcomma(obj):
     return '{:,}'.format(obj)
+
+
+@register.filter
+def get_item(obj, name):
+    return obj[name]

@@ -4,7 +4,7 @@ from simulation.strategy.single.single import *
 def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
                  cycle=0, strike=0, expire=(False, True)):
     """
-    Create long call strategy using, BUY (ask), SELL (bid)
+    Create naked call strategy using, SELL (bid), BUY (ask)
     :param df_stock: DataFrame
     :param df_signal: DataFrame
     :param moneyness: str
@@ -42,7 +42,7 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
             option0 = options0.get(date=date0)
 
             option1 = None
-            if option0 and option0.ask > 0:
+            if option0 and option0.bid > 0:
                 date1, option1 = get_option_by_contract_date(option0.contract, date1)
 
             if option0 and option1:
@@ -54,16 +54,16 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
                     close1 = close1 if close1 > 0 else 0.0
                 else:
                     date1 = option1.date
-                    close1 = np.float(option1.bid)
+                    close1 = np.float(option1.ask)
 
                 data.append({
                     'date0': option0.date,
                     'date1': date1,
-                    'signal0': 'BUY',
-                    'signal1': 'SELL',
+                    'signal0': 'SELL',
+                    'signal1': 'BUY',
                     'stock0': np.float(signal['close0']),
                     'stock1': np.float(signal['close1']),
-                    'close0': np.float(option0.ask),  # buy using ask
+                    'close0': np.float(option0.bid),  # buy using ask
                     'close1': np.round(close1, 2),  # sell using bid
                     'option_code': option0.contract.option_code,
                     'strike': np.float(option0.contract.strike),
@@ -90,7 +90,7 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
 
         df['sqm0'] = 0
         df['sqm1'] = 0
-        df['oqm0'] = 1
-        df['oqm1'] = -1
+        df['oqm0'] = -1
+        df['oqm1'] = 1
 
     return df

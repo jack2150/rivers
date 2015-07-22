@@ -72,29 +72,6 @@ class StrategyQuant(object):
 
         self.args = args0
 
-    def calc_fees(self, stock_qty, option_qty):
-        """
-        Calculate commission fee for each trade
-        :param stock_qty: int
-        :param option_qty: int
-        :return: float
-        """
-        stock_fees = 0
-        if stock_qty:
-            stock_fees = self.commission.stock_order_fee
-
-        option_fees = 0
-        if option_qty:
-            order_fees = 0
-            if not stock_fees:
-                order_fees = self.commission.option_order_fee
-
-            option_fees = order_fees + (
-                option_qty * self.commission.option_contract_fee
-            )
-
-        return np.float(stock_fees + option_fees)
-
     # noinspection PyUnresolvedReferences
     def calc_qty(self, close0, sqm, oqm, capital=0.0):
         """
@@ -104,19 +81,60 @@ class StrategyQuant(object):
         if not capital:
             capital = self.capital
 
-        f = np.floor if sqm > 0 else np.ceil
-
         stock_qty = 0
         option_qty = 0
         if sqm and not oqm:
-            stock_qty = np.int(f(capital / close0 / sqm))
-        elif sqm and oqm:
-            stock_qty = np.int(f(capital / close0 / sqm)) * sqm
-            option_qty = np.int(stock_qty / sqm)
+            stock_qty = np.floor((capital - np.float(self.commission.stock_order_fee)) / close0)
+            stock_qty *= sqm
         elif not sqm and oqm:
-            option_qty = np.int(np.floor(capital / close0 / oqm / 100))
+            single_qty = (close0 * 100) + np.float(self.commission.option_contract_fee)
 
-        return stock_qty, option_qty
+            if self.commission.option_order_fee:
+                option_qty = np.floor(capital - np.float(self.commission.option_order_fee)) / single_qty
+            else:
+                option_qty = np.floor(capital / single_qty)
+
+            option_qty *= oqm
+        else:
+            # 195 + 1.5
+            single_qty = (close0 * 100) + np.float(self.commission.option_contract_fee)
+
+            # 10000 / 196.5
+            qty = np.floor((capital - np.float(self.commission.stock_order_fee)) / single_qty)
+
+            stock_qty = qty * sqm
+            option_qty = qty * oqm
+
+        # if not enough fund, use min
+        if not stock_qty and not option_qty:
+            stock_qty = sqm
+            option_qty = oqm
+
+        return np.int(stock_qty), np.int(option_qty)
+
+    # noinspection PyUnresolvedReferences
+    def calc_fee(self, sqty, oqty):
+        """
+        Calculate trade fee for stock and options
+        :param close0: float
+        :param sqm: int
+        :param oqm: int
+        :param capital: float
+        """
+        if sqty and not oqty:
+            fee = np.float(self.commission.stock_order_fee)
+        elif not sqty and oqty:
+            fee = np.float(
+                self.commission.option_order_fee
+                + (np.abs(oqty) * self.commission.option_contract_fee)
+            )
+        else:
+            fee = np.float(
+                self.commission.stock_order_fee
+                + (np.abs(oqty) * self.commission.option_contract_fee)
+            )
+
+        return fee
 
     @staticmethod
     def calc_capital(close0, sqty0, oqty0):
@@ -146,31 +164,29 @@ class StrategyQuant(object):
         df_order = self.strategy.make_order(self.df_stock, self.df_signal, **kwargs)
         df_trade = df_order.copy()
 
-        # calc fees
-        df_trade['fee0'] = df_trade.apply(
-            lambda x: self.calc_fees(x['sqm0'], x['oqm0']), axis=1
-        )
-        df_trade['fee1'] = df_trade.apply(
-            lambda x: self.calc_fees(x['sqm1'], x['oqm1']), axis=1
-        )
-
         # calc qty
         df_trade['sqty0'] = df_trade.apply(
             lambda x: self.calc_qty(
-                x['close0'], x['sqm0'], x['oqm0'],
-                self.capital - x['fee0'] - x['fee1']
+                x['close0'], x['sqm0'], x['oqm0'], self.capital
             )[0],
             axis=1
         )
         df_trade['oqty0'] = df_trade.apply(
             lambda x: self.calc_qty(
-                x['close0'], x['sqm0'], x['oqm0'],
-                self.capital - x['fee0'] - x['fee1']
+                x['close0'], x['sqm0'], x['oqm0'], self.capital
             )[1],
             axis=1
         )
-        df_trade['sqty1'] = df_trade['sqty0'] * df_trade['sqm1'] * -1
-        df_trade['oqty1'] = df_trade['oqty0'] * df_trade['oqm1'] * -1
+        df_trade['sqty1'] = df_trade['sqty0'] * -1
+        df_trade['oqty1'] = df_trade['oqty0'] * -1
+
+        # calc fees
+        df_trade['fee0'] = df_trade.apply(
+            lambda x: self.calc_fee(x['sqty0'], x['oqty0']), axis=1
+        )
+        df_trade['fee1'] = df_trade.apply(
+            lambda x: self.calc_fee(x['sqty1'], x['oqty1']), axis=1
+        )
 
         # capital and amount
         df_trade['capital'] = self.capital
@@ -209,10 +225,10 @@ class StrategyQuant(object):
 
         # calc fees
         df_order['fee0'] = df_order.apply(
-            lambda x: self.calc_fees(x['sqm0'], x['oqm0']), axis=1
+            lambda x: self.calc_fee(x['sqm0'], x['oqm0']), axis=1
         )
         df_order['fee1'] = df_order.apply(
-            lambda x: self.calc_fees(x['sqm1'], x['oqm1']), axis=1
+            lambda x: self.calc_fee(x['sqm1'], x['oqm1']), axis=1
         )
 
         data = dict(
@@ -256,8 +272,8 @@ class StrategyQuant(object):
         df_order['roi_pct_chg'] = np.round(df_cumprod['roi'] / df_cumprod['capital'], 4)
         df_trade = df_order.join(df_cumprod).reindex_axis(
             ['date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding', 'pct_chg',
-             'time1', 'sqm0', 'sqm1', 'oqm0', 'oqm1', 'fee0', 'fee1', 'sqty0', 'oqty0',
-             'sqty1', 'oqty1', 'capital', 'amount0', 'amount1', 'remain', 'roi'],
+             'time1', 'sqm0', 'sqm1', 'oqm0', 'oqm1', 'sqty0', 'oqty0', 'sqty1', 'oqty1',
+             'fee0', 'fee1', 'capital', 'amount0', 'amount1', 'remain', 'roi'],
             axis=1
         )
         df_trade.drop(['sqm0', 'sqm1', 'oqm0', 'oqm1'], axis=1, inplace=True)
@@ -300,6 +316,7 @@ class StrategyQuant(object):
         report['fee_mean'] = (df_trade['fee0'] + df_trade['fee1']).mean()
 
         report.update(self.quant.report(self.df_stock, df_trade))
+
         return report
 
     def make_reports(self):

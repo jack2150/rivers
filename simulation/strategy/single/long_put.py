@@ -4,7 +4,7 @@ from simulation.strategy.single.single import *
 def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
                  cycle=0, strike=0, expire=(False, True)):
     """
-    Create long call strategy using, BUY (ask), SELL (bid)
+    Create long put strategy using, BUY (ask), SELL (bid)
     :param df_stock: DataFrame
     :param df_signal: DataFrame
     :param moneyness: str
@@ -27,7 +27,7 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
     data = list()
     dates0, options0 = get_options_by_cycle_strike(
         symbol=symbol,
-        name='CALL',
+        name='PUT',
         dates0=df_signal['date0'],
         dte=holding,
         moneyness=moneyness,
@@ -48,8 +48,8 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
             if option0 and option1:
                 if expire:
                     close1 = np.float(
+                        np.float(option0.contract.strike) -
                         tb_closes[option1.date.strftime('%Y-%m-%d')]
-                        - np.float(option0.contract.strike)
                     )
                     close1 = close1 if close1 > 0 else 0.0
                 else:
@@ -64,7 +64,7 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
                     'stock0': np.float(signal['close0']),
                     'stock1': np.float(signal['close1']),
                     'close0': np.float(option0.ask),  # buy using ask
-                    'close1': np.round(close1, 2),  # sell using bid
+                    'close1': round(np.float(close1), 2),  # sell using bid
                     'option_code': option0.contract.option_code,
                     'strike': np.float(option0.contract.strike),
                     'dte0': np.int(option0.dte),

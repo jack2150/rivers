@@ -1,10 +1,9 @@
 from base.utests import TestUnitSetUp
-from quantitative.quant import AlgorithmQuant
 from quantitative.models import Algorithm
 
 
 # noinspection PyArgumentList
-class TestEWMAChangeDirection(TestUnitSetUp):
+class TestMomentum(TestUnitSetUp):
     def algorithm_analysis(self, rule):
         self.algorithm = Algorithm.objects.get(rule=rule)
 
@@ -51,3 +50,30 @@ class TestEWMAChangeDirection(TestUnitSetUp):
 
         for column in columns:
             self.assertIn(column, df_signal.columns)
+
+
+# noinspection PyArgumentList
+class TestMomentumHolding(TestMomentum):
+    def setUp(self):
+        TestMomentum.setUp(self)
+
+        self.cs_args = {'holding': 20}
+        self.algorithm_analysis('Momentum rule - H')
+
+
+# noinspection PyArgumentList
+class TestMomentumUpHolding(TestMomentum):
+    def setUp(self):
+        TestMomentum.setUp(self)
+
+        self.cs_args = {'holding': 20}
+        self.algorithm_analysis('Momentum rule - UP H')
+
+
+# noinspection PyArgumentList
+class TestMomentumDownHolding(TestMomentum):
+    def setUp(self):
+        TestMomentum.setUp(self)
+
+        self.cs_args = {'holding': 20}
+        self.algorithm_analysis('Momentum rule - DW H')
