@@ -1,4 +1,4 @@
-from simulation.strategy.single.single import *
+from data.fetch.option_cs.option_cs import *
 
 
 def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
@@ -46,7 +46,7 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM'),
                 date1, option1 = get_option_by_contract_date(option0.contract, date1)
 
             if option0 and option1:
-                if expire:
+                if int(expire):
                     close1 = np.float(
                         np.float(option0.contract.strike) -
                         tb_closes[option1.date.strftime('%Y-%m-%d')]

@@ -1,0 +1,1 @@
+# todo: trailing stop

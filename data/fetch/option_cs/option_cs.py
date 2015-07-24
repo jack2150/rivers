@@ -98,6 +98,8 @@ def get_options_by_cycle_strike(symbol, name, dates0, dte, moneyness, cycle, str
                 ids.append(
                     df_found['id'].values[0]
                 )
+            else:
+                dates1[dates1.index(date)] = None
         except IndexError:
             # when cycle or strike not found, skip
             print symbol, date, cycle, strike, 'cycle or strike not found.'
@@ -133,3 +135,4 @@ def get_option_by_contract_date(contract, date0):
 
     return date1, option
 
+    # todo: move this as u func

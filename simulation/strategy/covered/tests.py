@@ -19,7 +19,7 @@ class TestStrategyCoveredCall(TestUnitSetUp):
         #self.hd_args = {'span': 60, 'previous': 20}
         #self.cs_args = {'holding': 20}
 
-        self.strategy = Strategy.objects.get(name='Covered Call by Cycle Strike')
+        self.strategy = Strategy.objects.get(name='Covered Call CS')
         self.args = {
             'moneyness': 'OTM',
             'cycle': 0,
@@ -58,7 +58,7 @@ class TestStrategyCoveredPut(TestStrategyCoveredCall):
     def setUp(self):
         TestStrategyCoveredCall.setUp(self)
 
-        self.strategy = Strategy.objects.get(name='Covered Put by Cycle Strike')
+        self.strategy = Strategy.objects.get(name='Covered Put CS')
         self.args = {
             'moneyness': 'OTM',
             'cycle': 0,
@@ -70,7 +70,7 @@ class TestStrategyProtectiveCall(TestStrategyCoveredCall):
     def setUp(self):
         TestStrategyCoveredCall.setUp(self)
 
-        self.strategy = Strategy.objects.get(name='Protective Call by Cycle Strike')
+        self.strategy = Strategy.objects.get(name='Protective Call CS')
         self.args = {
             'moneyness': 'OTM',
             'cycle': 0,
@@ -82,7 +82,7 @@ class TestStrategyProtectivePut(TestStrategyCoveredCall):
     def setUp(self):
         TestStrategyCoveredCall.setUp(self)
 
-        self.strategy = Strategy.objects.get(name='Protective Put by Cycle Strike')
+        self.strategy = Strategy.objects.get(name='Protective Put CS')
         self.args = {
             'moneyness': 'OTM',
             'cycle': 0,
