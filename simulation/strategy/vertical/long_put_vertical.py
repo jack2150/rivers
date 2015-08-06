@@ -69,7 +69,7 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM', 'ATM'),
         date1 = signal['date1']
 
         if date0a == date0b and date0a and date0b:
-            print date0a, date0b, date0a == date0b,
+            #print date0a, date0b, date0a == date0b,
             option0a = options0a.get(date=date0a)
             option0b = options0b.get(date=date0b)
 
@@ -153,4 +153,4 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM', 'ATM'),
 
     return df
 
-# todo: earning movement algorithm, unusual option volume
+# todo: unusual option volume

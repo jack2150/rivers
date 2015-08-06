@@ -46,18 +46,44 @@ class UnderlyingAdmin(admin.ModelAdmin):
     web_import.allow_tags = True
 
     def data_manage(self):
-        href = '<a href="{truncate_link}">Truncate</a>'
-
+        #href = '<a href="{truncate_link}">Truncate</a>'
+        href = """
+        <div class="dropdown">
+          <button class="btn btn-default btn-xs dropdown-toggle" type="button"
+            id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+            Manage
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+            <li><a href="{stock_link}">Csv import stock</a></li>
+            <li><a href="{option_link}">Csv import options</a></li>
+            <li><a href="{google_link}">Web import google</a></li>
+            <li><a href="{yahoo_link}">Web import yahoo</a></li>
+            <li class="divider"></li>
+            <li><a href="{earning_import}">Earning import</a></li>
+            <li><a href="{dividend_import}">Dividend import</a></li>
+            <li class="divider"></li>
+            <li><a href="{truncate_link}">Truncate data</a></li>
+          </ul>
+        </div>
+        """
+        symbol = self.symbol.lower()
         return href.format(
-            truncate_link=reverse('admin:truncate_symbol', args=(self.symbol.lower(), ))
+            stock_link=reverse('admin:csv_stock_import', kwargs={'symbol': symbol}),
+            option_link=reverse('admin:csv_option_import', kwargs={'symbol': symbol}),
+            google_link=reverse('admin:web_quote_import', args=('google', symbol)),
+            yahoo_link=reverse('admin:web_quote_import', args=('yahoo', symbol)),
+            earning_import=reverse('admin:event_import', kwargs={'event': 'earning', 'symbol': symbol}),
+            dividend_import=reverse('admin:event_import', kwargs={'event': 'dividend', 'symbol': symbol}),
+            truncate_link=reverse('admin:truncate_symbol', kwargs={'symbol': symbol})
         )
 
-    data_manage.short_description = 'Manage'
+    data_manage.short_description = ''
     data_manage.allow_tags = True
 
     list_display = (
         'symbol', 'start', 'stop', 'thinkback', 'google', 'yahoo', 'updated', 'validated',
-        csv_import, web_import, data_manage
+        data_manage
     )
 
     fieldsets = (
@@ -148,18 +174,19 @@ class DividendForm(forms.ModelForm):
 
 class DividendAdmin(admin.ModelAdmin):
     form = DividendForm
-    list_display = ('symbol', 'amount', 'announce_date', 'expire_date',
-                    'record_date', 'payable_date')
+    list_display = ('symbol', 'year', 'quarter',
+                    'announce_date', 'expire_date', 'record_date', 'payable_date',
+                    'amount', 'dividend_type')
 
     fieldsets = (
         ('Primary Fields', {
-            'fields': ('symbol', 'amount', 'announce_date', 'expire_date',
-                       'record_date', 'payable_date')
+            'fields': ('symbol', 'year', 'quarter',
+                       'announce_date', 'expire_date', 'record_date', 'payable_date',
+                       'amount', 'dividend_type')
         }),
     )
 
-    search_fields = ('symbol', 'amount', 'announce_date', 'expire_date',
-                     'record_date', 'payable_date')
+    search_fields = ('symbol', 'year', 'quarter', 'dividend_type')
 
     list_per_page = 20
     ordering = ('-expire_date', )
@@ -169,32 +196,30 @@ class DividendAdmin(admin.ModelAdmin):
 
 
 class EarningForm(forms.ModelForm):
-    date_est = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
-    )
-
-    date_act = forms.DateField(
+    actual_date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
     )
 
 
 class EarningAdmin(admin.ModelAdmin):
     form = EarningForm
-    list_display = ('date_est', 'date_act', 'release', 'time',
-                    'symbol', 'quarter', 'esp_est', 'esp_act', 'status')
+    list_display = ('symbol', 'actual_date', 'release', 'year', 'quarter',
+                    'analysts', 'estimate_eps', 'adjusted_eps', 'gaap',
+                    'high', 'low', 'actual_eps')
 
     fieldsets = (
         ('Primary Fields', {
-            'fields': ('date_est', 'date_act', 'release', 'time',
-                       'symbol', 'quarter', 'esp_est', 'esp_act', 'status')
+            'fields': ('symbol', 'actual_date', 'release', 'year', 'quarter',
+                       'analysts', 'estimate_eps', 'adjusted_eps', 'gaap',
+                       'high', 'low', 'actual_eps')
         }),
     )
 
-    search_fields = ('date_est', 'release', 'symbol', 'quarter', 'status')
-    list_filter = ('release', 'quarter', 'status')
+    search_fields = ('symbol', 'release', 'year', 'quarter')
+    list_filter = ('release', 'quarter')
 
     list_per_page = 20
-    ordering = ('-date_est', )
+    ordering = ('-actual_date', )
 
     def has_add_permission(self, request):
         return False
@@ -271,15 +296,13 @@ admin.site.register_view(
 )
 
 admin.site.register_view(
-    'data/import/(?P<event>\w+)/$', urlname='event_import', view=event_import
+    'data/import/treasury/$',
+    urlname='treasury_import', view=treasury_import
 )
 
 admin.site.register_view(
-    'data/import/treasury/$', urlname='treasury_import', view=treasury_import
-)
-
-admin.site.register_view(
-    'data/thinkback/truncate/(?P<symbol>\w+)/$', urlname='truncate_symbol', view=truncate_symbol
+    'data/thinkback/truncate/(?P<symbol>\w+)/$',
+    urlname='truncate_symbol', view=truncate_symbol
 )
 
 # csv import
@@ -298,6 +321,12 @@ admin.site.register_view(
     'data/underlying/set/(?P<symbol>\w+)/(?P<action>\w+)/$',
     urlname='set_underlying', view=set_underlying
 )
+
+admin.site.register_view(
+    'data/import/(?P<event>\w+)/(?P<symbol>\w+)/$',
+    urlname='event_import', view=event_import
+)
+
 
 
 # todo: position spread view

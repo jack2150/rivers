@@ -1,7 +1,7 @@
 """
 Type: Option
 Name: Option day to expire (DTE)
-Method: Normal
+Method: No Duplicate
 """
 import calendar
 from datetime import date
@@ -45,7 +45,7 @@ def handle_data(df, dte=0):
                 break
         else:
             start_dates.append(start_day)
-    #print start_dates
+    # print start_dates
 
     # set expire date in df
     for key, ex_day in enumerate(expire_dates):
@@ -78,7 +78,7 @@ def handle_data(df, dte=0):
     return df.copy()
 
 
-def create_signal(df, side=('buy', 'sell')):
+def create_signal(df, side=('buy', 'sell'), skip=0):
     df_enter = df[df['enter']]
     df_exit = df[df['exit']]
     df_enter.index = np.arange(df_enter['close'].count())
@@ -97,6 +97,22 @@ def create_signal(df, side=('buy', 'sell')):
     df2 = df2.reindex_axis(
         ['date0', 'date1', 'signal0', 'signal1', 'close0', 'close1'], axis=1
     ).dropna()
+
+    df2['dates'] = [pd.date_range(start, end) for start, end in zip(df2['date0'], df2['date1'])]
+    df2['keep'] = True
+
+    for index, data in df2.ix[skip:].iterrows():
+        for index2, data2 in df2[df2['keep']].ix[:index - 1].iterrows():
+            if data['date0'] in data2['dates']:
+                #print date0, 'found'
+                df2.loc[index, 'keep'] = False
+                break
+    else:
+        df2 = df2[df2['keep']]
+        df2.index = range(len(df2))
+
+        del df2['dates']
+        del df2['keep']
 
     df2['holding'] = df2['date1'] - df2['date0']
     df2['pct_chg'] = (df2['close1'] - df2['close0']) / df2['close0']

@@ -134,5 +134,3 @@ def get_option_by_contract_date(contract, date0):
                 break
 
     return date1, option
-
-    # todo: move this as u func

@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from base.tests import TestSetUp
 from data.views import *
 from rivers.settings import BASE_DIR
@@ -101,51 +102,6 @@ class TestData(TestSetUp):
 
             self.assertTrue(option.id)
             df = df.append(option.to_hdf())
-
-        print df.to_string(line_width=200)
-
-    def test_dividend(self):
-        """
-        Test dividend saving csv and output dataFrame
-        """
-        lines = [
-            'BCAR,$0.05,12/17/08,1/5/09,1/7/09,1/21/09',
-            'CMCSA,$0.0625,12/10/08,1/5/09,1/7/09,1/28/09',
-            'GNTX,$0.11,12/2/08,1/5/09,1/7/09,1/20/09',
-        ]
-
-        df = DataFrame()
-        for line in lines:
-            dividend = Dividend()
-            dividend.load_csv(line)
-            dividend.save()
-
-            self.assertTrue(dividend.id)
-            df = df.append(dividend.to_hdf())
-
-        print df
-
-    def test_earning(self):
-        """
-        Test earning saving csv line and output dataFrame
-        """
-        lines = [
-            '11/17/09,,After Market,,UFEN.PK,Q3,,,Unconfirmed',
-            '11/17/09,,Before Market,,VIT,Q3,0.14,0.14,Verified',
-            '11/17/09,11/17/09,Before Market,1:10:00 AM CST,REMI.OB,Q2,-0.03,-0.04,Verified',
-            '11/17/09,11/17/09,Before Market,5:00:00 AM CST,COV,Q4,0.699,0.11,Verified',
-            '11/17/09,11/17/09,Before Market,5:01:00 AM CST,HD,Q3,0.353,0.41,Verified',
-        ]
-
-        df = DataFrame()
-        for line in lines:
-            earning = Earning()
-            earning.load_csv(line)
-            earning.save()
-            print earning
-
-            self.assertTrue(earning.id)
-            df = df.append(earning.to_hdf())
 
         print df.to_string(line_width=200)
 
@@ -252,45 +208,6 @@ class TestDataImport(TestSetUp):
 
         stocks = Stock.objects.all()
         self.assertTrue(stocks.exists())
-
-    def test_event_import(self):
-        """
-        Test import dividend using csv files from tos calendars
-        """
-        self.skipTest("Only test when needed...")
-
-        print 'run dividend import view...'
-        response = self.client.get(reverse('admin:event_import', args=('dividend',)))
-
-        self.assertLessEqual(len(response.context['files']), 11)
-
-        df = DataFrame()
-        for dividend in Dividend.objects.all():
-            df = df.append(dividend.to_hdf())
-        print df.to_string(line_width=200)
-
-        print 'dividend count:', Dividend.objects.count()
-
-        self.assertGreater(Dividend.objects.count(), 100)
-
-    def test_csv_earning_import(self):
-        """
-        Test import earning using csv files from tos calendars
-        """
-        self.skipTest("Only test when needed...")
-
-        print 'run earning import view...'
-        response = self.client.get(reverse('admin:event_import', args=('earning',)))
-        self.assertLessEqual(len(response.context['files']), 11)
-
-        df = DataFrame()
-        for earning in Earning.objects.all():
-            df = df.append(earning.to_hdf())
-        print df.to_string(line_width=200)
-
-        print 'earning count:', Earning.objects.count()
-
-        self.assertGreater(Earning.objects.count(), 50)
 
     def test_treasury_import(self):
         """
@@ -668,3 +585,67 @@ class TestUnderlyingManage(TestSetUp):
             self.underlying = Underlying.objects.get(symbol=self.symbol)
             self.assertTrue(getattr(self.underlying, action))
             print 'underlying updated:', getattr(self.underlying, action), '\n'
+
+
+class TestVerifyEvent(TestSetUp):
+    def test_earning_import_form(self):
+        """
+        Test verify event form and handle file upload then verify earning
+        """
+        path = os.path.join(BASE_DIR, 'files', 'fidelity', 'earnings')
+
+        for symbol in ('JPM', 'DDD'):
+            print 'running symbol:', symbol
+            form = EventImportForm(
+                {'symbol': symbol, 'event': 'earning'},
+                {'fidelity_file': SimpleUploadedFile(
+                    '%s _ Earnings - Fidelity' % symbol,
+                    open(os.path.join(path, '%s _ Earnings - Fidelity.html' % symbol)).read()
+                )}
+            )
+
+            self.assertTrue(form.is_valid())
+            form.import_earning()
+
+            earnings = Earning.objects.filter(symbol=symbol)
+            self.assertTrue(earnings.count())
+
+            df_earnings = DataFrame()
+            for earning in earnings:
+                if len(df_earnings):
+                    df_earnings = df_earnings.append(earning.to_hdf())
+                else:
+                    df_earnings = earning.to_hdf()
+            else:
+                print df_earnings.to_string(line_width=400)
+                print '\n'
+
+    def test_dividend_import_form(self):
+        path = os.path.join(BASE_DIR, 'files', 'fidelity', 'dividends')
+
+        for symbol in ('JPM', 'AIG'):
+            print 'running symbol:', symbol
+            form = EventImportForm(
+                {'symbol': symbol, 'event': 'dividend'},
+                {'fidelity_file': SimpleUploadedFile(
+                    '%s _ Dividends - Fidelity' % symbol,
+                    open(os.path.join(path, '%s _ Dividends - Fidelity.html' % symbol)).read()
+                )}
+            )
+            print form.errors
+            self.assertTrue(form.is_valid())
+
+            form.insert_dividend()
+
+            dividends = Dividend.objects.filter(symbol=symbol)
+            self.assertTrue(dividends.count())
+
+            df_dividends = DataFrame()
+            for dividend in dividends:
+                if len(df_dividends):
+                    df_dividends = df_dividends.append(dividend.to_hdf())
+                else:
+                    df_dividends = dividend.to_hdf()
+            else:
+                print df_dividends.to_string(line_width=400)
+                print '\n'

@@ -1,19 +1,22 @@
+from HTMLParser import HTMLParser
 import codecs
-from datetime import datetime
+from django import forms
+from django.http import Http404
+import numpy as np
+from pandas.io.data import get_data_google, get_data_yahoo
+import calendar
+import datetime
 from glob import glob
 import os
-from django import forms
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.db import IntegrityError
 from django.db.models import Q
 from django.shortcuts import render, redirect
-import numpy as np
 from pandas import bdate_range
-from pandas.io.data import get_data_google, get_data_yahoo
-from data.extra import *
-from data.plugin.thinkback import ThinkBack
+from data.extra import holiday, offday
 from data.models import *
+from data.plugin.thinkback import ThinkBack
 from rivers.settings import BASE_DIR
 
 
@@ -94,78 +97,6 @@ def web_quote_import(request, source, symbol):
         symbol=symbol.lower(),
         source=source,
         stocks=stocks[:5] + [None] + stocks[-5:] if len(stocks) > 10 else stocks
-    )
-
-    return render(request, template, parameters)
-
-
-# noinspection PyUnresolvedReferences
-def event_import(request, event):
-    """
-    Import dividend using csv files in calendar folder
-    :param request: request
-    :return: render
-    """
-    if event == 'dividend':
-        folder_name = 'dividends'
-        obj_class = Dividend
-    elif event == 'earning':
-        folder_name = 'earnings'
-        obj_class = Earning
-    else:
-        raise ValueError('Calender event can only be "dividend" or "earning".')
-
-    path = os.path.join(BASE_DIR, 'files', 'calendars', folder_name)
-
-    files = sorted(glob(os.path.join(path, '*.csv')))
-
-    saved = list()
-    events = list()
-    for f in files:
-        lines = codecs.open(f, encoding="ascii", errors="ignore").readlines()
-
-        # skip duplicate files
-        date = datetime.datetime.strptime(lines[2].rstrip(), '%m/%d/%y').date()
-
-        # make condition
-        if event == 'dividend':
-            c = Q(expire_date=date)
-        else:
-            #c = Q(date_est=date) & (Q(date_act__lte=date) | Q(date_act__isnull=True))
-            c = Q(date_est__gte=date) & (Q(date_act=date) | Q(date_act__isnull=True))
-
-        if obj_class.objects.filter(c).exists():
-            #print 'skip: ', f
-            continue
-        else:
-            print 'running:', f
-
-        for line in lines[4:]:
-            event_obj = obj_class()
-            event_obj.load_csv(line)
-            events.append(event_obj)
-
-        if len(events) > 500:
-            # every time insert 500 dividends
-            obj_class.objects.bulk_create(events)
-            events = list()
-
-        saved.append(dict(
-            fname=f,
-            date=date,
-            event=len(lines)
-        ))
-    else:
-        if len(events):
-            obj_class.objects.bulk_create(events)
-
-    #Dividend.objects.all().delete()
-    template = 'data/import_calendar.html'
-    parameters = dict(
-        site_title='{event} import'.format(event=event.capitalize()),
-        title='{event} import'.format(event=event.capitalize()),
-        event=event,
-        files=saved[:5] + [None] + saved[-5:] if len(saved) > 10 else saved,
     )
 
     return render(request, template, parameters)
@@ -328,23 +259,6 @@ def truncate_symbol(request, symbol):
     return render(request, template, parameters)
 
 
-import calendar
-import datetime
-from glob import glob
-import os
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.urlresolvers import reverse
-from django.db import IntegrityError
-from django.db.models import Q
-from django.shortcuts import render, redirect
-from pandas import bdate_range
-from data.extra import holiday, offday
-from data.models import *
-from data.plugin.thinkback import ThinkBack
-from rivers.settings import BASE_DIR
-import numpy as np
-
-
 def csv_stock_import(request, symbol):
     """
     Import csv files stock data only
@@ -385,9 +299,11 @@ def csv_stock_import(request, symbol):
 
     # only get valid date
     trading_dates = pd.Series([d.date() for d in pd.bdate_range(start, end)])
-    trading_dates = np.array(trading_dates[
-                                 trading_dates.apply(lambda x: not offday(x) and not holiday(x))
-                             ].apply(lambda x: x.strftime('%Y-%m-%d')))
+    trading_dates = np.array(
+        trading_dates[
+            trading_dates.apply(lambda x: not offday(x) and not holiday(x))
+        ].apply(lambda x: x.strftime('%Y-%m-%d'))
+    )
 
     files = []
     for year in glob(os.path.join(path, '*')):
@@ -873,3 +789,229 @@ def set_underlying(request, symbol, action):
     underlying.save()
 
     return redirect(reverse('admin:data_underlying_changelist'))
+
+
+class EventImportForm(forms.Form):
+    symbol = forms.CharField(
+        max_length=20,
+        widget=forms.TextInput(attrs={'class': 'form-control vTextField'})
+    )
+    event = forms.CharField(
+        max_length=20,
+        widget=forms.HiddenInput()
+    )
+    fidelity_file = forms.FileField()
+
+    def clean(self):
+        """
+        Validate file name before start insert
+        """
+        cleaned_data = super(EventImportForm, self).clean()
+        symbol = cleaned_data.get('symbol')
+        event = cleaned_data.get('event')
+        fidelity_file = cleaned_data.get('fidelity_file')
+
+        if fidelity_file is None:
+            self._errors['fidelity_file'] = self.error_class(
+                ['Please select file to import']
+            )
+        else:
+            # event is correct and fname is correct too
+            if event == 'earning':
+                if ' _ Earnings - Fidelity' not in fidelity_file.__str__():
+                    self._errors['fidelity_file'] = self.error_class(
+                        ['Invalid fidelity earning file: {f}'.format(f=fidelity_file)]
+                    )
+            elif event == 'dividend':
+                if ' _ Dividends - Fidelity' not in fidelity_file.__str__():
+                    self._errors['fidelity_file'] = self.error_class(
+                        ['Invalid fidelity dividend file: {f}'.format(f=fidelity_file)]
+                    )
+            else:
+                self._errors['event'] = self.error_class(
+                    ['Invalid event: {event}'.format(event=event)]
+                )
+
+            # symbol must be match
+            symbol1 = fidelity_file.__str__().split(' _ ')[0]
+            if symbol != symbol1:
+                self._errors['symbol'] = self.error_class(
+                    ['Symbol is not match: {symbol0} != {symbol1}'.format(
+                        symbol0=symbol,
+                        symbol1=symbol1
+                    )]
+                )
+
+        return cleaned_data
+
+    def import_earning(self):
+        """
+        Verify thinkback earning by using fidelity earning data
+        including update, create, and delete invalid data
+        """
+        cleaned_data = super(EventImportForm, self).clean()
+
+        symbol = cleaned_data['symbol']
+        f = cleaned_data.get("fidelity_file")
+
+        # open read fidelity file
+        lines = f.readlines()
+        l = [l for l in lines if 'Estimates by Fiscal Quarter' in l][0]
+        l = l[l.find('<tbody>') + 7:l.find('</tbody>')]
+
+        class EarningParser(HTMLParser):
+            def __init__(self):
+                HTMLParser.__init__(self)
+
+                self.after_smart_estimate = False
+                self.data = list()
+
+                self.temp = list()
+                self.start = False
+
+            def handle_data(self, data):
+                if self.after_smart_estimate:
+                    if data.split(' ')[0] in ('Q1', 'Q2', 'Q3', 'Q4'):
+                        self.start = True
+
+                    if self.start:
+                        self.temp.append(data)
+
+                    if len(self.temp) == 10:
+                        if '--' not in self.temp:
+                            self.data.append(self.temp)
+
+                        self.temp = list()
+                        self.start = False
+
+                if data == 'SmartEstimate':
+                    self.after_smart_estimate = True
+
+        p = EarningParser()
+        p.feed(l)
+
+        # get old earning
+        dates = [d['actual_date'] for d in
+                 Earning.objects.filter(symbol=symbol).values('actual_date')]
+
+        # update and add new
+        earnings = list()
+        for l in p.data:
+            e = {k: str(v) for k, v in zip(
+                ['report_date', 'actual_date', 'release', 'estimate_eps', 'analysts',
+                 'adjusted_eps', 'diff', 'hl', 'gaap', 'actual_eps'], l
+            )}
+
+            e['quarter'] = e['report_date'].split(' ')[0]
+            e['year'] = e['report_date'].split(' ')[1]
+            e['actual_date'] = datetime.datetime.strptime(e['actual_date'], '%m/%d/%y').date()
+            e['analysts'] = int(e['analysts'][1:-1].replace(' Analysts', ''))
+            e['low'] = float(e['hl'].split(' / ')[0])
+            e['high'] = float(e['hl'].split(' / ')[1])
+            del e['report_date'], e['hl'], e['diff']
+
+            for key in ('estimate_eps', 'adjusted_eps', 'gaap', 'actual_eps'):
+                e[key] = float(e[key])
+
+            if e['actual_date'] not in dates:
+                earning = Earning(**e)
+                earning.symbol = symbol
+                earnings.append(earning)
+        else:
+            Earning.objects.bulk_create(earnings)
+
+    def insert_dividend(self):
+        """
+        Verify thinkback earning by using fidelity earning data
+        including update, create, and delete invalid data
+        """
+        cleaned_data = super(EventImportForm, self).clean()
+
+        symbol = cleaned_data['symbol']
+        f = cleaned_data.get('fidelity_file')
+
+        # open read fidelity file
+        lines = f.readlines()
+        l = [l for l in lines if 'Dividends by Calendar Quarter of Ex-Dividend Date' in l][0]
+        l = l[l.find('<tbody>') + 7:l.find('</tbody>')]
+
+        class DividendParser(HTMLParser):
+            def __init__(self):
+                HTMLParser.__init__(self)
+        
+                self.after_smart_estimate = False
+                self.data = list()
+        
+                self.temp = list()
+                self.counter = 0
+        
+            def handle_data(self, data):
+                self.temp.append(data)
+                if self.counter < 7:
+                    self.counter += 1
+                else:
+                    self.data.append(self.temp)
+                    self.temp = list()
+                    self.counter = 0
+
+        p = DividendParser()
+        p.feed(l)
+
+        # do not duplicate insert
+        dates = [d['expire_date'] for d in Dividend.objects.filter(symbol=symbol).values('expire_date')]
+
+        dividends1 = list()
+        for l in p.data:
+            d = {k: str(v) for k, v in zip(
+                ['year', 'quarter', 'announce_date', 'expire_date',
+                 'record_date', 'payable_date', 'amount', 'dividend_type'], l
+            )}
+
+            for date in ('announce_date', 'expire_date', 'record_date', 'payable_date'):
+                d[date] = datetime.datetime.strptime(d[date], '%d/%M/%Y').date()
+
+            dividend = Dividend(**d)
+            dividend.symbol = symbol
+            dividend.status = True
+
+            if d['expire_date'] not in dates:
+                dividends1.append(dividend)
+        else:
+            Dividend.objects.bulk_create(dividends1)
+
+
+def event_import(request, event, symbol):
+    """
+    Verify earning data from thinkback using fidelity data
+    :param request: request
+    :return: render
+    """
+    if event in ('earning', 'dividend'):
+        if request.method == 'POST':
+            form = EventImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                if event == 'earning':
+                    form.import_earning()
+                    return redirect(reverse('admin:data_earning_changelist') + '?q=' + symbol)
+                else:
+                    form.insert_dividend()
+                    return redirect(reverse('admin:data_dividend_changelist') + '?q=' + symbol)
+        else:
+            form = EventImportForm(
+                initial={
+                    'symbol': symbol.upper(),
+                    'event': event
+                }
+            )
+
+    else:
+        raise Http404("Verify event name not found.")
+
+    template = 'data/event_import/index.html'
+    parameters = dict(
+        site_title='Verify {event}'.format(event=event),
+        title='Verify {event}'.format(event=event),
+        form=form
+    )
+
+    return render(request, template, parameters)

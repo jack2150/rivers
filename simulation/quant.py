@@ -23,7 +23,7 @@ class StrategyQuant(object):
         )
 
         self.df_signal = self.quant.create_signal(
-            self.quant.data[self.algorithm_result.symbol],
+            self.df_stock,
             **self.quant.args['create_signal']
         )
 
@@ -147,11 +147,11 @@ class StrategyQuant(object):
         """
         capital = 0.0
         if sqty0 and not oqty0:
-            capital = close0 * sqty0
+            capital = np.abs(close0) * sqty0
         elif sqty0 and oqty0:
-            capital = close0 * sqty0
+            capital = np.abs(close0) * sqty0
         elif not sqty0 and oqty0:
-            capital = close0 * oqty0 * 100
+            capital = np.abs(close0) * oqty0 * 100
 
         return capital
 

@@ -1,0 +1,68 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags staticfiles %}
+
+{% block extrahead %}
+  <!-- DataTables CSS -->
+  <link rel="stylesheet" type="text/css"
+        href="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.css">
+
+  <!-- jQuery -->
+  <script type="text/javascript" charset="utf8" src="{% static 'admin/datatables/jquery-1.10.2.min.js' %}"></script>
+
+  <!-- DataTables -->
+  <script type="text/javascript" charset="utf8" src="{% static 'admin/datatables/jquery.dataTables.js' %}"></script>
+  <script type="text/javascript" charset="utf8"
+          src="{% static 'admin/datatables/dataTables.bootstrap.js' %}"></script>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'simulation' %}">Simulation</a></li>
+      <li><a href="{% url 'admin:simulation_strategyresult_changelist' %}">Strategy results</a></li>
+      <li>Dataframe html view</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div class="panel panel-default">
+    <div class="panel-heading">Dataframe</div>
+    <div class="panel-body">
+      {% if data|length %}
+        {% for d in data %}
+          {% if forloop.first %}
+            <table id="df" class="table">
+            <thead>
+            <tr>
+              {% for c in columns %}
+                <th>{{ c|upper }}</th>
+              {% endfor %}
+            </tr>
+            </thead>
+          {% endif %}
+        <tr>
+          {% for c in columns %}
+            <td>{{ d|get_item:c }}</td>
+          {% endfor %}
+        </tr>
+        {% if forloop.last %}
+          </table>
+        {% endif %}
+        {% endfor %}
+
+        <script type="text/javascript">
+
+          $(document).ready(function () {
+            $('#df').dataTable({
+              "scrollX": true,
+              "bLengthChange": false,
+              "searching": false
+            });
+          });
+        </script>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

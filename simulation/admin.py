@@ -105,7 +105,7 @@ class StrategyResultAdmin(admin.ModelAdmin):
     def html_view(self, obj):
         return '<a href="{link}">DF</a>'.format(
             link=reverse('admin:df_html_view', kwargs={
-                'strategyresult_id': obj.id
+                'result_id': obj.id, 'result': 'strategy'
             })
         )
 
@@ -174,9 +174,4 @@ admin.site.register_view(
 admin.site.register_view(
     'simulation/strategy/analysis/args/(?P<algorithmresult_id>\d+)/(?P<strategy_id>\d+)/$',
     urlname='strategy_analysis2', view=strategy_analysis2
-)
-
-admin.site.register_view(
-    'simulation/strategyresult/df_html_view/(?P<strategyresult_id>\d+)/$',
-    urlname='df_html_view', view=df_html_view
 )

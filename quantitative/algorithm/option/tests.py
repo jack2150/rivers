@@ -3,7 +3,7 @@ from quantitative.models import Algorithm
 
 
 # noinspection PyArgumentList
-class TestEWMAChangeDirection(TestUnitSetUp):
+class TestOptionDayToExpire(TestUnitSetUp):
     def algorithm_analysis(self, rule):
         self.algorithm = Algorithm.objects.get(rule=rule)
 
@@ -17,11 +17,11 @@ class TestEWMAChangeDirection(TestUnitSetUp):
         TestUnitSetUp.setUp(self)
 
         self.symbol = 'AIG'
-        self.hd_args = {'dte': 45}
+        self.hd_args = {'dte': 40}
         self.cs_args = {'side': 'buy'}
 
         self.quant = None
-        self.algorithm_analysis('Options Day to Expire')
+        self.algorithm_analysis('Options DTE')
 
     def test_handle_data(self):
         """
@@ -52,3 +52,14 @@ class TestEWMAChangeDirection(TestUnitSetUp):
 
         for column in columns:
             self.assertIn(column, self.df_signal.columns)
+
+
+class TestOptionDayToExpireNoDuplicate(TestOptionDayToExpire):
+    def setUp(self):
+        TestOptionDayToExpire.setUp(self)
+
+        self.algorithm_analysis('Options DTE - No Dup')
+        self.cs_args = {'side': 'buy', 'skip': 0}
+
+    def test_create_signal(self):
+        TestOptionDayToExpire.test_create_signal(self)

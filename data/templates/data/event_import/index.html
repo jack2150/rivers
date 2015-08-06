@@ -1,0 +1,136 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+
+{% block extrahead %}
+  <style>
+    HTML CSS JS Result
+    Edit
+    .btn-file {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-file input[type=file] {
+      position: absolute;
+      top: 0;
+      right: 0;
+      #min-width: 100%;
+      #min-height: 100%;
+      #font-size: 100px;
+      text-align: right;
+      filter: alpha(opacity=0);
+      opacity: 0;
+      background: red;
+      cursor: inherit;
+      display: block;
+    }
+
+    input[readonly] {
+      background-color: white !important;
+      cursor: text !important;
+    }
+  </style>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'data' %}">Data</a></li>
+      <li><a href="{% url 'admin:data_underlying_changelist' %}">Underlyings</a></li>
+      <li>Event Import</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  {% if form.errors %}
+    <div class="alert alert-danger fade in">
+      <a href="#" class="close" data-dismiss="alert">&times;</a>
+      <strong>Error!</strong>
+      {% for field in form %}
+        {% for error in field.errors %}
+          {{ error }}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form class="form-horizontal" action='#' method='post' enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="panel panel-default">
+      <div class="panel-heading">Verify form</div>
+      <div class="panel-body">
+        <div class="row">
+          {{ form.event }}
+
+          <div class="col-md-12 form-group ">
+            <div class="control-label col-md-3">
+              {{ form.symbol.label_tag }}
+            </div>
+            <div class="controls col-md-4">
+              {{ form.symbol }}
+            </div>
+            <div>
+              <span class="help-block">{{ field.symbol.help_text }}</span>
+            </div>
+          </div>
+
+          <div class="col-md-12 form-group ">
+            <div class="control-label col-md-3">
+              <label for="id_f">Fidelity File:</label>
+            </div>
+
+            <div class="controls col-md-6">
+              <div class="input-group">
+                <span class="input-group-btn">
+                    <span class="btn btn-primary btn-file">
+                        Browse&hellip; <input id="id_f" name="fidelity_file" type="file" multiple>
+                    </span>
+                </span>
+                <input type="text" class="form-control" readonly>
+              </div>
+              <span class="help-block">
+                  Try selecting one or more files and watch the feedback
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <div class="pull-left"></div>
+      <div class="pull-right">
+        <input class="btn btn-default" type="reset" name="_continue" value="Reset">
+        <input class="btn btn-primary default" type="submit"
+               name="_save" value="Run algorithm analysis">
+      </div>
+    </div>
+  </form>
+
+  <script type="text/javascript">
+    $(document).on('change', '.btn-file :file', function () {
+      var input = $(this),
+          numFiles = input.get(0).files ? input.get(0).files.length : 1,
+          label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+      input.trigger('fileselect', [numFiles, label]);
+    });
+
+    $(document).ready(function () {
+      $('.btn-file :file').on('fileselect', function (event, numFiles, label) {
+
+        var input = $(this).parents('.input-group').find(':text'),
+            log = numFiles > 1 ? numFiles + ' files selected' : label;
+
+        if (input.length) {
+          input.val(log);
+        } else {
+          if (log) alert(log);
+        }
+
+      });
+    });
+  </script>
+{% endblock %}

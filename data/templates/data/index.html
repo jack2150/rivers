@@ -1,13 +1,5 @@
 <div id="content-navbar-collapse" class="navbar-collapse collapse">
   <div class="nav navbar-nav navbar-right">
-    <button id="csv_earning_import" type="button" class="btn btn-primary">
-      Import Earning
-    </button>
-
-    <button id="csv_dividend_import" type="button" class="btn btn-primary">
-      Import Dividend
-    </button>
-
     <button id="treasury_import" type="button" class="btn btn-primary">
       Import Treasury
     </button>
@@ -15,14 +7,6 @@
 </div>
 
 <script type="text/javascript">
-  $("#csv_dividend_import").click(function () {
-    $(location).attr("href", "{% url 'admin:event_import' 'dividend' %}");
-  });
-
-  $("#csv_earning_import").click(function () {
-    $(location).attr("href", "{% url 'admin:event_import' 'earning' %}");
-  });
-
   $("#treasury_import").click(function () {
     $(location).attr("href", "{% url 'admin:treasury_import' %}");
   });

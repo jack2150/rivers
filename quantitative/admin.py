@@ -128,13 +128,23 @@ class AlgorithmResultAdmin(admin.ModelAdmin):
     strategy_analysis.short_description = ''
     strategy_analysis.allow_tags = True
 
+    def html_view(self, obj):
+        return '<a href="{link}">DF</a>'.format(
+            link=reverse('admin:df_html_view', kwargs={
+                'result_id': obj.id, 'result': 'algorithm'
+            })
+        )
+
+    html_view.short_description = ''
+    html_view.allow_tags = True
+
     list_display = (
         'algorithm', 'short_arguments', 'symbol', 'sharpe_spy',
         'bh_sum', 'pl_sum',
         'bh_cumprod', 'pl_cumprod',
         'trades', 'profit_prob', 'loss_prob',
         'max_dd', 'var_pct99',
-        'strategy_analysis'
+        'strategy_analysis', 'html_view'
     )
 
     fieldsets = (

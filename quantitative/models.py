@@ -37,13 +37,19 @@ class Algorithm(models.Model):
         """
         path = 'quantitative.algorithm.{path}'.format(path=self.path)
 
-        module = import_module(path)
-        handle_data = getattr(module, 'handle_data')
-        create_signal = getattr(module, 'create_signal')
+        quant = None
+        try:
+            module = import_module(path)
 
-        quant = AlgorithmQuant(self)
-        quant.handle_data = handle_data
-        quant.create_signal = create_signal
+            handle_data = getattr(module, 'handle_data')
+            create_signal = getattr(module, 'create_signal')
+
+            quant = AlgorithmQuant(self)
+            quant.handle_data = handle_data
+            quant.create_signal = create_signal
+        except (ImportError, KeyError):
+            self.path = ''
+            self.save()
 
         return quant
 

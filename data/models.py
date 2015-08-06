@@ -255,40 +255,27 @@ class Dividend(models.Model):
     AAN,$0.021,11/7/13,11/27/13,12/2/13,1/3/14
     """
     symbol = models.CharField(max_length=20)
-    amount = models.FloatField()
-
+    year = models.IntegerField(max_length=4)
+    quarter = models.CharField(max_length=100)
     announce_date = models.DateField()
     expire_date = models.DateField()
     record_date = models.DateField()
     payable_date = models.DateField()
-
-    def load_csv(self, line):
-        """
-        Load csv line split into values and save data
-        :param line: str
-        :return: Dividend
-        """
-        values = line.rstrip().split(',')
-
-        self.symbol = values[0]
-        self.amount = float(values[1].replace('$', ''))
-        self.announce_date = pd.datetime.strptime(values[2], '%m/%d/%y').date()
-        self.expire_date = pd.datetime.strptime(values[3], '%m/%d/%y').date()
-        self.record_date = pd.datetime.strptime(values[4], '%m/%d/%y').date()
-        self.payable_date = pd.datetime.strptime(values[5], '%m/%d/%y').date()
-
-        return self
+    amount = models.FloatField()
+    dividend_type = models.CharField(max_length=100)
 
     def to_hdf(self):
         """
         :return: DataFrame
         """
         return DataFrame(
-            data=[[self.symbol, self.amount, self.announce_date, self.expire_date,
-                   self.record_date, self.payable_date]],
+            data=[[self.symbol, self.year, self.quarter,
+                   self.announce_date, self.expire_date, self.record_date, self.payable_date,
+                   self.amount, self.dividend_type]],
             index=[self.expire_date],
-            columns=['Symbol', 'Amount', 'Announced Date', 'Expire Date',
-                     'Record Date', 'Payable Date']
+            columns=('symbol', 'year', 'quarter',
+                     'announce', 'expire', 'record', 'payable',
+                     'amount', 'dividend_type')
         )
 
     def __unicode__(self):
@@ -308,59 +295,46 @@ class Earning(models.Model):
     11/17/09,,During Market,,GRZ,Q3,,,Unconfirmed
     11/17/09,11/17/09,Before Market,5:00:00 AM CST,COV,Q4,0.699,0.11,Verified
     """
-    date_est = models.DateField()
-    date_act = models.DateField(null=True)
-    release = models.CharField(max_length=20)
-    time = models.TimeField(null=True)
     symbol = models.CharField(max_length=20)
+    actual_date = models.DateField()
+    release = models.CharField(max_length=20)
+    year = models.IntegerField(max_length=4)
     quarter = models.CharField(max_length=2)
-    esp_est = models.FloatField(null=True)
-    esp_act = models.FloatField(null=True)
-    status = models.CharField(max_length=20)
+    analysts = models.FloatField(default=0)
+    estimate_eps = models.FloatField()
+    adjusted_eps = models.FloatField()
+    gaap = models.FloatField()
+    high = models.FloatField()
+    low = models.FloatField()
+    actual_eps = models.FloatField()
 
-    unique_together = (('date_est', 'symbol', 'status'),)
-
-    def load_csv(self, line):
-        """
-        Load csv line split into values and save data
-        :param line: str
-        :return: Dividend
-        """
-        values = line.rstrip().split(',')
-
-        self.date_est = pd.datetime.strptime(values[0], '%m/%d/%y').date()
-        self.date_act = pd.datetime.strptime(values[1], '%m/%d/%y').date() if values[1] else None
-        self.release = values[2]
-        self.time = (pd.datetime.strptime(values[3][:values[3].rindex(' ')], '%I:%M:%S %p').time()
-                     if values[3] else None)
-        self.symbol = values[4]
-        self.quarter = values[5]
-        self.esp_est = float(values[6]) if values[6] else None
-        self.esp_act = float(values[7]) if values[7] else None
-        self.status = values[8]
-
-        return self
+    unique_together = (('symbol', 'actual_date'),)
 
     def to_hdf(self):
         """
         :return: DataFrame
         """
         return DataFrame(
-            data=[[self.date_est, self.date_act, self.release, self.time,
-                   self.symbol, self.quarter, self.esp_est, self.esp_act, self.status]],
-            index=[self.date_est],
-            columns=['Date Est', 'Date Act', 'Time Est', 'Time Act',
-                     'Symbol', 'Quarter', 'ESP Est', 'ESP Act', 'Status']
+            data=[[
+                self.symbol, self.actual_date, self.release,
+                self.year, self.quarter, self.analysts,
+                self.estimate_eps, self.adjusted_eps,
+                self.gaap, self.high, self.low, self.actual_eps
+            ]],
+            index=[self.actual_date],
+            columns=['symbol', 'actual_date', 'release', 'year', 'quarter',
+                     'analysts', 'estimate_eps', 'adjusted_eps', 'gaap',
+                     'high', 'low', 'actual_eps']
         )
 
     def __unicode__(self):
         """
         Output explain this model
         """
-        return '{symbol} {date_est} {esp_act}'.format(
+        return '{symbol} {actual_date} {actual_eps}'.format(
             symbol=self.symbol,
-            date_est=self.date_est,
-            esp_act=self.esp_act
+            actual_date=self.actual_date,
+            actual_eps=self.actual_eps
         )
 
 

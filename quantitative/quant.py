@@ -266,9 +266,19 @@ class AlgorithmQuant(object):
         bh_sum = 0.0
         csv_data = list()
 
+        #print df_stock.to_string(line_width=300)
+
         for index, data in df_signal.iterrows():
             try:
-                df_temp = df0.ix[data['date0']:data['date1']][:-1].copy()
+                df_temp = df0.ix[data['date0']:data['date1']]
+                if len(df_temp) > 2:
+                    df_temp = df_temp[:-1]
+
+                df_temp = df_temp.reindex_axis(
+                    ['symbol', 'open', 'high', 'low', 'close', 'volume'], axis=1
+                )
+
+                #df_temp = df0.ix[data['date0']:data['date1']][:-1].copy()
                 df_temp['pct_chg'] = np.round(df_temp['close'].pct_change(), 4)
 
                 f = lambda x: x['pct_chg'] * -1 if x['signal'] == 'SELL' else x['pct_chg']
@@ -301,7 +311,9 @@ class AlgorithmQuant(object):
                 csv_data2 += '\n'.join(d.split('\n')[1:])
 
         df1 = pd.read_csv(StringIO(csv_data2), index_col=0)
+        #print df1.to_string(line_width=300)
         df1 = df1.dropna()  # wait drop nan
+        #print df1.to_string(line_width=300)
 
         # return, trade, buy and hold
         pct_key = 'pct_chg'
