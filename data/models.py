@@ -18,11 +18,12 @@ class Underlying(models.Model):
     validated = models.BooleanField(default=False)  # is all import validate, especially options
     missing_dates = models.TextField(default='', blank=True)  # all missing dates
 
+    class Meta:
+        ordering = ['symbol']
+
     def __unicode__(self):
-        return '{symbol} {stop}'.format(
-            symbol=self.symbol,
-            start=self.start,
-            stop=self.stop
+        return '{symbol}'.format(
+            symbol=self.symbol
         )
 
 

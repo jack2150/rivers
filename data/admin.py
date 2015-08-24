@@ -63,6 +63,8 @@ class UnderlyingAdmin(admin.ModelAdmin):
             <li><a href="{earning_import}">Earning import</a></li>
             <li><a href="{dividend_import}">Dividend import</a></li>
             <li class="divider"></li>
+            <li><a href="{opinion_link}">Opinion link</a></li>
+            <li class="divider"></li>
             <li><a href="{truncate_link}">Truncate data</a></li>
           </ul>
         </div>
@@ -75,7 +77,8 @@ class UnderlyingAdmin(admin.ModelAdmin):
             yahoo_link=reverse('admin:web_quote_import', args=('yahoo', symbol)),
             earning_import=reverse('admin:event_import', kwargs={'event': 'earning', 'symbol': symbol}),
             dividend_import=reverse('admin:event_import', kwargs={'event': 'dividend', 'symbol': symbol}),
-            truncate_link=reverse('admin:truncate_symbol', kwargs={'symbol': symbol})
+            truncate_link=reverse('admin:truncate_symbol', kwargs={'symbol': symbol}),
+            opinion_link=reverse('admin:enter_opinion_links', kwargs={'symbol': symbol})
         )
 
     data_manage.short_description = ''

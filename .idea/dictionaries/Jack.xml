@@ -10,6 +10,7 @@
       <w>fdate</w>
       <w>fslr</w>
       <w>moneyness</w>
+      <w>morningstar</w>
       <w>offday</w>
       <w>optionable</w>
       <w>oqty</w>
@@ -18,6 +19,7 @@
       <w>sortino</w>
       <w>sqty</w>
       <w>strategyresult</w>
+      <w>thinkorswim</w>
     </words>
   </dictionary>
 </component>

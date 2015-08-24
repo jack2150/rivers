@@ -30,3 +30,11 @@ def intcomma(obj):
 @register.filter
 def get_item(obj, name):
     return obj[name]
+
+
+@register.filter
+def convert_abs(obj):
+    if type(obj) in (float, int):
+        return abs(obj)
+    else:
+        return ''

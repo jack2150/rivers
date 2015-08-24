@@ -14,10 +14,10 @@ from data.models import Earning
 def handle_data(df):
     symbol = df.ix[df.index.values[0]]['symbol']
 
-    earnings = pd.DataFrame(list(Earning.objects.filter(
-        Q(symbol=symbol) & (Q(status='Verified') | Q(status='Valid'))
-    ).order_by('date_act').values()))
-    earnings = earnings.set_index('date_act')
+    earnings = pd.DataFrame(
+        list(Earning.objects.filter(symbol=symbol).order_by('actual_date').values())
+    )
+    earnings = earnings.set_index('actual_date')
 
     # verify earnings
     s = [int(q[1:]) for q in earnings['quarter']]

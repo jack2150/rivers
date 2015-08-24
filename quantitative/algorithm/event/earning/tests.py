@@ -3,7 +3,7 @@ from quantitative.models import Algorithm
 
 
 # noinspection PyArgumentList
-class TestEarningMovmentDirection(TestUnitSetUp):
+class TestEarningMovementDirection(TestUnitSetUp):
     def algorithm_analysis(self, rule):
         self.algorithm = Algorithm.objects.get(rule=rule)
 
@@ -12,7 +12,7 @@ class TestEarningMovmentDirection(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'FSLR'  # jpm before, fslr after
+        self.symbol = 'AIG'  # jpm before, fslr after
         self.hd_args = {}
         self.cs_args = {
             'before': 0,

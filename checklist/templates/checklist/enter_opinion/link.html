@@ -1,0 +1,198 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+
+{% block extrastyle %}
+  <style>
+    .mb10px {
+      margin-bottom: 10px;
+    }
+  </style>
+{% endblock %}
+
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'checklist' %}">Checklist</a></li>
+      <li>Opinion Links</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block object-tools %}
+  <div class="pull-right">
+    <div id="content-navbar-collapse" class="navbar-collapse collapse">
+      <ul class="object-tools nav navbar-nav">
+        <li style="margin-right: 6px;">
+          <a class="btn btn-primary" href="/admin/checklist/marketopinion/add/" role="button" target="_blank">
+            <span class="glyphicon glyphicon-plus"></span>
+            Add market opinion
+          </a>
+        </li>
+        <li>
+          <a class="btn btn-primary" href="/admin/checklist/enteropinion/add/" role="button" target="_blank">
+            <span class="glyphicon glyphicon-plus"></span>
+            Add enter opinion
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Market News
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in" id="event">
+          <a href="http://www.morningstar.com/markets.html"
+             class="list-group-item" target="_blank">Morningstar top news</a>
+          <a href="http://www.zacks.com/stock-market-today"
+             class="list-group-item" target="_blank">Zack market today</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Economics Calendar
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in list-group" id="event">
+          <a href="http://mam.econoday.com/"
+             class="list-group-item" target="_blank">Econday Calendar</a>
+        </div>
+      </div>
+    </div>
+
+
+    </div>
+
+  </div>
+
+
+  <div class="row">
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Events
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in list-group" id="event">
+          <a href="https://eresearch.fidelity.com/eresearch/evaluate/fundamentals/earnings.jhtml?tab=details&symbols={{ symbol }}"
+             class="list-group-item" target="_blank">Fidelity earnings</a>
+          <a href="https://eresearch.fidelity.com/eresearch/evaluate/fundamentals/dividends.jhtml?tab=details&symbols={{ symbol }}"
+             class="list-group-item" target="_blank">Fidelity dividends</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Company News
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in list-group" id="event">
+          <a href="http://www.zacks.com/stock/research/{{ symbol }}/company-news"
+             class="list-group-item" target="_blank">Zack news</a>
+          <a href="http://www.nasdaq.com/symbol/{{ symbol|lower }}/news-headlines"
+             class="list-group-item" target="_blank">Nasdaq news</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Ownership
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in list-group" id="event">
+          <a href="http://www.nasdaq.com/symbol/{{ symbol|lower }}/institutional-holdings"
+             class="list-group-item" target="_blank">Nasdaq data</a>
+          <a href="http://investors.morningstar.com/ownership/shareholders-overview.html?t={{ symbol }}"
+             class="list-group-item" target="_blank">Morningstar data</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Insider
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in list-group" id="event">
+          <a href="http://www.nasdaq.com/symbol/{{ symbol|lower }}/insider-trades"
+             class="list-group-item" target="_blank">Nasdaq data</a>
+          <a href="http://insiders.morningstar.com/trading/executive-compensation.action?t={{ symbol }}"
+             class="list-group-item" target="_blank">Morningstar data</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Short interest
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in list-group" id="event">
+          <a href="http://www.nasdaq.com/symbol/{{ symbol|lower }}/short-interest"
+             class="list-group-item" target="_blank">Nasdaq data</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Analyst Rating
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in list-group" id="event">
+          <a href="http://www.zacks.com/stock/research/{{ symbol }}/brokerage-recommendations"
+             class="list-group-item" target="_blank">Zack data</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+{% endblock %}
