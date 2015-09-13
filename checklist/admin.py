@@ -38,7 +38,7 @@ class EnterOpinionAdmin(admin.ModelAdmin):
         """
         return href.format(
             get_data_link=reverse('admin:enter_opinion_get_data', kwargs={'id': obj.id}),
-            report_link='',
+            report_link=reverse('admin:enter_opinion_report', kwargs={'id': obj.id}),
         )
 
     action.short_description = ''
@@ -52,7 +52,7 @@ class EnterOpinionAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Primary field', {
             'fields': (
-                'symbol', 'date', 'score', 'complete', 'trade'
+                'position',  'symbol', 'date', 'score', 'complete', 'trade'
             )
         }),
         ('Position', {
@@ -122,14 +122,14 @@ class EnterOpinionAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-class MarketOpinionForm(forms.ModelForm):
+class DateForm(forms.ModelForm):
     date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
     )
 
 
 class MarketOpinionAdmin(admin.ModelAdmin):
-    form = MarketOpinionForm
+    form = DateForm
 
     list_display = (
         'date', 'long_trend1', 'short_trend1', 'long_persist', 'volatility',
@@ -166,8 +166,74 @@ class MarketOpinionAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-admin.site.register(EnterOpinion, EnterOpinionAdmin)
+class ExitOpinionAdmin(admin.ModelAdmin):
+    form = DateForm
+
+    def symbol(self, obj):
+        return obj.position.symbol
+
+    list_display = (
+        'symbol', 'date', 'auto_trigger', 'condition', 'result',
+        'amount', 'price', 'timing', 'wait'
+    )
+
+    fieldsets = (
+        ('Primary field', {
+            'fields': (
+                'position', 'date'
+            )
+        }),
+        ('Trade', {
+            'fields': (
+                'auto_trigger', 'condition', 'result', 'amount', 'price',
+                'timing', 'wait', 'description'
+            )
+        }),
+    )
+
+    search_fields = ('position__symbol', 'date', 'description')
+    list_filter = ('auto_trigger', 'condition', 'result', 'timing', 'wait')
+    list_per_page = 20
+
+
+# noinspection PyMethodMayBeStatic
+class HoldingOpinionAdmin(admin.ModelAdmin):
+    form = DateForm
+
+    def symbol(self, obj):
+        return obj.position.symbol
+
+    list_display = (
+        'symbol', 'date', 'condition', 'action', 'opinion',
+        'news_level', 'news_effect', 'special'
+    )
+
+    fieldsets = (
+        ('Primary field', {
+            'fields': (
+                'position', 'date'
+            )
+        }),
+        ('Position', {
+            'fields': (
+                'check_all', 'condition', 'action', 'opinion',
+                'news_level', 'news_effect', 'special', 'description'
+            )
+        }),
+    )
+
+    search_fields = ('position__symbol', 'date', 'description')
+    list_filter = ('condition', 'news_level', 'news_effect', 'check_all', 'special')
+    list_per_page = 20
+
+    def has_add_permission(self, request):
+        return False
+
+
 admin.site.register(MarketOpinion, MarketOpinionAdmin)
+admin.site.register(EnterOpinion, EnterOpinionAdmin)
+admin.site.register(ExitOpinion, ExitOpinionAdmin)
+admin.site.register(HoldingOpinion, HoldingOpinionAdmin)
 
 
 admin.site.register_view(
@@ -182,3 +248,4 @@ admin.site.register_view(
     'checklist/enteropinion/link/(?P<symbol>\w+)/$',
     urlname='enter_opinion_links', view=enter_opinion_links
 )
+

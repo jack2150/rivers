@@ -596,23 +596,6 @@ class TestStatementController(TestSetUp):
         print 'total expire position:', Position.objects.filter(status='EXPIRE').count()
 
 
-class TestPositionSpreads(TestSetUp):
-    fixtures = ('position.json', )
-
-    def test_view(self):
-        pass
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

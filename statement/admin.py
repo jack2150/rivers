@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django import forms
 from views import *
-from models import *
 from bootstrap3_datetime.widgets import DateTimePicker
+from statement.position.views import *
 
 
 class StatementForm(forms.ModelForm):
@@ -311,10 +311,34 @@ class PositionForm(forms.ModelForm):
         options={"format": "YYYY-MM-DD", "pickTime": False}))
 
 
+class EnterOpinionInline(StatementInline):
+    model = EnterOpinion
+    fields = ('risk_profile', 'trade', 'signal', 'event', 'significant', 'confirm', 'target', 'market')
+    readonly_fields = ('risk_profile', 'trade', 'signal', 'event', 'significant',
+                       'confirm', 'target', 'market')
+    ordering = ('date', )
+
+
+class HoldingOpinionInline(StatementInline):
+    model = HoldingOpinion
+    fields = ('condition', 'action', 'opinion', 'news_level', 'news_effect', 'check_all', 'special')
+    readonly_fields = ('condition', 'action', 'opinion', 'news_level',
+                       'news_effect', 'check_all', 'special')
+    ordering = ('date', )
+
+
+class ExitOpinionInline(StatementInline):
+    model = ExitOpinion
+    fields = ('auto_trigger', 'condition', 'result', 'amount', 'price', 'timing', 'wait')
+    readonly_fields = ('auto_trigger', 'condition', 'result', 'amount', 'price', 'timing', 'wait')
+    ordering = ('date', )
+
+
 class PositionAdmin(admin.ModelAdmin):
     form = PositionForm
-    inlines = (CashBalanceInline, AccountOrderInline, AccountTradeInline, HoldingEquityInline,
-               HoldingOptionInline, ProfitLossInline)
+    inlines = (CashBalanceInline, AccountOrderInline, AccountTradeInline,
+               HoldingEquityInline, HoldingOptionInline, ProfitLossInline,
+               EnterOpinionInline, HoldingOpinionInline, ExitOpinionInline)
 
     list_display = ('symbol', 'name', 'spread', 'status', 'start', 'stop')
 
@@ -325,6 +349,9 @@ class PositionAdmin(admin.ModelAdmin):
         ('Primary Fields', {
             'fields': ('symbol', 'name', 'spread', 'status', 'start', 'stop')
         }),
+        ('Foreign Fields', {
+            'fields': ('market_opinion', 'strategy_result')
+        })
     )
 
     def has_add_permission(self, request):
@@ -376,4 +403,16 @@ admin.site.register_view(
     'statement/position/spreads/(?P<date>\d{4}-\d{2}-\d{2})/$',
     urlname='position_spreads',
     view=position_spreads
+)
+
+admin.site.register_view(
+    'checklist/create/(?P<opinion>\w{4})/(?P<id>\d+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
+    urlname='create_opinion',
+    view=create_opinion
+)
+
+admin.site.register_view(
+    'statement/position/blind_strategy/(?P<id>\d+)/$',
+    urlname='blind_strategy',
+    view=blind_strategy
 )

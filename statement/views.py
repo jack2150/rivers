@@ -164,9 +164,9 @@ def statement_import(request):
                         profit_loss.save()
 
         # create positions
-        #statement.controller.add_relations()
-        #statement.controller.position_trades()
-        #statement.controller.position_expires()
+        statement.controller.add_relations()
+        statement.controller.position_trades()
+        statement.controller.position_expires()
 
         files.append(dict(
             #path=fpath,
@@ -194,37 +194,3 @@ def statement_import(request):
     return render(request, template, parameters)
 
 
-def position_spreads(request, date):
-    """
-    Import all statement in folders
-    :param request: request
-    :return: render
-    """
-    template = 'statement/position/spreads.html'
-
-    if date:
-        statement = Statement.objects.get(date=date)
-        """:type: Statement"""
-    else:
-        statement = Statement.objects.order_by('date').last()
-        """:type: Statement"""
-
-    positions = Position.objects.filter(
-        id__in=[p[0] for p in statement.profitloss_set.values_list('position')]
-    ).order_by('symbol')
-
-    spreads = list()
-    for position in positions:
-        spreads.append(dict(
-            position=position,
-            profit_loss=position.profitloss_set.get(statement__date=date),
-        ))
-
-    # todo: no price on option spread, do data first
-
-    parameters = dict(
-        title='Position Spreads',
-        spreads=spreads
-    )
-
-    return render(request, template, parameters)

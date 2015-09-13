@@ -2,7 +2,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.db.models import Q
 from django.shortcuts import render, redirect
 from django import forms
-from data.models import Stock
+from data.models import Stock, Underlying
 from quantitative.models import *
 
 
@@ -127,27 +127,6 @@ class AlgorithmAnalysisForm(forms.Form):
                     ['ValueError {arg} field value.'.format(arg=arg.capitalize())]
                 )
 
-
-        """
-        arguments = {key: value for key, value in self.cleaned_data.items()
-                     if 'algorithm_' not in key and key is not 'symbol'}
-
-        print arguments
-
-        for key, value in arguments.items():
-            try:
-                if ':' in value:
-                    [int(v) for v in value.split(':')]
-                else:
-                    int(value)
-            except ValueError:
-                self._errors[key] = self.error_class(
-                    ['{key} ({value}) is not valid.'.format(
-                        key=key.capitalize(), value=value
-                    )]
-                )
-        """
-
         return cleaned_data
 
     def analysis(self):
@@ -224,6 +203,8 @@ def algorithm_analysis(request, algorithm_id, argument_id=0):
             initial=initial
         )
 
+
+
     template = 'quant/algorithm/analysis.html'
 
     parameters = dict(
@@ -231,6 +212,7 @@ def algorithm_analysis(request, algorithm_id, argument_id=0):
         title='Algorithm Analysis',
         form=form,
         arguments=arguments,
+        underlyings=Underlying.objects.all()
     )
 
     return render(request, template, parameters)

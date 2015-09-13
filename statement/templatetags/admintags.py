@@ -12,6 +12,7 @@ def admin_field_type(obj):
 def form_field_type(obj):
     return obj.field.widget.__class__.__name__
 
+
 @register.filter
 def field_name(obj):
     return ' '.join(obj.split('_'))
@@ -38,3 +39,41 @@ def convert_abs(obj):
         return abs(obj)
     else:
         return ''
+
+
+@register.filter
+def cap(obj):
+    if obj:
+        return obj.replace('_', ' ').capitalize()
+    else:
+        return ''
+
+
+@register.filter
+def algorithm_args(obj):
+    """
+    Algorithm arguments into a list
+    :param obj: str
+    :return: str
+    """
+    arguments = eval(obj)
+
+    handle_data = arguments['handle_data']
+    create_signal = arguments['create_signal']
+
+    return handle_data.values() + create_signal.values()
+
+
+@register.filter
+def strategy_args(obj):
+    """
+    Strategy arguments into a list
+    :param obj: str
+    :return: str
+    """
+    try:
+        args = sorted(eval(obj).values(), reverse=True)
+    except AttributeError:
+        args = []
+
+    return args

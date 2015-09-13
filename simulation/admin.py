@@ -161,6 +161,9 @@ class StrategyResultAdmin(admin.ModelAdmin):
     readonly_fields = ('algorithm_result', 'strategy', 'commission')
     list_per_page = 20
 
+    def has_add_permission(self, request):
+        return False
+
 
 admin.site.register(Commission, CommissionAdmin)
 admin.site.register(Strategy, StrategyAdmin)

@@ -1,0 +1,94 @@
+{% extends "admin/base_site.html" %}
+{% load static admintags %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}"/>
+  <link rel="stylesheet" type="text/css" href="/static/admin/css/overrides.css"/>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <ul class="breadcrumb">
+    <li><a href="{% url 'admin:index' %}">Home</a></li>
+    <li><a href="{% url 'admin:app_list' 'statement' %}">Statement</a></li>
+    <li><a href="{% url 'admin:statement_position_changelist' %}">Position</a></li>
+    <li>Blind strategy</li>
+  </ul>
+{% endblock %}
+
+{% block content %}
+  {% if form.errors %}
+    <div class="alert alert-danger fade in">
+      <a href="#" class="close" data-dismiss="alert">&times;</a>
+      <strong>Error!</strong>
+      {% for field in form %}
+        {% for error in field.errors %}
+          {{ error }}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form class="form-horizontal" action='#' method='post'>
+    {% if strategy_results %}
+    <div class="panel panel-default">
+
+      <div class="panel-heading">Position: {{ position.symbol }} {{ position.start }}</div>
+      <div class="panel-body">
+
+        <div class="row">
+          <div class="control-group field-symbol">
+            {% csrf_token %}
+            {{ form.position }}
+
+            <div class="control-group field-start">
+
+                <div class="col-md-12 form-group ">
+                  <div class="control-label col-md-3">
+                    <b>Strategy result:</b>
+                  </div>
+                  <div class="controls col-md-4">
+                    <select id="id_strategy_result" name="strategy_result"
+                            class="form-control form-control-inline"
+                            title="" name="position" data-original-title="" size="10">
+                      {% for strategy_result in strategy_results %}
+                        <option value="{{ strategy_result.id }}"
+                            {% if position.strategy_result.id == strategy_result.id %}
+                              selected
+                            {% endif %}>
+                          {{ strategy_result.symbol }}:
+                          {{ strategy_result.algorithm_result.algorithm.rule|upper }}
+                          {{ strategy_result.algorithm_result.arguments|algorithm_args }}
+                          &
+                          {{ strategy_result.strategy.name|upper }}
+                          {{ strategy_result.arguments|strategy_args }}
+                          on {{ strategy_result.date }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    {% else %}
+      <div class="alert alert-warning">
+        <strong>Empty!</strong> Symbol {{ position.symbol }} do not have any strategy result.
+      </div>
+    {% endif %}
+
+
+    <div class="form-actions">
+      <div class="pull-left"></div>
+      <div class="pull-right">
+        <input class="btn btn-primary default" type="submit"
+               name="_save" value="Blind strategy result">
+      </div>
+    </div>
+  </form>
+{% endblock %}

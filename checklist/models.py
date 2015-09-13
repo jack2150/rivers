@@ -3,6 +3,7 @@ from StringIO import StringIO
 from django.db import models
 import pandas as pd
 from urllib2 import urlopen
+from statement.models import Position
 
 
 class MarketOpinion(models.Model):
@@ -79,10 +80,17 @@ class MarketOpinion(models.Model):
         null=True, blank=True, help_text='Input daily market condition'
     )
 
+    def __unicode__(self):
+        return 'Market Opinion {date}'.format(
+            date=self.date
+        )
+
 
 class EnterOpinion(models.Model):
     symbol = models.CharField(max_length=20)
     date = models.DateField()
+
+    position = models.ForeignKey('statement.Position', null=True, blank=True, default=None)
 
     # final, score and trade or not
     score = models.IntegerField(default=0, max_length=2, help_text='Score for checklist items!')
@@ -457,26 +465,99 @@ class EnterOpinion(models.Model):
         return self
 
 
+class ExitOpinion(models.Model):
+    """
+    do you have profit or loss?
+    is that reach goal or reach max loss?
+    is today a good timing to sell? can u wait tomorrow?
+    what will it effect your portfolio?
+    """
+    position = models.ForeignKey(Position)
+    date = models.DateField()
+
+    auto_trigger = models.BooleanField(default=False)
+
+    condition = models.CharField(
+        max_length=20,
+        choices=(('EXPIRE', 'EXPIRE'), ('MAX RISK', 'MAX RISK'),
+                 ('PROFIT TAKEN', 'PROFIT TAKEN'), ('STAT CHANGE', 'STAT CHANGE')),
+        help_text='Condition for you think is time to exit.',
+        default='STAT CHANGE'
+    )
+
+    result = models.CharField(
+        max_length=20,
+        choices=(('PROFIT', 'PROFIT'), ('EVEN', 'EVEN'), ('LOSS', 'LOSS')),
+        help_text='Result for this trade.',
+        default='EVEN'
+    )
+
+    amount = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        help_text='Close amount positive or negative?',
+        default=0.0
+    )
+
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        help_text='Underlying price when exit trade.',
+        default=0.0
+    )
+
+    timing = models.CharField(
+        max_length=20,
+        choices=(('GOOD', 'GOOD'), ('NORMAL', 'NORMAL'), ('BAD', 'BAD')),
+        help_text='Exit timing',
+        default='NORMAL'
+    )
+
+    wait = models.BooleanField(
+        default=False,
+        help_text='Is tomorrow a better day to close?'
+    )
+
+    description = models.TextField(null=True, blank=True)
 
 
+class HoldingOpinion(models.Model):
+    """
+    This insert daily when you are holding a position
+    """
+    position = models.ForeignKey(Position)
+    date = models.DateField()
 
+    condition = models.CharField(
+        max_length=20,
+        choices=(('BEST', 'BEST'), ('BETTER', 'BETTER'),
+                 ('UNKNOWN', 'UNKNOWN'), ('DANGER', 'DANGER'), ('WORST', 'WORST')),
+        help_text='Current position price condition.',
+        default='UNKNOWN'
+    )
 
+    action = models.CharField(
+        max_length=20,
+        choices=(('CLOSE', 'CLOSE'), ('READY CLOSE', 'READY CLOSE'),
+                 ('HOLD', 'HOLD'), ('OTHERS', 'OTHERS')),
+        help_text='Action to be taken.',
+        default='HOLD'
+    )
 
+    opinion = models.CharField(
+        max_length=20,
+        choices=(('BULL', 'BULL'), ('RANGE', 'RANGE'), ('BEAR', 'BEAR')),
+        help_text='Tomorrow price movement?',
+        default='RANGE'
+    )
 
+    news_level = models.CharField(
+        max_length=20,
+        choices=(('GOOD', 'GOOD'), ('UNCHANGED', 'UNCHANGED'), ('BAD', 'BAD')),
+        help_text='News level for this underlying',
+        default='UNCHANGED'
+    )
+    news_effect = models.BooleanField(default=False, help_text='News helping this position?')
 
+    check_all = models.BooleanField(default=False, help_text='Check all link yet?')
+    special = models.BooleanField(default=False, help_text='Is there anything special today?')
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    description = models.TextField(null=True, blank=True)

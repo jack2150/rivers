@@ -1,4 +1,18 @@
 {% extends "admin/base_site.html" %}
+{% load static admintags %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" href="{% static 'font-awesome-4.4.0/css/font-awesome.min.css' %}">
+
+  <style>
+    .center {
+      text-align: center;
+    }
+    .fa {
+      font-size: 100%;
+    }
+  </style>
+{% endblock %}
 
 {% block breadcrumbs %}
   <ul class="breadcrumb">
@@ -10,20 +24,119 @@
 {% endblock %}
 
 {% block content %}
-  <table class="table">
-  {% for spread in spreads %}
-    <tr>
-      <td>{{ spread.position.symbol }}</td>
-      <td>{{ spread.position.name }}</td>
-      <td>{{ spread.position.spread }}</td>
-      <td>stage</td>
-      <td>{{ spread.profit_loss.pl_open }}</td>
-      <td>{{ spread.profit_loss.pl_pct }}</td>
-      <td>{{ spread.profit_loss.pl_day }}</td>
-      <td>{{ spread.profit_loss.pl_ytd }}</td>
-      <td>{{ spread.profit_loss.margin_req }}</td>
-      <td>{{ spread.profit_loss.close_value }}</td>
-    </tr>
-  {% endfor %}
-  </table>
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion"
+           href="#position_spreads">Holding Positions</a>
+      </h4>
+    </div>
+    <div id="position_spreads" class="panel-collapse collapse in">
+      <table class="table">
+        <tr>
+          <th>Symbol</th>
+          <th>Type</th>
+          <th>Spread</th>
+          <th>Stage</th>
+          <th>PL Open</th>
+          <th>Pl %</th>
+          <th>PL Day</th>
+          <th>PL YTD</th>
+          <th class="center"><i class="fa fa-comment-o fa-lg" title="OPINION"></i></th>
+          <th class="center"><i class="fa fa-search fa-lg" title="CONDITION"></i></th>
+          <th class="center"><i class="fa fa-arrow-right fa-lg" title="ACTION"></i></th>
+        </tr>
+        {% for spread in spreads %}
+          <tr>
+            <td>{{ spread.position.symbol }}</td>
+            <td>{{ spread.position.name|cap }}</td>
+            <td>{{ spread.position.spread|cap }}</td>
+            <td>{{ spread.stage|cap }}</td>
+            <td>{{ spread.profit_loss.pl_open }}</td>
+            <td>{{ spread.profit_loss.pl_pct }}</td>
+            <td>{{ spread.profit_loss.pl_day }}</td>
+            <td>{{ spread.profit_loss.pl_ytd }}</td>
+            <td class="center">
+              {% if spread.opinion.exists %}
+                <i class="fa fa-check fa-lg" title="ADD"></i>
+              {% else %}
+                <i class="fa fa-times fa-lg" title="MISSING"></i>
+              {% endif %}
+            </td>
+            <td class="center">
+              {% if spread.opinion.condition == 'BEST' %}
+                <i class="fa fa-thumbs-up fa-lg" title="BEST"></i>
+              {% elif spread.opinion.condition == 'BETTER' %}
+                <i class="fa fa-thumbs-o-up fa-lg" title="BETTER"></i>
+              {% elif spread.opinion.condition == 'DANGER' %}
+                <i class="fa fa-thumbs-o-down fa-lg" title="DANGER"></i>
+              {% elif spread.opinion.condition == 'WORST' %}
+                <i class="fa fa-thumbs-down fa-lg" title="WORST"></i>
+              {% else %}
+                <i class="fa fa-question fa-lg" title="UNKNOWN"></i>
+              {% endif %}
+            </td>
+            <td class="center">
+              {% if spread.opinion.action == 'CLOSE' %}
+                <i class="fa fa-gavel fa-lg" title="CLOSE"></i>
+              {% elif spread.opinion.action == 'READY CLOSE' %}
+                <i class="fa fa-bell-o fa-lg" title="READY CLOSE"></i>
+              {% elif spread.opinion.action == 'OTHERS' %}
+                <i class="fa fa-sitemap fa-lg" title="OTHERS"></i>
+              {% else %}
+                <i class="fa fa-thumb-tack fa-lg" title="HOLD"></i>
+              {% endif %}
+            </td>
+            <td>
+              <div class="dropdown">
+                <button class="btn btn-default btn-xs dropdown-toggle" type="button"
+                        id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                  Manage
+                  <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                  <li>
+                    <a href="{% url 'admin:create_opinion' 'hold' spread.position.id date %}">
+                      {% if spread.opinion.name == 'hold' %}
+                        <b>Hold opinion</b>
+                      {% else %}
+                        Hold opinion
+                      {% endif %}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="{% url 'admin:create_opinion' 'exit' spread.position.id date %}">
+                      {% if spread.opinion.name == 'exit' %}
+                        <b>Exit opinion</b>
+                      {% else %}
+                        Exit opinion
+                      {% endif %}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="{% url 'admin:blind_strategy' spread.position.id %}">
+                    {% if spread.position.strategy_result %}
+                      <b>Blinded</b>
+                    {% else %}
+                      Blind Position
+                    {% endif %}
+                    </a>
+                  </li>
+
+                  <li class="divider"></li>
+                  <li><a href="#">Detail report</a></li>
+                  <li class="divider"></li>
+                  <li>
+                    <a href="{% url 'admin:statement_position_change' spread.position.id %}">
+                      View position
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
 {% endblock %}

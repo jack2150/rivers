@@ -1,4 +1,5 @@
 from importlib import import_module
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
 from pandas import DataFrame
@@ -71,6 +72,8 @@ class Statement(models.Model):
             Loop trade by trade and open or close position
             :return: None
             """
+            from checklist.models import MarketOpinion, EnterOpinion
+
             times = sorted(set([x[0] for x in self.account_trades.values_list('time')]))
 
             for time in times:
@@ -114,6 +117,24 @@ class Statement(models.Model):
                     # add relation here
                     for trade in trades:
                         position.accounttrade_set.add(trade)
+
+                    # checklist section blind market and enter opinion
+                    try:
+                        market_opinion = MarketOpinion.objects.get(date=self.statement.date)
+                        position.market_opinion = market_opinion
+                        position.save()
+                    except ObjectDoesNotExist:
+                        pass
+
+                    try:
+                        enter_opinion = EnterOpinion.objects.get(
+                            Q(symbol=position.symbol) & Q(date=self.statement.date)
+                        )
+                        enter_opinion.position = position
+                        enter_opinion.trade = True
+                        enter_opinion.save()
+                    except ObjectDoesNotExist:
+                        pass
 
         def position_expires(self):
             """
@@ -176,6 +197,14 @@ class Position(models.Model):
 
     start = models.DateField()
     stop = models.DateField(null=True, blank=True, default=None)
+
+    market_opinion = models.ForeignKey(
+        'checklist.MarketOpinion', null=True, blank=True, default=None
+    )
+
+    strategy_result = models.OneToOneField(
+        'simulation.StrategyResult', null=True, blank=True, default=None
+    )
 
     def set_open(self, trades):
         """

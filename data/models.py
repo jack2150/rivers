@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 import pandas as pd
 from pandas.util.testing import DataFrame, Series
 
@@ -75,6 +76,17 @@ class Stock(models.Model):
             close=self.close,
             volume=self.volume
         )
+
+    @staticmethod
+    def get_price(symbol, date, source='google'):
+        """
+        Get single symbol price for certain date
+        :param symbol: str
+        :param date: date
+        :param source: str ('thinkback', 'google', 'yahoo')
+        :return: Stock
+        """
+        return Stock.objects.get(Q(symbol=symbol) & Q(date=date) & Q(source=source))
 
 
 class OptionContract(models.Model):

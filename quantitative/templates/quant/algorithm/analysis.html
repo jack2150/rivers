@@ -55,7 +55,22 @@
                       {% endif %}
                     </div>
                     <div class="controls col-md-4">
-                      {{ field }}
+                      {% if 'Symbol' in field.label %}
+                        <select id="id_symbol" name="symbol"
+                          class="form-control form-control-inline" style="width: 350px"
+                          title="" name="position" data-original-title="">
+                          {% for underlying in underlyings %}
+                            <option value="{{ underlying.symbol }}">
+                              {{ underlying.symbol }} {{ underlying.stop }}
+                              tb: {{ underlying.thinkback }},
+                              google: {{ underlying.google }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                      {% else %}
+                        {{ field }}
+                      {% endif %}
+
                     </div>
                     <div>
                       <span class="help-block">{{ field.help_text }}</span>

@@ -9,7 +9,7 @@
          </a>
     </h4>
   </div>
-  <div id="{{ inline_admin_formset.formset.prefix }}-group" class="panel-collapse collapse">
+  <div id="{{ inline_admin_formset.formset.prefix }}-group" class="panel-collapse collapse in">
       <div class="tabular inline-related {% if forloop.last %}last-related{% endif %}">
         {{ inline_admin_formset.formset.management_form }}
         <fieldset class="module">
@@ -21,7 +21,7 @@
                   <th{% if field.required %}
                     class="required"{% endif %}>{{ field.label|capfirst }}
                     {% if field.help_text %}
-                      <i class="glyphicon glyphicon-comment help help-tooltip" style="margin-left: 4px;"
+                      <i class="glyphicon glyphicon-question-sign help help-tooltip" style="margin-left: 4px;"
                          alt="({{ field.help_text|striptags }})" title="{{ field.help_text|striptags }}">
                       </i>{% endif %}
                   </th>
