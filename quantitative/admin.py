@@ -167,6 +167,7 @@ class AlgorithmResultAdmin(admin.ModelAdmin):
                 'max_dd', 'r_max_dd', 'max_bh_dd', 'r_max_bh_dd',
                 'pct_mean', 'pct_median', 'pct_max', 'pct_min', 'pct_std',
                 'day_profit_mean', 'day_loss_mean',
+                'pct_bull', 'pct_even', 'pct_bear',
                 'df_signal')
         }),
     )

@@ -22,6 +22,9 @@ class StatementInline(admin.TabularInline):
     def has_add_permission(self, request):
         return False
 
+    #def has_change_permission(self, request, obj=None):
+    #    return False
+
     def has_delete_permission(self, request, obj=None):
         return False
 
@@ -311,14 +314,6 @@ class PositionForm(forms.ModelForm):
         options={"format": "YYYY-MM-DD", "pickTime": False}))
 
 
-class EnterOpinionInline(StatementInline):
-    model = EnterOpinion
-    fields = ('risk_profile', 'trade', 'signal', 'event', 'significant', 'confirm', 'target', 'market')
-    readonly_fields = ('risk_profile', 'trade', 'signal', 'event', 'significant',
-                       'confirm', 'target', 'market')
-    ordering = ('date', )
-
-
 class HoldingOpinionInline(StatementInline):
     model = HoldingOpinion
     fields = ('condition', 'action', 'opinion', 'news_level', 'news_effect', 'check_all', 'special')
@@ -338,9 +333,17 @@ class PositionAdmin(admin.ModelAdmin):
     form = PositionForm
     inlines = (CashBalanceInline, AccountOrderInline, AccountTradeInline,
                HoldingEquityInline, HoldingOptionInline, ProfitLossInline,
-               EnterOpinionInline, HoldingOpinionInline, ExitOpinionInline)
+               HoldingOpinionInline, ExitOpinionInline)
 
-    list_display = ('symbol', 'name', 'spread', 'status', 'start', 'stop')
+    def report(self):
+        return '<a href="{link}">Report</a>'.format(
+            link=reverse('admin:position_report', kwargs={'id': self.id})
+        )
+
+    report.allow_tags = True
+    report.short_description = ''
+
+    list_display = ('symbol', 'name', 'spread', 'status', 'start', 'stop', report)
 
     search_fields = ('symbol', 'name', 'spread', 'status', 'start', 'stop')
     list_per_page = 20
@@ -350,7 +353,7 @@ class PositionAdmin(admin.ModelAdmin):
             'fields': ('symbol', 'name', 'spread', 'status', 'start', 'stop')
         }),
         ('Foreign Fields', {
-            'fields': ('market_opinion', 'strategy_result')
+            'fields': ('market_opinion', 'enter_opinion', 'strategy_result')
         })
     )
 
@@ -415,4 +418,19 @@ admin.site.register_view(
     'statement/position/blind_strategy/(?P<id>\d+)/$',
     urlname='blind_strategy',
     view=blind_strategy
+)
+
+admin.site.register_view(
+    'statement/position/report/(?P<id>\d+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
+    urlname='position_report',
+    view=position_report
+)
+admin.site.register_view(
+    'statement/position/report/(?P<id>\d+)/$',
+    urlname='position_report',
+    view=position_report
+)
+
+admin.site.register_view(
+    'statement/truncate/$', urlname='truncate_statement', view=truncate_statement
 )

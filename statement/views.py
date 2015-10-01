@@ -1,8 +1,10 @@
 import glob
 import os
 import codecs
+from django import forms
+from django.core.urlresolvers import reverse
 import numpy as np
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from rivers.settings import BASE_DIR
 from statement.models import *
 
@@ -194,3 +196,67 @@ def statement_import(request):
     return render(request, template, parameters)
 
 
+class TruncateStatementForm(forms.Form):
+    confirm = forms.BooleanField(
+        widget=forms.HiddenInput(
+            attrs={'class': 'form-control vTextField', 'readonly': 'readonly'}
+        )
+    )
+
+    @staticmethod
+    def truncate_data():
+        """
+        Remove all data for single symbol
+        """
+        Statement.objects.all().delete()
+        Position.objects.all().delete()
+
+
+def truncate_statement(request):
+    """
+    Truncate all statement data
+    :param request: request
+    :return: render
+    """
+    stats = None
+    if request.method == 'POST':
+        form = TruncateStatementForm(request.POST)
+
+        if form.is_valid():
+            form.truncate_data()
+            return redirect(reverse('admin:app_list', args=('statement',)))
+    else:
+        form = TruncateStatementForm(
+            initial={'confirm': True}
+        )
+
+        stats = dict()
+        stats['statement'] = Statement.objects.count()
+
+        try:
+            stats['start_date'] = Statement.objects.order_by('date').first().date
+            stats['stop_date'] = Statement.objects.order_by('date').last().date
+        except AttributeError:
+            stats['start_date'] = '...'
+            stats['stop_date'] = '...'
+
+        stats['position'] = Position.objects.count()
+        stats['position_stage'] = PositionStage.objects.count()
+        stats['profit_loss'] = ProfitLoss.objects.count()
+        stats['account_order'] = AccountOrder.objects.count()
+        stats['account_trade'] = AccountTrade.objects.count()
+        stats['cash_balance'] = CashBalance.objects.count()
+        stats['holding_equity'] = HoldingEquity.objects.count()
+        stats['holding_option'] = HoldingOption.objects.count()
+
+    # view
+    template = 'statement/truncate.html'
+
+    parameters = dict(
+        site_title='Truncate statement',
+        title='Truncate statement',
+        form=form,
+        stats=stats
+    )
+
+    return render(request, template, parameters)

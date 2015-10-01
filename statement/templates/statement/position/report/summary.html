@@ -1,0 +1,81 @@
+{% load admintags %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a class="" href="#position_summary" data-parent="#accordion" data-toggle="collapse">
+        Summary
+      </a>
+    </h4>
+  </div>
+
+  <div class="panel-collapse collapse in" id="position_summary">
+    <table class="table">
+      <tr>
+        <th class="fix_col">Symbol:</th>
+        <td class="fix_col">{{ position.symbol }}</td>
+        <th class="fix_col">Open:</th>
+        <td class="fix_col">{{ basic.open }}</td>
+        <th class="fix_col">Close:</th>
+        <td class="fix_col">{{ basic.close }}</td>
+        <th class="fix_col">% Change:</th>
+        <td class="fix_col">{{ basic.pct_chg|percent2 }}</td>
+      </tr>
+      <tr>
+        <th>Name:</th>
+        <td>{{ position.name|cap }}</td>
+        <th>Spread:</th>
+        <td>{{ position.spread|cap }}</td>
+        <th>Status:</th>
+        <td>{{ position.status|cap }}</td>
+        <th>Stage:</th>
+        <td>{{ basic.stage|cap }}</td>
+      </tr>
+      <tr>
+        <th>Holding Day:</th>
+        <td>{{ basic.holding_day }}</td>
+        <th>Start Date:</th>
+        <td>{{ basic.start_date }}</td>
+        <th>Stop Date:</th>
+        <td>{{ basic.stop_date }}</td>
+        <th>Expire Date:</th>
+        <td>
+          {% if basic.expire_date %}
+            {{ basic.expire_date }} ({{ basic.dte }})
+          {% else %}
+            ...
+          {% endif %}
+        </td>
+      </tr>
+      <tr>
+        <th>Quantity:</th>
+        <td>{{ basic.quantity }}</td>
+        <th>Enter Price:</th>
+        <td>{{ basic.enter_price }}</td>
+        <th>Exit Price:</th>
+        <td>{{ basic.exit_price }}</td>
+        <th>Current PL:</th>
+        <td>{{ basic.current_pl }}</td>
+      </tr>
+      <tr>
+        <th>Commission:</th>
+        <td>{{ basic.commission }}</td>
+        <th>Brokerage:</th>
+        <td>{{ basic.brokerage }}</td>
+        <th>Total Fee:</th>
+        <td>{{ basic.total_fee }}</td>
+        <th>Margin:</th>
+        <td>{{ basic.margin }}</td>
+      </tr>
+      <tr>
+        <th>Bull:</th>
+        <td>{{ basic.stat.up_count }} ({{ basic.stat.up_pct|percent }})</td>
+        <th>Even:</th>
+        <td>{{ basic.stat.e_count }} ({{ basic.stat.e_pct|percent }})</td>
+        <th>Bear:</th>
+        <td>{{ basic.stat.dw_count }} ({{ basic.stat.dw_pct|percent }})</td>
+        <th>Total Move:</th>
+        <td>{{ basic.net_move|stringformat:'+.2f' }} ({{ basic.pct_move|percent2 }})</td>
+      </tr>
+    </table>
+  </div>
+</div>

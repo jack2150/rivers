@@ -5,13 +5,19 @@
   {{ block.super }}
   <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}"/>
   <link rel="stylesheet" type="text/css" href="/static/admin/css/overrides.css"/>
+
+  <style>
+  .position {
+    margin-top: 0.5em;
+  }
+  </style>
 {% endblock %}
 
 {% block breadcrumbs %}
   <ul class="breadcrumb">
     <li><a href="{% url 'admin:index' %}">Home</a></li>
     <li><a href="{% url 'admin:app_list' 'statement' %}">Statement</a></li>
-    <li><a href="{% url 'admin:statement_position_changelist' %}">Position</a></li>
+    <li><a href="{% url 'admin:statement_position_changelist' %}">Positions</a></li>
     <li>Blind strategy</li>
   </ul>
 {% endblock %}
@@ -42,6 +48,41 @@
             {{ form.position }}
 
             <div class="control-group field-start">
+              <div class="col-md-12 form-group ">
+                <div class="control-label col-md-3">
+                  <b>Symbol:</b>
+                </div>
+                <div class="position col-md-4">
+                  {{ position.symbol }}
+                </div>
+              </div>
+              <div class="col-md-12 form-group ">
+                <div class="control-label col-md-3">
+                  <b>Name:</b>
+                </div>
+                <div class="position col-md-4">
+                  {{ position.name }}
+                </div>
+              </div>
+              <div class="col-md-12 form-group ">
+                <div class="control-label col-md-3">
+                  <b>Spread:</b>
+                </div>
+                <div class="position col-md-4">
+                  {{ position.spread|cap|upper }}
+                </div>
+              </div>
+
+              <div class="col-md-12 form-group ">
+                <div class="control-label col-md-3">
+                  <b>Orders:</b>
+                </div>
+                <div class="position col-md-8">
+                  {% for account_trade in account_trades %}
+                    <div>{{ account_trade }}</div>
+                  {% endfor %}
+                </div>
+              </div>
 
                 <div class="col-md-12 form-group ">
                   <div class="control-label col-md-3">
@@ -72,16 +113,13 @@
 
           </div>
         </div>
-
       </div>
-
     </div>
     {% else %}
       <div class="alert alert-warning">
         <strong>Empty!</strong> Symbol {{ position.symbol }} do not have any strategy result.
       </div>
     {% endif %}
-
 
     <div class="form-actions">
       <div class="pull-left"></div>

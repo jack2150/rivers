@@ -159,6 +159,10 @@ class AlgorithmResult(models.Model):
     day_profit_mean = models.FloatField()
     day_loss_mean = models.FloatField()
 
+    pct_bull = models.FloatField(verbose_name='Bull %')
+    pct_even = models.FloatField(verbose_name='Even %')
+    pct_bear = models.FloatField(verbose_name='Bear %')
+
     df_signal = models.TextField()
 
     def __unicode__(self):

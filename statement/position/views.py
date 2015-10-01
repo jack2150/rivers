@@ -1,11 +1,52 @@
+from checklist.models import *
+from datetime import datetime
+from data.models import Stock
+from data.views import get_dte_date
 from django import forms
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
-from checklist.models import *
-from data.models import Stock
+from django.core.paginator import Paginator
 from simulation.models import StrategyResult
 from statement.models import *
+from pandas import Series
+
+
+def date_page(dates, date, link, values):
+    """
+    A method use for paginator for both
+    position spread and position report
+    :param dates: list of str
+    :param date: str
+    :param link: str
+    :param values: dict
+    :return: dict
+    """
+    p = Paginator(dates, 1)
+    page = p.page(dates.index(date) + 1)
+    next_date = p.page(dates.index(date) + 2).object_list[0] if page.has_next() else None
+    previous_date = p.page(dates.index(date)).object_list[0] if page.has_previous() else None
+
+    values['date'] = p.page(1).object_list[0]
+    first_page = reverse(link, kwargs=values)
+    values['date'] = p.page(len(dates)).object_list[0]
+    last_page = reverse(link, kwargs=values)
+
+    next_page = '#'
+    if next_date:
+        values['date'] = next_date
+        next_page = reverse(link, kwargs=values)
+
+    previous_page = '#'
+    if previous_date:
+        values['date'] = previous_date
+        previous_page = reverse(link, kwargs=values)
+
+    return {
+        'next_page': next_page,
+        'previous_page': previous_page,
+        'first_page': first_page,
+        'last_page': last_page
+    }
 
 
 def position_spreads(request, date):
@@ -29,9 +70,12 @@ def position_spreads(request, date):
     spreads = list()
     for position in positions:
         if position.name == 'STOCK':
-            stage = position.current_stage(
-                position.holdingequity_set.get(statement__date=date).close_price
-            )
+            try:
+                stage = position.current_stage(
+                    position.holdingequity_set.get(statement__date=date).close_price
+                )
+            except ObjectDoesNotExist:
+                stage = 'Closed'
         else:
             try:
                 stage = position.current_stage(float(Stock.get_price(position.symbol, date).close))
@@ -60,12 +104,17 @@ def position_spreads(request, date):
             stage=stage,
         ))
 
+    # paginator
+    dates = [s['date'].strftime('%Y-%m-%d') for s in
+             Statement.objects.all().order_by('date').values('date')]
+
     template = 'statement/position/spreads.html'
     parameters = dict(
         site_title='Position Spreads',
         title='Spreads',
         spreads=spreads,
-        date=date
+        date=date,
+        page=date_page(dates, date, 'admin:position_spreads', {})
     )
 
     return render(request, template, parameters)
@@ -153,11 +202,12 @@ def blind_strategy(request, id):
     A position can be blind into a strategy result for anlaysis
     :param request:
     :param id: int
-    :return:
+    :return: render
     """
     position = Position.objects.get(id=id)
-
+    account_trades = position.accounttrade_set.filter(pos_effect='TO OPEN')
     strategy_results = StrategyResult.objects.filter(symbol=position.symbol)
+
     if strategy_results.exists():
         strategy_results = strategy_results.order_by('id').reverse()
 
@@ -185,10 +235,261 @@ def blind_strategy(request, id):
         site_title='Position blind strategy',
         title='Blinding strategy',
         position=position,
+        account_trades=account_trades,
         form=form,
-        strategy_results=strategy_results
+        strategy_results=strategy_results,
+
     )
 
     return render(request, template, parameters)
 
-# todo: quant into another db
+
+# noinspection PyShadowingBuiltins
+def position_report(request, id, date=None):
+    """
+    Position report for certain date
+    :param request: request
+    :param id: int
+    :param date: str
+    :return: render
+    """
+    position = Position.objects.get(id=id)
+
+    if date:
+        date_query1 = Q(date__gte=position.start) & Q(date__lte=date)
+        date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=date)
+    else:
+        if position.stop:
+            date_query1 = Q(date__gte=position.start) & Q(date__lte=position.stop)
+            date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=position.stop)
+            date = position.stop.strftime('%Y-%m-%d')
+        else:
+            date = position.profitloss_set.order_by('statement__date')\
+                .last().statement.date.strftime('%Y-%m-%d')
+            date_query1 = Q(date__gte=position.start) & Q(date__lte=date)
+            date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=date)
+
+    # opinion
+    holding_opinions = position.holdingopinion_set.all()
+
+    # stock
+    stocks = Stock.objects.filter(
+        Q(symbol=position.symbol) & Q(source='google') & date_query1
+    )
+
+    # statement
+    profit_losses = position.profitloss_set.filter(date_query2)
+    open_trades = position.accounttrade_set.filter(pos_effect='TO OPEN')
+    close_trade = position.accounttrade_set.filter(pos_effect='TO CLOSE')
+    cash_balances = position.cashbalance_set.filter(date_query2)
+
+    # basic
+    basic = dict()
+    date0 = datetime.strptime(date, '%Y-%m-%d').date()
+    basic['open'] = stocks.last().open
+    basic['close'] = float(stocks.last().close)
+    basic['holding_day'] = (date0 - position.start).days
+    basic['start_date'] = position.start
+    basic['stop_date'] = date0
+    basic['expire_date'] = None
+    basic['dte'] = None
+    if position.name not in ('STOCK', ''):
+        ex_month, ex_year = position.holdingoption_set.first().exp.split(' ')
+        basic['expire_date'] = get_dte_date(ex_month, int(ex_year))
+        basic['dte'] = (basic['expire_date'] - date0).days
+
+    basic['quantity'] = '/'.join(['%+d' % a['qty'] for a in open_trades.values('qty')])
+    basic['enter_price'] = open_trades.first().net_price
+    basic['exit_price'] = '...'
+    if date0 == position.stop:
+        basic['exit_price'] = close_trade.first().net_price
+    basic['current_pl'] = profit_losses.order_by('statement__date').last().pl_open
+
+    basic['commission'] = sum([c.commission for c in cash_balances])
+    basic['brokerage'] = sum([c.fee for c in cash_balances])
+    basic['total_fee'] = basic['commission'] + basic['brokerage']
+    basic['margin'] = abs(cash_balances.order_by('statement__date').first().amount)
+
+    # condition
+    conditions = [{'stage': c[0], 'expr': c[1], 'amount': c[2], 'count': 0, 'prob': 0}
+                  for c in position.make_conditions()]
+    for condition in conditions:
+        if condition['expr'].count('<') == 2:
+            condition['distance'] = '...'
+            condition['average'] = '...'
+        else:
+            price = float([e for e in condition['expr'].format(x='').split()
+                           if '=' not in e and e is not '<'].pop())
+            condition['distance'] = round((price - basic['close']) / basic['close'], 4)
+
+            condition['average'] = '...'
+            if basic['dte']:
+                condition['average'] = round(condition['distance'] / basic['dte'], 4)
+
+        condition['remain'] = None
+        if condition['amount'].count('<') != 2:
+            amount = float([a for a in condition['amount'].format(y='').split()
+                            if '=' not in a and a is not '<'].pop())
+
+            condition['remain'] = amount - float(basic['current_pl'])
+
+    # stock
+    opinions = list()
+    stat = {
+        'up_count': 0, 'up_pct': 0, 'e_count': 0, 'e_pct': 0, 'dw_count': 0, 'dw_pct': 0,
+        'p_count': 0, 'p_pct': 0, 'l_count': 0, 'l_pct': 0
+    }
+    previous = None
+    reports = list()
+    for stock in stocks:
+        try:
+            profit_loss = profit_losses.get(statement__date=stock.date)
+        except ObjectDoesNotExist:
+            profit_loss = None
+
+        stock.pct_chg = 0.0
+        if previous:
+            stock.pct_chg = round((stock.close - previous.close) / previous.close, 4)
+        previous = stock
+
+        if stock.pct_chg > 0:
+            stat['up_count'] += 1
+            stat['up_pct'] = round(stat['up_count'] / float(len(stocks)), 4)
+        elif stock.pct_chg < 0:
+            stat['dw_count'] += 1
+            stat['dw_pct'] = round(stat['dw_count'] / float(len(stocks)), 4)
+        else:
+            stat['e_count'] += 1
+            stat['e_pct'] = round(stat['e_count'] / float(len(stocks)), 4)
+
+        if profit_loss:
+            if profit_loss.pl_open > 0:
+                stat['p_count'] += 1
+                stat['p_pct'] = round(stat['p_count'] / float(len(stocks)), 4)
+            elif profit_loss.pl_open < 0:
+                stat['l_count'] += 1
+                stat['l_pct'] = round(stat['l_count'] / float(len(stocks)), 4)
+
+        stage = position.current_stage(stock.close)
+        reports.append({
+            'date': stock.date,
+            'stock': stock,
+            'profit_loss': profit_loss,
+            'stage': stage
+        })
+
+        # condition
+        for key, condition in enumerate(conditions):
+            if condition['stage'] == stage:
+                conditions[key]['count'] += 1
+                conditions[key]['percent'] = round(conditions[key]['count'] / float(len(stocks)), 4)
+
+        # opinion
+        try:
+            opinion = holding_opinions.get(date=stock.date)
+
+            result = False
+            if stock.pct_chg > 0.5 and opinion.opinion == 'BULL':
+                result = True
+            elif stock.pct_chg < -0.5 and opinion.opinion == 'BEAR':
+                result = True
+            elif -0.5 < stock.pct_chg < 0.5 and opinion.opinion == 'RANGE':
+                result = True
+
+            opinions.append({
+                'object': opinion,
+                'pct_chg': stock.pct_chg,
+                'result': result
+            })
+        except ObjectDoesNotExist:
+            pass
+
+    # basic
+    basic['stat'] = stat
+    basic['pct_chg'] = reports[-1]['stock'].pct_chg
+    basic['stage'] = position.current_stage(reports[-1]['stock'].close)
+    basic['net_move'] = reports[-1]['stock'].close - reports[0]['stock'].close
+    basic['pct_move'] = round(basic['net_move'] / reports[0]['stock'].close, 4)
+    basic['mean_move'] = round(Series([s.pct_chg for s in stocks]).mean(), 4)
+    basic['pct_std'] = round(Series([s.pct_chg for s in stocks]).std(), 4)
+    basic['market_opinion'] = position.market_opinion
+    basic['enter_opinion'] = position.enter_opinion
+    basic['exit_opinion'] = position.exitopinion_set.last()
+    basic['max_bull'] = max([s.pct_chg for s in stocks])
+    basic['max_bear'] = min([s.pct_chg for s in stocks])
+    basic['max_profit'] = max([float(pl.pl_open) for pl in profit_losses]) / float(basic['margin'])
+    basic['max_loss'] = min([float(pl.pl_open) for pl in profit_losses]) / float(basic['margin'])
+
+    # strategy
+    strategy_result = position.strategy_result
+
+    # quant
+    quant = dict()
+    if strategy_result:
+        quant['bull'] = strategy_result.algorithm_result.pct_bull - stat['up_pct']
+        quant['even'] = strategy_result.algorithm_result.pct_even - stat['e_pct']
+        quant['bear'] = strategy_result.algorithm_result.pct_bear - stat['dw_pct']
+        quant['pct_move'] = strategy_result.algorithm_result.pct_mean - basic['pct_move']
+        quant['mean_move'] = strategy_result.algorithm_result.pct_mean - basic['mean_move']
+        quant['std'] = strategy_result.algorithm_result.pct_std - basic['pct_std']
+
+        quant['min_pct'] = min([s.pct_chg for s in stocks])
+        quant['var_pct99'] = strategy_result.algorithm_result.var_pct99 - quant['min_pct']
+        quant['var_pct95'] = strategy_result.algorithm_result.var_pct95 - quant['min_pct']
+
+        # drawdown using left right
+        #print strategy_result.algorithm_result.max_dd
+        closes = [s.close for s in stocks]
+        basic['drawdown'] = round((min(closes) - max(closes)) / max(closes), 4)
+        quant['drawdown'] = strategy_result.algorithm_result.max_dd - basic['drawdown']
+        quant['roll_dd'] = strategy_result.algorithm_result.r_max_dd - basic['drawdown']
+
+        quant['profit_day'] = strategy_result.day_profit_mean - stat['p_pct']
+        quant['loss_day'] = strategy_result.day_profit_mean - stat['l_pct']
+        quant['max_profit'] = strategy_result.max_profit - basic['max_profit']
+        quant['max_loss'] = strategy_result.max_loss - basic['max_loss']
+
+        quant['max_bull'] = strategy_result.algorithm_result.pct_max - basic['max_bull']
+        quant['max_bear'] = strategy_result.algorithm_result.pct_min - basic['max_bear']
+
+    historicals = Position.objects.filter(
+        Q(symbol=position.symbol) & Q(start__lt=position.start)
+    ).order_by('stop').reverse()
+
+    last_pl = 0.0
+    for historical in historicals:
+        #print historical
+        #print historical.start, historical.stop
+        pl_close = float(historical.profitloss_set.get(statement__date=historical.stop).pl_ytd)
+        #print 'current pl', pl_stop - last_pl
+        historical.pl_close = pl_close - last_pl
+        last_pl = pl_close
+
+    # paginator
+    dates = [pl.statement.date.strftime('%Y-%m-%d') for pl in
+             position.profitloss_set.order_by('statement__date')]
+
+    # view
+    template = 'statement/position/report/index.html'
+
+    parameters = dict(
+        site_title='Position report',
+        title='Position report: {symbol} {date}'.format(
+            symbol=position.symbol, date=date
+        ),
+        date=date,
+        position=position,
+        basic=basic,
+        stages=position.positionstage_set.all(),
+        conditions=conditions,
+        reports=reports,
+        opinions=opinions,
+        result=strategy_result,
+        quant=quant,
+        historicals=historicals,
+        page=date_page(dates, date, 'admin:position_report', {'id': id})
+    )
+
+    return render(request, template, parameters)
+
+# todo: movement test on report

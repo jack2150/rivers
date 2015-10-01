@@ -1,0 +1,132 @@
+{% extends "admin/base_site.html" %}
+{% load i18n l10n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}"/>
+  <link rel="stylesheet" type="text/css" href="/static/admin/css/overrides.css"/>
+
+  <style>
+  .fix_width {
+    width: 50%;
+  }
+  </style>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'data' %}">Data</a></li>
+      <li><a href="{% url 'admin:data_underlying_changelist' %}">Underlyings</a></li>
+      <li>Web Import</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block bodyclass %}change-form{% endblock %}
+
+{% block content %}
+  {% if form.errors %}
+    <div class="alert alert-danger fade in">
+      <a href="#" class="close" data-dismiss="alert">&times;</a>
+      <strong>Error!</strong>
+      {% for field in form %}
+        {% for error in field.errors %}
+          {{ error }}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form class="form-horizontal" action='' method='post'>
+    {% csrf_token %}
+    {% for field in form %}
+      {{ field }}
+    {% endfor %}
+
+    {% if stats %}
+      <div class="panel panel-default">
+        <div class="panel-heading">{{ symbol }} Statistics</div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-4">
+              <table class="table">
+                <caption>Statement</caption>
+                <tr>
+                  <th class="fix_width">Count:</th>
+                  <td>{{ stats.statement }}</td>
+                </tr>
+                <tr>
+                  <th>Start date:</th>
+                  <td>{{ stats.start_date }}</td>
+                </tr>
+                <tr>
+                  <th>Stop date:</th>
+                  <td>{{ stats.stop_date }}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div class="col-md-4">
+              <table class="table">
+                <caption>Account</caption>
+                <tr>
+                  <th class="fix_width">Account Order:</th>
+                  <td>{{ stats.account_order }}</td>
+                </tr>
+                <tr>
+                  <th>Account Trade:</th>
+                  <td>{{ stats.account_trade }}</td>
+                </tr>
+                <tr>
+                  <th>Cash Balance:</th>
+                  <td>{{ stats.cash_balance }}</td>
+                </tr>
+                <tr>
+                  <th>Holding Equity:</th>
+                  <td>{{ stats.holding_equity }}</td>
+                </tr>
+                <tr>
+                  <th>Holding Option:</th>
+                  <td>{{ stats.holding_option }}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div class="col-md-4">
+              <table class="table">
+                <caption>Position</caption>
+                <tr>
+                  <th class="fix_width">Count:</th>
+                  <td>{{ stats.position }}</td>
+                </tr>
+                <tr>
+                  <th>Stage:</th>
+                  <td>{{ stats.position_stage }}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="form-actions">
+      <div class="pull-left"></div>
+      <div class="pull-right">
+        <button id="back" class="btn btn-default" type="button" name="back">
+          Back
+        </button>
+        <button class="btn btn-danger default" type="submit" name="start">
+          Truncate Now
+        </button>
+      </div>
+    </div>
+  </form>
+  <script type="text/javascript">
+    $('#back').click(function () {
+      $(location).attr("href", "{% url 'admin:app_list' 'statement' %}");
+    });
+  </script>
+{% endblock %}

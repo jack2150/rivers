@@ -12,7 +12,7 @@ class MarketOpinion(models.Model):
     economics calendar, special market news
     """
     date = models.DateField(
-        help_text='Check /ES /NQ /YM /TF /VX'
+        help_text='Check /ES /NQ /YM /TF /VX', unique=True
     )
 
     # whole market
@@ -89,8 +89,6 @@ class MarketOpinion(models.Model):
 class EnterOpinion(models.Model):
     symbol = models.CharField(max_length=20)
     date = models.DateField()
-
-    position = models.ForeignKey('statement.Position', null=True, blank=True, default=None)
 
     # final, score and trade or not
     score = models.IntegerField(default=0, max_length=2, help_text='Score for checklist items!')
@@ -464,6 +462,12 @@ class EnterOpinion(models.Model):
 
         return self
 
+    def __unicode__(self):
+        return 'EnterOpinion {symbol} {date}'.format(
+            symbol=self.symbol,
+            date=self.date
+        )
+
 
 class ExitOpinion(models.Model):
     """
@@ -561,3 +565,11 @@ class HoldingOpinion(models.Model):
     special = models.BooleanField(default=False, help_text='Is there anything special today?')
 
     description = models.TextField(null=True, blank=True)
+
+    def __unicode__(self):
+        return 'Opinion {opinion} {condition} {action} {date}'.format(
+            opinion=self.opinion,
+            condition=self.condition,
+            action=self.action,
+            date=self.date
+        )

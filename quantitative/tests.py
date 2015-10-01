@@ -11,7 +11,7 @@ class TestAlgorithm(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.algorithm = Algorithm.objects.get(rule='EWMA change direction - H')
+        self.algorithm = Algorithm.objects.get(rule='Ewma Chg D')
 
     def test_make_quant(self):
         """
@@ -45,7 +45,7 @@ class TestAlgorithmAnalysis(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.algorithm = Algorithm.objects.get(rule='EWMA change direction')
+        self.algorithm = Algorithm.objects.get(rule='Ewma Chg D')
 
     def test_view(self):
         """
@@ -60,7 +60,7 @@ class TestAlgorithmAnalysis(TestUnitSetUp):
 
         self.assertTrue(form.initial['algorithm_id'])
         self.assertEqual(form.initial['algorithm_rule'],
-                         'EWMA change direction')
+                         'Ewma Chg D')
         self.assertTrue(form.initial['algorithm_formula'],
                         'EMA = EMA(t)(k-1) - EMA(t-1)(k-1)')
 
@@ -76,7 +76,7 @@ class TestQuant(TestUnitSetUp):
         TestUnitSetUp.setUp(self)
 
         self.symbol = 'AIG'  # can be a single symbol or list of symbols
-        self.algorithm = Algorithm.objects.get(rule='EWMA change direction - H')
+        self.algorithm = Algorithm.objects.get(rule='Ewma Chg D - H')
 
         self.quant = self.algorithm.quant
 
@@ -191,7 +191,8 @@ class TestQuant(TestUnitSetUp):
             'var_pct99', 'var_pct95',
             'max_dd', 'r_max_dd', 'max_bh_dd', 'r_max_bh_dd',
             'pct_mean', 'pct_median', 'pct_max', 'pct_min', 'pct_std',
-            'day_profit_mean', 'day_loss_mean'
+            'day_profit_mean', 'day_loss_mean',
+            'pct_bull', 'pct_bear', 'pct_even'
         )
 
         for key in report.keys():

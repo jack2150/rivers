@@ -1,0 +1,163 @@
+{% load admintags %}
+
+{% if result %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a class="" href="#algorithm" data-parent="#accordion" data-toggle="collapse">
+        Algorithm
+      </a>
+    </h4>
+  </div>
+
+  <div class="panel-collapse collapse in" id="algorithm">
+    <table class="table">
+      <caption>Algorithm: {{ result.algorithm_result.algorithm.rule }}</caption>
+      <tr>
+        <th class="fix_col">Formula:</th>
+        <td class="fix_col">{{ result.algorithm_result.algorithm.formula }}</td>
+        <th class="fix_col">Category:</th>
+        <td class="fix_col">{{ result.algorithm_result.algorithm.category }}</td>
+        <th class="fix_col">Method:</th>
+        <td class="fix_col">{{ result.algorithm_result.algorithm.method|upper }}</td>
+        <th class="fix_col">Optionable:</th>
+        <td class="fix_col">{{ result.algorithm_result.algorithm.optionable }}</td>
+      </tr>
+    </table>
+
+    <table class="table">
+      <caption>Algorithm Result: {{ result.algorithm_result.arguments }}</caption>
+      <tr>
+        <th class="fix_col">Sharpe SPY:</th>
+        <td class="fix_col">{{ result.algorithm_result.sharpe_spy|percent }}</td>
+        <th class="fix_col">Sortino SPY:</th>
+        <td class="fix_col">{{ result.algorithm_result.sortino_spy|percent }}</td>
+        <th class="fix_col">Trades:</th>
+        <td class="fix_col">{{ result.algorithm_result.trades }}</td>
+        <th class="fix_col">PL Trades:</th>
+        <td class="fix_col">
+          {{ result.algorithm_result.profit_prob|percent }} /
+          {{ result.algorithm_result.loss_prob|percent }}
+        </td>
+      </tr>
+      <tr>
+        <th>Max Profit:</th>
+        <td>{{ result.algorithm_result.max_profit|percent }}</td>
+        <th>Max Loss:</th>
+        <td>{{ result.algorithm_result.max_loss|percent }}</td>
+        <th>Sum PL:</th>
+        <td>{{ result.algorithm_result.pl_sum|percent }}</td>
+        <th>Mean PL:</th>
+        <td>{{ result.algorithm_result.pl_mean|percent }}</td>
+      </tr>
+      <tr>
+        <th>VaR 99:</th>
+        <td>{{ result.algorithm_result.var_pct99|percent }}</td>
+        <th>Var 95:</th>
+        <td>{{ result.algorithm_result.var_pct95|percent }}</td>
+        <th>Max Drawdown:</th>
+        <td>{{ result.algorithm_result.max_dd|percent }}</td>
+        <th>Roll Drawdown:</th>
+        <td>{{ result.algorithm_result.r_max_dd|percent }}</td>
+      </tr>
+      <tr>
+        <th>Max Bull:</th>
+        <td>{{ result.algorithm_result.pct_max|percent }}</td>
+        <th>Max Bear:</th>
+        <td>{{ result.algorithm_result.pct_min|percent }}</td>
+        <th>Move Mean:</th>
+        <td>
+          {{ result.algorithm_result.pct_mean|percent }}
+          ({{ result.algorithm_result.pct_median|percent }})
+        </td>
+        <th>Move Std:</th>
+        <td>&#177;{{ result.algorithm_result.pct_std|percent }}</td>
+      </tr>
+      <tr>
+        <th>Profit Days:</th>
+        <td>{{ result.algorithm_result.day_profit_mean|percent }}</td>
+        <th>Loss Days:</th>
+        <td>{{ result.algorithm_result.day_loss_mean|percent }}</td>
+        <th></th>
+        <td></td>
+        <th></th>
+        <td></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a class="" href="#strategy" data-parent="#accordion" data-toggle="collapse">
+          Strategy
+        </a>
+      </h4>
+    </div>
+
+    <div class="panel-collapse collapse in" id="strategy">
+    <table class="table">
+      <caption>
+        Strategy: {{ result.strategy.name }}
+      </caption>
+      <tr>
+        <th class="fix_col">Instrument:</th>
+        <td class="fix_col">{{ result.strategy.instrument }}</td>
+        <th class="fix_col">Category:</th>
+        <td class="fix_col">{{ result.strategy.category }}</td>
+        <th class="fix_col">Commission:</th>
+        <td>{{ result.commission }}</td>
+      </tr>
+    </table>
+
+    <table class="table">
+      <caption>
+        Strategy Result: {{ result.strategy.name }} {{ result.arguments }}
+      </caption>
+      <tr>
+        <th class="fix_col">Sharpe SPY:</th>
+        <td class="fix_col">{{ result.sharpe_spy|percent }}</td>
+        <th class="fix_col">Sortino SPY:</th>
+        <td class="fix_col">{{ result.sortino_spy|percent }}</td>
+        <th class="fix_col">Trades:</th>
+        <td class="fix_col">{{ result.trades }}</td>
+        <th class="fix_col">PL Trades:</th>
+        <td class="fix_col">
+          {{ result.profit_prob|percent }} / {{ result.loss_prob|percent }}
+        </td>
+      </tr>
+      <tr>
+        <th>Max Profit:</th>
+        <td>{{ result.max_profit|percent }}</td>
+        <th>Max Loss:</th>
+        <td>{{ result.max_loss|percent }}</td>
+        <th>Sum PL:</th>
+        <td>{{ result.pl_sum|percent }}</td>
+        <th>Mean PL:</th>
+        <td>{{ result.pl_mean|percent }}</td>
+      </tr>
+      <tr>
+        <th>Start Capital:</th>
+        <td>{{ result.capital0 }}</td>
+        <th>Stop Capital:</th>
+        <td>{{ result.capital1 }}</td>
+        <th>ROI Sum:</th>
+        <td>{{ result.roi_sum }}</td>
+        <th>ROI Mean:</th>
+        <td>{{ result.roi_mean }}</td>
+      </tr>
+      <tr>
+        <th>Fee Mean:</th>
+        <td>{{ result.fee_mean }}</td>
+        <th>Fee Sum:</th>
+        <td>{{ result.fee_sum }}</td>
+        <th>Remain Amount:</th>
+        <td>{{ result.remain_mean }}</td>
+        <th></th>
+        <td></td>
+      </tr>
+    </table>
+  </div>
+</div>
+{% endif %}

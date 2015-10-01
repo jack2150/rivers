@@ -1,0 +1,39 @@
+{% load admintags %}
+
+{% if historicals %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a class="" href="#position_stock" data-parent="#accordion" data-toggle="collapse">
+        Historical position
+      </a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse in" id="position_stock">
+    <table class="table">
+      <tr>
+        <th class="fix_col">Start Date</th>
+        <th class="fix_col">Stop Date</th>
+        <th class="fix_col">Name</th>
+        <th>Spread</th>
+        <th class="fix_col">Status</th>
+        <th class="fix_col">PL Close</th>
+        <th>Link</th>
+      </tr>
+      {% for historical in historicals %}
+        <tr>
+          <td>{{ historical.start }}</td>
+          <td>{{ historical.stop }}</td>
+          <td>{{ historical.name|cap }}</td>
+          <td>{{ historical.spread|cap }}</td>
+          <td>{{ historical.status|cap }}</td>
+          <td>{{ historical.pl_close|stringformat:'+.2f' }}</td>
+          <td>
+            <a href="{% url 'admin:position_report' historical.id %}">Report</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endif %}

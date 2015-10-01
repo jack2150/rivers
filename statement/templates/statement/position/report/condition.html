@@ -1,0 +1,43 @@
+{% load admintags %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a class="" href="#stage_condition" data-parent="#accordion" data-toggle="collapse">
+        Stage conditions
+      </a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse in" id="stage_condition">
+    <table class="table">
+      <tr>
+        <th class="fix_col">Stage</th>
+        <th>Expression</th>
+        <th>Amount</th>
+        <th class="fix_col">Remain</th>
+        <th class="fix_col">Distance</th>
+        <th class="fix_col">Average ({{ basic.dte }})</th>
+        <th class="fix_col">Count</th>
+      </tr>
+      {% for condition in conditions %}
+        <tr>
+          <td>{{ condition.stage }}</td>
+          <td>{{ condition.expr }}</td>
+          <td>{{ condition.amount }}</td>
+          <td>
+            {% if condition.remain %}
+              {{ condition.remain|stringformat:'+.2f' }}
+            {% else %}
+              ...
+            {% endif %}
+          </td>
+          <td>{{ condition.distance|percent2 }}</td>
+          <td>{{ condition.average|percent2 }}</td>
+          <td>
+            {{ condition.count }}
+            ({{ condition.percent|percent }})
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>

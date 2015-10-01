@@ -1,0 +1,43 @@
+{% load admintags %}
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a class="" href="#position_stock" data-parent="#accordion" data-toggle="collapse">
+        Historical prices
+      </a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse in" id="position_stock">
+    <table class="table">
+      <tr>
+        <th>Date</th>
+        <th>Open</th>
+        <th>Close</th>
+        <th>Volume</th>
+        <th>% Chg</th>
+        <th>PL Open</th>
+        <th>PL %</th>
+        <th>PL Day</th>
+        <th>PL YTD</th>
+        <th>Stage</th>
+        <th>Margin</th>
+      </tr>
+      {% for report in reports %}
+        <tr>
+          <td>{{ report.date }}</td>
+          <td>{{ report.stock.open }}</td>
+          <td>{{ report.stock.close }}</td>
+          <td>{{ report.stock.volume }}</td>
+          <td>{{ report.stock.pct_chg|percent2}}</td>
+          <td>{{ report.profit_loss.pl_open|stringformat:'+.2f' }}</td>
+          <td>{{ report.profit_loss.pl_pct|stringformat:'+.2f' }}</td>
+          <td>{{ report.profit_loss.pl_day|stringformat:'+.2f' }}</td>
+          <td>{{ report.profit_loss.pl_ytd|stringformat:'+.2f' }}</td>
+          <td>{{ report.stage|cap }}</td>
+          <td>{{ report.profit_loss.margin_req }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>

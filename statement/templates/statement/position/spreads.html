@@ -18,9 +18,52 @@
   <ul class="breadcrumb">
     <li><a href="{% url 'admin:index' %}">Home</a></li>
     <li><a href="{% url 'admin:app_list' 'statement' %}">Statement</a></li>
-    <li><a href="{% url 'admin:statement_position_changelist' %}">Position</a></li>
+    <li><a href="{% url 'admin:statement_position_changelist' %}">Positions</a></li>
     <li>Spreads</li>
   </ul>
+{% endblock %}
+
+{% block object-tools %}
+  <div id="content-navbar-collapse" class="navbar-collapse collapse">
+    <div class="nav navbar-nav navbar-right">
+      <div class="btn-group" style="margin-top: 10px;">
+        <button id="first_page" type="button" class="btn btn-sm btn-default">First</button>
+        <button id="previous_page" type="button" class="btn btn-sm btn-default">Previous</button>
+        <button id="next_page" type="button" class="btn btn-sm btn-default">Next</button>
+        <button id="last_page" type="button" class="btn btn-sm btn-default">Last</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    $("#first_page").click(function () {
+      $(location).attr('href', '{{ page.first_page }}');
+    });
+    $("#previous_page").click(function () {
+      $(location).attr('href', '{{ page.previous_page }}');
+    });
+    $("#next_page").click(function () {
+      $(location).attr('href', '{{ page.next_page }}');
+    });
+    $("#last_page").click(function () {
+      $(location).attr('href', '{{ page.last_page }}');
+    });
+
+    $(document).keyup(function (e) {
+      if (e.ctrlKey && (e.keyCode === 37)) {
+        $(location).attr('href', '{{ page.first_page }}');
+      }
+      else if (e.keyCode === 37) {
+        $(location).attr('href', '{{ page.previous_page }}');
+      }
+      else if (e.ctrlKey && (e.keyCode === 39)) {
+        $(location).attr('href', '{{ page.last_page }}');
+      }
+      else if (e.keyCode === 39) {
+        $(location).attr('href', '{{ page.next_page }}');
+      }
+    });
+  </script>
 {% endblock %}
 
 {% block content %}
@@ -28,7 +71,7 @@
     <div class="panel-heading">
       <h4 class="panel-title">
         <a data-toggle="collapse" data-parent="#accordion"
-           href="#position_spreads">Holding Positions</a>
+           href="#position_spreads">Holding Positions: {{ date }}</a>
       </h4>
     </div>
     <div id="position_spreads" class="panel-collapse collapse in">
@@ -118,17 +161,19 @@
                     {% if spread.position.strategy_result %}
                       <b>Blinded</b>
                     {% else %}
-                      Blind Position
+                      Blind strategy
                     {% endif %}
                     </a>
                   </li>
 
                   <li class="divider"></li>
-                  <li><a href="#">Detail report</a></li>
+                  <li>
+                    <a href="{% url 'admin:position_report' spread.position.id date %}">Report</a>
+                  </li>
                   <li class="divider"></li>
                   <li>
                     <a href="{% url 'admin:statement_position_change' spread.position.id %}">
-                      View position
+                      Position
                     </a>
                   </li>
                 </ul>

@@ -1,0 +1,43 @@
+{% extends "admin/base_site.html" %}
+{% load static admintags %}
+
+{% block extrastyle %}
+  <style>
+    .fix_col {
+      width: 12.5%;
+    }
+
+    .fix_col2 {
+      width: 25%;
+    }
+  </style>
+{% endblock %}
+
+
+{% block breadcrumbs %}
+  <ul class="breadcrumb">
+    <li><a href="{% url 'admin:index' %}">Home</a></li>
+    <li><a href="{% url 'admin:app_list' 'statement' %}">Statement</a></li>
+    <li><a href="{% url 'admin:statement_position_changelist' %}">Positions</a></li>
+    <li>Report</li>
+  </ul>
+{% endblock %}
+
+{% block object-tools %}
+  {% include 'statement/position/report/paginator.html' %}
+{% endblock %}
+
+{% block content %}
+  {% include 'statement/position/report/summary.html' %}
+  {% include 'statement/position/report/stock.html' %}
+
+  {% include 'statement/position/report/stage.html' %}
+  {% include 'statement/position/report/condition.html' %}
+
+  {% include 'statement/position/report/strategy.html' %}
+  {% include 'statement/position/report/comparison.html' %}
+
+  {% include 'statement/position/report/opinion.html' %}
+
+  {% include 'statement/position/report/historical.html' %}
+{% endblock %}

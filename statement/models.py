@@ -130,7 +130,8 @@ class Statement(models.Model):
                         enter_opinion = EnterOpinion.objects.get(
                             Q(symbol=position.symbol) & Q(date=self.statement.date)
                         )
-                        enter_opinion.position = position
+                        position.enter_opinion = enter_opinion
+                        position.save()
                         enter_opinion.trade = True
                         enter_opinion.save()
                     except ObjectDoesNotExist:
@@ -200,6 +201,9 @@ class Position(models.Model):
 
     market_opinion = models.ForeignKey(
         'checklist.MarketOpinion', null=True, blank=True, default=None
+    )
+    enter_opinion = models.OneToOneField(
+        'checklist.EnterOpinion', null=True, blank=True, default=None
     )
 
     strategy_result = models.OneToOneField(
@@ -289,9 +293,6 @@ class Position(models.Model):
                 stages = stage_cls(trades).create()
                 for stage in stages:
                     self.positionstage_set.add(stage)
-
-                #print self.spread, stages
-
             except (AttributeError, ImportError):
                 pass
                 #print '{name}.{spread} not yet implement.'.format(
@@ -345,10 +346,10 @@ class Position(models.Model):
 
         # make all stage into a list
         operators = list()
-        for stage_list in self.positionstage_set.order_by('price').all():
-            operators += [(stage_list.price, '<', stage_list.lt_stage, stage_list.lt_amount),
-                          (stage_list.price, '==', stage_list.e_stage, stage_list.e_amount),
-                          (stage_list.price, '>', stage_list.gt_stage, stage_list.gt_amount)]
+        for s in self.positionstage_set.order_by('price').all():
+            operators += [(s.price, '<', s.lt_stage, s.lt_amount),
+                          (s.price, '==', s.e_stage, s.e_amount),
+                          (s.price, '>', s.gt_stage, s.gt_amount)]
 
         # make a list of same stage
         stages = list()
@@ -362,17 +363,67 @@ class Position(models.Model):
 
         for stage_list in stages:
             condition0 = list()
+            amounts = list()
+
             for price in sorted(set([s[0] for s in stage_list])):
                 condition1 = list()
+
                 for stage in [s for s in stage_list if s[0] == price]:
                     condition1.append('{x} {operator} {price}'.format(
                         x='{x}',
                         operator=stage[1],
                         price=stage[0],
                     ))
-                condition0.append(' or '.join(condition1))
 
-            conditions.append((stage_list[0][2], ' and '.join(condition0)))
+                    amounts.append(stage[3])
+
+                condition0.append(' or '.join(condition1))
+            else:
+                if all([a == amounts[0] for a in amounts]):
+                    stage_operators = {
+                        'MAX_PROFIT': '{y} == {amount}',
+                        'PROFIT': '{amount} < {y}',
+                        'EVEN': '{y} == {amount}',
+                        'LOSS': '{y} < {amount}',
+                        'MAX_LOSS': '{y} == {amount}',
+                    }
+
+                    amount = stage_operators[stage_list[0][2]].format(
+                        y='{y}', amount=amounts[0]
+                    )
+                else:
+                    stage_operators = {
+                        'PROFIT': '{amount0} < {y} < {amount1}',
+                        'LOSS': '{amount0} < {y} < {amount1}',
+                    }
+                    amount = stage_operators[stage_list[0][2]].format(
+                        y='{y}', amount0=amounts[0], amount1=amounts[1],
+                    )
+
+                conditions.append([stage_list[0][2], ' and '.join(condition0), amount])
+        else:
+            for condition in conditions:
+                if 'or' in condition[1]:
+                    if '<' in condition[1] and '==' in condition[1]:
+                        condition[1] = '{x} <= {price}'.format(
+                            x='{x}', price=condition[1].split()[-1]
+                        )
+                    elif '>' in condition[1] and '==' in condition[1]:
+                        condition[1] = '{price} <= {x}'.format(
+                            x='{x}', price=condition[1].split()[-1]
+                        )
+                elif 'and' in condition[1]:
+                    if '{x} >' in condition[1] and '{x} <' in condition[1]:
+                        price0 = condition[1][condition[1].index('>') + 1:].split()[0]
+                        price1 = condition[1][condition[1].index('<') + 1:].split()[0]
+                        condition[1] = '{price0} < {x} < {price1}'.format(
+                            x='{x}', price0=price0, price1=price1
+                        )
+                elif '>' in condition[1]:
+                    x, operator, price = condition[1].split()
+                    condition[1] = '{price} {operator} {x}'.format(
+                        price=price, operator=operator.replace('>', '<'), x='{x}'
+                    )
 
         return conditions
 
@@ -383,7 +434,7 @@ class Position(models.Model):
         :return: str
         """
         result = None
-        for stage, condition in self.make_conditions():
+        for stage, condition, amount in self.make_conditions():
             if eval(condition.format(x=price)):
                 result = stage
                 break
@@ -412,7 +463,7 @@ class PositionStage(models.Model):
     e_amount = models.DecimalField(null=True, max_digits=10, decimal_places=2)
 
     lt_stage = models.CharField(max_length=20)
-    lt_amount = models.CharField(null=True, max_length=20)
+    lt_amount = models.DecimalField(null=True, max_digits=10, decimal_places=2)
 
     position = models.ForeignKey(Position, null=True)
 

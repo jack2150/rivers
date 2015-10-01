@@ -3,12 +3,8 @@ from statement.position.views import *
 
 
 class TestPositionSpreads(TestUnitSetUp):
-    multi_db = True
-
     def test_view(self):
-        #self.client.get(reverse('admin:position_spreads', kwargs={'date': '2015-01-29'}))
-
-        self.client.get(reverse('admin:blind_strategy', kwargs={'id': 7}))
+        self.client.get(reverse('admin:position_spreads', kwargs={'date': '2015-01-30'}))
 
 
 class TestBlindStrategySpreads(TestUnitSetUp):
@@ -17,13 +13,6 @@ class TestBlindStrategySpreads(TestUnitSetUp):
 
         self.position = Position.objects.filter(symbol='WFC').first()
         self.strategy_result = StrategyResult.objects.filter(symbol='WFC').first()
-
-    def test_view(self):
-        # self.client.get(reverse('admin:position_spreads', kwargs={'date': '2015-01-29'}))
-
-        self.client.get(reverse('admin:blind_strategy', kwargs={'id': 7}))
-
-        # todo: write testing
 
     def test_blind_strategy_form_is_valid(self):
         """
@@ -51,6 +40,20 @@ class TestBlindStrategySpreads(TestUnitSetUp):
         self.assertFalse(form.is_valid())
 
 
+class TestPositionReport(TestUnitSetUp):
+    def setUp(self):
+        TestUnitSetUp.setUp(self)
+
+        self.position = Position.objects.filter(symbol='WFC').last()
+        #self.date = '2015-02-06'
+        self.date = '2015-03-30'
+
+        print self.position, self.date
+
+    def test_view(self):
+        self.client.get(
+            reverse('admin:position_report', kwargs={'id': self.position.id, 'date': self.date})
+        )
 
 
 

@@ -1,5 +1,9 @@
 <div id="content-navbar-collapse" class="navbar-collapse collapse">
   <div class="nav navbar-nav navbar-right">
+    <button id="truncate_statement" type="button" class="btn btn-danger" style="margin-top: 10px;">
+      Truncate Statement
+    </button>
+
     <button id="statement_import" type="button" class="btn btn-primary">
       Statement Import
     </button>
@@ -7,6 +11,9 @@
 </div>
 
 <script type="text/javascript">
+  $("#truncate_statement").click(function () {
+    $(location).attr("href", "{% url 'admin:truncate_statement' %}");
+  });
   $("#statement_import").click(function () {
     $(location).attr("href", "{% url 'admin:statement_import' %}");
   });

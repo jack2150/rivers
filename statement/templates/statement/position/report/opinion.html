@@ -1,0 +1,93 @@
+{% load admintags %}
+
+{% if opinions %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a class="" href="#position_opinion" data-parent="#accordion" data-toggle="collapse">
+        Holding opinions
+      </a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse in" id="position_opinion">
+    <table class="table">
+      <tr>
+        <th>Date</th>
+        <th>Check All</th>
+        <th>Condition</th>
+        <th>Action</th>
+        <th>Opinion</th>
+        <th>News Level</th>
+        <th>News Effect</th>
+        <th>Special</th>
+        <th>% Change</th>
+        <th>Result</th>
+      </tr>
+      {% for opinion in opinions %}
+        <tr>
+          <td>{{ opinion.object.date }}</td>
+          <td>{{ opinion.object.check_all }}</td>
+          <td>{{ opinion.object.condition }}</td>
+          <td>{{ opinion.object.action }}</td>
+          <td>{{ opinion.object.opinion }}</td>
+          <td>{{ opinion.object.news_level }}</td>
+          <td>{{ opinion.object.news_effect }}</td>
+          <td>{{ opinion.object.special }}</td>
+          <td>{{ opinion.pct_chg }}</td>
+          <td>{{ opinion.result }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if basic.market_opinion or basic.enter_opinion or basic.exit_opinion %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a class="" href="#other_opinions" data-parent="#accordion" data-toggle="collapse">
+        Other opinions
+      </a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse in" id="other_opinions">
+    <table class="table">
+      <tr>
+        <th class="fix_col">Market Opinion:</th>
+        <td class="fix_col">
+          {% if basic.market_opinion %}
+            <a href="{% url 'admin:checklist_marketopinion_change' 1 %}">
+              Change
+            </a>
+          {% else %}
+            No opinion!
+          {% endif %}
+        </td>
+        <th class="fix_col">Enter Opinion:</th>
+        <td class="fix_col">
+          {% if basic.enter_opinion %}
+            <a href="{% url 'admin:enter_opinion_report' basic.enter_opinion.id %}">
+              Report
+            </a>
+          {% else %}
+            No opinion!
+          {% endif %}
+        </td>
+        <th class="fix_col">Exit Opinion:</th>
+        <td class="fix_col">
+          {% if basic.exit_opinion %}
+            <a href="{% url 'admin:checklist_exitopinion_change' basic.exit_opinion.id %}">
+              Change
+            </a>
+          {% else %}
+            No opinion!
+          {% endif %}
+        </td>
+        <th class="fix_col"></th>
+        <td class="fix_col"></td>
+      </tr>
+    </table>
+  </div>
+</div>
+{% endif %}

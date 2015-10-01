@@ -52,7 +52,7 @@ class EnterOpinionAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Primary field', {
             'fields': (
-                'position',  'symbol', 'date', 'score', 'complete', 'trade'
+                'symbol', 'date', 'score', 'complete', 'trade'
             )
         }),
         ('Position', {

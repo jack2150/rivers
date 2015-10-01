@@ -202,7 +202,9 @@ class StrategyQuant(object):
 
         df_trade['roi'] = (df_trade['amount1'] - df_trade['amount0']
                            - df_trade['fee1'] - df_trade['fee0'])
-        df_trade['roi_pct_chg'] = np.round(df_trade['roi'] / df_trade['capital'], 4)
+        #df_trade['roi_pct_chg'] = np.round(df_trade['roi'] / df_trade['capital'], 4)
+        df_trade['roi_pct_chg'] = np.round(df_trade['roi'] / (np.abs(df_trade['amount0'])
+                                           + df_trade['fee1'] + df_trade['fee0']), 4)
 
         df_trade.drop(['sqm0', 'sqm1', 'oqm0', 'oqm1'], axis=1, inplace=True)
 

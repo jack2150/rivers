@@ -180,6 +180,7 @@ class AlgorithmQuant(object):
 
         return result
 
+    # noinspection PyUnresolvedReferences
     @staticmethod
     def create_signal2(df, df_signal):
         """
@@ -263,6 +264,10 @@ class AlgorithmQuant(object):
 
         df0 = df_stock.set_index('date')
 
+        bull_count = 0
+        bear_count = 0
+        even_count = 0
+        total_count = 0
         bh_sum = 0.0
         csv_data = list()
 
@@ -294,6 +299,11 @@ class AlgorithmQuant(object):
                 close0 = df_temp['close'][df_temp.index.values[0]]
                 close1 = df_temp['close'][df_temp.index.values[-1]]
                 bh_sum += (close1 - close0) / close0
+
+                bull_count += len(df_temp['pct_chg'][df_temp['pct_chg'] > 0])
+                bear_count += len(df_temp['pct_chg'][df_temp['pct_chg'] < 0])
+                even_count += len(df_temp['pct_chg'][df_temp['pct_chg'] == 0])
+                total_count += len(df_temp['pct_chg'])
 
                 csv_data.append(df_temp.to_csv())
 
@@ -416,6 +426,12 @@ class AlgorithmQuant(object):
         day_profit_mean = df_signal2['p_pct'].mean()
         day_loss_mean = df_signal2['l_pct'].mean()
 
+        # bull bear count
+        pct_bull = round(bull_count / float(total_count), 2)
+        pct_bear = round(bear_count / float(total_count), 2)
+        pct_even = round((total_count - bull_count - bear_count
+                          + even_count) / float(total_count), 2)
+
         # output report
         return dict(
             sharpe_rf=round(np.float(avg1 / std1), 6),
@@ -447,6 +463,9 @@ class AlgorithmQuant(object):
             pct_std=pct_std,
             day_profit_mean=round(day_profit_mean, 2),
             day_loss_mean=round(day_loss_mean, 2),
+            pct_bull=pct_bull,
+            pct_bear=pct_bear,
+            pct_even=pct_even
         )
 
     def make_reports(self):

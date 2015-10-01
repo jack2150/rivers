@@ -304,6 +304,9 @@ class StrategyAnalysisForm2(forms.Form):
 
         strategy_results = list()
         for report in reports:
+            for key in ('pct_bull', 'pct_even', 'pct_bear'):
+                del report[key]
+
             strategy_result = StrategyResult(**report)
             strategy_result.symbol = strategy_quant.algorithm_result.symbol
             strategy_result.algorithm_result = strategy_quant.algorithm_result

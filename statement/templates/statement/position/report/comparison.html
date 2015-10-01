@@ -1,0 +1,156 @@
+{% load admintags %}
+
+{% if result %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a class="" href="#quant_compare" data-parent="#accordion" data-toggle="collapse">
+        Comparison
+      </a>
+    </h4>
+  </div>
+  <div class="panel-body panel-collapse collapse in" id="quant_compare">
+    <div class="row">
+      <div class="col-md-6">
+        <table class="table">
+          <caption>Movement</caption>
+          <tr>
+            <th class="fix_col2">Item</th>
+            <th class="fix_col2">Pass</th>
+            <th class="fix_col2">Current</th>
+            <th class="fix_col2">Different</th>
+          </tr>
+          <tr>
+            <td>Bull %</td>
+            <td>{{ result.algorithm_result.pct_bull|percent }}</td>
+            <td>{{ basic.stat.up_pct|percent }}</td>
+            <td>{{ quant.bull|percent2 }}</td>
+          </tr>
+          <tr>
+            <td>Even %</td>
+            <td>{{ result.algorithm_result.pct_even|percent }}</td>
+            <td>{{ basic.stat.e_pct|percent }}</td>
+            <td>{{ quant.even|percent2 }}</td>
+          </tr>
+          <tr>
+            <td>Bear %</td>
+            <td>{{ result.algorithm_result.pct_bear|percent }}</td>
+            <td>{{ basic.stat.dw_pct|percent }}</td>
+            <td>{{ quant.bear|percent2 }}</td>
+          </tr>
+          <tr>
+            <td>Total %</td>
+            <td>{{ result.algorithm_result.pct_mean|percent }}</td>
+            <td>{{ basic.pct_move|percent }}</td>
+            <td>{{ quant.pct_move|percent2 }}</td>
+          </tr>
+          <tr>
+            <td>Std</td>
+            <td>&#177;{{ result.algorithm_result.pct_std|percent }}</td>
+            <td>&#177;{{ basic.pct_std|percent }}</td>
+            <td>&#177;{{ quant.std|percent }}</td>
+          </tr>
+        </table>
+      </div>
+      <div class="col-md-6">
+        <table class="table">
+          <caption>Risk</caption>
+          <tr>
+            <th class="fix_col2">Item</th>
+            <th class="fix_col2">Pass</th>
+            <th class="fix_col2">Current</th>
+            <th class="fix_col2">Different</th>
+          </tr>
+          <tr>
+            <td>Var 99%</td>
+            <td>{{ result.algorithm_result.var_pct99|percent }}</td>
+            <td>{{ quant.min_pct|percent }}</td>
+            <td>{{ quant.var_pct99|percent }}</td>
+          </tr>
+          <tr>
+            <td>Var 95%</td>
+            <td>{{ result.algorithm_result.var_pct95|percent }}</td>
+            <td>{{ quant.min_pct|percent }}</td>
+            <td>{{ quant.var_pct95|percent }}</td>
+          </tr>
+          <tr>
+            <td>Max Drawdown</td>
+            <td>{{ result.algorithm_result.max_dd|percent }}</td>
+            <td>{{ basic.drawdown|percent }}</td>
+            <td>{{ quant.drawdown|percent }}</td>
+          </tr>
+          <tr>
+            <td>Roll Drawdown</td>
+            <td>{{ result.algorithm_result.r_max_dd|percent }}</td>
+            <td>{{ basic.drawdown|percent }}</td>
+            <td>{{ quant.roll_dd|percent }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        <table class="table">
+          <caption>Profit Loss</caption>
+          <tr>
+            <th class="fix_col2">Item</th>
+            <th class="fix_col2">Pass</th>
+            <th class="fix_col2">Current</th>
+            <th class="fix_col2">Different</th>
+          </tr>
+          <tr>
+            <td>Profit Day</td>
+            <td>{{ result.day_profit_mean|percent }}</td>
+            <td>{{ basic.stat.p_pct|percent }}</td>
+            <td>{{ quant.profit_day|percent }}</td>
+          </tr>
+          <tr>
+            <td>Loss Day</td>
+            <td>{{ result.day_loss_mean|percent }}</td>
+            <td>{{ basic.stat.l_pct|percent }}</td>
+            <td>{{ quant.loss_day|percent }}</td>
+          </tr>
+
+          <tr>
+            <td>Max Profit</td>
+            <td>{{ result.max_profit|percent }}</td>
+            <td>{{ basic.max_profit|percent }}</td>
+            <td>{{ quant.max_profit|percent }}</td>
+          </tr>
+
+          <tr>
+            <td>Max Loss</td>
+            <td>{{ result.max_loss|percent }}</td>
+            <td>{{ basic.max_loss|percent }}</td>
+            <td>{{ quant.max_loss|percent }}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="col-md-6">
+        <table class="table">
+          <caption>One Day</caption>
+          <tr>
+            <th class="fix_col2">Item</th>
+            <th class="fix_col2">Pass</th>
+            <th class="fix_col2">Current</th>
+            <th class="fix_col2">Different</th>
+          </tr>
+          <tr>
+            <td>Max Up</td>
+            <td>{{ result.algorithm_result.pct_max|percent }}</td>
+            <td>{{ basic.max_bull|percent }}</td>
+            <td>{{ quant.max_bull|percent }}</td>
+          </tr>
+          <tr>
+            <td>Max Down</td>
+            <td>{{ result.algorithm_result.pct_min|percent }}</td>
+            <td>{{ basic.max_bear|percent }}</td>
+            <td>{{ quant.max_bear|percent }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,37 @@
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a class="" href="#position_stage" data-parent="#accordion" data-toggle="collapse">
+        Position stages
+      </a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse in" id="position_stage">
+    <table class="table">
+      <tr>
+        <th>Price</th>
+        <th>LT Stage (<)</th>
+        <th>LT Amount (<)</th>
+        <th>E Stage (=)</th>
+        <th>E Amount (=)</th>
+        <th>GT Stage (>)</th>
+        <th>GT Amount (>)</th>
+      </tr>
+      {% for stage in stages %}
+        <tr>
+          <td>{{ stage.price }}</td>
+          <td>{{ stage.lt_stage }}</td>
+          <td>{{ stage.lt_amount }}</td>
+          <td>{{ stage.e_stage }}</td>
+          <td>{{ stage.e_amount }}</td>
+          <td>{{ stage.gt_stage }}</td>
+          <td>
+
+            {{ stage.gt_amount|stringformat:'+d' }}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+</div>

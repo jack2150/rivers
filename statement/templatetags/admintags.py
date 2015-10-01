@@ -77,3 +77,26 @@ def strategy_args(obj):
         args = []
 
     return args
+
+
+@register.filter
+def first_item(obj, key):
+    return obj[0][key]
+
+
+@register.filter
+def percent(obj):
+    try:
+        result = '{percent}%'.format(percent=round(obj * 100.0, 2))
+    except TypeError:
+        result = obj
+    return result
+
+
+@register.filter
+def percent2(obj):
+    try:
+        result = '{0:+.2f}%'.format(round(obj * 100.0, 2))
+    except TypeError:
+        result = obj
+    return result
