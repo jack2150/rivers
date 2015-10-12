@@ -12,6 +12,19 @@ class AlgorithmQuant(object):
         self.data = None
         self.args = None
 
+        self.start_date = None
+        self.stop_date = None
+
+    def set_date(self, start, stop):
+        """
+        Set start and stop date for algorithm test
+        :param start: datetime or str
+        :param stop: datetime or str
+        :return: None
+        """
+        self.start_date = start
+        self.stop_date = stop
+
     def set_args(self, fields):
         """
         Generate a list of variables
@@ -43,10 +56,16 @@ class AlgorithmQuant(object):
                 if arg in ('order', 'side'):
                     args[arg] = ['"%s"' % fields[arg]]
                 else:
-                    try:
-                        args[arg] = [int(fields[arg])]
-                    except ValueError:
-                        raise ValueError('Unable convert {arg} into int'.format(arg=arg))
+                    if '.' in fields[arg]:
+                        try:
+                            args[arg] = [float(fields[arg])]
+                        except ValueError:
+                            raise ValueError('Unable convert {arg} into float'.format(arg=arg))
+                    else:
+                        try:
+                            args[arg] = [int(fields[arg])]
+                        except ValueError:
+                            raise ValueError('Unable convert {arg} into int'.format(arg=arg))
 
         # make it a list
         keys = sorted(args.keys())
@@ -113,15 +132,21 @@ class AlgorithmQuant(object):
         return df['interest']
 
     @staticmethod
-    def make_df(symbol):
+    def make_df(symbol, start_date=None, stop_date=None):
         """
         Make data frame from objects data
         :param symbol: str
         :return: DataFrame
         """
-        df = pd.DataFrame(list(Stock.objects.filter(
-            Q(symbol=symbol) & Q(source='google')
-        ).values()))
+        query = Q(symbol=symbol) & Q(source='google')
+        if start_date and stop_date:
+            query &= Q(date__gte=start_date) & Q(date__lte=stop_date)
+        elif start_date:
+            query &= Q(date__gte=start_date)
+        elif stop_date:
+            query &= Q(date__lte=stop_date)
+
+        df = pd.DataFrame(list(Stock.objects.filter(query).values()))
         df = df.reindex_axis(
             ['symbol', 'date', 'open', 'high', 'low', 'close', 'volume'],
             axis=1
@@ -129,12 +154,6 @@ class AlgorithmQuant(object):
 
         if not df['close'].count():
             raise LookupError('Symbol %s stock not found in db.' % symbol.upper())
-
-        # add earnings
-        #earnings = [
-        #    e['date_act'] for e in Earning.objects.filter(symbol=symbol).values('date_act')
-        #]
-        #df['earning'] = df['date'].isin(earnings)
 
         # change type
         df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(np.float)
@@ -155,7 +174,7 @@ class AlgorithmQuant(object):
         data = dict()
         for symbol in symbols:
             # create df
-            data[symbol] = self.make_df(symbol)
+            data[symbol] = self.make_df(symbol, self.start_date, self.stop_date)
 
         self.data = pd.Panel(data)
 
@@ -278,6 +297,7 @@ class AlgorithmQuant(object):
                 df_temp = df0.ix[data['date0']:data['date1']]
                 if len(df_temp) > 2:
                     df_temp = df_temp[:-1]
+                print df_temp
 
                 df_temp = df_temp.reindex_axis(
                     ['symbol', 'open', 'high', 'low', 'close', 'volume'], axis=1

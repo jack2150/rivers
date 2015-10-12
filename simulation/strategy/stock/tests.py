@@ -4,6 +4,36 @@ import pandas as pd
 from simulation.models import Strategy
 
 
+class TestStrategyBuy(TestUnitSetUp):
+    def setUp(self):
+        TestUnitSetUp.setUp(self)
+
+        self.symbol = 'AIG'
+
+        self.algorithm = Algorithm.objects.get(id=1)
+
+        self.quant = self.algorithm.make_quant()
+        self.quant.seed_data(self.symbol)
+        self.arguments = {'span': 20, 'previous': 20}
+
+        self.strategy = Strategy.objects.get(name='Stock')
+
+    def test_make_order(self):
+        """
+        Test trade using stop loss order
+        """
+        df_stock = self.quant.handle_data(self.quant.data[self.symbol], **self.arguments)
+        df_signal = self.quant.create_signal(df_stock)
+        r0 = pd.Series(self.quant.report(df_stock, df_signal))
+
+        for side in ('follow', 'buy', 'sell'):
+            print 'side:', side
+            df_order = self.strategy.make_order(df_stock, df_signal, side)
+            print df_order.to_string(line_width=500)
+
+            print '=' * 100
+
+
 class TestStrategyStopLoss(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)

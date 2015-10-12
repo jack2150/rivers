@@ -88,6 +88,3 @@ class TestStrategyNakedPut(TestStrategyLongCall):
             'cycle': 0,
             'strike': 5
         }
-
-
-# todo: seed data can use date range

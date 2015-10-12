@@ -36,8 +36,7 @@ class TestAlgorithm(TestUnitSetUp):
         self.assertListEqual(
             args,
             [('handle_data_span', 0),
-             ('handle_data_previous', 0),
-             ('create_signal_holding', 0)]
+             ('handle_data_previous', 0)]
         )
 
 
@@ -115,9 +114,10 @@ class TestQuant(TestUnitSetUp):
         """
         Test make data frame using sql data
         """
-        df_aig = self.quant.make_df('AIG')
+        df_aig = self.quant.make_df('AIG', '2010-01-01', '2014-12-31')
 
         print df_aig.head()
+        print df_aig.tail()
 
         self.assertEqual(type(df_aig), pd.DataFrame)
         self.assertGreaterEqual(df_aig['date'].count(), 250)
@@ -155,9 +155,22 @@ class TestQuant(TestUnitSetUp):
         """
         Test create signal 2 that add extra columns into df_signal
         """
+        self.symbol = 'YUM'  # can be a single symbol or list of symbols
+        self.algorithm = Algorithm.objects.get(rule='After Earning Move')
+
+        self.quant = self.algorithm.quant
+        self.hd_args = {
+            'move': 'down',
+            'percent': 5,
+            'bdays': 30
+        }
+        self.cs_args = {
+            'side': 'buy'
+        }
+
         df = self.quant.make_df(self.symbol)
-        df_stock = self.quant.handle_data(df, 120, 20)
-        df_signal = self.quant.create_signal(df_stock, 20)
+        df_stock = self.quant.handle_data(df, **self.hd_args)
+        df_signal = self.quant.create_signal(df_stock, **self.cs_args)
 
         df_signal2 = self.quant.create_signal2(df, df_signal)
 
@@ -224,14 +237,16 @@ class TestAlgorithmAnalysisForm(TestUnitSetUp):
         TestUnitSetUp.setUp(self)
 
         self.symbol = 'AIG'
-        self.algorithm = Algorithm.objects.get(id=3)
+        self.algorithm = Algorithm.objects.get(rule='Ewma Chg D - H')
         self.arguments = self.algorithm.get_args()
 
         self.data = {
             'symbol': self.symbol,
-            'handle_data_span': '261',
+            'start_date': '2013-01-01',
+            'stop_date': '2014-12-31',
+            'handle_data_span': '60',
             'handle_data_previous': '20',
-            'create_signal_holding': '261',
+            'create_signal_holding': '20',
             'algorithm_id': self.algorithm.id,
             'algorithm_rule': self.algorithm.rule,
             'algorithm_formula': self.algorithm.formula,
@@ -243,7 +258,9 @@ class TestAlgorithmAnalysisForm(TestUnitSetUp):
         """
         self.form = AlgorithmAnalysisForm(arguments=self.arguments, data=self.data)
         print 'form is valid using valid input data...\n'
+        print self.form.errors
         self.assertTrue(self.form.is_valid())
+
 
         print 'testing with invalid input data...'
 

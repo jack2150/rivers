@@ -129,7 +129,7 @@
 
       <div class="col-md-6">
         <table class="table">
-          <caption>One Day</caption>
+          <caption>Move Median</caption>
           <tr>
             <th class="fix_col2">Item</th>
             <th class="fix_col2">Pass</th>
@@ -137,14 +137,14 @@
             <th class="fix_col2">Different</th>
           </tr>
           <tr>
-            <td>Max Up</td>
-            <td>{{ result.algorithm_result.pct_max|percent }}</td>
+            <td>Max</td>
+            <td>{{ quant.pct_max|percent }}</td>
             <td>{{ basic.max_bull|percent }}</td>
             <td>{{ quant.max_bull|percent }}</td>
           </tr>
           <tr>
-            <td>Max Down</td>
-            <td>{{ result.algorithm_result.pct_min|percent }}</td>
+            <td>Min</td>
+            <td>{{ quant.pct_min|percent }}</td>
             <td>{{ basic.max_bear|percent }}</td>
             <td>{{ quant.max_bear|percent }}</td>
           </tr>

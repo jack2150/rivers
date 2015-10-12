@@ -1,7 +1,10 @@
+from bootstrap3_datetime.widgets import DateTimePicker
+import datetime
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.db.models import Q
 from django.shortcuts import render, redirect
 from django import forms
+from pandas.tseries.offsets import BDay
 from data.models import Stock, Underlying
 from quantitative.models import *
 
@@ -16,6 +19,14 @@ class AlgorithmAnalysisForm(forms.Form):
         }),
         help_text='Sample: ALL, "SPY,AIG", SP500...'
     )
+
+    start_date = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+    stop_date = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
     algorithm_id = forms.IntegerField(widget=forms.HiddenInput())
 
     algorithm_rule = forms.CharField(widget=forms.TextInput(
@@ -134,6 +145,7 @@ class AlgorithmAnalysisForm(forms.Form):
         Using generate variables and run algorithm
         :return: AlgorithmResult
         """
+
         # prepare symbols
         symbols = self.cleaned_data['symbol'].upper()
         if ',' not in symbols:
@@ -153,9 +165,13 @@ class AlgorithmAnalysisForm(forms.Form):
         algorithm = Algorithm.objects.get(id=self.cleaned_data['algorithm_id'])
         algorithm.quant.set_args({
             key: value for key, value in self.cleaned_data.items()
-            if 'algorithm_' not in key and key is not 'symbol'
+            if 'algorithm_' not in key and key not in ('symbol', 'start_date', 'stop_date')
         })
 
+        algorithm.quant.set_date(
+            start=self.cleaned_data['start_date'],
+            stop=self.cleaned_data['stop_date'],
+        )
         algorithm.quant.seed_data(symbols)
         reports = algorithm.quant.make_reports()
 
@@ -189,6 +205,11 @@ def algorithm_analysis(request, algorithm_id, argument_id=0):
             'algorithm_id': algorithm.id,
             'algorithm_rule': algorithm.rule,
             'algorithm_formula': algorithm.formula,
+            'start_date': datetime.date(year=2009, month=1, day=1),
+            'stop_date': datetime.date(
+                year=datetime.datetime.today().year,
+                month=datetime.datetime.today().month,
+                day=1) - BDay(1),
         }
 
         if int(argument_id):
@@ -203,8 +224,6 @@ def algorithm_analysis(request, algorithm_id, argument_id=0):
             initial=initial
         )
 
-
-
     template = 'quant/algorithm/analysis.html'
 
     parameters = dict(
@@ -216,3 +235,5 @@ def algorithm_analysis(request, algorithm_id, argument_id=0):
     )
 
     return render(request, template, parameters)
+
+# todo: winner loser table, predict using normal stat, pass 30 days current price (lower, upper)

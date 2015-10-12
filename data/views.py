@@ -372,7 +372,7 @@ def csv_stock_import(request, symbol):
             bday = bday.to_datetime()
 
             if not holiday(bday) and not offday(bday):
-                missing_dates.append(bday.strftime('%m/%d/%y'))
+                missing_dates.append(bday.strftime('%m/%d/%Y'))
 
     # update underlying
     underlying.thinkback = len(
@@ -474,6 +474,8 @@ def get_dte_date(ex_month, ex_year):
 
     # get day in calendar
     day = c[week - 1][-2]
+    if day == 0:
+        day = [d for d in c[week - 1] if d != 0][-1]
 
     return datetime.date(year=year, month=month, day=day)
 
@@ -878,6 +880,9 @@ class EventImportForm(forms.Form):
                         self.temp.append(data)
 
                     if len(self.temp) == 10:
+                        if self.temp[5] and self.temp[9]:
+                            self.temp[9] = self.temp[5]
+
                         if '--' not in self.temp:
                             self.data.append(self.temp)
 
@@ -897,6 +902,7 @@ class EventImportForm(forms.Form):
         # update and add new
         earnings = list()
         for l in p.data:
+            print l
             e = {k: str(v) for k, v in zip(
                 ['report_date', 'actual_date', 'release', 'estimate_eps', 'analysts',
                  'adjusted_eps', 'diff', 'hl', 'gaap', 'actual_eps'], l
@@ -1009,8 +1015,8 @@ def event_import(request, event, symbol):
 
     template = 'data/event_import/index.html'
     parameters = dict(
-        site_title='Verify {event}'.format(event=event),
-        title='Verify {event}'.format(event=event),
+        site_title='{event} import'.format(event=event.capitalize()),
+        title='{event} import'.format(event=event.capitalize()),
         form=form
     )
 

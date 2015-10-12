@@ -594,7 +594,7 @@ class TestVerifyEvent(TestSetUp):
         """
         path = os.path.join(BASE_DIR, 'files', 'fidelity', 'earnings')
 
-        for symbol in ('JPM', 'DDD'):
+        for symbol in ('YUM',):  #('JPM', 'DDD'):
             print 'running symbol:', symbol
             form = EventImportForm(
                 {'symbol': symbol, 'event': 'earning'},

@@ -152,5 +152,3 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM', 'ATM'),
         df['oqm1'] = -1
 
     return df
-
-# todo: unusual option volume

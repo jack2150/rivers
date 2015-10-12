@@ -224,7 +224,10 @@ def blind_strategy(request, id):
             position.strategy_result = strategy_result
             position.save()
 
-            return redirect(reverse('admin:statement_position_change', args=(position.id,)))
+            return redirect(reverse(
+                'admin:position_report',
+                kwargs={'id': position.id, 'date': position.start.strftime('%Y-%m-%d')}
+            ))
     else:
         form = BlindPositionForm(initial={
             'position': id
@@ -415,10 +418,10 @@ def position_report(request, id, date=None):
     basic['market_opinion'] = position.market_opinion
     basic['enter_opinion'] = position.enter_opinion
     basic['exit_opinion'] = position.exitopinion_set.last()
-    basic['max_bull'] = max([s.pct_chg for s in stocks])
-    basic['max_bear'] = min([s.pct_chg for s in stocks])
     basic['max_profit'] = max([float(pl.pl_open) for pl in profit_losses]) / float(basic['margin'])
     basic['max_loss'] = min([float(pl.pl_open) for pl in profit_losses]) / float(basic['margin'])
+    basic['max_bull'] = max([s.pct_chg for s in stocks])
+    basic['max_bear'] = min([s.pct_chg for s in stocks])
 
     # strategy
     strategy_result = position.strategy_result
@@ -449,8 +452,15 @@ def position_report(request, id, date=None):
         quant['max_profit'] = strategy_result.max_profit - basic['max_profit']
         quant['max_loss'] = strategy_result.max_loss - basic['max_loss']
 
-        quant['max_bull'] = strategy_result.algorithm_result.pct_max - basic['max_bull']
-        quant['max_bear'] = strategy_result.algorithm_result.pct_min - basic['max_bear']
+        if strategy_result.algorithm_result.pct_max > strategy_result.algorithm_result.pct_min:
+            quant['pct_max'] = strategy_result.algorithm_result.pct_max
+            quant['pct_min'] = strategy_result.algorithm_result.pct_min
+        else:
+            quant['pct_max'] = strategy_result.algorithm_result.pct_min
+            quant['pct_min'] = strategy_result.algorithm_result.pct_max
+
+        quant['max_bull'] = quant['pct_max'] - basic['max_bull']
+        quant['max_bear'] = quant['pct_min'] - basic['max_bear']
 
     historicals = Position.objects.filter(
         Q(symbol=position.symbol) & Q(start__lt=position.start)

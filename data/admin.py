@@ -329,7 +329,3 @@ admin.site.register_view(
     'data/import/(?P<event>\w+)/(?P<symbol>\w+)/$',
     urlname='event_import', view=event_import
 )
-
-
-
-# todo: position spread view
