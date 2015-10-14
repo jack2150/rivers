@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django import forms
 from views import *
 from bootstrap3_datetime.widgets import DateTimePicker
 from statement.position.views import *
@@ -92,13 +91,29 @@ class ProfitLossInline(StatementInline):
     ordering = ('symbol', )
 
 
+# noinspection PyMethodMayBeStatic
 class StatementAdmin(admin.ModelAdmin):
+    def report(self, obj):
+        return '<a href="{link}">Spread</a>'.format(
+            link=reverse('admin:position_spreads', kwargs={'date': obj.date})
+        )
+
+    report.allow_tags = True
+    report.short_description = ''
+
+    def positions(self, obj):
+        return obj.profitloss_set.count()
+
+    def trades(self, obj):
+        return len(obj.accounttrade_set.distinct('symbol'))
+
     form = StatementForm
 
     inlines = (CashBalanceInline, AccountOrderInline, AccountTradeInline, HoldingEquityInline,
                HoldingOptionInline, ProfitLossInline)
 
-    list_display = ('date', 'net_liquid', 'stock_bp', 'option_bp', 'commission_ytd')
+    list_display = ('date',  'stock_bp', 'option_bp', 'commission_ytd',
+                    'trades', 'positions', 'net_liquid', 'report')
 
     fieldsets = (
         ('Primary Fields', {
@@ -129,7 +144,7 @@ class CashBalanceAdmin(StatementModelAdmin):
     form = StatementForm  # enable bootstrap datetime js
 
     list_display = ['date', 'time', 'name', 'ref_no', 'description',
-                    'fee', 'commission', 'amount', 'balance',]
+                    'fee', 'commission', 'amount', 'balance']
 
     fieldsets = (
         ('Foreign Keys', {

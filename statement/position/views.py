@@ -69,18 +69,23 @@ def position_spreads(request, date):
 
     spreads = list()
     for position in positions:
-        if position.name == 'STOCK':
+        if position.status != 'OPEN':
+            stage = position.status
+        elif position.name == 'STOCK':
             try:
                 stage = position.current_stage(
                     position.holdingequity_set.get(statement__date=date).close_price
                 )
             except ObjectDoesNotExist:
-                stage = 'Closed'
+                stage = 'Close'
+        elif position.name == 'CUSTOM':
+            stage = '...'
         else:
             try:
                 stage = position.current_stage(float(Stock.get_price(position.symbol, date).close))
             except ObjectDoesNotExist:
-                stage = None
+                stage = '...'
+        print position, position.status, stage
 
         opinion = dict(exists=False, condition='UNKNOWN', action='HOLD', name='')
         holding_opinion = position.holdingopinion_set.filter(date=date)
@@ -501,5 +506,3 @@ def position_report(request, id, date=None):
     )
 
     return render(request, template, parameters)
-
-# todo: movement test on report

@@ -235,5 +235,3 @@ def algorithm_analysis(request, algorithm_id, argument_id=0):
     )
 
     return render(request, template, parameters)
-
-# todo: winner loser table, predict using normal stat, pass 30 days current price (lower, upper)

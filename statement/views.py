@@ -9,6 +9,10 @@ from rivers.settings import BASE_DIR
 from statement.models import *
 
 
+# use for import
+statement_path = 'demo'
+
+
 def statement_import(request):
     """
     Import all statement in folders
@@ -20,7 +24,7 @@ def statement_import(request):
     last_index = lambda x, y: [k for k, l in enumerate(y[x:], start=x) if l == ''][0]
 
     files = list()
-    fpaths = glob.glob(os.path.join(BASE_DIR, 'files', 'statements', 'tests', '*.csv'))
+    fpaths = glob.glob(os.path.join(BASE_DIR, 'files', 'statements', statement_path, '*.csv'))
 
     #for fpath in [f for f in fpaths if '05-11' in f]:
     for fpath in fpaths:  #

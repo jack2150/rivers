@@ -56,4 +56,13 @@ class TestPositionReport(TestUnitSetUp):
         )
 
 
+class TestDailyImport(TestUnitSetUp):
+    def test_csv_option_import_view(self):
+        """
+        Test import thinkback csv option into db
+        """
+        date = '2015-10-12'
+
+        print 'run daily import view...'
+        self.client.get(reverse('admin:daily_import', kwargs={'date': date}))
 

@@ -18,6 +18,7 @@ from data.extra import holiday, offday
 from data.models import *
 from data.plugin.thinkback import ThinkBack
 from rivers.settings import BASE_DIR
+from statement.models import Statement, Position
 
 
 def web_quote_import(request, source, symbol):
@@ -42,7 +43,7 @@ def web_quote_import(request, source, symbol):
     # only save after
     try:
         last_date = s.last().date
-        start = last_date if last_date > start else start
+        #start = last_date if last_date > start else start
     except (ObjectDoesNotExist, AttributeError):
         pass
 
@@ -1021,3 +1022,87 @@ def event_import(request, event, symbol):
     )
 
     return render(request, template, parameters)
+
+
+def daily_import(request, date):
+    """
+    Daily google and yahoo import
+    :param request: request
+    :param date: str
+    :return: render
+    """
+    statement = Statement.objects.get(date=date)
+
+    positions = Position.objects.filter(
+        id__in=[p[0] for p in statement.profitloss_set.values_list('position')]
+    ).order_by('symbol')
+
+    for position in positions:
+        end = date
+        try:
+            underlying = Underlying.objects.get(symbol=position.symbol)
+            start = underlying.stop
+            underlying.stop = date
+            underlying.save()
+        except ObjectDoesNotExist:
+            underlying = Underlying()
+            underlying.symbol = position.symbol
+            underlying.start = '2009-01-01'
+            underlying.stop = date
+            underlying.save()
+            start = underlying.start
+
+        if start == end:
+            continue
+
+        # drop if ohlc is empty
+        for source, f in (('google', get_data_google), ('yahoo', get_data_yahoo)):
+            try:
+                data = f(symbols=position.symbol, start=start, end=end)
+
+                if not len(data):
+                    continue
+
+                for field in ['Open', 'High', 'Low', 'Close']:
+                    data[field] = data[field].replace('-', np.nan).astype(float)
+
+                # do not drop if volume is empty
+                data['Volume'] = data['Volume'].replace('-', 0).astype(long)
+
+                # rename into lower case
+                data.columns = [c.lower() for c in data.columns]
+
+                # skip or insert
+                stocks = list()
+                # for line in data.dropna().to_csv().split('\n')[1:-1]:
+                for date, row in data.dropna().iterrows():
+                    try:
+                        Stock.objects.get(symbol=position.symbol, source=source, date=date)
+                    except ObjectDoesNotExist:
+                        data = dict(row)
+                        data['date'] = date.strftime('%Y-%m-%d')
+
+                        stock = Stock()
+                        stock.symbol = position.symbol
+                        stock.source = source
+                        stock.load_dict(data)
+                        stock.save()
+
+                        stocks.append(stock)
+
+                # update symbol stat
+                if source == 'google':
+                    underlying.google = Stock.objects.filter(
+                        Q(symbol=position.symbol) & Q(source='google')
+                    ).count()
+                else:
+                    underlying.yahoo = Stock.objects.filter(
+                        Q(symbol=position.symbol) & Q(source='yahoo')
+                    ).count()
+
+                underlying.save()
+
+            except IOError:
+                pass
+
+    return redirect(reverse('admin:position_spreads', kwargs={'date': date.strftime('%Y-%m-%d')}))

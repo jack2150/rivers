@@ -11,6 +11,10 @@
     .fa {
       font-size: 100%;
     }
+
+    .padtop10 {
+      margin-top: 10px;
+    }
   </style>
 {% endblock %}
 
@@ -26,7 +30,9 @@
 {% block object-tools %}
   <div id="content-navbar-collapse" class="navbar-collapse collapse">
     <div class="nav navbar-nav navbar-right">
-      <div class="btn-group" style="margin-top: 10px;">
+      <button id="daily_import" class="btn btn-default btn-sm padtop10">Import price</button>
+
+      <div class="btn-group padtop10">
         <button id="first_page" type="button" class="btn btn-sm btn-default">First</button>
         <button id="previous_page" type="button" class="btn btn-sm btn-default">Previous</button>
         <button id="next_page" type="button" class="btn btn-sm btn-default">Next</button>
@@ -36,6 +42,10 @@
   </div>
 
   <script type="text/javascript">
+    $("#daily_import").click(function () {
+      $(location).attr('href', '{% url 'admin:daily_import' date %}');
+    });
+
     $("#first_page").click(function () {
       $(location).attr('href', '{{ page.first_page }}');
     });
@@ -139,6 +149,10 @@
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
                   <li>
+                    <a href="{% url 'admin:position_report' spread.position.id date %}">Report</a>
+                  </li>
+                  <li class="divider"></li>
+                  <li>
                     <a href="{% url 'admin:create_opinion' 'hold' spread.position.id date %}">
                       {% if spread.opinion.name == 'hold' %}
                         <b>Hold opinion</b>
@@ -167,10 +181,7 @@
                   </li>
 
                   <li class="divider"></li>
-                  <li>
-                    <a href="{% url 'admin:position_report' spread.position.id date %}">Report</a>
-                  </li>
-                  <li class="divider"></li>
+
                   <li>
                     <a href="{% url 'admin:statement_position_change' spread.position.id %}">
                       Position

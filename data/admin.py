@@ -329,3 +329,9 @@ admin.site.register_view(
     'data/import/(?P<event>\w+)/(?P<symbol>\w+)/$',
     urlname='event_import', view=event_import
 )
+
+admin.site.register_view(
+    'data/import/daily/(?P<date>\d{4}-\d{2}-\d{2})/$',
+    urlname='daily_import', view=daily_import
+)
+

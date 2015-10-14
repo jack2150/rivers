@@ -90,10 +90,23 @@ class Statement(models.Model):
                         if self.open_positions.filter(symbol=symbol).exists():
                             position = self.open_positions.get(symbol=symbol)
 
-                            # if strategy not same
+                            # if strategy not same, expire date same
                             if position.spread != Position().set_open(trades).spread:
                                 position.set_custom()
                                 position.save()
+                            elif position.name != 'STOCK':
+                                expire_date0 = sorted(list(set([
+                                    p['exp'] for p in position.accounttrade_set.filter(
+                                        pos_effect='TO OPEN'
+                                    ).values('exp')
+                                ])))
+
+                                expire_date1 = sorted(list(set([
+                                    t['exp'] for t in trades.filter().values('exp')
+                                ])))
+                                if expire_date0 != expire_date1:
+                                    position.set_custom()
+                                    position.save()
                         else:
                             position = Position()
                             position.set_open(trades)
@@ -104,13 +117,48 @@ class Statement(models.Model):
                         if self.open_positions.filter(symbol=symbol).exists():
                             self.add_relations(symbol=symbol, time=time)
                             position = self.open_positions.get(symbol=symbol)
-                            position.set_close(self.statement.date)
-                            position.save()
+
+                            equity = position.holdingequity_set.filter(
+                                statement__date=self.statement.date
+                            )
+                            option = position.holdingoption_set.filter(
+                                statement__date=self.statement.date
+                            )
+                            print symbol, equity, option
+                            if equity.exists() and not option.exists():
+                                # still opened as stock
+                                equity = equity.first()
+                                if equity.qty != 0:
+                                    new_pos = Position()
+                                    new_pos.status = 'OPEN'
+                                    new_pos.symbol = position.symbol
+                                    new_pos.name = 'STOCK'
+                                    if equity.qty > 0:
+                                        new_pos.spread = 'LONG_STOCK'
+                                    elif equity.qty < 0:
+                                        new_pos.spread = 'SHORT_STOCK'
+                                    else:
+                                        raise ValueError('Invalid equity quantity for option exercise into stock.')
+                            elif equity.exists() and option.exists():
+                                # covered, close some
+                                pass
+                            elif not equity.exists() and option.exists():
+                                # option, close some
+                                pass
+                            else:
+                                position.set_close(self.statement.date)
+                                position.save()
                         else:
                             #print trades[0].statement.date, trades
-                            raise ValueError('Position <{symbol}> not found when closing.'.format(
-                                symbol=symbol
-                            ))
+                            # check holding equity and option, then if both not exists, the skip
+                            equity = self.statement.holdingequity_set.filter(symbol=symbol)
+                            option = self.statement.holdingoption_set.filter(symbol=symbol)
+
+                            if not(equity.exists or option.exists()):
+                                raise ValueError('Position <{symbol}> not found when closing.'.format(
+                                    symbol=symbol
+                                ))
+
                     else:
                         raise ValueError('Wrong pos effect when open or close position.')
 
@@ -180,8 +228,6 @@ class Statement(models.Model):
                     values = cash_balance.description.split(' ')[:5]
                     if position.symbol in values and time == cash_balance.time:
                         position.cashbalance_set.add(cash_balance)
-
-
 
     def __init__(self, *args, **kwargs):
         models.Model.__init__(self, *args, **kwargs)
@@ -321,6 +367,20 @@ class Position(models.Model):
         """
         if self.id:
             self.status = 'EXPIRE'
+            self.stop = date
+        else:
+            raise ValueError('Please set expire a existing position')
+
+        return self
+
+    def set_exercise(self, date):
+        """
+        Set position expire
+        :param date: DateTime
+        :return: Position
+        """
+        if self.id:
+            self.status = 'EXERCISE'
             self.stop = date
         else:
             raise ValueError('Please set expire a existing position')
@@ -898,4 +958,3 @@ class ProfitLoss(models.Model):
             symbol=self.symbol,
             pl_open=self.pl_open
         )
-
