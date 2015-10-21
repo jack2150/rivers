@@ -58,7 +58,7 @@ class EnterOpinionAdmin(admin.ModelAdmin):
         ('Position', {
             'fields': (
                 'risk_profile', 'bp_effect', 'profit', 'loss', 'size',
-                'strategy', 'optionable', 'spread', 'enter_date', 'exit_date'
+                'iv_rank', 'strategy', 'optionable', 'spread', 'enter_date', 'exit_date', 'dte'
             )
         }),
         ('Trade signal', {

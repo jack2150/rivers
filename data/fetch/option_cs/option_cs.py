@@ -17,11 +17,13 @@ def get_options_by_cycle_strike(symbol, name, dates0, dte, moneyness, cycle, str
     :param strike: int
     :return: list of date, list of Option
     """
+    missing = round((dte / 0.25), 0)
+
     query = (Q(contract__symbol=symbol) &
              Q(contract__name=name)
-             & Q(contract__others='')
+             & Q(contract__others__in=('', 'Weeklys'))
              & Q(contract__forfeit=False)
-             & Q(contract__missing__lt=5)
+             & Q(contract__missing__lt=missing if missing < 25 else 25)
              & Q(contract__right='100'))
 
     dates1 = [d for d in dates0]
@@ -72,6 +74,7 @@ def get_options_by_cycle_strike(symbol, name, dates0, dte, moneyness, cycle, str
                 pass
         else:
             # not found too
+            options.append(None)
             dates1[dates1.index(d1)] = None
     else:
         # append back into options
@@ -87,6 +90,9 @@ def get_options_by_cycle_strike(symbol, name, dates0, dte, moneyness, cycle, str
         try:
             cycles = np.sort(df['dte'].unique())
             strikes = np.sort(df[df['dte'] == cycles[cycle]]['contract__strike'].unique())[::order]
+            #print date, cycles, strikes
+            #print df_options
+            #print '-' * 100
 
             df_found = df.loc[
                 (df['dte'] == cycles[cycle])
@@ -134,3 +140,26 @@ def get_option_by_contract_date(contract, date0):
                 break
 
     return date1, option
+
+
+def get_option_by_contract_last(contract, date0):
+    """
+    Get option by contract with last date
+    :param contract: OptionContract
+    :param date0: str
+    :return: str, Option
+    """
+    option = None
+    date1 = date0
+    try:
+        option = Option.objects.filter(
+            Q(contract=contract) & Q(date__lte=date0)
+        ).order_by('date').reverse().last()
+    except ObjectDoesNotExist:
+        pass
+
+    return date1, option
+
+
+# todo: improve get cycle strike for more trade
+

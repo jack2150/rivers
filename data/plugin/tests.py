@@ -12,8 +12,8 @@ class TestThinkBack(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = 'AIG'
-        self.year = '2011'
+        self.symbol = 'GLD'
+        self.year = '2014'
 
         self.dir_name = os.path.join(
             BASE_DIR, 'files', 'thinkback', self.symbol.lower(), self.year
@@ -21,7 +21,8 @@ class TestThinkBack(TestSetUp):
 
         self.fpaths = list()
         for path in glob(os.path.join(self.dir_name, '*.csv')):
-            self.fpaths.append(path)
+            if '2014-12-05' in path:
+                self.fpaths.append(path)
 
         self.thinkback = None
 
@@ -89,7 +90,7 @@ class TestThinkBack(TestSetUp):
 
         option_keys = [
             'date', 'dte',
-            'last', 'mark', 'bid', 'ask', 'delta', 'gamma', 'theta', 'vega',
+            'bid', 'ask', 'last', 'mark', 'delta', 'gamma', 'theta', 'vega',
             'theo_price', 'impl_vol', 'prob_itm', 'prob_otm', 'prob_touch', 'volume',
             'open_int', 'intrinsic', 'extrinsic'
         ]
@@ -105,6 +106,11 @@ class TestThinkBack(TestSetUp):
                 options = self.thinkback.get_cycle_options(cycle)
 
                 for contract, option in options:
+                    #if not contract['option_code'] in ('GLD150123C114', 'GLD150123P114'):
+                    #    continue
+                    #else:
+                    #    print contract
+                    #    print option
                     #print 'current contract, option code: %s' % contract['option_code']
                     #pprint(contract, width=400)
 
@@ -128,7 +134,7 @@ class TestThinkBack(TestSetUp):
                     self.assertIn(contract['name'], ['CALL', 'PUT'])
 
                     self.assertEqual(type(contract['special']), str)
-                    self.assertIn(contract['special'], ['Weeklys', 'Standard', 'Mini'])
+                    self.assertIn(contract['special'], ['Weeklys', 'Standard', 'Mini', 'Quarterlys'])
 
                     self.assertEqual(type(contract['strike']), float)
                     self.assertGreater(contract['strike'], 0)

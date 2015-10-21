@@ -75,15 +75,15 @@
   <div class="form-actions">
     <div class="pull-left"></div>
     <div class="pull-right">
-      <button id="validated" class="btn btn-success default" name="updated">
-        Set underlying validated
+      <button id="optionable" class="btn btn-success default" name="updated">
+        Set underlying optionable
       </button>
     </div>
   </div>
 
   <script type="text/javascript">
-    $('#validated').click(function () {
-      $(location).attr("href", "{% url 'admin:set_underlying' symbol|lower 'validated' %}");
+    $('#optionable').click(function () {
+      $(location).attr("href", "{% url 'admin:set_underlying' symbol|lower 'optionable' %}");
     });
   </script>
 {% endblock %}

@@ -16,10 +16,10 @@ class TestStrategyLongCallVertical(TestUnitSetUp):
         self.quant.seed_data(self.symbol)
         self.hd_args = {'dte': 20}
         self.cs_args = {'side': 'buy'}
-        #self.hd_args = {'span': 60, 'previous': 20}
+        # self.hd_args = {'span': 60, 'previous': 20}
         #self.cs_args = {'holding': 20}
 
-        self.strategy = Strategy.objects.get(name='Long Call Vertical CS')
+        self.strategy = Strategy.objects.get(name='Long Call Vertical CS SL')
 
     def test_make_order(self):
         """
@@ -28,9 +28,9 @@ class TestStrategyLongCallVertical(TestUnitSetUp):
         # profile.runctx('self.strategy.make_order(
         df_stock, df_signal, expire=expire, **self.args)', globals(), locals())
         """
-        args = ({'moneyness': 'OTM', 'cycle': 0, 'strike': 0, 'wide': 1},
-                {'moneyness': 'ITM', 'cycle': 0, 'strike': 0, 'wide': 1},
-                {'moneyness': 'ATM', 'cycle': 0, 'strike': 0, 'wide': 1},)
+        args = ({'moneyness': 'OTM', 'cycle': 0, 'strike': 0, 'wide': 1, 'stop_pct': 40},
+                {'moneyness': 'ITM', 'cycle': 0, 'strike': 0, 'wide': 1, 'stop_pct': 40},
+                {'moneyness': 'ATM', 'cycle': 0, 'strike': 0, 'wide': 1, 'stop_pct': 40},)
 
         df_stock = self.quant.handle_data(self.quant.data[self.symbol], **self.hd_args)
         df_signal = self.quant.create_signal(df_stock, **self.cs_args)

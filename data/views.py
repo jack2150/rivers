@@ -2,6 +2,7 @@ from HTMLParser import HTMLParser
 import codecs
 from django import forms
 from django.http import Http404
+import gc
 import numpy as np
 from pandas.io.data import get_data_google, get_data_yahoo
 import calendar
@@ -212,7 +213,7 @@ def truncate_symbol(request, symbol):
             underlying.google = 0
             underlying.yahoo = 0
             underlying.updated = False
-            underlying.validated = False
+            underlying.optionable = False
             underlying.missing_dates = ''
             underlying.save()
 
@@ -383,7 +384,7 @@ def csv_stock_import(request, symbol):
 
     if len(completed_files):
         underlying.updated = False
-        underlying.validated = False
+        underlying.optionable = False
 
     underlying.save()
 
@@ -660,15 +661,21 @@ def csv_option_import(request, symbol):
 
             for code in contracts.keys():
                 if code not in codes2:
+                    # note: if memory error, split date then import
                     c = contracts[code]
-                    o = c.option_set.order_by('date').last()
+                    #o = c.option_set.order_by('date').last()
+                    #o = c.option_set.last()
+                    o = Option.objects.filter(
+                        Q(contract=c) & Q(date__lt=stock.date)
+                    ).order_by('date')[0]
+
 
                     if o.bid or o.ask:
                         if not c.forfeit and (o.bid > 1000 or o.ask > 1000):
                             print '----| FORFEIT:', c, code, o.bid, o.ask
                             c.forfeit = True
                             c.save()
-                        elif o.dte in (1, 2):
+                        elif not c.expire and o.dte in (1, 2):
                             # it is near to expiration, set expire, maybe no data
                             c.expire = True
                             c.save()
@@ -676,12 +683,13 @@ def csv_option_import(request, symbol):
                             if c.missing == 0:
                                 print '----| MISSING:', c, code, o.bid, o.ask
 
-                            c.missing += 1
-                            c.save()
+                            if c.missing < 20:
+                                c.missing += 1
+                                c.save()
 
                     # set all error expire
                     dte_date = get_dte_date(c.ex_month, c.ex_year)
-                    if dte_date < stock.date:
+                    if not c.expire and dte_date < stock.date:
                         print '----| MISSING/ERROR EXPIRE:', c, code, stock.date
                         c.expire = True
                         c.save()
@@ -785,8 +793,8 @@ def set_underlying(request, symbol, action):
     underlying = Underlying.objects.get(symbol=symbol)
     if action == 'updated':
         underlying.updated = True
-    elif action == 'validated':
-        underlying.validated = True
+    elif action == 'optionable':
+        underlying.optionable = True
     else:
         raise ValueError('Invalid view action')
     underlying.save()

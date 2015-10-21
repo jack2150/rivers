@@ -138,19 +138,24 @@ class AlgorithmQuant(object):
         :param symbol: str
         :return: DataFrame
         """
-        query = Q(symbol=symbol) & Q(source='google')
-        if start_date and stop_date:
-            query &= Q(date__gte=start_date) & Q(date__lte=stop_date)
-        elif start_date:
-            query &= Q(date__gte=start_date)
-        elif stop_date:
-            query &= Q(date__lte=stop_date)
+        df = DataFrame()
+        for source in ('google', 'yahoo'):
+            query = Q(symbol=symbol) & Q(source=source)
+            if start_date and stop_date:
+                query &= Q(date__gte=start_date) & Q(date__lte=stop_date)
+            elif start_date:
+                query &= Q(date__gte=start_date)
+            elif stop_date:
+                query &= Q(date__lte=stop_date)
 
-        df = pd.DataFrame(list(Stock.objects.filter(query).values()))
-        df = df.reindex_axis(
-            ['symbol', 'date', 'open', 'high', 'low', 'close', 'volume'],
-            axis=1
-        ).sort(['date'])
+            df = pd.DataFrame(list(Stock.objects.filter(query).values()))
+            df = df.reindex_axis(
+                ['symbol', 'date', 'open', 'high', 'low', 'close', 'volume'],
+                axis=1
+            ).sort(['date'])
+
+            if len(df):
+                break
 
         if not df['close'].count():
             raise LookupError('Symbol %s stock not found in db.' % symbol.upper())
@@ -297,7 +302,7 @@ class AlgorithmQuant(object):
                 df_temp = df0.ix[data['date0']:data['date1']]
                 if len(df_temp) > 2:
                     df_temp = df_temp[:-1]
-                print df_temp
+                #print df_temp
 
                 df_temp = df_temp.reindex_axis(
                     ['symbol', 'open', 'high', 'low', 'close', 'volume'], axis=1

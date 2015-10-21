@@ -564,7 +564,7 @@ class TestUnderlyingManage(TestSetUp):
         """
         Test set_underlying_updated view
         """
-        for action in ('updated', 'validated'):
+        for action in ('updated', 'optionable'):
             print action
             self.assertFalse(getattr(self.underlying, action))
             print 'underlying before:', getattr(self.underlying, action)

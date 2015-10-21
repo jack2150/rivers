@@ -23,6 +23,9 @@ def handle_data(df):
     s = [int(q[1:]) for q in earnings['quarter']]
     r = list(itertools.chain.from_iterable([range(1, 5) * int(np.ceil(len(earnings) / 4.0) + 1)]))
     if s != r[s[0] - 1:s[0] - 1 + len(s)]:
+        # some time no data available
+        #print s
+        #print r[s[0] - 1:s[0] - 1 + len(s)]
         raise LookupError('%s earning is missing quarter, need valid data' % symbol)
 
     date_act = list(earnings.index)

@@ -85,7 +85,6 @@ def position_spreads(request, date):
                 stage = position.current_stage(float(Stock.get_price(position.symbol, date).close))
             except ObjectDoesNotExist:
                 stage = '...'
-        print position, position.status, stage
 
         opinion = dict(exists=False, condition='UNKNOWN', action='HOLD', name='')
         holding_opinion = position.holdingopinion_set.filter(date=date)

@@ -1,0 +1,3 @@
+big update
+# todo: fill missing options using quant lib
+# todo: convert data db into hdf5

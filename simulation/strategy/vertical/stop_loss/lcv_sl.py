@@ -2,7 +2,7 @@ from data.fetch.option_cs.option_cs import *
 
 
 def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM', 'ATM'),
-                 cycle=0, strike=0, wide=1, expire=(False, True)):
+                 cycle=0, strike=0, wide=1, expire=(False, True), stop_pct=0):
     """
     Create long call vertical strategy using, BUY (ask - bid), SELL (bid - ask)
     :param df_stock: DataFrame
@@ -13,6 +13,9 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM', 'ATM'),
     :param expire: bool
     :return: DataFrame
     """
+    if stop_pct < 0:
+        stop_pct = abs(stop_pct)
+
     if moneyness != 'ATM' and wide < 1:
         raise ValueError('Option strike wide must be greater than 0.')
 
@@ -70,14 +73,17 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM', 'ATM'),
 
         if date0a == date0b and date0a and date0b:
             option0a = options0a.get(date=date0a)
+            """:type: Option"""
             option0b = options0b.get(date=date0b)
+            """:type: Option"""
 
             close0 = option0a.ask - option0b.bid
+            stop_close = np.float(close0) * (1 - (stop_pct / 100.0))
 
             if close0 < 0.01:
                 close0 = 0.0
 
-            #print signal['close0'], signal['close1']
+            # print signal['close0'], signal['close1']
             #print option0a.contract.strike, option0b.contract.strike
             #print option0a.ask, option0b.bid, close0
 
@@ -85,19 +91,33 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM', 'ATM'),
             option1b = None
             close1 = 0
             if close0:
-                date1a, option1a = get_option_by_contract_date(option0a.contract, date1)
-                date1b, option1b = get_option_by_contract_date(option0b.contract, date1)
+                # loop option1 ab until found stop loss 40%
+                options1a = Option.objects.filter(
+                    Q(contract=option0a.contract) & Q(date__gt=date0a) & Q(date__lte=date1)
+                ).order_by('date')
+                options1b = Option.objects.filter(
+                    Q(contract=option0b.contract) & Q(date__gt=date0b) & Q(date__lte=date1)
+                ).order_by('date')
+                for date in [o.date for o in options1a]:
+                    try:
+                        a = options1a.get(date=date)
+                        b = options1b.get(date=date)
+                        c1 = a.bid - b.ask
 
-                if not option1a:
-                    date1a, option1a = get_option_by_contract_last(option0a.contract, date1)
+                        if a and b:
+                            date1 = date
+                            option1a = a
+                            option1b = b
 
-                    if option1a:
-                        date1b, option1b = get_option_by_contract_date(option0b.contract, date1a)
+                            if stop_close >= c1:
+                                break
+                            #print stop_close, c1, 'found'
+                            # todo: why less than direct long call
+                    except ObjectDoesNotExist:
+                        pass
 
-                    if date1a != date1b:
-                        option1a = None
-                        option1b = None
-                        print option1a, date1a, option1b, date1b, 'not same'
+                #date1a, option1a = get_option_by_contract_date(option0a.contract, date1)
+                #date1b, option1b = get_option_by_contract_date(option0b.contract, date1)
 
                 if option1a and option1b:
                     if int(expire):
@@ -114,7 +134,7 @@ def create_order(df_stock, df_signal, moneyness=('OTM', 'ITM', 'ATM'),
                         if close1 < 0:
                             close1 = 0.0
                 else:
-                    print 'No %s data: %s & %s\n\n' % (date1, option0a, option0b)
+                    print 'No %s data: %s & %s.' % (date1, option0a, option0b)
 
             if option0a and option0b and option1a and option1b and close0:
                 data.append({

@@ -62,9 +62,9 @@ class Strategy(models.Model):
     def make_order(self, df_stock, df_signal, *args, **kwargs):
         """
         Run strategy trade
-        :param args:
-        :param kwargs:
-        :return:
+        :param args: DataFrame
+        :param kwargs: DataFrame
+        :return: DataFrame
         """
         module = import_module('simulation.strategy.{path}'.format(path=self.path))
         create_order = getattr(module, 'create_order')

@@ -16,7 +16,8 @@ class Underlying(models.Model):
 
     # for thinkback csv only
     updated = models.BooleanField(default=False)   # is underlying up to date?
-    validated = models.BooleanField(default=False)  # is all import validate, especially options
+    optionable = models.BooleanField(default=False)  # options imported
+
     missing_dates = models.TextField(default='', blank=True)  # all missing dates
 
     class Meta:
@@ -239,13 +240,13 @@ class Option(models.Model):
         :return: DataFrame
         """
         return DataFrame(
-            data=[[self.dte, self.bid, self.ask, self.mark, self.last,
+            data=[[self.dte, self.bid, self.ask, self.last, self.mark,
                    self.delta, self.gamma, self.vega, self.theta,
                    self.theo_price, self.impl_vol,
                    self.prob_itm, self.prob_otm, self.prob_touch,
                    self.volume, self.open_int, self.intrinsic, self.extrinsic]],
             index=[[self.contract.option_code], [self.date]],
-            columns=['DTE', 'Bid', 'Ask', 'Mark', 'Last',
+            columns=['DTE', 'Bid', 'Ask', 'Last', 'Mark',
                      'Delta', 'Gamma', 'Vega', 'Theta',
                      'Theo Price', 'Impl Vol',
                      'Prob ITM', 'Prob OTM', 'Prob Touch',

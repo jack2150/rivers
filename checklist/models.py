@@ -108,7 +108,15 @@ class EnterOpinion(models.Model):
     loss = models.DecimalField(max_digits=10, decimal_places=2)
     size = models.IntegerField()
 
-    strategy = models.CharField(max_length=50, help_text='Strategy name for this trade')
+    iv_rank = models.CharField(
+        max_length=20,
+        choices=(('HIGH', 'HIGH'), ('MEDIAN', 'MEDIAN'), ('LOW', 'LOW')),
+        help_text='Current IV Rank (%) vs historical IV'
+    )
+
+    strategy = models.CharField(
+        max_length=50, help_text='Correct strategy for IV rank and current market'
+    )
     spread = models.CharField(
         max_length=20,
         choices=(
@@ -119,7 +127,11 @@ class EnterOpinion(models.Model):
     optionable = models.BooleanField(default=False)
 
     enter_date = models.DateField()
-    exit_date = models.DateField()
+    exit_date = models.DateField(null=True, blank=True)
+    dte = models.IntegerField(
+        null=True, blank=True,
+        help_text='For option strategy, make sure dte long enough.'
+    )
 
     # trade signal
     signal = models.CharField(
@@ -143,6 +155,8 @@ class EnterOpinion(models.Model):
                  ('CURRENCY', 'CURRENCY')),
         help_text='Underlying indices category'
     )
+
+
 
     description = models.TextField(null=True, blank=True)
 

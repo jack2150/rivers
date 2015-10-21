@@ -4,6 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.shortcuts import render, redirect
+from data.models import Underlying
 from simulation.quant import StrategyQuant
 from simulation.models import *
 
@@ -122,9 +123,10 @@ def strategy_analysis1(request, algorithmresult_id):
             }
         )
 
-        if not algorithm_result.algorithm.optionable:
+        underlying = Underlying.objects.get(symbol=algorithm_result.symbol)
+        if not algorithm_result.algorithm.optionable or not underlying.optionable:
             form.fields['strategy'].choices = Strategy.objects.exclude(
-                instrument='Option'
+                instrument__in=('Covered', 'Option')
             ).order_by('id').reverse().values_list('id', 'name')
 
     parameters = dict(

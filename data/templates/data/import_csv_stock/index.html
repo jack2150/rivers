@@ -58,15 +58,28 @@
   <div class="form-actions">
     <div class="pull-left"></div>
     <div class="pull-right">
-      <button id="updated" class="btn btn-success default" name="updated">
+      <button id="import_options" class="btn btn-warning default" name="updated">
+        Import options
+      </button>
+      <button id="import_again" class="btn btn-warning default" name="updated">
+        Import again
+      </button>
+      <button id="set_updated" class="btn btn-success default" name="updated">
         Set underlying updated
       </button>
     </div>
   </div>
 
   <script type="text/javascript">
-  $('#updated').click(function () {
-    $(location).attr("href", "{% url 'admin:set_underlying' symbol|lower 'updated' %}");
-  });
+    $('#import_options').click(function () {
+      $(location).attr("href", "{% url 'admin:csv_option_import' symbol|lower %}");
+    });
+    $('#import_again').click(function () {
+      $(location).attr("href", "{% url 'admin:csv_stock_import' symbol|lower %}");
+    });
+
+    $('#set_updated').click(function () {
+      $(location).attr("href", "{% url 'admin:set_underlying' symbol|lower 'updated' %}");
+    });
   </script>
 {% endblock %}

@@ -18,7 +18,7 @@ class ThinkBack(object):
                      'strike', 'name', 'option_code']
 
     OPTION_KEYS = ['date', 'dte',
-                   'last', 'mark', 'bid', 'ask', 'delta', 'gamma', 'theta', 'vega',
+                   'bid', 'ask', 'last', 'mark', 'delta', 'gamma', 'theta', 'vega',
                    'theo_price', 'impl_vol', 'prob_itm', 'prob_otm', 'prob_touch', 'volume',
                    'open_int', 'intrinsic', 'extrinsic']
 
@@ -145,3 +145,14 @@ class ThinkBack(object):
             options += self.get_cycle_options(c)
 
         return self.get_stock(), options
+
+# todo: fill missing options using quant lib
+# todo: convert data db into hdf5
+"""
+how do you access stock.last?
+from hdf5 get data using symbol and date,
+then create instance of Stock using that data (without save)
+
+how do you search data?
+in Stock class, create a search...
+"""
