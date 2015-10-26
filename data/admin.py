@@ -60,20 +60,25 @@ class UnderlyingAdmin(admin.ModelAdmin):
     data_manage.allow_tags = True
 
     list_display = (
-        'symbol', 'start', 'stop', 'thinkback', 'google', 'yahoo', 'updated', 'optionable',
+        'symbol', 'start', 'stop', 'thinkback', 'contract', 'option',
+        'google', 'yahoo', 'earning', 'dividend','updated', 'optionable',
         data_manage
     )
 
     fieldsets = (
         ('Primary Fields', {
             'fields': (
-                'symbol', 'start', 'stop', 'thinkback', 'google', 'yahoo',
+                'symbol', 'start', 'stop',
+                'thinkback', 'contract', 'option',
+                'google', 'yahoo',
+                'earning', 'dividend',
                 'updated', 'optionable', 'missing'
             )
         }),
     )
 
-    readonly_fields = ('thinkback', 'google', 'yahoo')
+    readonly_fields = ('thinkback', 'google', 'yahoo',
+                       'contract', 'option', 'earning', 'dividend',)
 
     search_fields = ('symbol', 'start', 'stop')
     list_per_page = 20

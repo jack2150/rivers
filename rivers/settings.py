@@ -81,18 +81,18 @@ DATABASES = {
         'PORT': '5432',
         'CONN_MAX_AGE': 60
     },
-    'quote': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'quote',
-        'USER': 'admin',
-        'PASSWORD': 'qwer1234',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
-        'CONN_MAX_AGE': 60
-    },
+    #'quote': {
+    #    'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #    'NAME': 'quote',
+    #    'USER': 'admin',
+    #    'PASSWORD': 'qwer1234',
+    #    'HOST': '127.0.0.1',
+    #    'PORT': '5432',
+    #    'CONN_MAX_AGE': 60
+    #},
 }
 
-DATABASE_ROUTERS = ['rivers.router.DataRouter']
+#DATABASE_ROUTERS = ['rivers.router.DataRouter']
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/

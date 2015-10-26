@@ -5,6 +5,7 @@ import re
 import urllib2
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import render, redirect
 from pandas.io.data import get_data_google, get_data_yahoo
@@ -532,6 +533,12 @@ def csv_option_h5(request, symbol):
     # close db
     db.close()
 
+    # update underlying
+    underlying = Underlying.objects.get(symbol=symbol.upper())
+    underlying.contract = len(df_contract)
+    underlying.option = len(df_data)
+    underlying.save()
+
     template = 'data/import_csv_option/index.html'
     parameters = dict(
         site_title='Csv option import',
@@ -618,7 +625,7 @@ def web_stock_h5(request, source, symbol):
     return render(request, template, parameters)
 
 
-class TreasuryImportForm(forms.Form):
+class TreasuryForm(forms.Form):
     url = forms.CharField(
         max_length=300,
         widget=forms.TextInput(attrs={'class': 'form-control vTextField'})
@@ -632,7 +639,7 @@ def web_treasury_h5(request):
     :return: render
     """
     if request.method == 'POST':
-        form = TreasuryImportForm(request.POST)
+        form = TreasuryForm(request.POST)
         if form.is_valid():
             response = urllib2.urlopen(form.cleaned_data['url'])
             html = response.readlines()
@@ -691,7 +698,7 @@ def web_treasury_h5(request):
 
             return redirect('admin:data_treasury_changelist')
     else:
-        form = TreasuryImportForm()
+        form = TreasuryForm()
 
     template = 'data/import_treasury.html'
     parameters = dict(
@@ -816,7 +823,7 @@ class EventImportForm(forms.Form):
 
             e['quarter'] = e['report_date'].split(' ')[0]
             e['year'] = int(e['report_date'].split(' ')[1])
-            e['actual_date'] = pd.datetime.strptime(e['actual_date'], '%m/%d/%y')  #.date()
+            e['actual_date'] = pd.datetime.strptime(e['actual_date'], '%m/%d/%y')  # .date()
             e['analysts'] = int(e['analysts'][1:-1].replace(' Analysts', ''))
             e['low'] = float(e['hl'].split(' / ')[0])
             e['high'] = float(e['hl'].split(' / ')[1])
@@ -831,17 +838,22 @@ class EventImportForm(forms.Form):
             db = pd.HDFStore(QUOTE)
 
             try:
-                db.remove('earning/%s' % symbol.lower())
+                db.remove('event/earning/%s' % symbol.lower())
             except KeyError:
                 pass
 
-            df_earning = pd.DataFrame(earnings, index=range(len(earnings)))  #.set_index('actual_date')
+            df_earning = pd.DataFrame(earnings, index=range(len(earnings)))
             #print df_earning
             db.append(
-                'earning/%s' % symbol.lower(), df_earning,
+                'event/earning/%s' % symbol.lower(), df_earning,
                 format='table', data_columns=True, min_itemsize=100
             )
             db.close()
+
+            # update earning
+            underlying = Underlying.objects.get(symbol=symbol.upper())
+            underlying.earning = len(df_earning)
+            underlying.save()
 
     def insert_dividend(self):
         """
@@ -899,17 +911,22 @@ class EventImportForm(forms.Form):
             db = pd.HDFStore(QUOTE)
 
             try:
-                db.remove('dividend/%s' % symbol.lower())
+                db.remove('event/dividend/%s' % symbol.lower())
             except KeyError:
                 pass
 
             df_dividend = pd.DataFrame(dividends, index=range(len(dividends)))
             #print df_dividend
             db.append(
-                'dividend/%s' % symbol.lower(), df_dividend,
+                'event/dividend/%s' % symbol.lower(), df_dividend,
                 format='table', data_columns=True, min_itemsize=100
             )
             db.close()
+
+            # update dividend
+            underlying = Underlying.objects.get(symbol=symbol.upper())
+            underlying.dividend = len(df_dividend)
+            underlying.save()
 
 
 def event_import(request, event, symbol):
@@ -949,10 +966,115 @@ def event_import(request, event, symbol):
     return render(request, template, parameters)
 
 
-# todo: remake quant df view in pre
+class TruncateSymbolForm(forms.Form):
+    symbol = forms.CharField(
+        label='Symbol', max_length=20,
+        widget=forms.HiddenInput(
+            attrs={'class': 'form-control vTextField', 'readonly': 'readonly'}
+        )
+    )
 
 
+def truncate_symbol(request, symbol):
+    """
+    Truncate all data for a single symbol
+    :param request: request
+    :param symbol: str
+    :return: render
+    """
+    symbol = symbol.upper()
+    stats = None
 
+    if request.method == 'POST':
+        form = TruncateSymbolForm(request.POST)
+
+        if form.is_valid():
+            db = pd.HDFStore(QUOTE)
+
+            keys = [
+                'stock/thinkback/%s', 'stock/google/%s', 'stock/yahoo/%s',
+                'option/%s/contract', 'option/%s/data',
+                'event/earning/%s', 'event/dividend/%s',
+            ]
+            for key in keys:
+                try:
+                    db.remove(key % symbol.lower())
+                except KeyError:
+                    pass
+
+            db.close()
+
+            # update underlying
+            underlying = Underlying.objects.get(symbol=symbol)
+            underlying.thinkback = 0
+            underlying.contract = 0
+            underlying.option = 0
+            underlying.google = 0
+            underlying.yahoo = 0
+            underlying.earning = 0
+            underlying.dividend = 0
+            underlying.updated = False
+            underlying.optionable = False
+            underlying.missing_dates = ''
+            underlying.save()
+
+            return redirect(reverse('admin:data_underlying_changelist'))
+    else:
+        form = TruncateSymbolForm(
+            initial={'symbol': symbol}
+        )
+
+        db = pd.HDFStore(QUOTE)
+
+        names = ['thinkback', 'google', 'yahoo', 'contract', 'option', 'earning', 'dividend']
+        keys = ['stock/thinkback/%s', 'stock/google/%s', 'stock/yahoo/%s',
+                'option/%s/contract', 'option/%s/data',
+                'event/earning/%s', 'event/dividend/%s']
+
+        df = {}
+        for name, key in zip(names, keys):
+            try:
+                df[name] = db.select(key % symbol.lower())
+            except KeyError:
+                df[name] = pd.DataFrame()
+        db.close()
+
+        stats = {
+            'thinkback': {
+                'stock': len(df['thinkback']),
+                'start': df['thinkback'].index[0].date() if len(df['thinkback']) else 0,
+                'stop': df['thinkback'].index[-1].date() if len(df['thinkback']) else 0
+            },
+            'option': {
+                'contract': len(df['contract']),
+                'count': len(df['option'])
+            },
+            'google': {
+                'stock': len(df['google']),
+                'start': df['google'].index[0].date() if len(df['google']) else 0,
+                'stop': df['google'].index[-1].date() if len(df['google']) else 0,
+            },
+            'yahoo': {
+                'stock': len(df['yahoo']),
+                'start': df['yahoo'].index[0].date() if len(df['yahoo']) else 0,
+                'stop': df['yahoo'].index[-1].date() if len(df['yahoo']) else 0,
+            },
+            'event': {
+                'earning': len(df['earning']),
+                'dividend': len(df['dividend']),
+            }
+        }
+
+    template = 'data/truncate_symbol.html'
+    parameters = dict(
+        site_title='Truncate symbol',
+        title='Truncate symbol',
+        symbol=symbol,
+        stats=stats,
+        form=form
+    )
+
+    return render(request, template, parameters)
 
 
 

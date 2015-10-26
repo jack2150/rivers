@@ -3,11 +3,12 @@
 2. create
 """
 import os
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.models import Underlying, Treasury
-from data.views2 import TreasuryImportForm, EventImportForm
+from data.views2 import TreasuryForm, EventImportForm
 from rivers.settings import QUOTE, BASE_DIR
 import pandas as pd
 
@@ -57,7 +58,7 @@ class TestCsvToHDF(TestSetUp):
         db.close()
 
     def test_web_treasury_form(self):
-        form = TreasuryImportForm(data=self.data)
+        form = TreasuryForm(data=self.data)
 
         print form.is_valid()
 
@@ -100,7 +101,7 @@ class TestEventImport(TestSetUp):
             form.import_earning()
 
             db = pd.HDFStore(QUOTE)
-            df_earning = db.select('earning/%s' % symbol.lower())
+            df_earning = db.select('event/earning/%s' % symbol.lower())
             print df_earning.to_string(line_width=600)
             self.assertTrue(len(df_earning))
             db.close()
@@ -122,7 +123,89 @@ class TestEventImport(TestSetUp):
             form.insert_dividend()
 
             db = pd.HDFStore(QUOTE)
-            df_dividend = db.select('dividend/%s' % symbol.lower())
+            df_dividend = db.select('event/dividend/%s' % symbol.lower())
             print df_dividend.to_string(line_width=600)
             self.assertTrue(len(df_dividend))
             db.close()
+
+
+class TestUnderlyingManage(TestSetUp):
+    def setUp(self):
+        TestSetUp.setUp(self)
+
+        self.symbol = 'AIG'
+
+        try:
+            self.underlying = Underlying.objects.get(symbol=self.symbol)
+        except ObjectDoesNotExist:
+            self.underlying = Underlying(symbol=self.symbol)
+            self.underlying.start = '2015-04-01'
+            self.underlying.stop = '2015-04-30'
+            self.underlying.save()
+
+    def test_set_underlying(self):
+        """
+        Test set_underlying_updated view
+        """
+        for action in ('updated', 'optionable'):
+            #print action
+            self.assertFalse(getattr(self.underlying, action))
+            print 'underlying before:', getattr(self.underlying, action)
+
+            response = self.client.get(reverse(
+                'admin:set_underlying', kwargs={
+                    'symbol': self.symbol.lower(), 'action': action
+                })
+            )
+
+            # check redirect
+            self.assertIn(
+                reverse('admin:data_underlying_changelist'),
+                response.url
+            )
+            self.assertEqual(response.status_code, 302)
+
+            self.underlying = Underlying.objects.get(symbol=self.symbol)
+            self.assertTrue(getattr(self.underlying, action))
+            print 'underlying updated:', getattr(self.underlying, action), '\n'
+
+
+class TestTruncateSymbol(TestSetUp):
+    def test_truncate_symbol_view(self):
+        """
+        Test truncate symbol view
+        """
+        symbol = 'AIG0'
+        underlying = Underlying(symbol=symbol)
+        underlying.start = '2015-05-20'
+        underlying.stop = '2015-05-30'
+        underlying.thinkback = 213
+        underlying.google = 321
+        underlying.yahoo = 123
+        underlying.contract = 17000
+        underlying.option = 440000
+        underlying.dividend = 9
+        underlying.earning = 40
+        underlying.save()
+
+        # test redirect and underlying set into 0
+        print 'run truncate symbol...'
+        response2 = self.client.post(
+            reverse('admin:truncate_symbol', kwargs={'symbol': symbol}),
+            data={'symbol': symbol}
+        )
+
+        self.assertIn(
+            reverse('admin:data_underlying_changelist'),
+            response2.url
+        )
+        self.assertEqual(response2.status_code, 302)
+
+        underlying = Underlying.objects.get(symbol=symbol)
+        self.assertFalse(underlying.thinkback)
+        self.assertFalse(underlying.google)
+        self.assertFalse(underlying.yahoo)
+        self.assertFalse(underlying.contract)
+        self.assertFalse(underlying.option)
+        self.assertFalse(underlying.dividend)
+        self.assertFalse(underlying.earning)

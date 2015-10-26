@@ -91,10 +91,10 @@
 
   <script type="text/javascript">
     $('#import_options').click(function () {
-      $(location).attr("href", "{% url 'admin:csv_option_import' symbol|lower %}");
+      $(location).attr("href", "{% url 'admin:csv_option_h5' symbol|lower %}");
     });
     $('#import_again').click(function () {
-      $(location).attr("href", "{% url 'admin:csv_stock_import' symbol|lower %}");
+      $(location).attr("href", "{% url 'admin:csv_stock_h5' symbol|lower %}");
     });
 
     $('#set_updated').click(function () {

@@ -235,3 +235,5 @@ def algorithm_analysis(request, algorithm_id, argument_id=0):
     )
 
     return render(request, template, parameters)
+
+    # todo: remake quant df view in pre

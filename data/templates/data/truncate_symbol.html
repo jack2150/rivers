@@ -48,7 +48,7 @@
               <table class="table">
                 <caption>Thinkback</caption>
                 <tr>
-                  <td>Stock:</td>
+                  <td class="col-md-6">Stock:</td>
                   <td>{{ stats.thinkback.stock|intcomma }}</td>
                 </tr>
                 <tr>
@@ -59,13 +59,16 @@
                   <td>Date Stop:</td>
                   <td>{{ stats.thinkback.stop }}</td>
                 </tr>
+              </table>
+              <table class="table">
+                <caption>Options</caption>
                 <tr>
-                  <td>Contracts:</td>
-                  <td>{{ stats.thinkback.contract|intcomma }}</td>
+                  <td class="col-md-6">Contracts:</td>
+                  <td>{{ stats.option.contract|intcomma }}</td>
                 </tr>
                 <tr>
                   <td>Options:</td>
-                  <td>{{ stats.thinkback.option|intcomma }}</td>
+                  <td>{{ stats.option.count|intcomma }}</td>
                 </tr>
               </table>
             </div>
@@ -73,7 +76,7 @@
               <table class="table">
                 <caption>Google</caption>
                 <tr>
-                  <td>Stock:</td>
+                  <td class="col-md-6">Stock:</td>
                   <td>{{ stats.google.stock|intcomma }}</td>
                 </tr>
                 <tr>
@@ -85,12 +88,23 @@
                   <td>{{ stats.google.stop }}</td>
                 </tr>
               </table>
+              <table class="table">
+                <caption>Event</caption>
+                <tr>
+                  <td class="col-md-6">Dividend:</td>
+                  <td>{{ stats.event.dividend|intcomma }}</td>
+                </tr>
+                <tr>
+                  <td>Earning:</td>
+                  <td>{{ stats.event.earning|intcomma }}</td>
+                </tr>
+              </table>
             </div>
             <div class="col-md-4">
               <table class="table">
                 <caption>Yahoo</caption>
                 <tr>
-                  <td>Stock:</td>
+                  <td class="col-md-6">Stock:</td>
                   <td>{{ stats.yahoo.stock|intcomma }}</td>
                 </tr>
                 <tr>
@@ -105,8 +119,6 @@
             </div>
           </div>
         </div>
-
-
       </div>
     {% endif %}
 

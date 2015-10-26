@@ -11,8 +11,14 @@ class Underlying(models.Model):
     stop = models.DateField()
 
     thinkback = models.IntegerField(default=0)
+    contract = models.BigIntegerField(default=0)
+    option = models.BigIntegerField(default=0)
+
     google = models.IntegerField(default=0)
     yahoo = models.IntegerField(default=0)
+
+    earning = models.IntegerField(default=0)
+    dividend = models.IntegerField(default=0)
 
     # for thinkback csv only
     updated = models.BooleanField(default=False)   # is underlying up to date?
@@ -31,7 +37,7 @@ class Underlying(models.Model):
 
 class Stock(models.Model):
     symbol = models.CharField(max_length=20)
-    
+
     date = models.DateField()
     open = models.DecimalField(max_digits=10, decimal_places=2)
     high = models.DecimalField(max_digits=10, decimal_places=2)
@@ -260,7 +266,7 @@ class Option(models.Model):
         return '{date} {option_contract}'.format(
             date=self.date,
             option_contract=self.contract
-        )    
+        )
 
 
 class Dividend(models.Model):
