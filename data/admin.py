@@ -2,7 +2,6 @@ from bootstrap3_datetime.widgets import DateTimePicker
 from django.contrib import admin
 from pandas.tseries.offsets import BDay
 from data.views import *
-from data.views2 import *
 
 
 class UnderlyingForm(forms.ModelForm):
@@ -12,11 +11,9 @@ class UnderlyingForm(forms.ModelForm):
     )
     stop = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False}),
-        initial=datetime.date(
-            year=datetime.datetime.today().year,
-            month=datetime.datetime.today().month,
-            day=1
-        ) - BDay(1)
+        initial=pd.Timestamp('%s%02d%02d' % (
+            pd.datetime.today().year, pd.datetime.today().month, 1
+        )) - BDay(1)
     )
 
 
@@ -51,8 +48,12 @@ class UnderlyingAdmin(admin.ModelAdmin):
             option_link=reverse('admin:csv_option_h5', kwargs={'symbol': symbol}),
             google_link=reverse('admin:web_stock_h5', args=('google', symbol)),
             yahoo_link=reverse('admin:web_stock_h5', args=('yahoo', symbol)),
-            earning_import=reverse('admin:event_import', kwargs={'event': 'earning', 'symbol': symbol}),
-            dividend_import=reverse('admin:event_import', kwargs={'event': 'dividend', 'symbol': symbol}),
+            earning_import=reverse('admin:html_event_import', kwargs={
+                'event': 'earning', 'symbol': symbol
+            }),
+            dividend_import=reverse('admin:html_event_import', kwargs={
+                'event': 'dividend', 'symbol': symbol
+            }),
             truncate_link=reverse('admin:truncate_symbol', kwargs={'symbol': symbol})
         )
 
@@ -152,7 +153,5 @@ admin.site.register_view(
 # dividend and earning
 admin.site.register_view(
     'data/h5/(?P<event>\w+)/(?P<symbol>\w+)/$',
-    urlname='event_import', view=event_import
+    urlname='html_event_import', view=html_event_import
 )
-
-# todo: underlying will move back to rivers db
