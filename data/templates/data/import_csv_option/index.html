@@ -1,6 +1,16 @@
 {% extends "admin/base_site.html" %}
 {% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags %}
 
+{% block extrastyle %}
+  <style>
+    .fblock {
+      width: 100%;
+      height: 400px;
+      overflow-y: scroll;
+    }
+  </style>
+{% endblock %}
+
 {% if not is_popup %}
   {% block breadcrumbs %}
     <ul class="breadcrumb">
@@ -18,53 +28,53 @@
     <div class="panel-body">
       <div class="row">
         <div class="col-md-4">
-          {% include 'data/import_csv_option/missing_dates.html' %}
+          <label for="cfiles">Missing code:</label>
+          <pre class="fblock">
+{% for m in missing %}{{ forloop.counter|stringformat:'-6d' }}{{ m.option_code|stringformat:'-16s' }}{{ m.count|stringformat:'-6d' }}
+{% endfor %}
+          </pre>
         </div>
         <div class="col-md-4">
-          {% include 'data/import_csv_option/forfeit_contracts.html' %}
+          <label for="cfiles">Complete date:</label>
+          <pre class="fblock">
+{% for c in completed %}{{ forloop.counter|stringformat:'-6d' }}{{ c.date|stringformat:'-16s' }}{{ c.count|stringformat:'-6d' }}
+{% endfor %}
+          </pre>
         </div>
         <div class="col-md-4">
           <table class="table">
-            <caption>Contracts</caption>
+            <caption>Report</caption>
             <tr>
-              <th class="col-md-4">Count:</th>
-              <td>{{ stats.contracts.count }}</td>
+              <th class="col-md-4">Data:</th>
+              <td>{{ stats.data }}</td>
             </tr>
             <tr>
-              <th>Expire:</th>
-              <td>{{ stats.contracts.expire }}</td>
+              <th class="col-md-4">Index:</th>
+              <td>{{ stats.index }}</td>
             </tr>
             <tr>
-              <th>Split:</th>
-              <td>{{ stats.contracts.split }}</td>
+              <th class="col-md-4">Contract:</th>
+              <td>{{ stats.contract }}</td>
             </tr>
             <tr>
-              <th>Code Change:</th>
-              <td>{{ stats.contracts.code_change }}</td>
+              <th class="col-md-4">Expire:</th>
+              <td>{{ stats.expire }}</td>
             </tr>
             <tr>
-              <th>Others:</th>
-              <td>{{ stats.contracts.others }}</td>
+              <th class="col-md-4">Active</th>
+              <td>{{ stats.active }}</td>
             </tr>
             <tr>
-              <th>Others set:</th>
-              <td>{{ stats.contracts.others_set }}</td>
+              <th class="col-md-4">Right:</th>
+              <td>{{ stats.right }}</td>
             </tr>
             <tr>
-              <th>Special:</th>
-              <td>{{ stats.contracts.special }}</td>
+              <th class="col-md-4">Others:</th>
+              <td>{{ stats.others }}</td>
             </tr>
             <tr>
-              <th>Special set:</th>
-              <td>{{ stats.contracts.special_set }}</td>
-            </tr>
-          </table>
-
-          <table class="table">
-            <caption>Options</caption>
-            <tr>
-              <th class="col-md-6">Count:</th>
-              <td>{{ stats.options.count }}</td>
+              <th class="col-md-4">Special:</th>
+              <td>{{ stats.special }}</td>
             </tr>
           </table>
         </div>

@@ -1,13 +1,13 @@
 <div id="content-navbar-collapse" class="navbar-collapse collapse">
   <div class="nav navbar-nav navbar-right">
-    <button id="treasury_import" type="button" class="btn btn-primary">
+    <button id="web_treasury_h5" type="button" class="btn btn-primary">
       Import Treasury
     </button>
   </div>
 </div>
 
 <script type="text/javascript">
-  $("#treasury_import").click(function () {
-    $(location).attr("href", "{% url 'admin:treasury_import' %}");
+  $("#web_treasury_h5").click(function () {
+    $(location).attr("href", "{% url 'admin:web_treasury_h5' %}");
   });
 </script>

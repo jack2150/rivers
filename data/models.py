@@ -18,7 +18,7 @@ class Underlying(models.Model):
     updated = models.BooleanField(default=False)   # is underlying up to date?
     optionable = models.BooleanField(default=False)  # options imported
 
-    missing_dates = models.TextField(default='', blank=True)  # all missing dates
+    missing = models.TextField(default='', blank=True)  # all missing dates
 
     class Meta:
         ordering = ['symbol']
@@ -467,9 +467,36 @@ class TreasuryInterest(models.Model):
         )
 
 
+class Treasury(models.Model):
+    """
+    "Series Description","Market yield on U.S. Treasury securities at 1-year   constant maturity, quoted on investment basis"
+    "Unit:","Percent:_Per_Year"
+    "Multiplier:","1"
+    "Currency:","NA"
+    "Unique Identifier: ","H15/H15/RIFLGFCY01_N.B"
+    "Time Period","RIFLGFCY01_N.B"
+    """
+    start_date = models.DateField()
+    stop_date = models.DateField()
 
+    series_description = models.TextField()
+    unit = models.CharField(max_length=100)
+    multiplier = models.FloatField()
+    currency = models.CharField(max_length=20)
+    unique_identifier = models.CharField(max_length=100)
+    time_period = models.CharField(max_length=100)
 
+    def to_key(self):
+        """
+        use when open hdf5 key
+        :return: str
+        """
+        return self.time_period.replace('.', '_')
 
+    def __unicode__(self):
+        return '{time_period}'.format(
+            time_period=self.time_period
+        )
 
 
 

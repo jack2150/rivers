@@ -43,3 +43,5 @@ if __name__ == '__main__':
     assert (offday('04/04/15') is False), "Date is holiday."
 
     assert (offday(datetime.strptime('2015-02-16', '%Y-%m-%d').date()) is True)
+
+# todo: rework this into new format

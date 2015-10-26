@@ -1,6 +1,17 @@
 {% extends "admin/base_site.html" %}
 {% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags %}
 
+{% block extrastyle %}
+  <style>
+    .fblock {
+      width: 100%;
+      height: 400px;
+      overflow-y: scroll;
+    }
+  </style>
+{% endblock %}
+
+
 {% if not is_popup %}
   {% block breadcrumbs %}
     <ul class="breadcrumb">
@@ -25,10 +36,18 @@
     <div class="panel-body">
       <div class="row">
         <div class="col-md-4">
-          {% include 'data/import_csv_stock/complete_files.html' %}
+          <label for="cfiles">Completed Files:</label>
+          <pre class="fblock">
+{% for f in completes %}{{ forloop.counter|stringformat:'-6d' }}{{ f.date|stringformat:'-16s' }}{{ f.volume|stringformat:'-14d' }}{{ f.close }}
+{% endfor %}
+          </pre>
         </div>
         <div class="col-md-4">
-          {% include 'data/import_csv_stock/missing_dates.html' %}
+          <label for="missing_dates">Missing Dates:</label>
+        <pre class="fblock">
+{% for date in missing %}{{ date }}
+{% endfor %}
+        </pre>
         </div>
         <div class="col-md-4">
           <table class="table">
@@ -47,7 +66,7 @@
             </tr>
             <tr>
               <th class="col-md-6">Missing:</th>
-              <td>{{ missing_dates|length }}</td>
+              <td>{{ missing|length }}</td>
             </tr>
           </table>
         </div>

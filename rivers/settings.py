@@ -128,6 +128,10 @@ CACHES = {
     }
 }
 
+# HDF5 Store
+QUOTE = os.path.join(BASE_DIR, 'quote.h5')
+
+# for test only
 if 'test' in sys.argv:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',

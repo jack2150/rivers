@@ -1,7 +1,0 @@
-<label for="completed_files">Completed Files:</label>
-<textarea id="completed_files" class="form-control vLargeTextField" rows="20"
-    {% if completed_files|length == 0 %}disabled="disabled"{% endif %}>
-{% for f in completed_files %}{{ forloop.counter }}. {{ f.date }} {{ f.volume }} {{ f.close }}
-{% endfor %}
-{{ completed_files.length }}
-</textarea>

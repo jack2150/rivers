@@ -669,7 +669,6 @@ def csv_option_import(request, symbol):
                         Q(contract=c) & Q(date__lt=stock.date)
                     ).order_by('date')[0]
 
-
                     if o.bid or o.ask:
                         if not c.forfeit and (o.bid > 1000 or o.ask > 1000):
                             print '----| FORFEIT:', c, code, o.bid, o.ask

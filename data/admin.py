@@ -2,6 +2,7 @@ from bootstrap3_datetime.widgets import DateTimePicker
 from django.contrib import admin
 from pandas.tseries.offsets import BDay
 from data.views import *
+from data.views2 import *
 
 
 class UnderlyingForm(forms.ModelForm):
@@ -21,29 +22,6 @@ class UnderlyingForm(forms.ModelForm):
 
 class UnderlyingAdmin(admin.ModelAdmin):
     form = UnderlyingForm
-
-    def csv_import(self):
-        href = '<a href="{stock_link}">Stock</a> | ' \
-               '<a href="{option_link}">Options</a>'
-        return href.format(
-            stock_link=reverse('admin:csv_stock_import', kwargs={'symbol': self.symbol.lower()}),
-            option_link=reverse('admin:csv_option_import', kwargs={'symbol': self.symbol.lower()}),
-        )
-
-    csv_import.short_description = 'Csv'
-    csv_import.allow_tags = True
-
-    def web_import(self):
-        href = '<a href="{google_link}">Google</a> | ' \
-               '<a href="{yahoo_link}">Yahoo</a>'
-
-        return href.format(
-            google_link=reverse('admin:web_quote_import', args=('google', self.symbol.lower())),
-            yahoo_link=reverse('admin:web_quote_import', args=('yahoo', self.symbol.lower()))
-        )
-
-    web_import.short_description = 'Web'
-    web_import.allow_tags = True
 
     def data_manage(self):
         #href = '<a href="{truncate_link}">Truncate</a>'
@@ -69,10 +47,10 @@ class UnderlyingAdmin(admin.ModelAdmin):
         """
         symbol = self.symbol.lower()
         return href.format(
-            stock_link=reverse('admin:csv_stock_import', kwargs={'symbol': symbol}),
-            option_link=reverse('admin:csv_option_import', kwargs={'symbol': symbol}),
-            google_link=reverse('admin:web_quote_import', args=('google', symbol)),
-            yahoo_link=reverse('admin:web_quote_import', args=('yahoo', symbol)),
+            stock_link=reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}),
+            option_link=reverse('admin:csv_option_h5', kwargs={'symbol': symbol}),
+            google_link=reverse('admin:web_stock_h5', args=('google', symbol)),
+            yahoo_link=reverse('admin:web_stock_h5', args=('yahoo', symbol)),
             earning_import=reverse('admin:event_import', kwargs={'event': 'earning', 'symbol': symbol}),
             dividend_import=reverse('admin:event_import', kwargs={'event': 'dividend', 'symbol': symbol}),
             truncate_link=reverse('admin:truncate_symbol', kwargs={'symbol': symbol})
@@ -90,7 +68,7 @@ class UnderlyingAdmin(admin.ModelAdmin):
         ('Primary Fields', {
             'fields': (
                 'symbol', 'start', 'stop', 'thinkback', 'google', 'yahoo',
-                'updated', 'optionable', 'missing_dates'
+                'updated', 'optionable', 'missing'
             )
         }),
     )
@@ -101,180 +79,30 @@ class UnderlyingAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-class StockForm(forms.ModelForm):
-    date = forms.DateField(
+class TreasuryForm(forms.ModelForm):
+    start_date = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+    stop_date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
     )
 
 
-class StockAdmin(admin.ModelAdmin):
-    form = StockForm
-    list_display = ('symbol', 'date', 'open', 'high', 'low', 'close', 'source')
-
-    fieldsets = (
-        ('Foreign Keys', {
-            'fields': ('underlying',)
-        }),
-        ('Primary Fields', {
-            'fields': ('symbol', 'date', 'open', 'high', 'low', 'close', 'source')
-        }),
-    )
-
-    search_fields = ('symbol', 'date', 'source')
-    list_per_page = 20
-
-    def has_add_permission(self, request):
-        return False
-
-
-class OptionContractAdmin(admin.ModelAdmin):
-    list_display = (
-        'symbol', 'ex_month', 'ex_year', 'right', 'special',
-        'strike', 'name', 'option_code', 'others', 'source',
-        'expire', 'code_change', 'missing'
-        # 'forfeit', 'split',
-    )
-
+class TreasuryAdmin(admin.ModelAdmin):
+    form = TreasuryForm
+    list_display = ('time_period', 'start_date', 'stop_date', 'unit',
+                    'multiplier', 'currency', 'unique_identifier')
     fieldsets = (
         ('Primary Fields', {
-            'fields': (
-                'symbol', 'ex_month', 'ex_year', 'right', 'special',
-                'strike', 'name', 'option_code', 'others', 'source',
-                'expire', 'code_change', 'split', 'missing', 'forfeit'
-            )
+            'fields': ('start_date', 'stop_date', 'series_description', 'unit',
+                       'multiplier', 'currency', 'unique_identifier', 'time_period')
         }),
     )
 
-    search_fields = ('symbol', 'ex_month', 'ex_year', 'special',
-                     'strike', 'name', 'option_code', 'others')
+    search_fields = ('start_date', 'stop_date', 'series_description', 'time_period')
 
     list_per_page = 20
-
-    def has_add_permission(self, request):
-        return False
-
-
-class DividendForm(forms.ModelForm):
-    announce_date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
-    )
-
-    expire_date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
-    )
-
-    record_date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
-    )
-
-    payable_date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
-    )
-
-
-class DividendAdmin(admin.ModelAdmin):
-    form = DividendForm
-    list_display = ('symbol', 'year', 'quarter',
-                    'announce_date', 'expire_date', 'record_date', 'payable_date',
-                    'amount', 'dividend_type')
-
-    fieldsets = (
-        ('Primary Fields', {
-            'fields': ('symbol', 'year', 'quarter',
-                       'announce_date', 'expire_date', 'record_date', 'payable_date',
-                       'amount', 'dividend_type')
-        }),
-    )
-
-    search_fields = ('symbol', 'year', 'quarter', 'dividend_type')
-
-    list_per_page = 20
-    ordering = ('-expire_date', )
-
-    def has_add_permission(self, request):
-        return False
-
-
-class EarningForm(forms.ModelForm):
-    actual_date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
-    )
-
-
-class EarningAdmin(admin.ModelAdmin):
-    form = EarningForm
-    list_display = ('symbol', 'actual_date', 'release', 'year', 'quarter',
-                    'analysts', 'estimate_eps', 'adjusted_eps', 'gaap',
-                    'high', 'low', 'actual_eps')
-
-    fieldsets = (
-        ('Primary Fields', {
-            'fields': ('symbol', 'actual_date', 'release', 'year', 'quarter',
-                       'analysts', 'estimate_eps', 'adjusted_eps', 'gaap',
-                       'high', 'low', 'actual_eps')
-        }),
-    )
-
-    search_fields = ('symbol', 'release', 'year', 'quarter')
-    list_filter = ('release', 'quarter')
-
-    list_per_page = 20
-    ordering = ('-actual_date', )
-
-    def has_add_permission(self, request):
-        return False
-
-
-class TreasuryInstrumentAdmin(admin.ModelAdmin):
-    list_display = ('unique_identifier', 'name', 'instrument', 'maturity',
-                    'unit', 'multiplier', 'currency', 'time_frame')
-    fieldsets = (
-        ('Primary Fields', {
-            'fields': ('name', 'instrument', 'maturity', 'description',
-                       'unit', 'multiplier', 'currency', 'unique_identifier',
-                       'time_period', 'time_frame')
-        }),
-    )
-
-    search_fields = ('name', 'instrument', 'maturity', 'description',
-                     'unit', 'multiplier', 'currency', 'unique_identifier',
-                     'time_period', 'time_frame')
-    list_filter = ('name', 'maturity', 'unit', 'multiplier', 'time_frame')
-
-    list_per_page = 20
-    ordering = ('name', )
-
-    def has_add_permission(self, request):
-        return False
-
-
-class TreasuryInterestForm(forms.ModelForm):
-    date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
-    )
-
-
-class TreasuryInterestAdmin(admin.ModelAdmin):
-    form = TreasuryInterestForm
-    list_display = ('treasury', 'date', 'interest')
-    fieldsets = (
-        ('Foreign Keys', {
-            'fields': ('treasury',)
-        }),
-        ('Primary Fields', {
-            'fields': ('date', 'interest')
-        }),
-    )
-
-    search_fields = ('treasury__name', 'treasury__instrument', 'treasury__maturity',
-                     'treasury__description', 'treasury__unit', 'treasury__multiplier',
-                     'treasury__currency', 'treasury__unique_identifier',
-                     'treasury__time_period', 'treasury__time_frame')
-    list_filter = ('treasury__name', 'treasury__maturity', 'treasury__unit',
-                   'treasury__multiplier', 'treasury__time_frame')
-
-    list_per_page = 20
-    ordering = ('treasury__name', '-date', )
+    ordering = ()
 
     def has_add_permission(self, request):
         return False
@@ -282,38 +110,12 @@ class TreasuryInterestAdmin(admin.ModelAdmin):
 
 # admin model
 admin.site.register(Underlying, UnderlyingAdmin)
-admin.site.register(Stock, StockAdmin)
-admin.site.register(OptionContract, OptionContractAdmin)
-admin.site.register(Dividend, DividendAdmin)
-admin.site.register(Earning, EarningAdmin)
-admin.site.register(TreasuryInstrument, TreasuryInstrumentAdmin)
-admin.site.register(TreasuryInterest, TreasuryInterestAdmin)
+admin.site.register(Treasury, TreasuryAdmin)
 
-# custom admin view
-admin.site.register_view(
-    'data/import/quote/web/(?P<source>\w+)/(?P<symbol>\w+)/$',
-    urlname='web_quote_import', view=web_quote_import
-)
-
-admin.site.register_view(
-    'data/import/treasury/$',
-    urlname='treasury_import', view=treasury_import
-)
-
+# admin view
 admin.site.register_view(
     'data/thinkback/truncate/(?P<symbol>\w+)/$',
     urlname='truncate_symbol', view=truncate_symbol
-)
-
-# csv import
-admin.site.register_view(
-    'data/import/quote/csv/stock/(?P<symbol>\w+)/$',
-    urlname='csv_stock_import', view=csv_stock_import
-)
-
-admin.site.register_view(
-    'data/import/quote/csv/option/(?P<symbol>\w+)/$',
-    urlname='csv_option_import', view=csv_option_import
 )
 
 # set updated
@@ -322,13 +124,30 @@ admin.site.register_view(
     urlname='set_underlying', view=set_underlying
 )
 
+# csv h5 stock and option
 admin.site.register_view(
-    'data/import/(?P<event>\w+)/(?P<symbol>\w+)/$',
+    'data/h5/quote/csv/stock/(?P<symbol>\w+)/$',
+    urlname='csv_stock_h5', view=csv_stock_h5
+)
+admin.site.register_view(
+    'data/h5/quote/csv/option/(?P<symbol>\w+)/$',
+    urlname='csv_option_h5', view=csv_option_h5
+)
+
+# web h5 stock
+admin.site.register_view(
+    'data/h5/quote/web/(?P<source>\w+)/(?P<symbol>\w+)/$',
+    urlname='web_stock_h5', view=web_stock_h5
+)
+admin.site.register_view(
+    'data/h5/treasury/$',
+    urlname='web_treasury_h5', view=web_treasury_h5
+)
+
+# dividend and earning
+admin.site.register_view(
+    'data/h5/(?P<event>\w+)/(?P<symbol>\w+)/$',
     urlname='event_import', view=event_import
 )
 
-admin.site.register_view(
-    'data/import/daily/(?P<date>\d{4}-\d{2}-\d{2})/$',
-    urlname='daily_import', view=daily_import
-)
-
+# todo: underlying will move back to rivers db
