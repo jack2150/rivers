@@ -31,18 +31,18 @@ class TestStageLongCall(TestStage):
         self.assertEqual(stage1.e_stage, 'MAX_LOSS')
         self.assertEqual(stage1.e_amount, -217)
         self.assertEqual(stage1.gt_stage, 'LOSS')
-        self.assertEqual(stage1.check(203.9), 'MAX_LOSS')
-        self.assertEqual(stage1.check(204), 'MAX_LOSS')
-        self.assertEqual(stage1.check(204.1), 'LOSS')
+        self.assertEqual(stage1.check_status(203.9), 'MAX_LOSS')
+        self.assertEqual(stage1.check_status(204), 'MAX_LOSS')
+        self.assertEqual(stage1.check_status(204.1), 'LOSS')
 
         stage2 = stages[1]
         self.assertEqual(stage2.lt_stage, 'LOSS')
         self.assertEqual(stage2.e_stage, 'EVEN')
         self.assertEqual(stage2.e_amount, 0)
         self.assertEqual(stage2.gt_stage, 'PROFIT')
-        self.assertEqual(stage2.check(206.16), 'LOSS')
-        self.assertEqual(stage2.check(206.17), 'EVEN')
-        self.assertEqual(stage2.check(206.18), 'PROFIT')
+        self.assertEqual(stage2.check_status(206.16), 'LOSS')
+        self.assertEqual(stage2.check_status(206.17), 'EVEN')
+        self.assertEqual(stage2.check_status(206.18), 'PROFIT')
 
         conditions = self.position.make_conditions()
 
@@ -88,18 +88,18 @@ class TestStageNakedCall(TestStage):
         self.assertEqual(stage1.e_stage, 'MAX_PROFIT')
         self.assertEqual(stage1.e_amount, 74)
         self.assertEqual(stage1.gt_stage, 'PROFIT')
-        self.assertEqual(stage1.check(17.9), 'MAX_PROFIT')
-        self.assertEqual(stage1.check(18), 'MAX_PROFIT')
-        self.assertEqual(stage1.check(18.1), 'PROFIT')
+        self.assertEqual(stage1.check_status(17.9), 'MAX_PROFIT')
+        self.assertEqual(stage1.check_status(18), 'MAX_PROFIT')
+        self.assertEqual(stage1.check_status(18.1), 'PROFIT')
 
         stage2 = stages[1]
         self.assertEqual(stage2.lt_stage, 'PROFIT')
         self.assertEqual(stage2.e_stage, 'EVEN')
         self.assertEqual(stage2.e_amount, 0)
         self.assertEqual(stage2.gt_stage, 'LOSS')
-        self.assertEqual(stage2.check(18.73), 'PROFIT')
-        self.assertEqual(stage2.check(18.74), 'EVEN')
-        self.assertEqual(stage2.check(18.75), 'LOSS')
+        self.assertEqual(stage2.check_status(18.73), 'PROFIT')
+        self.assertEqual(stage2.check_status(18.74), 'EVEN')
+        self.assertEqual(stage2.check_status(18.75), 'LOSS')
 
         conditions = self.position.make_conditions()
 
@@ -144,9 +144,9 @@ class TestStageLongPut(TestStage):
         self.assertEqual(stage1.e_stage, 'EVEN')
         self.assertEqual(stage1.e_amount, 0.0)
         self.assertEqual(stage1.gt_stage, 'LOSS')
-        self.assertEqual(stage1.check(334.41), 'PROFIT')
-        self.assertEqual(stage1.check(334.42), 'EVEN')
-        self.assertEqual(stage1.check(334.43), 'LOSS')
+        self.assertEqual(stage1.check_status(334.41), 'PROFIT')
+        self.assertEqual(stage1.check_status(334.42), 'EVEN')
+        self.assertEqual(stage1.check_status(334.43), 'LOSS')
 
         stage2 = stages[1]
         self.assertEqual(stage2.lt_stage, 'LOSS')
@@ -154,9 +154,9 @@ class TestStageLongPut(TestStage):
         self.assertEqual(stage2.e_amount, -58)
         self.assertEqual(stage2.gt_stage, 'MAX_LOSS')
         self.assertEqual(stage2.gt_amount, -58)
-        self.assertEqual(stage2.check(334.99), 'LOSS')
-        self.assertEqual(stage2.check(335), 'MAX_LOSS')
-        self.assertEqual(stage2.check(335.1), 'MAX_LOSS')
+        self.assertEqual(stage2.check_status(334.99), 'LOSS')
+        self.assertEqual(stage2.check_status(335), 'MAX_LOSS')
+        self.assertEqual(stage2.check_status(335.1), 'MAX_LOSS')
 
         conditions = self.position.make_conditions()
 
@@ -201,9 +201,9 @@ class TestStageNakedPut(TestStage):
         self.assertEqual(stage1.e_stage, 'EVEN')
         self.assertEqual(stage1.e_amount, 0.0)
         self.assertEqual(stage1.gt_stage, 'PROFIT')
-        self.assertEqual(stage1.check(17.24), 'LOSS')
-        self.assertEqual(stage1.check(17.25), 'EVEN')
-        self.assertEqual(stage1.check(17.26), 'PROFIT')
+        self.assertEqual(stage1.check_status(17.24), 'LOSS')
+        self.assertEqual(stage1.check_status(17.25), 'EVEN')
+        self.assertEqual(stage1.check_status(17.26), 'PROFIT')
 
         stage2 = stages[1]
         self.assertEqual(stage2.lt_stage, 'PROFIT')
@@ -211,9 +211,9 @@ class TestStageNakedPut(TestStage):
         self.assertEqual(stage2.e_amount, 25)
         self.assertEqual(stage2.gt_stage, 'MAX_PROFIT')
         self.assertEqual(stage2.gt_amount, 25)
-        self.assertEqual(stage2.check(17.49), 'PROFIT')
-        self.assertEqual(stage2.check(17.5), 'MAX_PROFIT')
-        self.assertEqual(stage2.check(17.51), 'MAX_PROFIT')
+        self.assertEqual(stage2.check_status(17.49), 'PROFIT')
+        self.assertEqual(stage2.check_status(17.5), 'MAX_PROFIT')
+        self.assertEqual(stage2.check_status(17.51), 'MAX_PROFIT')
 
         conditions = self.position.make_conditions()
 

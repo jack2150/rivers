@@ -36,10 +36,11 @@ def handle_data(df, dte=0):
 
     # set start date in df
     for ex_date in expire_dates:
-        start_day = (ex_date - Day(dte)).date()
+        start_day = pd.to_datetime(ex_date - Day(dte))
+
         while start_day not in trading_dates:
             if start_day > first_date:
-                start_day = (start_day - BDay(1)).date()
+                start_day = pd.to_datetime(start_day - BDay(1))
             else:
                 start_dates.append(None)
                 break
@@ -50,16 +51,15 @@ def handle_data(df, dte=0):
     # set expire date in df
     for key, ex_day in enumerate(expire_dates):
         if not ex_day in trading_dates:
-            p_day = (ex_day - BDay(1)).date()
+            p_day = pd.to_datetime(ex_day)
             while p_day not in trading_dates:
-                if p_day < last_date:
-                    p_day = (p_day - BDay(1)).date()
+                if p_day < pd.to_datetime(last_date):
+                    p_day = pd.to_datetime(p_day - BDay(1))
                 else:
                     expire_dates[key] = None
                     break
             else:
                 expire_dates[key] = p_day
-
     # drop none set
     for key, (sd, ed) in enumerate(zip(start_dates, expire_dates)):
         if not sd or not ed:

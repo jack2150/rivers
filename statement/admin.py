@@ -449,3 +449,8 @@ admin.site.register_view(
 admin.site.register_view(
     'statement/truncate/$', urlname='truncate_statement', view=truncate_statement
 )
+
+admin.site.register_view(
+    'data/underlying/daily/(?P<date>\d{4}-\d{2}-\d{2})/(?P<ready_all>\d+)/$',
+    urlname='daily_import', view=daily_import
+)

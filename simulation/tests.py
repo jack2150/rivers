@@ -4,7 +4,6 @@ from simulation.views import *
 
 class TestStrategyAnalysisForm1(TestSetUp):
     fixtures = ('quant_data.json', 'sim_data.json')
-    multi_db = True
 
     def setUp(self):
         TestSetUp.setUp(self)
@@ -58,8 +57,7 @@ class TestStrategyAnalysisForm1(TestSetUp):
 
 
 class TestStrategyAnalysisForm2(TestSetUp):
-    fixtures = ('quant_data.json', 'sim_data.json', 'quote_data.json')
-    multi_db = True
+    fixtures = ('quant_data.json', 'sim_data.json')
 
     def setUp(self):
         TestSetUp.setUp(self)
@@ -69,6 +67,18 @@ class TestStrategyAnalysisForm2(TestSetUp):
         self.strategy = Strategy.objects.get(name='Stop Loss')
         self.commission = Commission.objects.first()
         self.capital = 13721.25
+
+        underlying = Underlying()
+        underlying.symbol = self.algorithm_result.symbol.upper()
+        underlying.start = '2009-01-01'
+        underlying.stop = '2016-01-01'
+        underlying.save()
+
+        underlying2 = Underlying()
+        underlying2.symbol = 'SPY'
+        underlying2.start = '2009-01-01'
+        underlying2.stop = '2016-01-01'
+        underlying2.save()
 
         print self.algorithm_result.symbol
 
@@ -143,5 +153,3 @@ class TestStrategyAnalysisForm2(TestSetUp):
             print strategy_result
             self.assertEqual(strategy_result.algorithm_result.id, self.algorithm_result.id)
             self.assertEqual(strategy_result.strategy.id, self.strategy.id)
-
-

@@ -5,21 +5,15 @@ from quantitative.models import AlgorithmResult
 from simulation.models import StrategyResult
 
 
-def df_html_view(request, result, result_id):
-    """
-    Dataframe view in html
-    :param request: request
-    :param result: str ('algorithm', 'strategy')
-    :param result_id: int
-    :return: render
-    """
-    if result == 'strategy':
-        r = StrategyResult.objects.get(id=result_id)
+# noinspection PyShadowingBuiltins
+def df_view(request, model, id):
+    if model == 'strategy':
+        r = StrategyResult.objects.get(id=id)
         df = r.df_trade
         name = r.strategy.name
         args = r.arguments
-    elif result == 'algorithm':
-        r = AlgorithmResult.objects.get(id=result_id)
+    elif model == 'algorithm':
+        r = AlgorithmResult.objects.get(id=id)
         df = r.df_signal
         name = r.algorithm.rule
         args = r.arguments
@@ -27,22 +21,28 @@ def df_html_view(request, result, result_id):
         raise ValueError('Result type can only be "strategy" or "algorithm"')
 
     df = pd.read_csv(StringIO(df), index_col=0)
+    """:type: DataFrame"""
+    df['date0'] = df['date0'].astype('datetime64').apply(lambda x: x.to_datetime().date())
+    df['date1'] = df['date1'].astype('datetime64').apply(lambda x: x.to_datetime().date())
 
-    data = list()
-    columns = list(df.columns)
-    for index, trade in df.iterrows():
-        data.append({c: trade[c] for c in columns})
+    df.index = range(len(df))
+    df = df.sort(['date0'], ascending=[False])
 
-    template = 'base/df_to_html/index.html'
+    df = df[[
+        'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding',
+        'mean', 'median', 'max', 'min', 'std', 'max2', 'min2', 'p_pct', 'l_pct',
+        'pct_chg'
+    ]]
+
+    template = 'base/df_view/index.html'
+
     parameters = dict(
-        site_title='Dataframe html view',
-        title='{result} Result: {name}, Arg: {args}'.format(
-            result=result.capitalize(), name=name, args=args
+        site_title='Dataframe view',
+        title='< {symbol} > {result} Result: {name}, Arg: {args}'.format(
+            symbol=r.symbol, result=model.capitalize(), name=name, args=args
         ),
-        data=data,
-        columns=columns
+        df=df.to_string(line_width=700),
+        model=model,
     )
 
     return render(request, template, parameters)
-
-

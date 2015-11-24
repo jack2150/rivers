@@ -62,128 +62,132 @@ class Statement(models.Model):
     class Controller(object):
         def __init__(self, statement):
             self.statement = statement
-            self.account_trades = self.statement.accounttrade_set
+            self.acc_trades = self.statement.accounttrade_set
 
-            self.open_positions = Position.objects.filter(status='OPEN')
+            self.open_pos = Position.objects.filter(status='OPEN')
             """:type: QuerySet"""
 
         def position_trades(self):
             """
-            Loop trade by trade and open or close position
-            :return: None
+            :return:
             """
-            from checklist.models import MarketOpinion, EnterOpinion
-
-            times = sorted(set([x[0] for x in self.account_trades.values_list('time')]))
-
+            times = sorted(set([t.time for t in self.acc_trades.all()]))
+            opens = []
             for time in times:
-                for symbol in set([t.symbol for t in self.account_trades.filter(time=time)]):
-                #for symbol in set([t.symbol for t in self.account_trades.filter(time=time) if t.symbol=='XOM']):
-                    trades = self.account_trades.filter(Q(time=time) & Q(symbol=symbol)).order_by('time')
-                    """:type: QuerySet"""
+                for symbol in set([t.symbol for t in self.acc_trades.filter(time=time)]):
+                    opens.append((time, symbol))
 
-                    if len(list(set([t.pos_effect for t in trades]))) > 1:
-                        raise ValueError('Difference pos effect for account trades.')
-                    pos_effect = trades[0].pos_effect
+            for time, symbol in opens:
+                trades = self.acc_trades.filter(
+                    Q(time=time) & Q(symbol=symbol)
+                )
 
-                    if pos_effect == 'TO OPEN':
-                        if self.open_positions.filter(symbol=symbol).exists():
-                            position = self.open_positions.get(symbol=symbol)
+                pos_effect = list(set([t.pos_effect for t in trades]))[0]
 
-                            # if strategy not same, expire date same
-                            if position.spread != Position().set_open(trades).spread:
-                                position.set_custom()
-                                position.save()
-                            elif position.name != 'STOCK':
-                                expire_date0 = sorted(list(set([
-                                    p['exp'] for p in position.accounttrade_set.filter(
-                                        pos_effect='TO OPEN'
-                                    ).values('exp')
-                                ])))
+                if pos_effect == 'TO OPEN':
+                    position = self.position_open(symbol, time, trades)
+                    self.add_opinion(position)
+                elif pos_effect == 'TO CLOSE':
+                    position = self.position_close(symbol, time, trades)
+                else:
+                    raise ValueError('Invalid pos effect on trade "%s"' % pos_effect)
 
-                                expire_date1 = sorted(list(set([
-                                    t['exp'] for t in trades.filter().values('exp')
-                                ])))
-                                if expire_date0 != expire_date1:
-                                    position.set_custom()
-                                    position.save()
-                        else:
-                            position = Position()
-                            position.set_open(trades)
-                            position.save()
-                            position.create_stages(trades)
-                            self.add_relations(symbol=symbol, time=time)
-                    elif pos_effect == 'TO CLOSE':
-                        if self.open_positions.filter(symbol=symbol).exists():
-                            self.add_relations(symbol=symbol, time=time)
-                            position = self.open_positions.get(symbol=symbol)
+                # add acc trades
+                for trade in trades:
+                    position.accounttrade_set.add(trade)
 
-                            equity = position.holdingequity_set.filter(
-                                statement__date=self.statement.date
-                            )
-                            option = position.holdingoption_set.filter(
-                                statement__date=self.statement.date
-                            )
-                            print symbol, equity, option
-                            if equity.exists() and not option.exists():
-                                # still opened as stock
-                                equity = equity.first()
-                                if equity.qty != 0:
-                                    new_pos = Position()
-                                    new_pos.status = 'OPEN'
-                                    new_pos.symbol = position.symbol
-                                    new_pos.name = 'STOCK'
-                                    if equity.qty > 0:
-                                        new_pos.spread = 'LONG_STOCK'
-                                    elif equity.qty < 0:
-                                        new_pos.spread = 'SHORT_STOCK'
-                                    else:
-                                        raise ValueError('Invalid equity quantity for option exercise into stock.')
-                            elif equity.exists() and option.exists():
-                                # covered, close some
-                                pass
-                            elif not equity.exists() and option.exists():
-                                # option, close some
-                                pass
-                            else:
-                                position.set_close(self.statement.date)
-                                position.save()
-                        else:
-                            #print trades[0].statement.date, trades
-                            # check holding equity and option, then if both not exists, the skip
-                            equity = self.statement.holdingequity_set.filter(symbol=symbol)
-                            option = self.statement.holdingoption_set.filter(symbol=symbol)
+        def position_open(self, symbol, time, trades):
+            """
+            Replace position trades with more functions
+            :param symbol: str
+            :param time: DateTime
+            :param trades: list of AccountTrade
+            :return: Position
+            """
+            if self.open_pos.filter(symbol=symbol).exists():
+                position = self.open_pos.get(symbol=symbol)
 
-                            if not(equity.exists or option.exists()):
-                                raise ValueError('Position <{symbol}> not found when closing.'.format(
-                                    symbol=symbol
-                                ))
+                # different strategy
+                if position.spread != Position().set_open(trades).spread:
+                    position.set_custom()
+                    position.save()
 
-                    else:
-                        raise ValueError('Wrong pos effect when open or close position.')
+                # same strategy but different expire date
+                if position.name != 'STOCK':
+                    expire_date0 = sorted(list(set([
+                        p['exp'] for p in position.accounttrade_set.filter(
+                            pos_effect='TO OPEN'
+                        ).values('exp')
+                    ])))
 
-                    # add relation here
-                    for trade in trades:
-                        position.accounttrade_set.add(trade)
-
-                    # checklist section blind market and enter opinion
-                    try:
-                        market_opinion = MarketOpinion.objects.get(date=self.statement.date)
-                        position.market_opinion = market_opinion
+                    expire_date1 = sorted(list(set([
+                        t['exp'] for t in trades.filter().values('exp')
+                    ])))
+                    if expire_date0 != expire_date1:
+                        position.set_custom()
                         position.save()
-                    except ObjectDoesNotExist:
-                        pass
+            else:
+                # create new pos if no existing pos
+                position = Position()
+                position.set_open(trades)
+                position.save()
+                position.create_stages(trades)
+                self.add_relations(symbol=symbol, time=time)
 
-                    try:
-                        enter_opinion = EnterOpinion.objects.get(
-                            Q(symbol=position.symbol) & Q(date=self.statement.date)
-                        )
-                        position.enter_opinion = enter_opinion
-                        position.save()
-                        enter_opinion.trade = True
-                        enter_opinion.save()
-                    except ObjectDoesNotExist:
-                        pass
+            return position
+
+        def position_close(self, symbol, time, trades):
+            """
+            Close position for all condition
+            :return: Position
+            """
+            opens = self.open_pos.filter(symbol=symbol)
+            if opens.exists():
+                position = self.open_pos.get(symbol=symbol)
+                self.add_relations(symbol=symbol, time=time)
+
+                # quantity match work on stock, covered, options
+                close_qty = sum([abs(t.qty) for t in trades])
+                open_qty = sum([abs(t.qty) for t in position.accounttrade_set.all()])
+
+                if open_qty == close_qty:
+                    position.set_close(self.statement.date)
+                    position.save()
+            else:
+                raise ValueError('Position < {symbol} > not found when closing.'.format(
+                    symbol=symbol
+                ))
+
+            return position
+
+        def add_opinion(self, position):
+            """
+            Add opinion into new open position
+            :param position: Position
+            :return: Position
+            """
+            checklist_models = import_module('checklist.models')
+            market_opinion = getattr(checklist_models, 'MarketOpinion')
+            enter_opinion = getattr(checklist_models, 'EnterOpinion')
+
+            # checklist section blind market and enter opinion
+            try:
+                market_opinion = market_opinion.objects.get(date=self.statement.date)
+                position.market_opinion = market_opinion
+                position.save()
+            except ObjectDoesNotExist:
+                pass
+
+            try:
+                enter_opinion = enter_opinion.objects.get(
+                    Q(symbol=position.symbol) & Q(date=self.statement.date)
+                )
+                position.enter_opinion = enter_opinion
+                position.save()
+                enter_opinion.trade = True
+                enter_opinion.save()
+            except ObjectDoesNotExist:
+                pass
 
         def position_expires(self):
             """
@@ -205,7 +209,7 @@ class Statement(models.Model):
             if symbol:
                 positions = [Position.objects.get(Q(symbol=symbol) & Q(status='OPEN'))]
             else:
-                positions = self.open_positions
+                positions = self.open_pos
 
             for position in positions:
                 f1 = (Q(symbol=position.symbol) & Q(position__isnull=True))
@@ -527,7 +531,7 @@ class PositionStage(models.Model):
 
     position = models.ForeignKey(Position, null=True)
 
-    def check(self, price):
+    def check_status(self, price):
         """
         """
         result = None

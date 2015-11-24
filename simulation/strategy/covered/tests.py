@@ -4,12 +4,13 @@ from simulation.models import Strategy
 from simulation.strategy.covered.covered_call import *
 
 
+# todo: here
 class TestStrategyCoveredCall(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
         self.symbol = 'AIG'
-        self.algorithm = Algorithm.objects.get(rule='Options Day to Expire')
+        self.algorithm = Algorithm.objects.get(rule='Options DTE - No Dup')
         # self.algorithm = Algorithm.objects.get(rule='EWMA change direction - H')
 
         self.quant = self.algorithm.make_quant()

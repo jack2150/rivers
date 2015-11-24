@@ -30,11 +30,12 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
+# install django-bootstrap3
+# install pandas data reader
 INSTALLED_APPS = (
     'adminplus',
-    'django_admin_bootstrapped',  # version 2.3.5 for django 1.6
-    'bootstrap3_datetime',
+    'django_admin_bootstrapped',  # django-admin-bootstrapped version 2.3.5 for django 1.6
+    'bootstrap3_datetime',  # django-bootstrap3-datetimepicker
     'django_extensions',
 
     'django.contrib.admin',
@@ -125,6 +126,7 @@ FIXTURE_DIRS = [os.path.join(BASE_DIR, 'fixtures')]
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        'TIMEOUT': 3600
     }
 }
 

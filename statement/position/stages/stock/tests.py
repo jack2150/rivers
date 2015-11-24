@@ -25,9 +25,9 @@ class TestStageLongStock(TestStage):
         self.position.positionstage_set.add(stage)
 
         self.assertEqual(float(stage.price), 20.17)
-        self.assertEqual(stage.check(20.16), 'LOSS')
-        self.assertEqual(stage.check(20.17), 'EVEN')
-        self.assertEqual(stage.check(20.18), 'PROFIT')
+        self.assertEqual(stage.check_status(20.16), 'LOSS')
+        self.assertEqual(stage.check_status(20.17), 'EVEN')
+        self.assertEqual(stage.check_status(20.18), 'PROFIT')
 
         conditions = self.position.make_conditions()
 
@@ -66,9 +66,9 @@ class TestStageShortStock(TestStage):
         self.position.positionstage_set.add(stage)
 
         self.assertEqual(float(stage.price), 124.86)
-        self.assertEqual(stage.check(124.85), 'PROFIT')
-        self.assertEqual(stage.check(124.86), 'EVEN')
-        self.assertEqual(stage.check(124.87), 'LOSS')
+        self.assertEqual(stage.check_status(124.85), 'PROFIT')
+        self.assertEqual(stage.check_status(124.86), 'EVEN')
+        self.assertEqual(stage.check_status(124.87), 'LOSS')
 
         conditions = self.position.make_conditions()
 

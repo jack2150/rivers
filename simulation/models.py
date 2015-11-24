@@ -1,7 +1,6 @@
 from importlib import import_module
 from inspect import getargspec
 from django.db import models
-import pandas as pd
 import numpy as np
 from quantitative.models import Algorithm, AlgorithmResult
 
@@ -90,7 +89,7 @@ class StrategyResult(models.Model):
     An algorithm contain different of variables test
     """
     symbol = models.CharField(max_length=20)
-    date = models.DateField(default=pd.datetime.today().date())
+    date = models.DateField()
 
     algorithm_result = models.ForeignKey(AlgorithmResult)
     strategy = models.ForeignKey(Strategy)

@@ -28,9 +28,7 @@
       <a href="#" class="close" data-dismiss="alert">&times;</a>
       <strong>Imported!</strong> Stock have been insert into database.
     </div>
-    <pre class="fblock">
-{% for s in stocks %}{{ forloop.counter|stringformat:'-6d' }} | {{ s }}
-{% endfor %}
+    <pre class="fblock">{{ stocks }}
     </pre>
   {% else %}
     <div class="bs-example">

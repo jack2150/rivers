@@ -97,7 +97,10 @@ class ThinkBack(object):
                 if len(cycles) > 1:
                     cycles[len(cycles) - 2]['stop'] = key - 1
         else:
-            cycles[len(cycles) - 1]['stop'] = len(self.lines) - 1
+            if len(self.lines[-1]):
+                cycles[len(cycles) - 1]['stop'] = len(self.lines)
+            else:
+                cycles[len(cycles) - 1]['stop'] = len(self.lines) - 1
 
         return cycles
 
@@ -147,7 +150,6 @@ class ThinkBack(object):
         return self.get_stock(), options
 
 # todo: fill missing options using quant lib
-# todo: convert data db into hdf5
 """
 how do you access stock.last?
 from hdf5 get data using symbol and date,

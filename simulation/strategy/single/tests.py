@@ -9,7 +9,7 @@ class TestStrategyLongCall(TestUnitSetUp):
         TestUnitSetUp.setUp(self)
 
         self.symbol = 'FSLR'
-        self.algorithm = Algorithm.objects.get(rule='Options Day to Expire')
+        self.algorithm = Algorithm.objects.get(rule='Options DTE - No Dup')
         #self.algorithm = Algorithm.objects.get(rule='EWMA change direction - H')
 
         self.quant = self.algorithm.make_quant()

@@ -14,7 +14,7 @@ class TestMomentum(TestUnitSetUp):
 
         self.symbol = 'AIG'
         self.hd_args = {
-            'span': 120
+            'span': 60
         }
         self.cs_args = {}
 

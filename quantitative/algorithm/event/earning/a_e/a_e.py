@@ -4,25 +4,23 @@ Name: Earning Movement
 Method: Enter before and exit after
 """
 import itertools
-from django.db.models import Q
 import numpy as np
 import pandas as pd
-from data.models import Earning
+from rivers.settings import QUOTE
 
 
 def handle_data(df, move=('up', 'down'), percent=0, bdays=0):
     symbol = df.ix[df.index.values[0]]['symbol']
 
-    earnings = pd.DataFrame(
-        list(Earning.objects.filter(
-            Q(symbol=symbol) & Q(actual_date__gte=df['date'][0])
-        ).order_by('actual_date').values())
-    )
-    earnings = earnings.set_index('actual_date')
+    db = pd.HDFStore(QUOTE)
+    df_earning = db.select('event/earning/%s' % symbol.lower())
+    """:type: DataFrame"""
+    db.close()
+    df_earning = df_earning.set_index('actual_date').sort_index(ascending=True)
 
     # verify earnings
-    s = [int(q[1:]) for q in earnings['quarter']]
-    r = list(itertools.chain.from_iterable([range(1, 5) * int(np.ceil(len(earnings) / 4.0) + 1)]))
+    s = [int(q[1:]) for q in df_earning['quarter']]
+    r = list(itertools.chain.from_iterable([range(1, 5) * int(np.ceil(len(df_earning) / 4.0) + 1)]))
     if s != r[s[0] - 1:s[0] - 1 + len(s)]:
         print s
         print r[s[0] - 1:s[0] - 1 + len(s)]
@@ -31,7 +29,7 @@ def handle_data(df, move=('up', 'down'), percent=0, bdays=0):
     dates = list(df['date'])
 
     release_dates = list()
-    for index, earning in earnings.iterrows():
+    for index, earning in df_earning.iterrows():
         day = 1 if earning['release'] == 'After Market' else 0
 
         try:

@@ -6,6 +6,7 @@ admin.site = AdminSitePlus()
 admin.autodiscover()
 admin.site.site_header = 'Rivers quantitative platform'
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     url(r'^admin/', include(admin.site.urls)),
 )

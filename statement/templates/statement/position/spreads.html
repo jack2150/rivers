@@ -30,6 +30,7 @@
 {% block object-tools %}
   <div id="content-navbar-collapse" class="navbar-collapse collapse">
     <div class="nav navbar-nav navbar-right">
+      <button id="import_all" class="btn btn-default btn-sm padtop10">Import all</button>
       <button id="daily_import" class="btn btn-default btn-sm padtop10">Import price</button>
 
       <div class="btn-group padtop10">
@@ -42,8 +43,11 @@
   </div>
 
   <script type="text/javascript">
+    $("#import_all").click(function () {
+      $(location).attr('href', '{% url 'admin:daily_import' date 1 %}');
+    });
     $("#daily_import").click(function () {
-      $(location).attr('href', '{% url 'admin:daily_import' date %}');
+      $(location).attr('href', '{% url 'admin:daily_import' date 0 %}');
     });
 
     $("#first_page").click(function () {

@@ -1,7 +1,11 @@
 from bootstrap3_datetime.widgets import DateTimePicker
 from django.contrib import admin
-from pandas.tseries.offsets import BDay
+
+from data.plugin.fillna.views import fillna_option
+from data.plugin.clean.views import clean_option3
+from data.plugin.csv.views import *
 from data.views import *
+from data.views2 import *
 
 
 class UnderlyingForm(forms.ModelForm):
@@ -21,7 +25,6 @@ class UnderlyingAdmin(admin.ModelAdmin):
     form = UnderlyingForm
 
     def data_manage(self):
-        #href = '<a href="{truncate_link}">Truncate</a>'
         href = """
         <div class="dropdown">
           <button class="btn btn-default btn-xs dropdown-toggle" type="button"
@@ -35,8 +38,7 @@ class UnderlyingAdmin(admin.ModelAdmin):
             <li><a href="{google_link}">Web import google</a></li>
             <li><a href="{yahoo_link}">Web import yahoo</a></li>
             <li class="divider"></li>
-            <li><a href="{earning_import}">Earning import</a></li>
-            <li><a href="{dividend_import}">Dividend import</a></li>
+            <li><a href="{event_import}">Event import</a></li>
             <li class="divider"></li>
             <li><a href="{truncate_link}">Truncate data</a></li>
           </ul>
@@ -48,12 +50,7 @@ class UnderlyingAdmin(admin.ModelAdmin):
             option_link=reverse('admin:csv_option_h5', kwargs={'symbol': symbol}),
             google_link=reverse('admin:web_stock_h5', args=('google', symbol)),
             yahoo_link=reverse('admin:web_stock_h5', args=('yahoo', symbol)),
-            earning_import=reverse('admin:html_event_import', kwargs={
-                'event': 'earning', 'symbol': symbol
-            }),
-            dividend_import=reverse('admin:html_event_import', kwargs={
-                'event': 'dividend', 'symbol': symbol
-            }),
+            event_import=reverse('admin:html_event_import', kwargs={'symbol': symbol}),
             truncate_link=reverse('admin:truncate_symbol', kwargs={'symbol': symbol})
         )
 
@@ -62,7 +59,7 @@ class UnderlyingAdmin(admin.ModelAdmin):
 
     list_display = (
         'symbol', 'start', 'stop', 'thinkback', 'contract', 'option',
-        'google', 'yahoo', 'earning', 'dividend','updated', 'optionable',
+        'google', 'yahoo', 'earning', 'dividend', 'updated', 'optionable',
         data_manage
     )
 
@@ -120,7 +117,7 @@ admin.site.register(Treasury, TreasuryAdmin)
 
 # admin view
 admin.site.register_view(
-    'data/thinkback/truncate/(?P<symbol>\w+)/$',
+    'data/underlying/truncate/(?P<symbol>\w+)/$',
     urlname='truncate_symbol', view=truncate_symbol
 )
 
@@ -132,26 +129,48 @@ admin.site.register_view(
 
 # csv h5 stock and option
 admin.site.register_view(
-    'data/h5/quote/csv/stock/(?P<symbol>\w+)/$',
+    'data/h5/import/csv/stock/(?P<symbol>\w+)/$',
     urlname='csv_stock_h5', view=csv_stock_h5
 )
 admin.site.register_view(
-    'data/h5/quote/csv/option/(?P<symbol>\w+)/$',
+    'data/h5/import/csv/option/(?P<symbol>\w+)/$',
     urlname='csv_option_h5', view=csv_option_h5
 )
 
 # web h5 stock
 admin.site.register_view(
-    'data/h5/quote/web/(?P<source>\w+)/(?P<symbol>\w+)/$',
+    'data/h5/import/web/(?P<source>\w+)/(?P<symbol>\w+)/$',
     urlname='web_stock_h5', view=web_stock_h5
 )
 admin.site.register_view(
-    'data/h5/treasury/$',
+    'data/h5/import/treasury/$',
     urlname='web_treasury_h5', view=web_treasury_h5
 )
 
 # dividend and earning
 admin.site.register_view(
-    'data/h5/(?P<event>\w+)/(?P<symbol>\w+)/$',
+    'data/h5/import/event/(?P<symbol>\w+)/$',
     urlname='html_event_import', view=html_event_import
+)
+
+
+# clean option data
+admin.site.register_view(
+    'data/h5/clean/csv/option/(?P<symbol>\w+)/$',
+    urlname='clean_option', view=clean_option
+)
+
+admin.site.register_view(
+    'data/h5/clean2/csv/option/(?P<symbol>\w+)/$',
+    urlname='clean_option2', view=clean_option2
+)
+
+admin.site.register_view(
+    'data/h5/clean3/csv/option/(?P<symbol>\w+)/$',
+    urlname='clean_option3', view=clean_option3
+)
+
+admin.site.register_view(
+    'data/h5/fillna/csv/option/(?P<symbol>\w+)/$',
+    urlname='fillna_option', view=fillna_option
 )

@@ -1,13 +1,17 @@
+from pandas_datareader.data import get_data_google, get_data_yahoo
 from checklist.models import *
 from datetime import datetime
-from data.models import Stock
-from data.views import get_dte_date
+from data.models import Underlying
+from data.plugin.csv.views import get_dte_date
+from data.views import web_stock_h5
 from django import forms
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
+from rivers.settings import QUOTE
 from simulation.models import StrategyResult
 from statement.models import *
+import numpy as np
 from pandas import Series
 
 
@@ -57,7 +61,9 @@ def position_spreads(request, date):
     :return: render
     """
     if date:
-        statement = Statement.objects.get(date=date)
+        date = pd.datetime.strptime(date, '%Y-%m-%d')
+
+        statement = Statement.objects.get(date=date.date())
         """:type: Statement"""
     else:
         statement = Statement.objects.order_by('date').last()
@@ -69,22 +75,32 @@ def position_spreads(request, date):
 
     spreads = list()
     for position in positions:
-        if position.status != 'OPEN':
+        if position.status != 'OPEN' and date.date() >= position.stop:
             stage = position.status
-        elif position.name == 'STOCK':
-            try:
-                stage = position.current_stage(
-                    position.holdingequity_set.get(statement__date=date).close_price
-                )
-            except ObjectDoesNotExist:
-                stage = 'Close'
-        elif position.name == 'CUSTOM':
-            stage = '...'
         else:
-            try:
-                stage = position.current_stage(float(Stock.get_price(position.symbol, date).close))
-            except ObjectDoesNotExist:
+            if position.name == 'STOCK':
+                try:
+                    stage = position.current_stage(
+                        position.holdingequity_set.get(statement__date=date).close_price
+                    )
+                except ObjectDoesNotExist:
+                    stage = 'Close'
+            elif position.name == 'CUSTOM':
                 stage = '...'
+            else:
+                #print position.symbol,
+                #print Underlying.get_price(position.symbol, date.date())
+                try:
+
+                    #print position.positionstage_set.all()
+                    #print position.make_conditions()
+                    stage = position.current_stage(
+                        Underlying.get_price(position.symbol, date.date())['close']
+                    )
+                except (ObjectDoesNotExist, TypeError, IndexError):
+                    stage = '...'
+
+        # todo: vxx problem
 
         opinion = dict(exists=False, condition='UNKNOWN', action='HOLD', name='')
         holding_opinion = position.holdingopinion_set.filter(date=date)
@@ -103,7 +119,7 @@ def position_spreads(request, date):
 
         spreads.append(dict(
             position=position,
-            profit_loss=position.profitloss_set.get(statement__date=date),
+            profit_loss=position.profitloss_set.get(statement__date=date.date()),
             opinion=opinion,
             stage=stage,
         ))
@@ -117,8 +133,8 @@ def position_spreads(request, date):
         site_title='Position Spreads',
         title='Spreads',
         spreads=spreads,
-        date=date,
-        page=date_page(dates, date, 'admin:position_spreads', {})
+        date=date.date(),
+        page=date_page(dates, date.strftime('%Y-%m-%d'), 'admin:position_spreads', {})
     )
 
     return render(request, template, parameters)
@@ -263,26 +279,50 @@ def position_report(request, id, date=None):
     position = Position.objects.get(id=id)
 
     if date:
-        date_query1 = Q(date__gte=position.start) & Q(date__lte=date)
+        #date_query1 = Q(date__gte=position.start) & Q(date__lte=date)
+        date_query1 = {'start': position.start, 'stop': date}
         date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=date)
     else:
         if position.stop:
-            date_query1 = Q(date__gte=position.start) & Q(date__lte=position.stop)
+            #date_query1 = Q(date__gte=position.start) & Q(date__lte=position.stop)
+            date_query1 = {'start': position.start, 'stop': position.stop}
             date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=position.stop)
             date = position.stop.strftime('%Y-%m-%d')
         else:
             date = position.profitloss_set.order_by('statement__date')\
                 .last().statement.date.strftime('%Y-%m-%d')
-            date_query1 = Q(date__gte=position.start) & Q(date__lte=date)
+            #date_query1 = Q(date__gte=position.start) & Q(date__lte=date)
+            date_query1 = {'start': position.start, 'stop': date}
             date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=date)
 
     # opinion
     holding_opinions = position.holdingopinion_set.all()
 
     # stock
-    stocks = Stock.objects.filter(
-        Q(symbol=position.symbol) & Q(source='google') & date_query1
-    )
+    #stocks = Stock.objects.filter(
+    #    Q(symbol=position.symbol) & Q(source='google') & date_query1
+    #)
+    try:
+        stocks = Underlying.objects.get(symbol=position.symbol).get_stock(
+            source='google', **date_query1
+        )
+        """:type: DataFrame"""
+    except ObjectDoesNotExist:
+        underlying = Underlying()
+        underlying.symbol = position.symbol
+        underlying.start = '2009-01-01'
+        underlying.stop = position.stop if position.stop else date
+        underlying.save()
+
+        web_stock_h5(request, source='google', symbol=position.symbol.lower())
+        web_stock_h5(request, source='yahoo', symbol=position.symbol.lower())
+
+        stocks = Underlying.objects.get(symbol=position.symbol).get_stock(
+            source='google', **date_query1
+        )
+
+    if not len(stocks):
+        raise LookupError('< {symbol} > have no stock data'.format(symbol=position.symbol))
 
     # statement
     profit_losses = position.profitloss_set.filter(date_query2)
@@ -293,8 +333,8 @@ def position_report(request, id, date=None):
     # basic
     basic = dict()
     date0 = datetime.strptime(date, '%Y-%m-%d').date()
-    basic['open'] = stocks.last().open
-    basic['close'] = float(stocks.last().close)
+    basic['open'] = stocks.ix[stocks.index[-1]]['open']  # stocks.last().open
+    basic['close'] = stocks.ix[stocks.index[-1]]['close']  # float(stocks.last().close)
     basic['holding_day'] = (date0 - position.start).days
     basic['start_date'] = position.start
     basic['stop_date'] = date0
@@ -348,21 +388,30 @@ def position_report(request, id, date=None):
     }
     previous = None
     reports = list()
-    for stock in stocks:
+    for _, data in stocks.iterrows():
+        stock = {
+            'date': data['date'].date(),
+            'open': data['open'],
+            'high': data['high'],
+            'low': data['low'],
+            'close': data['close'],
+            'volume': data['volume'],
+        }
+
         try:
-            profit_loss = profit_losses.get(statement__date=stock.date)
+            profit_loss = profit_losses.get(statement__date=data['date'].date())
         except ObjectDoesNotExist:
             profit_loss = None
 
-        stock.pct_chg = 0.0
+        stock['pct_chg'] = 0.0
         if previous:
-            stock.pct_chg = round((stock.close - previous.close) / previous.close, 4)
+            stock['pct_chg'] = round((stock['close'] - previous['close']) / previous['close'], 4)
         previous = stock
 
-        if stock.pct_chg > 0:
+        if stock['pct_chg'] > 0:
             stat['up_count'] += 1
             stat['up_pct'] = round(stat['up_count'] / float(len(stocks)), 4)
-        elif stock.pct_chg < 0:
+        elif stock['pct_chg'] < 0:
             stat['dw_count'] += 1
             stat['dw_pct'] = round(stat['dw_count'] / float(len(stocks)), 4)
         else:
@@ -377,9 +426,9 @@ def position_report(request, id, date=None):
                 stat['l_count'] += 1
                 stat['l_pct'] = round(stat['l_count'] / float(len(stocks)), 4)
 
-        stage = position.current_stage(stock.close)
+        stage = position.current_stage(stock['close'])
         reports.append({
-            'date': stock.date,
+            'date': stock['date'],
             'stock': stock,
             'profit_loss': profit_loss,
             'stage': stage
@@ -393,19 +442,19 @@ def position_report(request, id, date=None):
 
         # opinion
         try:
-            opinion = holding_opinions.get(date=stock.date)
+            opinion = holding_opinions.get(date=stock['date'])
 
             result = False
-            if stock.pct_chg > 0.5 and opinion.opinion == 'BULL':
+            if stock['pct_chg'] > 0.5 and opinion.opinion == 'BULL':
                 result = True
-            elif stock.pct_chg < -0.5 and opinion.opinion == 'BEAR':
+            elif stock['pct_chg'] < -0.5 and opinion.opinion == 'BEAR':
                 result = True
-            elif -0.5 < stock.pct_chg < 0.5 and opinion.opinion == 'RANGE':
+            elif -0.5 < stock['pct_chg'] < 0.5 and opinion.opinion == 'RANGE':
                 result = True
 
             opinions.append({
                 'object': opinion,
-                'pct_chg': stock.pct_chg,
+                'pct_chg': stock['pct_chg'],
                 'result': result
             })
         except ObjectDoesNotExist:
@@ -413,19 +462,19 @@ def position_report(request, id, date=None):
 
     # basic
     basic['stat'] = stat
-    basic['pct_chg'] = reports[-1]['stock'].pct_chg
-    basic['stage'] = position.current_stage(reports[-1]['stock'].close)
-    basic['net_move'] = reports[-1]['stock'].close - reports[0]['stock'].close
-    basic['pct_move'] = round(basic['net_move'] / reports[0]['stock'].close, 4)
-    basic['mean_move'] = round(Series([s.pct_chg for s in stocks]).mean(), 4)
-    basic['pct_std'] = round(Series([s.pct_chg for s in stocks]).std(), 4)
+    basic['pct_chg'] = reports[-1]['stock']['pct_chg']
+    basic['stage'] = position.current_stage(reports[-1]['stock']['close'])
+    basic['net_move'] = reports[-1]['stock']['close'] - reports[0]['stock']['close']
+    basic['pct_move'] = round(basic['net_move'] / reports[0]['stock']['close'], 4)
+    basic['mean_move'] = round(Series([r['stock']['pct_chg'] for r in reports]).mean(), 4)
+    basic['pct_std'] = round(Series([r['stock']['pct_chg'] for r in reports]).std(), 4)
     basic['market_opinion'] = position.market_opinion
     basic['enter_opinion'] = position.enter_opinion
     basic['exit_opinion'] = position.exitopinion_set.last()
     basic['max_profit'] = max([float(pl.pl_open) for pl in profit_losses]) / float(basic['margin'])
     basic['max_loss'] = min([float(pl.pl_open) for pl in profit_losses]) / float(basic['margin'])
-    basic['max_bull'] = max([s.pct_chg for s in stocks])
-    basic['max_bear'] = min([s.pct_chg for s in stocks])
+    basic['max_bull'] = max([r['stock']['pct_chg'] for r in reports])
+    basic['max_bear'] = min([r['stock']['pct_chg'] for r in reports])
 
     # strategy
     strategy_result = position.strategy_result
@@ -440,13 +489,13 @@ def position_report(request, id, date=None):
         quant['mean_move'] = strategy_result.algorithm_result.pct_mean - basic['mean_move']
         quant['std'] = strategy_result.algorithm_result.pct_std - basic['pct_std']
 
-        quant['min_pct'] = min([s.pct_chg for s in stocks])
+        quant['min_pct'] = min([r['stock']['pct_chg'] for r in reports])
         quant['var_pct99'] = strategy_result.algorithm_result.var_pct99 - quant['min_pct']
         quant['var_pct95'] = strategy_result.algorithm_result.var_pct95 - quant['min_pct']
 
         # drawdown using left right
         #print strategy_result.algorithm_result.max_dd
-        closes = [s.close for s in stocks]
+        closes = [r['stock']['close'] for r in reports]
         basic['drawdown'] = round((min(closes) - max(closes)) / max(closes), 4)
         quant['drawdown'] = strategy_result.algorithm_result.max_dd - basic['drawdown']
         quant['roll_dd'] = strategy_result.algorithm_result.r_max_dd - basic['drawdown']
@@ -505,3 +554,89 @@ def position_report(request, id, date=None):
     )
 
     return render(request, template, parameters)
+
+
+def daily_import(request, date, ready_all=0):
+    """
+    Daily google and yahoo import
+    :param request: request
+    :param date: str
+    :return: render
+    """
+    statement = Statement.objects.get(date=date)
+
+    if int(ready_all):
+        date = Statement.objects.order_by('date').last().date
+        positions = Position.objects.all()
+    else:
+        date = pd.datetime.strptime(date, '%Y-%m-%d').date()
+
+        positions = Position.objects.filter(
+            id__in=[p[0] for p in statement.profitloss_set.values_list('position')]
+        ).order_by('symbol')
+
+    db = pd.HDFStore(QUOTE)
+    for symbol in list(set([p.symbol for p in positions] + ['SPY'])):
+        end = date
+        try:
+            underlying = Underlying.objects.get(symbol=symbol)
+            start = underlying.stop
+            underlying.stop = date
+            underlying.save()
+        except ObjectDoesNotExist:
+            underlying = Underlying()
+            underlying.symbol = symbol
+            underlying.start = '2009-01-01'
+            underlying.stop = date
+            underlying.save()
+            start = underlying.start
+
+        if start == end:
+            continue
+
+        # drop if ohlc is empty
+        for source, f in (('google', get_data_google), ('yahoo', get_data_yahoo)):
+            try:
+                df_stock = f(symbols=symbol, start=start, end=end)
+
+                if not len(df_stock):
+                    continue
+
+                for field in ['Open', 'High', 'Low', 'Close']:
+                    df_stock[field] = df_stock[field].replace('-', np.nan).astype(float)
+
+                # do not drop if volume is empty
+                df_stock['Volume'] = df_stock['Volume'].replace('-', 0).astype(long)
+
+                # rename into lower case
+                df_stock.columns = [c.lower() for c in df_stock.columns]
+
+                if source == 'yahoo':
+                    del df_stock['adj close']
+
+                df_stock.index.names = ['date']
+
+                # skip or insert
+                # for line in data.dropna().to_csv().split('\n')[1:-1]:
+                print 'import from %-10s for %-10s total: %-10d' % (source, symbol, len(df_stock))
+
+                db.append(
+                    'stock/%s/%s' % (source, symbol.lower()), df_stock,
+                    format='table', data_columns=True, min_itemsize=100
+                )
+
+                # update symbol stat
+                if source == 'google':
+                    underlying.google += len(df_stock)
+                else:
+                    underlying.yahoo += len(df_stock)
+
+                underlying.save()
+
+            except IOError:
+                pass
+
+    # close db
+    db.close()
+
+    return redirect(reverse('admin:position_spreads', kwargs={'date': date}))

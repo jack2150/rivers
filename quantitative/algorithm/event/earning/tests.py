@@ -15,8 +15,8 @@ class TestEarningMovementDirection(TestUnitSetUp):
         self.symbol = 'AIG'  # jpm before, fslr after
         self.hd_args = {}
         self.cs_args = {
-            'before': 0,
-            'after': 0,
+            'before': 10,
+            'after': 20,
             'side': 'BUY'
         }
 
@@ -33,9 +33,9 @@ class TestEarningMovementDirection(TestUnitSetUp):
 
         print df_stock.to_string(line_width=200)
 
-        #new_columns = ('sma0', 'sma1', 'sma_chg', 'signal')
-        #for column in new_columns:
-        #    self.assertIn(column, df_stock.columns)
+        new_columns = ('earning', 'release')
+        for column in new_columns:
+            self.assertIn(column, df_stock.columns)
 
     def test_create_signal(self):
         """

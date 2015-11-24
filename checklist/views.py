@@ -1,9 +1,8 @@
+from StringIO import StringIO
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from checklist.models import *
 from statement.models import Statement
-import numpy as np
 
 
 # noinspection PyShadowingBuiltins
@@ -53,10 +52,6 @@ def enter_opinion_get_data(request, id):
     enter_opinion.save()
 
     return redirect(reverse('admin:checklist_enteropinion_change', args=(id,)))
-
-
-
-
 
 
 # noinspection PyTypeChecker,PyShadowingBuiltins

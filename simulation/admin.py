@@ -104,8 +104,8 @@ class StrategyResultAdmin(admin.ModelAdmin):
 
     def html_view(self, obj):
         return '<a href="{link}">DF</a>'.format(
-            link=reverse('admin:df_html_view', kwargs={
-                'result_id': obj.id, 'result': 'strategy'
+            link=reverse('admin:df_view', kwargs={
+                'model': 'strategy', 'id': obj.id
             })
         )
 

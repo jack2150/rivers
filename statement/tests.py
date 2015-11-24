@@ -521,7 +521,7 @@ class TestPositionStage(TestSetUp):
         expects = ['PROFIT', 'EVEN', 'LOSS']
 
         for price, expect in zip(prices, expects):
-            result = self.stage.check(price)
+            result = self.stage.check_status(price)
             self.assertEqual(result, expect)
             print 'price: %.2f, result: %s' % (price, result)
 
@@ -553,7 +553,7 @@ class TestStatementImport(TestSetUp):
 
 
 class TestStatementController(TestSetUp):
-    fixtures = ('statement.json', )
+    fixtures = ('no_pos.json', )
 
     def setUp(self):
         TestSetUp.setUp(self)
@@ -562,12 +562,9 @@ class TestStatementController(TestSetUp):
 
     def test_position_trades(self):
         """
-        Test open positions using statement account trades
-        03-23 statement symbol 'so' position wrong system csv, remember modify it
+        Test using account trade to open and close position
         """
-        print 'get all statement...'
-        print 'then run add_relations, position_trades, position_expires'
-        print 'for each statement...\n'
+        Position.objects.all().delete()
         for statement in Statement.objects.all():
             statement.controller.add_relations()
             statement.controller.position_trades()
@@ -575,6 +572,7 @@ class TestStatementController(TestSetUp):
 
         for position in Position.objects.all():
             print position
+            print position.accounttrade_set.all()
 
             print 'cash balance:', position.cashbalance_set.count(),
             print 'account order:', position.accountorder_set.count(),
@@ -584,8 +582,8 @@ class TestStatementController(TestSetUp):
             print 'profit loss:', position.profitloss_set.count(), '\n'
 
             self.assertGreater(position.cashbalance_set.count(), 0)
-            self.assertGreater(position.accounttrade_set.count(), 0)
             self.assertGreater(position.accountorder_set.count(), 0)
+            self.assertGreater(position.accounttrade_set.count(), 0)
             if position.start != position.stop:  # day trade maybe no pl because multi positions
                 self.assertTrue(position.holdingequity_set.exists() or position.holdingoption_set.exists())
                 self.assertGreater(position.profitloss_set.count(), 0)
@@ -596,10 +594,6 @@ class TestStatementController(TestSetUp):
         print 'total open position:', Position.objects.filter(status='OPEN').count()
         print 'total close position:', Position.objects.filter(status='CLOSE').count()
         print 'total expire position:', Position.objects.filter(status='EXPIRE').count()
-
-
-
-
 
 
 

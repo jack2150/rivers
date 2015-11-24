@@ -1,19 +1,77 @@
-"""
-1. create a underlying data
-2. create
-"""
 import os
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.models import Underlying, Treasury
-from data.views import EventImportForm
+from data.views import get_dte_date
 from rivers.settings import QUOTE, BASE_DIR
 import pandas as pd
 
 
-class TestCsvToHDF(TestSetUp):
+class TestCsvToH5(TestSetUp):
+    def setUp(self):
+        TestSetUp.setUp(self)
+
+        self.symbol = 'FSLR'
+        self.underlying = Underlying(
+            symbol=self.symbol,
+            start='2010-04-26',
+            stop='2010-06-01'
+        )
+        self.underlying.save()
+
+    def tearDown(self):
+        TestSetUp.tearDown(self)
+
+    def test_get_dte_date(self):
+        #print get_dte_date('JAN', 10)
+        for i in range(10):
+            break
+        else:
+            print 1
+
+    def test_csv_option_h5(self):
+        """
+        Test csv option import into h5 db after csv stock import
+        some of the csv can be wrong, for example fslr 08-25-2011 got wrong cycle info
+        """
+        #self.skipTest('Only test when need!')
+
+        print 'run csv stock import view...'
+
+        self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': self.symbol}))
+        self.client.get(reverse('admin:csv_option_h5', kwargs={'symbol': self.symbol}))
+
+        db = pd.HDFStore(QUOTE)
+        df_contract = db.select('option/%s/contract/' % self.symbol.lower())
+        df_option = db.select('option/%s/raw/' % self.symbol.lower()).sort_index()
+        db.close()
+
+        self.assertTrue(len(df_contract))
+        self.assertTrue(len(df_option))
+
+        self.assertGreater(len(df_option), len(df_contract))
+
+        # todo: wfc option import problem
+
+    def test_csv_stock_h5(self):
+        """
+        Test csv stock import into h5 db
+        """
+        #self.skipTest('Only test when need!')
+
+        print 'run csv stock import view...'
+        self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': self.symbol}))
+
+        db = pd.HDFStore(QUOTE)
+        df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
+        db.close()
+        print df_stock.to_string(line_width=500)
+        self.assertTrue(len(df_stock))
+
+
+class TestWebStockTreasury(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
@@ -30,44 +88,6 @@ class TestCsvToHDF(TestSetUp):
                    'rel=H15&series=e30653a4b627e9d1f2490a0277d9f1ac&lastObs='
                    '&from=&to=&filetype=csv&label=include&layout=seriescolumn'
         }
-
-    def tearDown(self):
-        TestSetUp.tearDown(self)
-
-    def test_csv_option_h5(self):
-        """
-        Test csv option import into h5 db after csv stock import
-        """
-        self.skipTest('Only test when need!')
-
-        print 'run csv stock import view...'
-
-        self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': self.symbol}))
-        self.client.get(reverse('admin:csv_option_h5', kwargs={'symbol': self.symbol}))
-
-        db = pd.HDFStore(QUOTE)
-        df_contract = db.select('option/%s/contract/' % self.symbol.lower())
-        df_option = db.select('option/%s/data/' % self.symbol.lower())
-        db.close()
-
-        self.assertTrue(len(df_contract))
-        self.assertTrue(len(df_option))
-        self.assertGreater(len(df_option), len(df_contract))
-
-    def test_csv_stock_h5(self):
-        """
-        Test csv stock import into h5 db
-        """
-        self.skipTest('Only test when need!')
-
-        print 'run csv stock import view...'
-        self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': self.symbol}))
-
-        db = pd.HDFStore(QUOTE)
-        df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
-        db.close()
-        print df_stock.to_string(line_width=500)
-        self.assertTrue(len(df_stock))
 
     def test_web_stock_h5(self):
         """
@@ -125,45 +145,15 @@ class TestEventImport(TestSetUp):
         """
         Test verify event form and handle file upload then verify earning
         """
-        path = os.path.join(BASE_DIR, 'files', 'fidelity', 'earnings')
-
         for symbol in ('YUM',):  # ('JPM', 'DDD'):
             print 'running symbol:', symbol
-            form = EventImportForm(
-                {'symbol': symbol, 'event': 'earning'},
-                {'fidelity_file': SimpleUploadedFile(
-                    '%s _ Earnings - Fidelity' % symbol,
-                    open(os.path.join(path, '%s _ Earnings - Fidelity.html' % symbol)).read()
-                )}
-            )
-
-            self.assertTrue(form.is_valid())
-            form.import_earning()
+            self.client.get(reverse('admin:html_event_import', kwargs={'symbol': symbol}))
 
             db = pd.HDFStore(QUOTE)
             df_earning = db.select('event/earning/%s' % symbol.lower())
             print df_earning.to_string(line_width=600)
             self.assertTrue(len(df_earning))
             db.close()
-
-    def test_dividend_import_form(self):
-        """
-        Test event import dividend into h5 db
-        """
-        path = os.path.join(BASE_DIR, 'files', 'fidelity', 'dividends')
-
-        for symbol in ('JPM', 'AIG'):
-            print 'running symbol:', symbol
-            form = EventImportForm(
-                {'symbol': symbol, 'event': 'dividend'},
-                {'fidelity_file': SimpleUploadedFile(
-                    '%s _ Dividends - Fidelity' % symbol,
-                    open(os.path.join(path, '%s _ Dividends - Fidelity.html' % symbol)).read()
-                )}
-            )
-            #print form.errors
-            self.assertTrue(form.is_valid())
-            form.insert_dividend()
 
             db = pd.HDFStore(QUOTE)
             df_dividend = db.select('event/dividend/%s' % symbol.lower())

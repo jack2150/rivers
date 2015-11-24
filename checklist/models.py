@@ -1,5 +1,4 @@
 from HTMLParser import HTMLParser
-from StringIO import StringIO
 from django.db import models
 import pandas as pd
 from urllib2 import urlopen
@@ -91,7 +90,7 @@ class EnterOpinion(models.Model):
     date = models.DateField()
 
     # final, score and trade or not
-    score = models.IntegerField(default=0, max_length=2, help_text='Score for checklist items!')
+    score = models.IntegerField(default=0, help_text='Score for checklist items!')
     complete = models.BooleanField(default=False, help_text='Is checklist complete?')
     trade = models.BooleanField(default=False, help_text='Trade or not trade this position?')
 
@@ -156,8 +155,6 @@ class EnterOpinion(models.Model):
         help_text='Underlying indices category'
     )
 
-
-
     description = models.TextField(null=True, blank=True)
 
     # event happen between enter and exit date
@@ -205,9 +202,9 @@ class EnterOpinion(models.Model):
     # institutional ownership
     ownership = models.BooleanField(default=False)
     ownership_holding_pct = models.FloatField(null=True, blank=True)
-    ownership_sell_count = models.IntegerField(null=True, blank=True, max_length=10)
+    ownership_sell_count = models.IntegerField(null=True, blank=True)
     ownership_sell_share = models.BigIntegerField(null=True, blank=True)
-    ownership_held_count = models.IntegerField(null=True, blank=True, max_length=10)
+    ownership_held_count = models.IntegerField(null=True, blank=True)
     ownership_held_share = models.BigIntegerField(null=True, blank=True)
     ownership_buy_count = models.IntegerField(null=True, blank=True)
     ownership_buy_share = models.BigIntegerField(null=True, blank=True)

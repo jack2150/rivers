@@ -3,36 +3,36 @@ Type: Event Earning
 Name: Earning Movement
 Method: Enter before and exit after
 """
-from django.db.models import Q
 import itertools
-from pandas import rolling_mean
 import numpy as np
 import pandas as pd
-from data.models import Earning
+from rivers.settings import QUOTE
 
 
 def handle_data(df):
     symbol = df.ix[df.index.values[0]]['symbol']
 
-    earnings = pd.DataFrame(
-        list(Earning.objects.filter(symbol=symbol).order_by('actual_date').values())
-    )
-    earnings = earnings.set_index('actual_date')
+    db = pd.HDFStore(QUOTE)
+    df_earning = db.select('event/earning/%s' % symbol.lower())
+    """:type: DataFrame"""
+    db.close()
+
+    df_earning = df_earning.set_index('actual_date').sort_index(ascending=True)
 
     # verify earnings
-    s = [int(q[1:]) for q in earnings['quarter']]
-    r = list(itertools.chain.from_iterable([range(1, 5) * int(np.ceil(len(earnings) / 4.0) + 1)]))
+    s = [int(q[1:]) for q in df_earning['quarter']]
+    r = list(itertools.chain.from_iterable([range(1, 5) * int(np.ceil(len(df_earning) / 4.0) + 1)]))
     if s != r[s[0] - 1:s[0] - 1 + len(s)]:
         # some time no data available
-        #print s
-        #print r[s[0] - 1:s[0] - 1 + len(s)]
+        print s
+        print r[s[0] - 1:s[0] - 1 + len(s)]
         raise LookupError('%s earning is missing quarter, need valid data' % symbol)
 
-    date_act = list(earnings.index)
+    date_act = list(df_earning.index)
     df2 = df.copy()
     df2['earning'] = df2['date'].apply(lambda x: x in date_act)
     df2['release'] = df2.apply(
-        lambda x: earnings.ix[x['date']]['release'] if x['earning'] else np.nan, axis=1
+        lambda x: df_earning.ix[x['date']]['release'] if x['earning'] else np.nan, axis=1
     )
 
     return df2

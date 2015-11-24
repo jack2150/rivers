@@ -1,5 +1,7 @@
+from django.db import IntegrityError
 from base.utests import *
 from django.core.urlresolvers import reverse
+from data.models import Underlying
 from quantitative.quant import AlgorithmQuant
 from django.db.models import Q
 from quantitative.models import Algorithm, AlgorithmResult
@@ -45,6 +47,14 @@ class TestAlgorithmAnalysis(TestUnitSetUp):
         TestUnitSetUp.setUp(self)
 
         self.algorithm = Algorithm.objects.get(rule='Ewma Chg D')
+
+        try:
+            self.underlying = Underlying()
+            self.underlying.symbol = 'AIG'
+            self.underlying.start = '2009-01-01'
+            self.underlying.stop = '2016-01-01'
+        except IntegrityError:
+            self.underlying = Underlying.objects.get(symbol='AIG')
 
     def test_view(self):
         """
@@ -142,11 +152,11 @@ class TestQuant(TestUnitSetUp):
         """
         Test seed data into quant model
         """
-        self.quant.seed_data([self.symbol, 'FSLR'])
+        self.quant.seed_data([self.symbol, 'AIG'])
         data = self.quant.data
 
         print self.quant.data[self.symbol].tail().to_string(line_width=200)
-        print self.quant.data['FSLR'].tail().to_string(line_width=200)
+        print self.quant.data['AIG'].tail().to_string(line_width=200)
 
         self.assertEqual(type(data), pd.Panel)
         self.assertEqual(type(data[self.symbol]), pd.DataFrame)
@@ -155,17 +165,16 @@ class TestQuant(TestUnitSetUp):
         """
         Test create signal 2 that add extra columns into df_signal
         """
-        self.symbol = 'YUM'  # can be a single symbol or list of symbols
-        self.algorithm = Algorithm.objects.get(rule='After Earning Move')
+        self.symbol = 'AIG'  # can be a single symbol or list of symbols
+        self.algorithm = Algorithm.objects.get(rule='Ewma Chg D - H')
 
         self.quant = self.algorithm.quant
         self.hd_args = {
-            'move': 'down',
-            'percent': 5,
-            'bdays': 30
+            'span': 20,
+            'previous': 20
         }
         self.cs_args = {
-            'side': 'buy'
+            'holding': 30
         }
 
         df = self.quant.make_df(self.symbol)
@@ -191,6 +200,10 @@ class TestQuant(TestUnitSetUp):
         df = self.quant.make_df(self.symbol)
         df_stock = self.quant.handle_data(df, 120, 20)
         df_signal = self.quant.create_signal(df_stock, 20)
+
+        #print df_stock['date'].dtype
+        #print df_signal['date0'].dtype, df_signal['date1'].dtype
+        #print df_signal['date0'] - df_signal['date1']
 
         report = self.quant.report(df_stock, df_signal)
 
@@ -260,7 +273,6 @@ class TestAlgorithmAnalysisForm(TestUnitSetUp):
         print 'form is valid using valid input data...\n'
         print self.form.errors
         self.assertTrue(self.form.is_valid())
-
 
         print 'testing with invalid input data...'
 

@@ -118,25 +118,27 @@ class AlgorithmResultAdmin(admin.ModelAdmin):
     short_arguments.short_description = 'Args'
     short_arguments.admin_order_field = 'arguments'
 
-    def strategy_analysis(self, obj):
-        return '<a href="{link}">Analysis</a>'.format(
-            link=reverse(
-                'admin:strategy_analysis1', kwargs={'algorithmresult_id': obj.id}
-            )
+    def manage(self, obj):
+        href = """
+            <div class="dropdown">
+              <button class="btn btn-default btn-xs dropdown-toggle" type="button"
+                id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                Manage
+                <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                <li><a href="{analysis}">Strategy Analysis</a></li>
+                <li><a href="{df_view}">Dataframe</a></li>
+              </ul>
+            </div>
+            """
+        return href.format(
+            analysis=reverse('admin:strategy_analysis1', kwargs={'algorithmresult_id': obj.id}),
+            df_view=reverse('admin:df_view', kwargs={'model': 'algorithm', 'id': obj.id}),
         )
 
-    strategy_analysis.short_description = ''
-    strategy_analysis.allow_tags = True
-
-    def html_view(self, obj):
-        return '<a href="{link}">DF</a>'.format(
-            link=reverse('admin:df_html_view', kwargs={
-                'result_id': obj.id, 'result': 'algorithm'
-            })
-        )
-
-    html_view.short_description = ''
-    html_view.allow_tags = True
+    manage.short_description = ''
+    manage.allow_tags = True
 
     list_display = (
         'algorithm', 'short_arguments', 'symbol', 'sharpe_spy',
@@ -144,7 +146,7 @@ class AlgorithmResultAdmin(admin.ModelAdmin):
         'bh_cumprod', 'pl_cumprod',
         'trades', 'profit_prob', 'loss_prob',
         'max_dd', 'var_pct99',
-        'strategy_analysis', 'html_view'
+        'manage'
     )
 
     fieldsets = (

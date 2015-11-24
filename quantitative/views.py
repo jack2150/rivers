@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.shortcuts import render, redirect
 from django import forms
 from pandas.tseries.offsets import BDay
-from data.models import Stock, Underlying
+from data.models import *
 from quantitative.models import *
 
 
@@ -86,11 +86,13 @@ class AlgorithmAnalysisForm(forms.Form):
                 symbol_errors = list()
                 for symbol in symbols:
                     try:
-                        Stock.objects.get(symbol=symbol)
-                    except MultipleObjectsReturned:
-                        pass
+                        underlying = Underlying.objects.get(symbol=symbol.upper())
+                        if not (underlying.google or underlying.yahoo):
+                            symbol_errors.append('Symbol <{symbol}> have no data.'.format(
+                                symbol=symbol
+                            ))
                     except ObjectDoesNotExist:
-                        symbol_errors.append('Symbol <{symbol}> not found.'.format(
+                        symbol_errors.append('Symbol <{symbol}> underlying not found.'.format(
                             symbol=symbol
                         ))
                 else:
@@ -152,7 +154,7 @@ class AlgorithmAnalysisForm(forms.Form):
             # single
             if symbols == 'ALL':
                 # special case, all symbols, postgre support distinct
-                symbols = [s[0] for s in Stock.objects.distinct('symbol').values_list('symbol')
+                symbols = [s[0] for s in Underlying.objects.distinct('symbol').values_list('symbol')
                            if s[0] != 'SPY']
             else:
                 symbols = [symbols]
@@ -235,5 +237,3 @@ def algorithm_analysis(request, algorithm_id, argument_id=0):
     )
 
     return render(request, template, parameters)
-
-    # todo: remake quant df view in pre

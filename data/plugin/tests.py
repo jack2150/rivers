@@ -2,6 +2,7 @@ from calendar import month_name
 from datetime import datetime
 from glob import glob
 import os
+from pandas import DataFrame
 from base.tests import TestSetUp
 from data.plugin.thinkback import ThinkBack
 from data.models import *
@@ -12,8 +13,8 @@ class TestThinkBack(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = 'GLD'
-        self.year = '2014'
+        self.symbol = 'AIG'
+        self.year = '2009'
 
         self.dir_name = os.path.join(
             BASE_DIR, 'files', 'thinkback', self.symbol.lower(), self.year
@@ -21,43 +22,16 @@ class TestThinkBack(TestSetUp):
 
         self.fpaths = list()
         for path in glob(os.path.join(self.dir_name, '*.csv')):
-            if '2014-12-05' in path:
+            if '2009-07-01' in path:
                 self.fpaths.append(path)
 
         self.thinkback = None
-
-    def test_stock(self):
-        """
-        Test open thinkback csv and save into stock
-        """
-        expected_keys = ['date', 'volume', 'open', 'high', 'low', 'last', 'net_change']
-
-        df = DataFrame()
-        for fpath in self.fpaths:
-            self.thinkback = ThinkBack(fpath=fpath)
-
-            data = self.thinkback.get_stock()
-
-            self.assertEqual(type(data), dict)
-            for key, value in data.items():
-                self.assertIn(key, expected_keys)
-
-            # save stock
-            stock = Stock()
-            stock.symbol = self.symbol
-            stock.load_dict(data)
-            stock.save()
-
-            self.assertTrue(stock.id)
-            df = df.append(stock.to_hdf())
-
-        print df
 
     def test_get_cycles(self):
         """
         Test get cycle on every top of option chain section
         """
-        test_date = '2011-06-06'
+        test_date = '2009-07-01'
         for fpath in self.fpaths:
             if test_date in fpath:
                 print fpath
@@ -106,6 +80,8 @@ class TestThinkBack(TestSetUp):
                 options = self.thinkback.get_cycle_options(cycle)
 
                 for contract, option in options:
+                    print contract,
+                    print option
                     #if not contract['option_code'] in ('GLD150123C114', 'GLD150123P114'):
                     #    continue
                     #else:
@@ -154,25 +130,30 @@ class TestThinkBack(TestSetUp):
                         else:
                             self.assertEqual(type(option[key]), float)
 
-                    # try save contract and option
-                    c = OptionContract()
-                    c.symbol = self.symbol
-                    c.load_dict(contract)
-                    c.save()
-                    self.assertTrue(c.id)
-
-                    o = Option()
-                    o.contract = c
-                    o.load_dict(option)
-                    o.save()
-                    self.assertTrue(o.id)
-
-                    df_contract = df_contract.append(c.to_hdf())
-                    df_options = df_options.append(o.to_hdf())
-
                     #print '.' * 80
                     #print '\n' + '*' * 100 + '\n'
 
         print df_contract
 
         print df_options.to_string(line_width=300)
+
+    def test_custom(self):
+        """
+        Testing for some bug only
+        """
+        symbol = 'AIG'
+        date = '2014-05-01'
+        fpath = os.path.join(
+            BASE_DIR, 'files', 'thinkback', symbol.lower(), date[:4],
+            '%s-StockAndOptionQuoteFor%s.csv' % (date, symbol)
+        )
+
+        tb = ThinkBack(fpath=fpath)
+        stocks, options = tb.read()
+
+        for o in options:
+            if o[0]['option_code'] in ('AIG160115C95', 'AIG160115P95'):
+                print o[0]['option_code']
+
+            #if o[0]['option_code'] == 'AIG160115C90':
+            #    print 'found last'

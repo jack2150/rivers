@@ -3,6 +3,7 @@ from data.models import Option
 import numpy as np
 import pandas as pd
 
+# todo: remake this
 
 # noinspection PyTypeChecker
 class NearestOptionPricing(object):

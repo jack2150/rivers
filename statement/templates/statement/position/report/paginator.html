@@ -1,6 +1,7 @@
 <div id="content-navbar-collapse" class="navbar-collapse collapse">
   <div class="nav navbar-nav navbar-right">
-    <button id="move_predict" class="btn btn-default btn-sm padtop10">Move Predict</button>
+    <button id="move_predict" class="btn btn-default btn-sm padtop10">Move predict</button>
+    <button id="blind_strategy" class="btn btn-default btn-sm padtop10">Blind strategy</button>
 
     <div class="btn-group" style="margin-top: 10px;">
       <button id="first_page" type="button" class="btn btn-sm btn-default">First</button>
@@ -15,6 +16,10 @@
   $("#move_predict").click(function () {
     $(location).attr('href',
         '{% url 'admin:quantitative_algorithm_changelist' %}');
+  });
+  $("#blind_strategy").click(function () {
+    $(location).attr('href',
+        '{% url 'admin:blind_strategy' position.id %}');
   });
 
   $("#first_page").click(function () {

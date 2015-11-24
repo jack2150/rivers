@@ -11,27 +11,47 @@ class TestEnterOpinion(TestSetUp):
         self.enter_opinion = EnterOpinion(**{
             'symbol': 'WFC',
             'date': '2015-08-12',
-            'risk_profile': 'Moderate',
-            'bp_effect': 2000.0,
-            'reward': 2000.0,
-            'risk': 3500.0,
+
+            'score': 3,
+            'complete': False,
+            'trade': False,
+
+            'risk_profile': 'LOW',
+            'bp_effect': 3500.0,
+            'profit': 1000.0,
+            'loss': 3500.0,
             'size': 10,
-            'enter_date': '2015-08-13',
-            'exit_date': '2015-09-19',
-            'signal': 'RANGE',
+
+            'iv_rank': 19.3,
+            'strategy': 'LONG CALL VERTICAL',
+            'optionable': True,
+            'spread': 'DEBIT',
+            'enter_date': '2015-10-31',
+            'exit_date': '2015-12-25',
+            'dte': 45,
+
+            'signal': 'BULL',
+            'event': False,
             'significant': True,
             'confirm': True,
-            'target': 57.5,
+            'target': 99,
+            'market': 'MAJOR',
             'description': '',
-            'earning': 1,
-            'dividend': 0,
-            'split': 0,
-            'special': 0,
+
+            'earning': False,
+            'dividend': False,
+            'split': False,
+            'announcement': False,
+
             'news_level': 'WEAK',
             'news_signal': 'UNKNOWN',
-            'chart0': 'BULL',
-            'chart1': 'RANGE',
-            'chart_persist': 1,
+
+            'long_trend0': 'RANGE',
+            'long_trend1': 'BULL',
+            'short_trend0': 'BEAR',
+            'short_trend1': 'BULL',
+            'long_persist': True,
+            'short_persist': True
         })
         self.enter_opinion.save()
         self.assertTrue(self.enter_opinion.id)
@@ -40,13 +60,19 @@ class TestEnterOpinion(TestSetUp):
         """
         Test get ownership data from nasdaq html file
         """
+        self.skipTest('Test only when need')
         self.enter_opinion.get_ownership()
         
         keys = [
-            'holding_pct', 'decrease_holder', 'decrease_shares',
-            'held_holder', 'held_shares', 'increase_holder', 'increase_shares', 'net_activity',
-            'net_activity_pct', 'new_holder', 'out_holder', 'new_shares', 'out_shares',
-            'top15_activity', 'top15_holding'
+            'ownership',
+            'ownership_holding_pct',
+            'ownership_sell_count', 'ownership_sell_share',
+            'ownership_held_count', 'ownership_held_share',
+            'ownership_buy_count', 'ownership_buy_share',
+            'ownership_na', 'ownership_na_pct',
+            'ownership_new_count', 'ownership_new_share',
+            'ownership_out_count', 'ownership_out_share',
+            'ownership_top15_sum', 'ownership_top15_na_pct',
         ]
         
         for key in keys:
@@ -61,13 +87,16 @@ class TestEnterOpinion(TestSetUp):
         """
         Test get ownership data from nasdaq html file
         """
+        self.skipTest('Test only when need')
         self.enter_opinion.get_insider()
 
         keys = [
-            'symbol', 'date',
-            'buy_trade_3m', 'buy_trade_12m', 'sell_trade_3m', 'sell_trade_12m',
-            'buy_shares_3m', 'buy_shares_12m', 'sell_shares_3m', 'sell_shares_12m',
-            'net_activity_3m', 'net_activity_12m'
+            'insider',
+            'insider_buy_3m', 'insider_buy_12m',
+            'insider_sell_3m', 'insider_sell_12m',
+            'insider_buy_share_3m', 'insider_buy_share_12m',
+            'insider_sell_share_3m', 'insider_sell_share_12m',
+            'insider_na_3m', 'insider_na_12m',
         ]
 
         for key in keys:
@@ -80,9 +109,15 @@ class TestEnterOpinion(TestSetUp):
         """
         Test get ownership data from nasdaq html file
         """
+        self.skipTest('Test only when need')
         self.enter_opinion.get_short_interest()
 
-        print self.enter_opinion.df_short_interest
+        keys = [
+            'short_interest', 'df_short_interest', 'short_squeeze'
+        ]
+
+        for key in keys:
+            print key, getattr(self.enter_opinion, key)
 
         self.enter_opinion.short_interest = True
         self.enter_opinion.save()
@@ -91,10 +126,11 @@ class TestEnterOpinion(TestSetUp):
         """
         Test get ownership data from nasdaq html file
         """
+        self.skipTest('Test only when need')
         self.enter_opinion.get_rating()
 
         keys = [
-            'current_abr', 'last_abr', 'no_recs', 'avg_target'
+            'analyst_rating', 'abr_current', 'abr_previous', 'abr_target', 'abr_rating_count'
         ]
 
         for key in keys:
@@ -103,48 +139,47 @@ class TestEnterOpinion(TestSetUp):
         self.enter_opinion.analyst_rating = True
         self.assertTrue(self.enter_opinion.id)
 
-
-class TestEnterOpinionGenerateScore(TestSetUp):
-    fixtures = ('wfc_score.json', )
-    multi_db = True
-
-    def setUp(self):
-        TestSetUp.setUp(self)
-
-        self.enter_opinion = EnterOpinion.objects.get(id=1)
-
-    def test_generate_score(self):
+    def test_enter_opinion_report(self):
         """
-
+        Test enter opinion report
         :return:
         """
-        self.enter_opinion.generate_score()
+        self.market_opinion = MarketOpinion(**{
+            'date': '2015-08-12',
+            'short_trend0': 'BEAR',
+            'short_trend1': 'BULL',
+            'long_trend0': 'BEAR',
+            'long_trend1': 'BULL',
+            'short_persist': False,
+            'long_persist': True,
+            'description': '',
+            'volatility': 'NORMAL',
+            'bond': 'BEAR',
+            'commodity': 'BEAR',
+            'currency': 'RANGE',
+            'market_indicator': 4,
+            'extra_attention': 2,
+            'key_indicator': 1,
+            'special_news': False,
+            'commentary': ''
+        })
+        self.market_opinion.save()
 
-
-class TestEnterOpinionReport(TestSetUp):
-    fixtures = ('wfc_score.json', )
-    multi_db = True
-
-    def setUp(self):
-        TestSetUp.setUp(self)
-
-        self.enter_opinion = EnterOpinion.objects.get(id=1)
-        self.statement = Statement()
-        self.statement.date = '2015-08-14'
-        self.statement.net_liquid = 25000.0
-        self.statement.stock_bp = 25000.0
-        self.statement.option_bp = 25000.0
-        self.statement.commission_ytd = 25000.0
+        self.statement = Statement(**{
+            'date': '2015-08-12',
+            'net_liquid': 25000.0,
+            'stock_bp': 14900.0,
+            'option_bp': 10100.0,
+            'commission_ytd': 1850.0,
+            'csv_data': ''
+        })
         self.statement.save()
 
-    def test_generate_score(self):
-        """
-
-        :return:
-        """
-        self.client.get(
+        response = self.client.get(
             reverse('admin:enter_opinion_report', kwargs={'id': self.enter_opinion.id})
         )
+
+        print response
 
 
 

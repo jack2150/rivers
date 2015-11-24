@@ -1,4 +1,7 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from pandas import DataFrame
+from pandas.tseries.offsets import BDay
 from data.models import *
 from itertools import product
 import numpy as np
@@ -117,53 +120,34 @@ class AlgorithmQuant(object):
         Get risk free rate series from db
         :return: Series
         """
-        data = list(
-            TreasuryInterest.objects.filter(
-                treasury__unique_identifier='H15/H15/RIFLGFCY01_N.B'
-            ).values()
-        )
+        df_rate = Treasury.get_rf()
 
-        if not len(data):
-            raise LookupError('Risk free rate not found in db.')
+        if not len(df_rate):
+            raise LookupError('Risk free rate not found in h5 db.')
 
-        df = pd.DataFrame(data)
-        df = df.set_index(df['date'])
-
-        return df['interest']
+        return df_rate
 
     @staticmethod
     def make_df(symbol, start_date=None, stop_date=None):
         """
         Make data frame from objects data
+        :param start_date: date
+        :param stop_date: date
         :param symbol: str
         :return: DataFrame
         """
-        df = DataFrame()
+        df_stock = pd.DataFrame()
         for source in ('google', 'yahoo'):
-            query = Q(symbol=symbol) & Q(source=source)
-            if start_date and stop_date:
-                query &= Q(date__gte=start_date) & Q(date__lte=stop_date)
-            elif start_date:
-                query &= Q(date__gte=start_date)
-            elif stop_date:
-                query &= Q(date__lte=stop_date)
+            underlying = Underlying.objects.get(symbol=symbol.upper())
+            df_stock = underlying.get_stock(source, start_date, stop_date)
 
-            df = pd.DataFrame(list(Stock.objects.filter(query).values()))
-            df = df.reindex_axis(
-                ['symbol', 'date', 'open', 'high', 'low', 'close', 'volume'],
-                axis=1
-            ).sort(['date'])
-
-            if len(df):
+            if len(df_stock):
                 break
 
-        if not df['close'].count():
+        if not len(df_stock):
             raise LookupError('Symbol %s stock not found in db.' % symbol.upper())
 
-        # change type
-        df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(np.float)
-
-        return df
+        return df_stock
 
     def seed_data(self, symbols):
         """
@@ -181,7 +165,7 @@ class AlgorithmQuant(object):
             # create df
             data[symbol] = self.make_df(symbol, self.start_date, self.stop_date)
 
-        self.data = pd.Panel(data)
+        self.data = data
 
     @staticmethod
     def max_dd(percents):
@@ -284,7 +268,7 @@ class AlgorithmQuant(object):
 
         df_spy = df_spy.set_index(df_spy['date'])
         spy_return = df_spy['close'].pct_change()
-        rf_return = self.get_rf_return() / 100 / 360
+        rf_return = self.get_rf_return() / 100.0 / 250.0
 
         df0 = df_stock.set_index('date')
 
@@ -346,9 +330,10 @@ class AlgorithmQuant(object):
                 csv_data2 += '\n'.join(d.split('\n')[1:])
 
         df1 = pd.read_csv(StringIO(csv_data2), index_col=0)
-        #print df1.to_string(line_width=300)
+        #print df1.to_string(line_width=600)
         df1 = df1.dropna()  # wait drop nan
         #print df1.to_string(line_width=300)
+        #print df1
 
         # return, trade, buy and hold
         pct_key = 'pct_chg'
