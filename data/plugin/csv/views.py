@@ -322,22 +322,6 @@ def csv_stock_h5(request, symbol):
     return render(request, template, parameters)
 
 
-@jit
-def match_full(c, option_set):
-    result = np.zeros(range(len(c)), dtype='int')
-    for i in range(len(c)):
-        spec = '%s,%s,%s,%s,%s,%s,%s,%s' % (
-            c[i]['option_code'], c[i]['name'], c[i]['ex_month'], c[i]['ex_year'],
-            c[i]['special'], c[i]['strike'], c[i]['right'], c[i]['others']
-        )
-
-        #if spec in option_set:
-        #    result[i] = True
-
-    return 0
-
-
-
 def csv_option_h5(request, symbol):
     """
     Import thinkback csv options into db,
@@ -376,7 +360,6 @@ def csv_option_h5(request, symbol):
     ])
     options = {}
 
-
     # start loop every date
     inserted = 0
     for index, values in df_stock.iterrows():
@@ -392,43 +375,14 @@ def csv_option_h5(request, symbol):
         # get all contract
         contracts = [c for c, _ in option_data]
 
-        z = 0
-        t0 = time.time()
-
         # output
         print 'D | %-12s | ' % index.strftime('%Y-%m-%d'), 'CONTRACT: %-7s | ' % len(contracts),
 
-        # get new contract and a list of no list code
-        #option_code = list(df_contract[df_contract['expire'] == False]['option_code'])
-
-        t1 = time.time()
-        print z, round(t1 - t0, 5) * 100
-        z += 1
-        t0 = t1
-
-        # speed up matching using string matching
-        """
-        contract_keys = ['option_code', 'name', 'ex_month', 'ex_year',
-                         'special', 'strike', 'right', 'others']
-        option_set = []
-        for _, data in df_remain.iterrows():
-            option_set.append(','.join([str(data[key]) for key in contract_keys]))
-
-        t1 = time.time()
-        print z, round(t1 - t0, 5) * 100
-        z += 1
-        t0 = t1
-        """
-        """
-        1. merge str, str in option_set, remove option_code from df_remain
-        2. option_code in option_code set,
-        """
         # df_remain: all previous option_code that not expire
         # df_new: all current file option_code
         # df_continue: all option_code in new and remain
-
         # make a list of remain option_code
-        df_remain = df_contract[df_contract['expire'] == False]  # get no expire contract
+        df_remain = df_contract[df_contract['expire'] == False].copy(deep=True)  # get no expire contract
         df_all = pd.DataFrame(contracts)
         df_continue = pd.merge(
             df_all, df_remain, how='inner', on=[
@@ -443,7 +397,8 @@ def csv_option_h5(request, symbol):
         if len(df_contract) and len(df_remain) and len(df_new):
             df_change = pd.merge(
                 df_contract[
-                    ['option_code', 'name', 'ex_month', 'ex_year', 'expire', 'strike', 'missing']
+                    ['option_code', 'name', 'ex_date', 'ex_month', 'ex_year',
+                     'expire', 'strike', 'missing']
                 ],
                 df_new[df_new['option_code'].isin(df_remain['option_code'])][
                     ['option_code', 'special', 'right', 'others']
@@ -470,218 +425,99 @@ def csv_option_h5(request, symbol):
 
         # all remaining new option_code that not full match or detail change
         if len(df_new):
-            df_new['expire'] = False
-            df_new['ex_date'] = df_new.apply(
+            df_new.loc[:, 'expire'] = False
+            df_new.loc[:, 'ex_date'] = df_new.apply(
                 lambda c: pd.Timestamp(get_dte_date(c['ex_month'], int(c['ex_year']))), axis=1
             )
 
-        t1 = time.time()
-        print '>>>', z, 'a', round(t1 - t0, 5) * 100
-        t0 = t1
+        # df_new that same spec in df_remain
+        if len(df_remain) and len(df_new):
+            keys = ['option_code', 'name', 'ex_month', 'ex_year', 'strike', 'special', 'right', 'others']
+            count = {
+                'df_remain': len(df_remain),
+                'df_new': len(df_new),
+                'df_contract': len(df_contract),
+            }
+            for i in range(len(keys), len(keys) - 3, -1):
 
-        """
-        i = 0
-        j = 0
-        new_contract = []
-        for c in contracts:
-            # matching whole
-            spec0 = ','.join([str(c[key]) for key in contract_keys])
-            if spec0 in option_set:
-                # full set match
-                df_remain = df_remain[df_remain['option_code'] != c['option_code']]
-                j += 1
-                continue
-            elif c['option_code'] in option_code:
-                # update if exists but full spec not same
-                q = df_contract['option_code'] == c['option_code']
-                t = df_contract[q].iloc[0]
-                # only code is match
-                found = False
-                for key in contract_keys:
-                    if c[key] != t[key]:
-                        if i == 0:
-                            print ''
+                df_spec = pd.merge(
+                    df_remain.rename(columns={'option_code': 'old_code'}),
+                    df_new[keys[:i]],
+                    how='inner', on=keys[1:i]
+                )
 
-                        print 'C | %-12s | %-27s | %-14s => %-14s' % (
-                            'CONTRACT',
-                            'DETAIL CHANGE %s' % c['option_code'],
-                            c[key],
-                            t[key]
-                        )
-                        # noinspection PyUnresolvedReferences
-                        df_contract.loc[q, key] = c[key]
-
-                        found = True
-                if found:
-                    i += 1
-                    df_remain = df_remain[df_remain['option_code'] != c['option_code']]
-            else:
-                # no match at all
-                c['ex_date'] = pd.Timestamp(get_dte_date(c['ex_month'], int(c['ex_year'])))
-                c['expire'] = 0
-
-                new_contract.append(c)
-
-        print len(df_remain), len(df_remain1)
-        assert len(df_remain) == len(df_remain1)
-        print len(df_new), len(new_contract)
-        assert len(df_new) == len(new_contract)
-        print len(df_change), i
-        assert len(df_change) == i
-        print len(df_continue), j
-        assert len(df_continue) == j
-        print len(df_contract), len(df_contract1)
-        assert len(df_contract) == len(df_contract1)
-        """
-        # todo: speed up here
-
-        t1 = time.time()
-        print '>>>', z, 'b', round(t1 - t0, 5) * 100
-        z += 1
-        t0 = t1
-
-        p = True
-        print 'df_remain', len(df_remain)
-        print 'df_new', len(df_new)
-        if len(df_remain):
-            df_new2 = df_new.copy()
-            for _, n in df_new.iterrows():
-                # new is not in option code, so we need to check spec is same
-                update = 0
-                old_code = ''
-                new_code = n['option_code']
-                query = [
-                    'name == %r' % n['name'],
-                    'ex_month == %r' % n['ex_month'],
-                    'ex_year == %r' % n['ex_year'],
-                    'strike == %r' % n['strike'],
-                    'special == %r' % n['special'],
-                    'right == %r' % n['right'],
-                    'others == %r' % n['others']
-                ]
-
-                if new_code in ['AILMZ', 'WAPMZ']:
-                    print n['option_code']
-                    print query
-                    print df_remain.query(' & '.join(query))
-
-                # full found on everything is same
-                found0 = df_remain.query(' & '.join(query))
-                if len(found0) == 1:
-                    update = 1
-                    old_code = found0['option_code'][found0.index.values[0]]
-                elif len(found0) > 1:
-                    print found0.to_string(line_width=1000)
-                    raise LookupError('%s found %d similar full specs' % (n['option_code'], len(found0)))
-
-                # got others, special div, announcement
-                found1 = df_remain.query(' & '.join(query[:-1]))  # without others
-                if not update and len(found1) == 1:
-                    update = 2
-                    old_code = found1['option_code'][found1.index.values[0]]
-                elif len(found1) > 1:
-                    print found1.to_string(line_width=1000)
-                    raise LookupError('%s found %d others specs' % (n['option_code'], len(found1)))
-
-                # got split or bonus issue or etc...
-                found2 = df_remain.query(' & '.join(query[:-2]))  # without others and right
-                if not update and len(found2) == 1:
-                    update = 3
-                    old_code = found2['option_code'][found2.index.values[0]]
-                elif len(found2) > 2:
-                    print found2.to_string(line_width=1000)
-                    raise LookupError('%s found %d others right specs' % (n['option_code'], len(found2)))
-
-                if update:
-                    if p:
-                        print ''
-                        p = False
-
+                for _, c in df_spec.iterrows():
                     print 'C | %-12s | %-27s | %-14s => %-14s' % (
                         'CODE CHANGE',
                         [
-                            '',
-                            'NORMAL (Old code to new code)',
-                            'OTHERS (Special dividend or etc)',
-                            'RIGHT (Split, bonus issue or etc)',
-                        ][update],
-                        old_code,
-                        new_code
+                            'RIGHT (SPLIT, BONUS ISSUE OR ETC)',
+                            'OTHERS (SPECIAL DIVIDEND OR ETC)',
+                            'NORMAL (OLD CODE TO NEW CODE)',
+                        ][i - 6],
+                        c['old_code'],
+                        c['option_code']
                     )
 
-                    # remove code from df_remain
-                    df_remain = df_remain[df_remain['option_code'] != old_code]
+                    # update option_code in options data
+                    options[c['option_code']] = options[c['old_code']]
+                    del options[c['old_code']]  # remove option data in new data
 
-                    # remove contract code from df_contract
-                    # noinspection PyUnresolvedReferences
-                    df_contract.loc[df_contract['option_code'] == old_code, 'option_code'] = new_code
-                    # update all
-                    # noinspection PyUnresolvedReferences
-                    df_contract.loc[df_contract['option_code'] == new_code, 'others'] = n['others']
-                    # noinspection PyUnresolvedReferences
-                    df_contract.loc[df_contract['option_code'] == new_code, 'right'] = n['right']
+                    for j, __ in enumerate(options[c['option_code']]):
+                        options[c['option_code']][j]['option_code'] = c['option_code']
 
-                    # update option data from old key name into new key name
-                    options[new_code] = []
-                    if old_code in options.keys():
-                        options[new_code] += options[old_code]
-                        del options[old_code]  # remove option data in new data
+                if len(df_contract) and len(df_spec):
+                    # update current contract that change code, others, right
+                    df_update = pd.merge(
+                        df_contract[[
+                            'ex_date', 'ex_month', 'ex_year', 'expire', 'missing', 'name',
+                            'option_code', 'special', 'strike'
+                        ]].rename(columns={'option_code': 'old_code'}),
+                        df_spec[['old_code', 'option_code', 'others', 'right']].rename(
+                            columns={'option_code': 'new_code'}
+                        ),
+                        how='inner', on='old_code'
+                    ).rename(columns={'new_code': 'option_code'})
+                    df_contract = df_contract[~df_contract['option_code'].isin(df_spec['old_code'])]
+                    df_contract = pd.concat([df_contract, df_update])
+                    """:type: pd.DataFrame"""
+                    del df_contract['old_code']
 
-                        for i, o in enumerate(options[new_code]):
-                            options[new_code][i]['option_code'] = new_code
+                    assert len(df_contract) == count['df_contract']
 
-                    # remove from new contract list
-                    #del new_contract[new_contract.index(n)]
-                    df_new2 = df_new2[df_new2['option_code'] != n['option_code']]
+                    # remove found spec old code in df_remain then merge df_spec back into it
+                    df_remain = df_remain[~df_remain['option_code'].isin(df_spec['old_code'])]
+                    del df_spec['old_code']
 
-                    # todo: here
+                    # remove found new option_code in df_new
+                    df_new = df_new[~df_new['option_code'].isin(df_spec['option_code'])]
 
-                else:
-                    print new_code, 'not match old detail'
+                    assert len(df_remain) <= count['df_remain']
+                    assert len(df_new) <= count['df_new']
 
-            df_new = df_new2.copy()
-
-
-        t1 = time.time()
-        print z, round(t1 - t0, 5) * 100
-        z += 1
-        t0 = t1
-
+        # todo: here slow, update
         # set missing
         if len(df_remain):
             print 'ACTIVE: %-6d | ' % len(df_contract[df_contract['expire'] == False]),
             print 'MISSING: %-6d' % len(df_remain)
 
-            for _, c in df_remain.iterrows():
-                # if expire skip it
-                q = df_contract['option_code'] == c['option_code']
-                q &= df_contract['ex_date'] >= index
-
-                # noinspection PyUnresolvedReferences
-                df_contract.loc[q, 'missing'] += 1
+            df_contract.loc[
+                (df_contract['option_code'].isin(df_remain['option_code']) &
+                 df_contract['ex_date'].apply(lambda x: x >= index)),
+                'missing'
+            ] += 1
         else:
             print 'ACTIVE:  %-6d | ' % len(df_contract[df_contract['expire'] == False]),
             print 'NO MISSING'
 
-        t1 = time.time()
-        print z, round(t1 - t0, 5) * 100
-        z += 1
-        t0 = t1
-
         # insert new contract into df_contract
         if len(df_new):
             # add new contract into df_contract
-            df_new['expire'] = df_new['expire'].astype('bool')
-            df_new['missing'] = 0
+            df_new.loc[:, 'expire'] = df_new['expire'].astype('bool')
+            df_new.loc[:, 'missing'] = 0
             if len(df_contract):
                 df_contract = pd.concat([df_contract, df_new])
             else:
                 df_contract = df_new
-
-        t1 = time.time()
-        print z, round(t1 - t0, 5) * 100
-        z += 1
-        t0 = t1
 
         # insert option into big option data list
         for c, o in option_data:
@@ -697,13 +533,8 @@ def csv_option_h5(request, symbol):
             else:
                 options[c['option_code']] = [o]
 
-        t1 = time.time()
-        print z, round(t1 - t0, 5) * 100
-        z += 1
-        t0 = t1
-
         # expire, save into db and delete from new and old
-        q0 = df_contract['ex_date'] <= index
+        q0 = df_contract['ex_date'].apply(lambda x: x <= index)
         q1 = df_contract['expire'] == False
         if np.any(q0 & q1):
             # change old format into new format, if not yet change
@@ -735,23 +566,16 @@ def csv_option_h5(request, symbol):
                 del options[c['option_code']]
 
             df_expire = pd.DataFrame(ex_data, index=range(len(ex_data))).set_index('date')
-            """
             db.append(
                 'option/%s/raw/data' % symbol, df_expire,
                 format='table', data_columns=True, min_itemsize=100
             )
-            """
 
             # set all expire
             # noinspection PyUnresolvedReferences
             df_contract.loc[q0 & q1, 'expire'] = True
+            print len(df_contract[df_contract['expire']])
 
-        t1 = time.time()
-        print z, round(t1 - t0, 5) * 100
-        z += 1
-        t0 = t1
-
-    """
     if len(df_contract):
         # old code to new code
         for _, c in df_contract.iterrows():
@@ -786,7 +610,7 @@ def csv_option_h5(request, symbol):
             'option/%s/raw/data' % symbol, df_data,
             format='table', data_columns=True, min_itemsize=100
         )
-    """
+
     missing = []
     try:
         df_missing = db.select('option/%s/raw/contract' % symbol, 'missing > 0')
@@ -812,10 +636,8 @@ def csv_option_h5(request, symbol):
         'special': ', '.join(df_contract['special'].unique())
     }
 
-
     # close db
     db.close()
-
 
     # update underlying
     underlying = Underlying.objects.get(symbol=symbol.upper())

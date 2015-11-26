@@ -32,9 +32,8 @@ class TestCsvToH5(TestSetUp):
         print 'run csv stock import view...'
 
         #self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': self.symbol}))
-        self.client.get(reverse('admin:csv_option_h5', kwargs={'symbol': self.symbol}))
+        #self.client.get(reverse('admin:csv_option_h5', kwargs={'symbol': self.symbol}))
 
-        """
         db = pd.HDFStore(QUOTE)
         df_contract = db.select('option/%s/raw/contract/' % self.symbol.lower())
         df_option = db.select('option/%s/raw/data' % self.symbol.lower()).sort_index()
@@ -52,7 +51,6 @@ class TestCsvToH5(TestSetUp):
         self.assertTrue(len(df_option))
 
         self.assertGreater(len(df_option), len(df_contract))
-        """
 
     def test_csv_stock_h5(self):
         """
