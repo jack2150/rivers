@@ -399,8 +399,11 @@ def truncate_symbol(request, symbol):
 
             keys = [
                 'stock/thinkback/%s', 'stock/google/%s', 'stock/yahoo/%s',
-                'option/%s/contract', 'option/%s/raw',
                 'event/earning/%s', 'event/dividend/%s',
+                'option/%s/raw/contract', 'option/%s/raw/data',
+                'option/%s/clean/contract', 'option/%s/clean/data',
+                'option/%s/other/contract', 'option/%s/other/data',
+                'option/%s/final/contract', 'option/%s/final/data',
             ]
             for key in keys:
                 try:
@@ -433,9 +436,14 @@ def truncate_symbol(request, symbol):
         db = pd.HDFStore(QUOTE)
 
         names = ['thinkback', 'google', 'yahoo', 'contract', 'option', 'earning', 'dividend']
-        keys = ['stock/thinkback/%s', 'stock/google/%s', 'stock/yahoo/%s',
-                'option/%s/contract', 'option/%s/raw',
-                'event/earning/%s', 'event/dividend/%s']
+        keys = [
+            'stock/thinkback/%s', 'stock/google/%s', 'stock/yahoo/%s',
+            'event/earning/%s', 'event/dividend/%s',
+            'option/%s/raw/contract', 'option/%s/raw/data',
+            'option/%s/clean/contract', 'option/%s/clean/data',
+            'option/%s/other/contract', 'option/%s/other/data',
+            'option/%s/final/contract', 'option/%s/final/data'
+        ]
 
         df = {}
         for name, key in zip(names, keys):

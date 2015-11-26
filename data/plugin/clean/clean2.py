@@ -136,6 +136,7 @@ class CleanOption2(object):
         # black calculator
         self.term = 0
         self.black_calc = None
+        """:type: BlackCalculator"""
         self.start_bc()
 
     def start_vo(self):
@@ -260,9 +261,14 @@ class CleanOption2(object):
         deep itm 0.00%,100.00%,0.00%
         :return: dict
         """
-        itm = self.black_calc.itmCashProbability()
-        prob_itm = itm * 100
-        prob_otm = (1 - itm) * 100
+        itm = float('%.2f' % (self.black_calc.itmCashProbability() * 100))
+
+        if self.name == Option.Call:
+            prob_itm = itm
+            prob_otm = 100 - itm
+        else:
+            prob_itm = 100 - itm
+            prob_otm = itm
 
         if prob_otm == 100 or prob_itm == 100:
             prob_touch = 0.0

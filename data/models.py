@@ -108,8 +108,8 @@ class Underlying(models.Model):
         :return: DataFrame, DataFrame
         """
         db = pd.HDFStore(QUOTE)
-        df_contract = db.select('option/%s/contract' % self.symbol.lower())
-        df_option = db.select('option/%s/data' % self.symbol.lower())
+        df_contract = db.select('option/%s/final/contract' % self.symbol.lower())
+        df_option = db.select('option/%s/final/data' % self.symbol.lower())
         db.close()
 
         return df_contract, df_option

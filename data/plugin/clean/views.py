@@ -10,6 +10,11 @@ from multiprocessing import Process, Queue
 
 # change dtype
 def ex_code(code):
+    """
+    Extract ex_date, option and strike from a list of option code 
+    :param code: str 
+    :return: list(str, float, float)
+    """
     a = ['' for _ in range(len(code))]
     b = np.zeros(len(code))
     c = np.zeros(len(code))
@@ -20,7 +25,23 @@ def ex_code(code):
 
 @jit
 def clean(ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div):
-    r = np.zeros([len(ex_date), 12], dtype='float32')
+    """
+
+    :param ex_date: np.array(str)
+    :param name: np.array(int)
+    :param strike: np.array(float)
+    :param today: np.array(str)
+    :param rf_rate: np.array(float)
+    :param close: np.array(float)
+    :param bid: np.array(float)
+    :param ask: np.array(float)
+    :param impl_vol: np.array(float)
+    :param div: np.array(float)
+    :return: np.darray(
+        float, float, float, float, float, float, float, float, float, float, float, float
+    )
+    """
+    r = np.zeros([len(ex_date), 12], dtype='float64')
     for i in range(len(ex_date)):
         if not ex_date[i]:
             continue
@@ -32,7 +53,7 @@ def clean(ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div)
             ex_date[i], name[i], strike[i], today[i], rf_rate[i],
             close[i], bid[i], ask[i], impl_vol[i], div[i]
         )
-        r[i][0] = c.impl_vol()
+        r[i][0] = round(c.impl_vol() * 100.0, 2)
         r[i][1] = c.theo_price()
         r[i][2], r[i][3] = c.moneyness()
         r[i][4] = c.dte()
@@ -43,80 +64,23 @@ def clean(ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div)
 
 
 def clean2(q, start, stop, ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div):
+    """
+
+    :param q: Queue
+    :param start: int
+    :param stop: int
+    :param ex_date: list(str)
+    :param name: list(int)
+    :param strike: list(float)
+    :param today: list(str)
+    :param rf_rate: list(float)
+    :param close: list(float)
+    :param bid: list(float)
+    :param ask: list(float)
+    :param impl_vol: list(float)
+    :param div: list(float)
+    """
     q.put([start, stop, clean(ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div)])
-
-
-@jit
-def fill_zero(old, new):
-    r = np.zeros(len(old))
-    for i in range(len(old)):
-        if old[i]:
-            r[i] = old[i]
-        else:
-            r[i] = new[i]
-
-    return r
-
-
-@jit
-def moneyness(old, new):
-    r = np.zeros(len(old))
-    for i in range(len(old)):
-        if old[i] <= 0:
-            r[i] = new[i]
-        else:
-            r[i] = old[i]
-
-    return r
-
-
-@jit
-def dte(old, new):
-    r = np.zeros(len(old))
-    for i in range(len(old)):
-        if old[i] != new[i]:
-            r[i] = new[i]
-        else:
-            r[i] = old[i]
-
-    return r
-
-
-@jit
-def prob(name, itm, otm, touch, new):
-    r = np.zeros(len(new))
-    old = {
-        'prob_itm': itm,
-        'prob_otm': otm,
-        'prob_touch': touch,
-    }[name]
-
-    for i in range(len(new)):
-        r[i] = old[i]
-
-        if itm[i] == 100 or otm[i] == 100 or itm[i] == 0 or otm[i] == 0:
-            r[i] = new[i]
-
-    return r
-
-
-@jit
-def greek(name, delta, gamma, theta, vega, new):
-    r = np.zeros(len(new))
-    old = {
-        'delta': delta,
-        'gamma': gamma,
-        'theta': theta,
-        'vega': vega,
-    }[name]
-
-    for i in range(len(new)):
-        if delta[i] or gamma[i] or theta[i] or vega[i]:
-            r[i] = old[i]
-        else:
-            r[i] = new[i]
-
-    return r
 
 
 def clean_option3(request, symbol):
@@ -133,9 +97,10 @@ def clean_option3(request, symbol):
     df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
     df_stock = db.select('stock/thinkback/%s' % symbol.lower())
     df_stock = df_stock[['close']]
-    df_contract = db.select('option/%s/contract' % symbol.lower())
-    df_option = db.select('option/%s/raw' % symbol.lower())
+    df_contract0 = db.select('option/%s/raw/contract' % symbol.lower())
+    df_option = db.select('option/%s/raw/data' % symbol.lower())
     df_option = df_option.reset_index()
+
     try:
         df_dividend = db.select('event/dividend/%s' % symbol.lower())
         df_div = get_div_yield(df_stock, df_dividend)
@@ -146,17 +111,25 @@ def clean_option3(request, symbol):
         df_div['div'] = 0.0
     db.close()
 
-    # df_option = df_option[df_option['option_code'] == 'AIG100417C24']
-    # print df_option.to_string(line_width=1000)
+    # skip others and split right
+    print output % ('', 'skip others and split', '')
+    df_contract1 = df_contract0.query('others == "" & right == "100" & special != "Mini"')
+    print output % ('', 'special: %s' % df_contract1['special'].unique(), '')
+    print output % ('', 'no others: %s' % df_contract0.query('others != ""')['others'].unique(), '')
+    print output % ('', 'no right: %s' % df_contract0.query('right != "100"')['right'].unique(), '')
 
-    # todo: skip others, skip special
-
+    # time output
     t1 = time.time()
     print output % (1, 'start merging', '%10d secs' % (t1 - t0))
     t0 = t1
 
     # merge all into a single table
-    df_all = pd.merge(df_option, df_contract, how='inner', on='option_code').sort_values(
+    df_skip = pd.merge(
+        df_option,
+        df_contract0.query('others != "" | right != "100" | special == "Mini"'),
+        how='inner', on='option_code'
+    )
+    df_all = pd.merge(df_option, df_contract1, how='inner', on='option_code').sort_values(
         ['option_code', 'date']
     )
     df_all = pd.merge(df_all, df_stock.reset_index(), how='inner', on=['date'])
@@ -164,9 +137,13 @@ def clean_option3(request, symbol):
     df_all = pd.merge(df_all, df_div.reset_index(), how='inner', on=['date'])
 
     total = len(df_all)
-    print output % ('1a', 'total length df_all', '%10d rows' % total)
-    print output % ('1b', 'total length df_contract', '%10d rows' % len(df_contract))
-    if len(df_all) != len(df_option):
+    print output % ('', 'total length df_option', '%10d rows' % total)
+    print output % ('', 'total length df_contract0', '%10d rows' % len(df_contract0))
+    print output % ('', 'total length df_contract1', '%10d rows' % len(df_contract1))
+    print output % ('', 'total length df_skip', '%10d rows' % len(df_skip))
+    print output % ('', 'total length df_all', '%10d rows' % len(df_all))
+
+    if len(df_all) + len(df_skip) != len(df_option):
         raise ValueError('Invalid merging data rows!')
 
     t1 = time.time()
@@ -176,11 +153,11 @@ def clean_option3(request, symbol):
     # multi process cleaning
     q = Queue()
     p = []
-    n = 6
+    n = 8
     m = int(total / float(n))
     l = range(0, total, m)
     l[-1] = total
-    print output % ('3a', 'process steps %s' % l, '')
+    print output % ('3', 'process steps %s' % l, '')
     for start, stop in zip(l[:-1], l[1:]):
         df = df_all[start:stop].reset_index()
 
@@ -194,10 +171,10 @@ def clean_option3(request, symbol):
             df['impl_vol'], df['div']
         )))
 
-        print output % ('3b', 'processing created', '%10d [%d, %d]' % (len(p) - 1, start, stop))
+        print output % ('', 'processing created', '%10d [%d, %d]' % (len(p) - 1, start, stop))
 
     for i in range(len(p)):
-        print output % ('3c', 'processing started', '%10d' % i)
+        print output % ('', 'processing started', '%10d' % i)
         p[i].start()
 
     df_result = pd.DataFrame()
@@ -210,7 +187,7 @@ def clean_option3(request, symbol):
             df_result = pd.DataFrame(df, index=range(start, stop))
 
     for i in range(len(p)):
-        print output % ('3c', 'processing closed', '%10d' % i)
+        print output % ('', 'processing closed', '%10d' % i)
         p[i].join()
 
     t1 = time.time()
@@ -220,49 +197,19 @@ def clean_option3(request, symbol):
     # update
     df_result = df_result.sort_index()
     df_result.columns = [
-        'impl_vol2', 'theo_price2', 'intrinsic2', 'extrinsic2', 'dte2',
-        'prob_itm_2', 'prob_otm_2', 'prob_touch_2',
-        'delta_2', 'gamma_2', 'theta_2', 'vega_2'
+        'impl_vol', 'theo_price', 'intrinsic', 'extrinsic',
+        'dte', 'prob_itm', 'prob_otm', 'prob_touch',
+        'delta', 'gamma', 'theta', 'vega'
     ]
-    df_clean = pd.concat([df_all, df_result], axis=1)
+    df_clean = df_all[['date', 'ask', 'bid', 'last', 'mark', 'open_int', 'option_code', 'volume']]
+    df_clean = pd.concat([df_clean, df_result], axis=1)
     """:type: pd.DataFrame"""
-
-    # clean data using result
-    df_clean['impl_vol'] = np.round(fill_zero(df_clean['impl_vol'], df_clean['impl_vol2'] * 100), 2)
-    df_clean['theo_price'] = np.round(fill_zero(df_clean['theo_price'], df_clean['theo_price2']), 2)
-    df_clean['intrinsic'] = moneyness(df_clean['intrinsic'], df_clean['intrinsic2'])
-    df_clean['extrinsic'] = moneyness(df_clean['extrinsic'], df_clean['extrinsic2'])
-    df_clean['dte'] = dte(df_clean['dte'], df_clean['dte2'])
-    i = {}
-    for x in ('prob_itm', 'prob_otm', 'prob_touch'):
-        i[x] = prob(
-            x,
-            df_clean['prob_itm'], df_clean['prob_otm'], df_clean['prob_touch'],
-            df_clean['%s_2' % x]
-        )
-    for x in ('prob_itm', 'prob_otm', 'prob_touch'):
-        df_clean[x] = np.around(i[x], 2)
-
-    i = {}
-    for x in ('delta', 'gamma', 'theta', 'vega'):
-        i[x] = greek(
-            x,
-            df_clean['delta'], df_clean['gamma'], df_clean['theta'], df_clean['vega'],
-            df_clean['%s_2' % x]
-        )
-    for x in ('delta', 'gamma', 'theta', 'vega'):
-        df_clean[x] = np.around(i[x], 2)
 
     t1 = time.time()
     print output % (5, 'save data', '%10d secs' % (t1 - t0))
     t0 = t1
 
     # remove all
-    df_clean = df_clean[[
-        'date', 'ask', 'bid', 'delta', 'dte', 'extrinsic', 'gamma', 'impl_vol',
-        'intrinsic', 'last', 'mark', 'open_int', 'option_code', 'prob_itm', 'prob_otm',
-        'prob_touch', 'theo_price', 'theta', 'vega', 'volume'
-    ]]
     df_clean = df_clean.set_index('date')
 
     if len(df_clean) != total:
@@ -270,10 +217,13 @@ def clean_option3(request, symbol):
 
     db = pd.HDFStore(QUOTE)
     try:
-        db.remove('option/%s/clean' % symbol.lower())
+        db.remove('option/%s/clean/contract' % symbol.lower())
+        db.remove('option/%s/clean/data' % symbol.lower())
     except KeyError:
         pass
-    db.append('option/%s/clean' % symbol.lower(), df_clean,
+    db.append('option/%s/clean/contract' % symbol.lower(), df_contract1,
+              format='table', data_columns=True)
+    db.append('option/%s/clean/data' % symbol.lower(), df_clean,
               format='table', data_columns=True)
     db.close()
 

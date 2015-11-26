@@ -2,7 +2,11 @@ import calendar
 from glob import glob
 import os
 import re
+
+import time
 from django.shortcuts import render
+from numba import jit
+
 from data.extra import offday, holiday
 from data.models import Underlying
 from data.plugin.thinkback import ThinkBack
@@ -197,6 +201,7 @@ def csv_stock_h5(request, symbol):
     end = underlying.stop
 
     # move files into year folder
+    # noinspection PyUnresolvedReferences
     path = os.path.join(BASE_DIR, 'files', 'thinkback', symbol)
     no_year_files = glob(os.path.join(path, '*.csv'))
     years = sorted(list(set([os.path.basename(f)[:4] for f in no_year_files])))
@@ -247,6 +252,7 @@ def csv_stock_h5(request, symbol):
 
         if trading_day:
             # output to console
+            print '%-05d | %-20s' % (i, os.path.basename(f))
             stock_data, option_data = ThinkBack(f).read()
 
             try:
@@ -316,7 +322,22 @@ def csv_stock_h5(request, symbol):
     return render(request, template, parameters)
 
 
-# noinspection PyUnresolvedReferences
+@jit
+def match_full(c, option_set):
+    result = np.zeros(range(len(c)), dtype='int')
+    for i in range(len(c)):
+        spec = '%s,%s,%s,%s,%s,%s,%s,%s' % (
+            c[i]['option_code'], c[i]['name'], c[i]['ex_month'], c[i]['ex_year'],
+            c[i]['special'], c[i]['strike'], c[i]['right'], c[i]['others']
+        )
+
+        #if spec in option_set:
+        #    result[i] = True
+
+    return 0
+
+
+
 def csv_option_h5(request, symbol):
     """
     Import thinkback csv options into db,
@@ -333,6 +354,7 @@ def csv_option_h5(request, symbol):
     :return: render
     """
     symbol = symbol.lower()
+    # noinspection PyUnresolvedReferences
     path = os.path.join(BASE_DIR, 'files', 'thinkback', symbol)
     df_stock = get_exist_stocks(symbol)
 
@@ -340,20 +362,20 @@ def csv_option_h5(request, symbol):
     db = pd.HDFStore(QUOTE)
 
     # remove all existing data
-    for key in ('date', 'index', 'contract', 'raw', 'clean', 'data'):
-        try:
-            db.remove('option/%s/%s' % (symbol, key))
-        except KeyError:
-            pass
+    try:
+        db.remove('option/%s' % symbol)
+    except KeyError:
+        pass
 
     # all new
     df_contract = pd.DataFrame(columns=[
         'option_code',
         'ex_date', 'ex_month', 'ex_year', 'expire',
-        'name', 'others', 'right', 'special', 'strike'
+        'name', 'others', 'right', 'special', 'strike',
+        'missing'
     ])
-    dc_index = {}
     options = {}
+
 
     # start loop every date
     inserted = 0
@@ -370,28 +392,96 @@ def csv_option_h5(request, symbol):
         # get all contract
         contracts = [c for c, _ in option_data]
 
-        # date code index
-        if len(contracts):
-            for c in contracts:
-                if c['option_code'] in dc_index.keys():
-                    dc_index[c['option_code']].append(index)
-                else:
-                    dc_index[c['option_code']] = [index]
+        z = 0
+        t0 = time.time()
 
+        # output
         print 'D | %-12s | ' % index.strftime('%Y-%m-%d'), 'CONTRACT: %-7s | ' % len(contracts),
-        print 'INDEX LENGTH: %-10s | ' % len(dc_index.keys()),
 
         # get new contract and a list of no list code
-        option_code = np.array(df_contract[df_contract['expire'] == False]['option_code'])
-        df_remain = df_contract[df_contract['expire'] == False]  # get no expire contract
+        #option_code = list(df_contract[df_contract['expire'] == False]['option_code'])
+
+        t1 = time.time()
+        print z, round(t1 - t0, 5) * 100
+        z += 1
+        t0 = t1
 
         # speed up matching using string matching
+        """
         contract_keys = ['option_code', 'name', 'ex_month', 'ex_year',
                          'special', 'strike', 'right', 'others']
         option_set = []
         for _, data in df_remain.iterrows():
             option_set.append(','.join([str(data[key]) for key in contract_keys]))
 
+        t1 = time.time()
+        print z, round(t1 - t0, 5) * 100
+        z += 1
+        t0 = t1
+        """
+        """
+        1. merge str, str in option_set, remove option_code from df_remain
+        2. option_code in option_code set,
+        """
+        # df_remain: all previous option_code that not expire
+        # df_new: all current file option_code
+        # df_continue: all option_code in new and remain
+
+        # make a list of remain option_code
+        df_remain = df_contract[df_contract['expire'] == False]  # get no expire contract
+        df_all = pd.DataFrame(contracts)
+        df_continue = pd.merge(
+            df_all, df_remain, how='inner', on=[
+                'option_code', 'name', 'ex_month', 'ex_year',
+                'special', 'strike', 'right', 'others'
+            ]
+        )
+        df_new = df_all[~df_all['option_code'].isin(df_continue['option_code'])]
+        df_remain = df_remain[~df_remain['option_code'].isin(df_continue['option_code'])]
+
+        # check remain option_code is still exists, then change detail
+        if len(df_contract) and len(df_remain) and len(df_new):
+            df_change = pd.merge(
+                df_contract[
+                    ['option_code', 'name', 'ex_month', 'ex_year', 'expire', 'strike', 'missing']
+                ],
+                df_new[df_new['option_code'].isin(df_remain['option_code'])][
+                    ['option_code', 'special', 'right', 'others']
+                ],
+                how='inner', on='option_code'
+            )
+
+            # merge back
+            df_contract = pd.concat([
+                df_contract[~df_contract['option_code'].isin(df_change['option_code'])],
+                df_change
+            ])
+            """:type: pd.DataFrame"""
+
+            # reduce df_new and df_remain
+            df_new = df_new[~df_new['option_code'].isin(df_change['option_code'])]
+            df_remain = df_remain[~df_remain['option_code'].isin(df_change['option_code'])]
+
+            for _, c in df_change.iterrows():
+                print 'C | %-12s | %-27s' % (
+                    'CONTRACT',
+                    'DETAIL CHANGE %s' % c['option_code']
+                )
+
+        # all remaining new option_code that not full match or detail change
+        if len(df_new):
+            df_new['expire'] = False
+            df_new['ex_date'] = df_new.apply(
+                lambda c: pd.Timestamp(get_dte_date(c['ex_month'], int(c['ex_year']))), axis=1
+            )
+
+        t1 = time.time()
+        print '>>>', z, 'a', round(t1 - t0, 5) * 100
+        t0 = t1
+
+        """
+        i = 0
+        j = 0
         new_contract = []
         for c in contracts:
             # matching whole
@@ -399,6 +489,7 @@ def csv_option_h5(request, symbol):
             if spec0 in option_set:
                 # full set match
                 df_remain = df_remain[df_remain['option_code'] != c['option_code']]
+                j += 1
                 continue
             elif c['option_code'] in option_code:
                 # update if exists but full spec not same
@@ -408,17 +499,21 @@ def csv_option_h5(request, symbol):
                 found = False
                 for key in contract_keys:
                     if c[key] != t[key]:
+                        if i == 0:
+                            print ''
+
                         print 'C | %-12s | %-27s | %-14s => %-14s' % (
                             'CONTRACT',
                             'DETAIL CHANGE %s' % c['option_code'],
                             c[key],
                             t[key]
                         )
+                        # noinspection PyUnresolvedReferences
                         df_contract.loc[q, key] = c[key]
 
                         found = True
-
                 if found:
+                    i += 1
                     df_remain = df_remain[df_remain['option_code'] != c['option_code']]
             else:
                 # no match at all
@@ -427,13 +522,34 @@ def csv_option_h5(request, symbol):
 
                 new_contract.append(c)
 
+        print len(df_remain), len(df_remain1)
+        assert len(df_remain) == len(df_remain1)
+        print len(df_new), len(new_contract)
+        assert len(df_new) == len(new_contract)
+        print len(df_change), i
+        assert len(df_change) == i
+        print len(df_continue), j
+        assert len(df_continue) == j
+        print len(df_contract), len(df_contract1)
+        assert len(df_contract) == len(df_contract1)
+        """
+        # todo: speed up here
+
+        t1 = time.time()
+        print '>>>', z, 'b', round(t1 - t0, 5) * 100
+        z += 1
+        t0 = t1
+
         p = True
+        print 'df_remain', len(df_remain)
+        print 'df_new', len(df_new)
         if len(df_remain):
-            for n in [n for n in new_contract]:
+            df_new2 = df_new.copy()
+            for _, n in df_new.iterrows():
                 # new is not in option code, so we need to check spec is same
                 update = 0
-                code0 = ''
-                code1 = n['option_code']
+                old_code = ''
+                new_code = n['option_code']
                 query = [
                     'name == %r' % n['name'],
                     'ex_month == %r' % n['ex_month'],
@@ -444,11 +560,16 @@ def csv_option_h5(request, symbol):
                     'others == %r' % n['others']
                 ]
 
+                if new_code in ['AILMZ', 'WAPMZ']:
+                    print n['option_code']
+                    print query
+                    print df_remain.query(' & '.join(query))
+
                 # full found on everything is same
                 found0 = df_remain.query(' & '.join(query))
                 if len(found0) == 1:
                     update = 1
-                    code0 = found0['option_code'][found0.index.values[0]]
+                    old_code = found0['option_code'][found0.index.values[0]]
                 elif len(found0) > 1:
                     print found0.to_string(line_width=1000)
                     raise LookupError('%s found %d similar full specs' % (n['option_code'], len(found0)))
@@ -457,7 +578,7 @@ def csv_option_h5(request, symbol):
                 found1 = df_remain.query(' & '.join(query[:-1]))  # without others
                 if not update and len(found1) == 1:
                     update = 2
-                    code0 = found1['option_code'][found1.index.values[0]]
+                    old_code = found1['option_code'][found1.index.values[0]]
                 elif len(found1) > 1:
                     print found1.to_string(line_width=1000)
                     raise LookupError('%s found %d others specs' % (n['option_code'], len(found1)))
@@ -466,7 +587,7 @@ def csv_option_h5(request, symbol):
                 found2 = df_remain.query(' & '.join(query[:-2]))  # without others and right
                 if not update and len(found2) == 1:
                     update = 3
-                    code0 = found2['option_code'][found2.index.values[0]]
+                    old_code = found2['option_code'][found2.index.values[0]]
                 elif len(found2) > 2:
                     print found2.to_string(line_width=1000)
                     raise LookupError('%s found %d others right specs' % (n['option_code'], len(found2)))
@@ -480,43 +601,51 @@ def csv_option_h5(request, symbol):
                         'CODE CHANGE',
                         [
                             '',
-                            'NORMAL (Old to new format)',
+                            'NORMAL (Old code to new code)',
                             'OTHERS (Special dividend or etc)',
                             'RIGHT (Split, bonus issue or etc)',
                         ][update],
-                        code0,
-                        code1
+                        old_code,
+                        new_code
                     )
 
                     # remove code from df_remain
-                    df_remain = df_remain[df_remain['option_code'] != code0]
+                    df_remain = df_remain[df_remain['option_code'] != old_code]
 
                     # remove contract code from df_contract
-                    df_contract.loc[df_contract['option_code'] == code0, 'option_code'] = code1
+                    # noinspection PyUnresolvedReferences
+                    df_contract.loc[df_contract['option_code'] == old_code, 'option_code'] = new_code
                     # update all
-                    df_contract.loc[df_contract['option_code'] == code1, 'others'] = n['others']
-                    df_contract.loc[df_contract['option_code'] == code1, 'right'] = n['right']
+                    # noinspection PyUnresolvedReferences
+                    df_contract.loc[df_contract['option_code'] == new_code, 'others'] = n['others']
+                    # noinspection PyUnresolvedReferences
+                    df_contract.loc[df_contract['option_code'] == new_code, 'right'] = n['right']
 
                     # update option data from old key name into new key name
-                    options[code1] = []
-                    if code0 in options.keys():
-                        options[code1] += options[code0]
-                        del options[code0]  # remove option data in new data
+                    options[new_code] = []
+                    if old_code in options.keys():
+                        options[new_code] += options[old_code]
+                        del options[old_code]  # remove option data in new data
 
-                        for i, o in enumerate(options[code1]):
-                            options[code1][i]['option_code'] = code1
-
-                    # update date code index
-                    dc_index[code1] = []
-                    if code0 in options.keys():
-                        dc_index[code1] += dc_index[code0]
-                        del dc_index[code0]  # remove option data in new data
-
-                        for i, o in enumerate(dc_index[code1]):
-                            dc_index[code1][i]['option_code'] = code1
+                        for i, o in enumerate(options[new_code]):
+                            options[new_code][i]['option_code'] = new_code
 
                     # remove from new contract list
-                    del new_contract[new_contract.index(n)]
+                    #del new_contract[new_contract.index(n)]
+                    df_new2 = df_new2[df_new2['option_code'] != n['option_code']]
+
+                    # todo: here
+
+                else:
+                    print new_code, 'not match old detail'
+
+            df_new = df_new2.copy()
+
+
+        t1 = time.time()
+        print z, round(t1 - t0, 5) * 100
+        z += 1
+        t0 = t1
 
         # set missing
         if len(df_remain):
@@ -528,21 +657,31 @@ def csv_option_h5(request, symbol):
                 q = df_contract['option_code'] == c['option_code']
                 q &= df_contract['ex_date'] >= index
 
+                # noinspection PyUnresolvedReferences
                 df_contract.loc[q, 'missing'] += 1
         else:
             print 'ACTIVE:  %-6d | ' % len(df_contract[df_contract['expire'] == False]),
             print 'NO MISSING'
 
+        t1 = time.time()
+        print z, round(t1 - t0, 5) * 100
+        z += 1
+        t0 = t1
+
         # insert new contract into df_contract
-        if len(new_contract):
+        if len(df_new):
             # add new contract into df_contract
-            df = pd.DataFrame(new_contract)
-            df['expire'] = df['expire'].astype('bool')
-            df['missing'] = 0
+            df_new['expire'] = df_new['expire'].astype('bool')
+            df_new['missing'] = 0
             if len(df_contract):
-                df_contract = pd.concat([df_contract, df])
+                df_contract = pd.concat([df_contract, df_new])
             else:
-                df_contract = df
+                df_contract = df_new
+
+        t1 = time.time()
+        print z, round(t1 - t0, 5) * 100
+        z += 1
+        t0 = t1
 
         # insert option into big option data list
         for c, o in option_data:
@@ -557,6 +696,11 @@ def csv_option_h5(request, symbol):
                     options[c['option_code']].append(o)
             else:
                 options[c['option_code']] = [o]
+
+        t1 = time.time()
+        print z, round(t1 - t0, 5) * 100
+        z += 1
+        t0 = t1
 
         # expire, save into db and delete from new and old
         q0 = df_contract['ex_date'] <= index
@@ -591,30 +735,23 @@ def csv_option_h5(request, symbol):
                 del options[c['option_code']]
 
             df_expire = pd.DataFrame(ex_data, index=range(len(ex_data))).set_index('date')
+            """
             db.append(
-                'option/%s/raw' % symbol, df_expire,
+                'option/%s/raw/data' % symbol, df_expire,
                 format='table', data_columns=True, min_itemsize=100
             )
+            """
 
             # set all expire
+            # noinspection PyUnresolvedReferences
             df_contract.loc[q0 & q1, 'expire'] = True
 
-    df_index = pd.DataFrame()
-    if len(dc_index.keys()):
-        dc_data = []
-        for code, dates in dc_index.items():
-            for d in dates:
-                dc_data.append({
-                    'date': d,
-                    'option_code': code
-                })
+        t1 = time.time()
+        print z, round(t1 - t0, 5) * 100
+        z += 1
+        t0 = t1
 
-        df_index = pd.DataFrame(dc_data, index=range(len(dc_data))).set_index('date')
-        db.append(
-            'option/%s/index' % symbol, df_index,
-            format='table', data_columns=True, min_itemsize=100
-        )
-
+    """
     if len(df_contract):
         # old code to new code
         for _, c in df_contract.iterrows():
@@ -629,7 +766,7 @@ def csv_option_h5(request, symbol):
 
         # save into db
         db.append(
-            'option/%s/contract' % symbol, df_contract,
+            'option/%s/raw/contract' % symbol, df_contract,
             format='table', data_columns=True, min_itemsize=100
         )
 
@@ -646,32 +783,27 @@ def csv_option_h5(request, symbol):
 
         df_data = pd.DataFrame(data, index=range(len(data))).set_index('date')
         db.append(
-            'option/%s/raw' % symbol, df_data,
+            'option/%s/raw/data' % symbol, df_data,
             format='table', data_columns=True, min_itemsize=100
         )
-
+    """
     missing = []
-    df_missing = db.select('option/%s/contract' % symbol, 'missing > 0')
-    if len(df_missing):
-        for _, m in df_missing.sort_values(by='missing', ascending=False).iterrows():
-            missing.append({
-                'option_code': m['option_code'],
-                'count': m['missing']
-            })
+    try:
+        df_missing = db.select('option/%s/raw/contract' % symbol, 'missing > 0')
+        if len(df_missing):
+            for _, m in df_missing.sort_values(by='missing', ascending=False).iterrows():
+                missing.append({
+                    'option_code': m['option_code'],
+                    'count': m['missing']
+                })
+    except KeyError:
+        pass
 
-    completed = []
-    if len(df_index):
-        for i in df_index.index.unique():
-            completed.append({
-                'date': i.date(),
-                'count': len(df_index.ix[i]),
-            })
-
-    df_data = db.select('option/%s/raw' % symbol)
-    df_contract = db.select('option/%s/contract' % symbol)
+    df_data = db.select('option/%s/raw/data' % symbol)
+    df_contract = db.select('option/%s/raw/contract' % symbol)
     stats = {
         'data': len(df_data),
-        'index': len(df_index),
+        'index': len(df_data.index.unique()),
         'contract': len(df_contract),
         'expire': len(df_contract[df_contract['expire']]),
         'active': len(df_contract[df_contract['expire'] == False]),
@@ -680,8 +812,10 @@ def csv_option_h5(request, symbol):
         'special': ', '.join(df_contract['special'].unique())
     }
 
+
     # close db
     db.close()
+
 
     # update underlying
     underlying = Underlying.objects.get(symbol=symbol.upper())
@@ -695,8 +829,7 @@ def csv_option_h5(request, symbol):
         title='Thinkback csv option import: {symbol}'.format(symbol=symbol.upper()),
         symbol=symbol.upper(),
         stats=stats,
-        missing=missing,
-        completed=completed
+        missing=missing
     )
 
     return render(request, template, parameters)

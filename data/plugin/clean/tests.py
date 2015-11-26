@@ -13,8 +13,8 @@ symbol = 'AIG'
 db = pd.HDFStore(QUOTE)
 df_rate = db.select('treasury/RIFLGFCY01_N_B')['rate']  # series
 df_stock = db.select('stock/thinkback/%s' % symbol.lower())
-df_contract = db.select('option/%s/contract' % symbol.lower())
-df_option = db.select('option/%s/raw' % symbol.lower())
+df_contract = db.select('option/%s/raw/contract' % symbol.lower())
+df_option = db.select('option/%s/raw/data' % symbol.lower())
 df_option = df_option.reset_index()
 df_dividend = db.select('event/dividend/%s' % symbol.lower())
 div_yield = get_div_yield(df_stock, df_dividend)
@@ -294,15 +294,16 @@ class TestCsvToH5(TestSetUp):
         17m 44s pretty good
         :return:
         """
-
         # self.client.get(reverse('admin:clean_option', kwargs={'symbol': self.symbol.lower()}))
         self.client.get(reverse('admin:clean_option3', kwargs={'symbol': self.symbol.lower()}))
 
-        #db = pd.HDFStore(QUOTE)
-        #df_option = db.select('option/%s/clean' % symbol.lower())
-        #db.close()
+        """
+        db = pd.HDFStore(QUOTE)
+        df_option = db.select('option/%s/clean/data' % symbol.lower())
+        db.close()
 
-        #print df_option[2000:3000].to_string(line_width=1000)
+        print df_option.to_string(line_width=1000)
+        """
 
         # todo: wrong prob
         # todo: after clean, got wrong rows

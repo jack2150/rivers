@@ -18,34 +18,20 @@ def fillna_option(request, symbol):
     df_rate = df_rate['rate']
     df_stock = db.select('stock/thinkback/%s' % symbol.lower())
     df_stock = df_stock['close']
-    df_contract = db.select('option/%s/contract' % symbol.lower())
-    df_option = db.select('option/%s/clean' % symbol.lower()).sort_index()
-    df_option = df_option.reset_index().sort_values('date')
+    df_contract = db.select('option/%s/clean/contract' % symbol.lower())
+    df_clean = db.select('option/%s/clean/data' % symbol.lower())
+    df_clean = df_clean.reset_index().sort_values('date')
     db.close()
 
-    #df_option = df_option.query('option_code == "AIG110421C25"')
-    #print df_option.query('option_code == "AIG110421C25"').to_string(line_width=1000)
-
-    df_missing = df_contract.query("missing > 0 & others == ''")
-
-    split = df_missing['right'].apply(lambda x: '/' in x)
-    df_split = df_missing[split]  # split contract
-    df_normal = df_missing[split == 0]  # normal contract
-    df_normal = df_normal.query('missing == 1')  # testing
-    # print df_normal.query('option_code == %r' % 'AIG100417C24').to_string(line_width=1000)
-    df_all = pd.merge(df_option, df_normal, how='right', on=['option_code']).sort_values(
+    df_missing = df_contract.query("missing > 0")
+    df_all = pd.merge(df_clean, df_missing, how='right', on=['option_code']).sort_values(
         ['option_code', 'date']
     )
-    # print df_all.query('option_code == %r' % 'AIG100417C24').to_string(line_width=1000)
-    # print df_split.to_string(line_width=1000)
-    # print df_normal.to_string(line_width=1000)
 
-    # todo: missing is wrong, maybe add holidays
-    # print df_normal['missing']
-    # print trading_dates
     new = []
-    for _, data in df_normal.iterrows():
-        # todo: missing 03-08-2010
+    for _, data in df_missing.iterrows():
+        # todo: % of missing date
+
         print data['option_code'], data['missing'],
         df_current = df_all.query('option_code == %r' % data['option_code']).sort_values('date')
         current_dates = list(df_current['date'])
@@ -56,10 +42,16 @@ def fillna_option(request, symbol):
         bdays = [d for d in df_stock.index if start <= d <= stop]
         missing_dates = [d for d in bdays if d not in current_dates]
 
+        if data['missing'] / float(len(bdays)) > 0.2:
+            print 'skip, missing %:', data['missing'] / float(len(bdays))
+            continue
+
+        if len(current_dates) < 4:
+            print 'skip, less than: %d dates' % len(current_dates)
+            continue
+
         if len(bdays) == len(current_dates):
             raise ValueError('Empty missing date: %d, %d' % (len(bdays), len(current_dates)))
-
-        # todo: wrong missing date, fix it
 
         for date in missing_dates:
             print date
@@ -83,7 +75,6 @@ def fillna_option(request, symbol):
                     'ask': np.mean([(o['ask'] / o['theo_price']) - 1 for o in options]),
                     'impl_vol': np.mean([o['impl_vol'] for o in options if o['impl_vol']]),
                 }
-
 
                 for key in ('bid', 'ask', 'impl_vol'):
                     mean[key] = round(mean[key], 2)
@@ -122,8 +113,10 @@ def fillna_option(request, symbol):
 
             new.append({
                 'date': date,
+                'option_code': data['option_code'],
                 'impl_vol': mean['impl_vol'],
                 'theo_price': theo_price,
+                'close': round(df_stock[date], 2),
                 'bid': bid,
                 'ask': ask,
                 'intrinsic': intrinsic + 0,
@@ -137,6 +130,9 @@ def fillna_option(request, symbol):
                 'theta': theta,
                 'vega': vega,
             })
+
+            # todo: update missing count
+
 
         print ''
 
