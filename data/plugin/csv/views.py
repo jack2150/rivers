@@ -1,4 +1,5 @@
 import calendar
+from fractions import Fraction
 from glob import glob
 import os
 import re
@@ -322,6 +323,105 @@ def csv_stock_h5(request, symbol):
     return render(request, template, parameters)
 
 
+@jit
+def valid_option(bid, ask, volume, open_int, dte):
+    valid = np.ones(len(bid), dtype='int')
+
+    for i in range(len(valid)):
+        if ask[i] < 0:
+            valid[i] = 0
+
+        if bid[i] < 0:
+            valid[i] = 0
+
+        if bid[i] >= ask[i]:
+            valid[i] = 0
+
+        if volume[i] < 0:
+            valid[i] = 0
+
+        if open_int[i] < 0:
+            valid[i] = 0
+
+        if dte[i] < 0:
+            valid[i] = 0
+
+    return valid
+
+
+def valid_code(option_code0, option_code1):
+    """
+    Check every option_code is exists in df_option
+    :param option_code0: list
+    :param option_code1: list
+    :return: list
+    """
+    valid = np.ones(len(option_code0), dtype='int')
+    codes = list(option_code1)
+    for i in range(len(option_code0)):
+        if option_code0[i] not in codes:
+            valid[i] = 0
+
+    return valid
+
+
+def valid_contract(symbol, df_contract):
+    """
+    Valid df_contract every column
+    :param symbol: str
+    :param df_contract: DataFrame
+    :return: list
+    """
+    valid = np.ones(len(df_contract), dtype='int')
+    specials = ['Standard', 'Weeklys', 'Quarterlys', 'Mini']
+    months = [calendar.month_name[i + 1][:3].upper() for i in range(12)]
+    years = range(8, 20)
+    weeks = range(1, 7)
+    for i, (_, contract) in enumerate(df_contract.iterrows()):
+        if symbol not in contract['option_code']:
+            valid[i] = 0
+
+        if contract['ex_month'][:3] not in months:
+            valid[i] = 0
+
+        if len(contract['ex_month']) == 4:
+            if int(contract['ex_month'][3:]) not in weeks:
+                valid[i] = 0
+
+        if contract['ex_year'] not in years:
+            valid[i] = 0
+
+        if type(contract['expire']) is not bool:
+            valid[i] = 0
+
+        if type(contract['ex_date']) is not pd.Timestamp:
+            valid[i] = 0
+
+        if contract['missing'] < 0:
+            valid[i] = 0
+
+
+        # right
+        if '/' in contract['right']:
+            try:
+                Fraction(contract['right'])
+            except ValueError:
+                valid[i] = 0
+        else:
+            try:
+                int(contract['right'])
+            except ValueError:
+                valid[i] = 0
+
+        if contract['special'] not in specials:
+            valid[i] = 0
+
+        if type(contract['strike']) is not float:
+            valid[i] = 0
+
+    return valid
+
+
 def csv_option_h5(request, symbol):
     """
     Import thinkback csv options into db,
@@ -376,7 +476,7 @@ def csv_option_h5(request, symbol):
         contracts = [c for c, _ in option_data]
 
         # output
-        print 'D | %-12s | ' % index.strftime('%Y-%m-%d'), 'CONTRACT: %-7s | ' % len(contracts),
+        print 'D | %-12s | CONTRACT: %-7s | ' % (index.strftime('%Y-%m-%d'), len(contracts)),
 
         # df_remain: all previous option_code that not expire
         # df_new: all current file option_code
@@ -397,13 +497,13 @@ def csv_option_h5(request, symbol):
         if len(df_contract) and len(df_remain) and len(df_new):
             df_change = pd.merge(
                 df_contract[
-                    ['option_code', 'name', 'ex_date', 'ex_month', 'ex_year',
-                     'expire', 'strike', 'missing']
+                    ['option_code', 'strike', 'name', 'ex_date',
+                     'ex_month', 'ex_year', 'expire', 'missing']
                 ],
                 df_new[df_new['option_code'].isin(df_remain['option_code'])][
-                    ['option_code', 'special', 'right', 'others']
+                    ['option_code', 'strike', 'special', 'right', 'others']
                 ],
-                how='inner', on='option_code'
+                how='inner', on=['option_code', 'strike']
             )
 
             # merge back
@@ -427,7 +527,7 @@ def csv_option_h5(request, symbol):
         if len(df_new):
             df_new.loc[:, 'expire'] = False
             df_new.loc[:, 'ex_date'] = df_new.apply(
-                lambda c: pd.Timestamp(get_dte_date(c['ex_month'], int(c['ex_year']))), axis=1
+                lambda x: pd.Timestamp(get_dte_date(x['ex_month'], int(x['ex_year']))), axis=1
             )
 
         # df_new that same spec in df_remain
@@ -494,7 +594,6 @@ def csv_option_h5(request, symbol):
                     assert len(df_remain) <= count['df_remain']
                     assert len(df_new) <= count['df_new']
 
-        # todo: here slow, update
         # set missing
         if len(df_remain):
             print 'ACTIVE: %-6d | ' % len(df_contract[df_contract['expire'] == False]),
@@ -574,7 +673,6 @@ def csv_option_h5(request, symbol):
             # set all expire
             # noinspection PyUnresolvedReferences
             df_contract.loc[q0 & q1, 'expire'] = True
-            print len(df_contract[df_contract['expire']])
 
     if len(df_contract):
         # old code to new code
@@ -623,8 +721,38 @@ def csv_option_h5(request, symbol):
     except KeyError:
         pass
 
-    df_data = db.select('option/%s/raw/data' % symbol)
+    # validating
     df_contract = db.select('option/%s/raw/contract' % symbol)
+    df_contract = df_contract.copy().reset_index()
+    df_data = db.select('option/%s/raw/data' % symbol)
+    df_data = df_data.copy().reset_index()
+
+    df_data['valid'] = valid_option(
+        df_data['bid'], df_data['ask'], df_data['volume'], df_data['open_int'], df_data['dte']
+    )
+    df_data = df_data.query('valid == 1')
+    df_data = df_data.set_index('date')
+    del df_data['valid']
+
+    df_contract['valid'] = valid_code(
+        list(df_contract['option_code']), df_data['option_code'].unique()
+    )
+    df_contract = df_contract.query('valid == 1')
+    del df_contract['valid']
+    df_contract = df_contract.copy()
+
+    df_contract['valid'] = valid_contract(symbol.upper(), df_contract)
+    df_contract = df_contract.query('valid == 1')
+    del df_contract['valid']
+
+    # save back into db
+    db.remove('option/%s/raw/contract' % symbol)
+    db.remove('option/%s/raw/data' % symbol)
+
+    db.append('option/%s/raw/contract' % symbol, df_contract)
+    db.append('option/%s/raw/data' % symbol, df_data)
+
+    # output html
     stats = {
         'data': len(df_data),
         'index': len(df_data.index.unique()),

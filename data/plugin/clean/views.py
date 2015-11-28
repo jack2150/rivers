@@ -85,7 +85,8 @@ def clean2(q, start, stop, ex_date, name, strike, today, rf_rate, close, bid, as
 
 def clean_option3(request, symbol):
     """
-
+    Cleaning option using multi process method
+    multi thread is useless in heavy calculation process
     :param request: request
     :param symbol: str
     :return: render
