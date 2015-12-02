@@ -4,6 +4,7 @@ from django.contrib import admin
 from data.plugin.fillna.views import fillna_option
 from data.plugin.clean.views import clean_option3
 from data.plugin.csv.views import *
+from data.plugin.raw.views import *
 from data.views import *
 from data.views2 import *
 
@@ -166,11 +167,16 @@ admin.site.register_view(
 )
 
 admin.site.register_view(
-    'data/h5/clean3/csv/option/(?P<symbol>\w+)/$',
+    'data/h5/clean3/csv/option/(?P<symbol>\w+)/(?P<core>\d+)/$',
     urlname='clean_option3', view=clean_option3
 )
 
 admin.site.register_view(
     'data/h5/fillna/csv/option/(?P<symbol>\w+)/$',
     urlname='fillna_option', view=fillna_option
+)
+
+admin.site.register_view(
+    'data/h5/import/csv/option2/(?P<symbol>\w+)/$',
+    urlname='csv_option_h5x', view=csv_option_h5x
 )

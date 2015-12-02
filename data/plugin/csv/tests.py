@@ -1,7 +1,5 @@
-import os
 from calendar import month_name
 from fractions import Fraction
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
@@ -16,7 +14,7 @@ class TestCsvToH5(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = ['AIG', 'FSLR', 'SNDK'][1]
+        self.symbol = ['AIG', 'FSLR', 'SNDK', 'DDD', 'BP', 'C', 'CELG'][-1]
         self.underlying = Underlying(
             symbol=self.symbol,
             start='2009-01-01',
@@ -35,7 +33,7 @@ class TestCsvToH5(TestSetUp):
         # self.skipTest('Only test when need!')
         print 'run csv stock import view...'
 
-        self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': self.symbol}))
+        #self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': self.symbol}))
         self.client.get(reverse('admin:csv_option_h5', kwargs={'symbol': self.symbol}))
 
     def test_csv_option_h5_result(self):

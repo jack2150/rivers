@@ -63,7 +63,7 @@ def clean(ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div)
     return r
 
 
-def clean2(q, start, stop, ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div):
+def clean_queue(q, start, stop, ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div):
     """
 
     :param q: Queue
@@ -83,10 +83,11 @@ def clean2(q, start, stop, ex_date, name, strike, today, rf_rate, close, bid, as
     q.put([start, stop, clean(ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div)])
 
 
-def clean_option3(request, symbol):
+def clean_option3(request, symbol, core=6):
     """
     Cleaning option using multi process method
     multi thread is useless in heavy calculation process
+    :param core: int
     :param request: request
     :param symbol: str
     :return: render
@@ -136,9 +137,11 @@ def clean_option3(request, symbol):
     df_all = pd.merge(df_all, df_stock.reset_index(), how='inner', on=['date'])
     df_all = pd.merge(df_all, df_rate.reset_index(), how='inner', on=['date'])
     df_all = pd.merge(df_all, df_div.reset_index(), how='inner', on=['date'])
+    df_all = df_all.reset_index()
+    del df_all['index']
 
     total = len(df_all)
-    print output % ('', 'total length df_option', '%10d rows' % total)
+    print output % ('', 'total length df_option', '%10d rows' % len(df_option))
     print output % ('', 'total length df_contract0', '%10d rows' % len(df_contract0))
     print output % ('', 'total length df_contract1', '%10d rows' % len(df_contract1))
     print output % ('', 'total length df_skip', '%10d rows' % len(df_skip))
@@ -154,7 +157,7 @@ def clean_option3(request, symbol):
     # multi process cleaning
     q = Queue()
     p = []
-    n = 8
+    n = core
     m = int(total / float(n))
     l = range(0, total, m)
     l[-1] = total
@@ -165,7 +168,7 @@ def clean_option3(request, symbol):
         ex_date, name, strike = ex_code(df['option_code'])
         df['date2'] = df['date'].apply(lambda d: d.date().strftime('%y%m%d'))
 
-        p.append(Process(target=clean2, args=(
+        p.append(Process(target=clean_queue, args=(
             q, start, stop,
             ex_date, name, strike, df['date2'],
             df['rate'], df['close'], df['bid'], df['ask'],
@@ -217,13 +220,13 @@ def clean_option3(request, symbol):
         raise ValueError('Invalid clean option: (%d, %d)' % (total, len(df_clean)))
 
     db = pd.HDFStore(QUOTE)
-    try:
-        db.remove('option/%s/clean/contract' % symbol.lower())
-        db.remove('option/%s/clean/data' % symbol.lower())
-    except KeyError:
-        pass
+    for key in ('contract', 'data'):
+        try:
+            db.remove('option/%s/clean/%s' % (symbol.lower(), key))
+        except KeyError:
+            pass
     db.append('option/%s/clean/contract' % symbol.lower(), df_contract1,
-              format='table', data_columns=True)
+              format='table', data_columns=True, min_itemsize=100)
     db.append('option/%s/clean/data' % symbol.lower(), df_clean,
               format='table', data_columns=True)
     db.close()

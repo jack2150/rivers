@@ -11,7 +11,7 @@ class TestCsvToH5(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = 'AIG'
+        self.symbol = 'FSLR'
 
     def test_clean_option(self):
         """
@@ -19,15 +19,17 @@ class TestCsvToH5(TestSetUp):
         :return:
         """
         # self.client.get(reverse('admin:clean_option', kwargs={'symbol': self.symbol.lower()}))
-        self.client.get(reverse('admin:clean_option3', kwargs={'symbol': self.symbol.lower()}))
+        self.client.get(reverse('admin:clean_option3', kwargs={
+            'symbol': self.symbol.lower(), 'core': 6
+        }))
 
-        """
         db = pd.HDFStore(QUOTE)
-        df_option = db.select('option/%s/clean/data' % symbol.lower())
+        df_contract = db.select('option/%s/clean/contract' % self.symbol.lower())
+        df_option = db.select('option/%s/clean/data' % self.symbol.lower())
         db.close()
 
-        print df_option.to_string(line_width=1000)
-        """
+        print df_contract.head(10).to_string(line_width=1000)
+        print df_option.head(10).to_string(line_width=1000)
 
         # todo: wrong prob
         # todo: after clean, got wrong rows
