@@ -161,7 +161,8 @@ def csv_option_h5x(request, symbol):
     for key, df_current in enumerate(panel):
         #print df_current.head().to_string(line_width=1000)
 
-        codes = []
+        special_codes = []
+        normal_codes = []
         for code in df_current['option_code'].unique():
             contract = df_current.query('option_code == %r' % code).iloc[0][[
                 'ex_month', 'ex_year', 'name', 'option_code',
@@ -169,10 +170,11 @@ def csv_option_h5x(request, symbol):
             ]]
 
             if len(contract['others']) or '/' in contract['right']:
-                codes.insert(0, (code, contract))
+                special_codes.append((code, contract))
             else:
-                codes.append((code, contract))
+                normal_codes.append((code, contract))
 
+        codes = special_codes + normal_codes
         for code, contract in codes:
             df_temp = df_current.query('option_code == %r' % code).copy()
             if len(df_temp) == 0:
@@ -184,11 +186,16 @@ def csv_option_h5x(request, symbol):
 
             # for others and split
             if len(contract['others']) or '/' in contract['right']:
-                # todo: check before add
-
                 df_before = df_current.query('date < %r' % oldest)
-                df_current = df_current[~df_current.index.isin(df_before.index)]
+                if len(df_before) != len(df_before['date'].unique()):
+                    df_before = df_before.query('others == %r & right == %r' % (
+                        contract['others'], contract['right']
+                    ))
+
                 df_temp = pd.concat([df_temp, df_before])
+                """:type: pd.DataFrame"""
+                df_current = df_current[~df_current.index.isin(df_temp.index)]
+                #print df_temp.to_string(line_width=1000)
 
             # make sure date is unique
             if len(df_temp) != len(df_temp['date'].unique()):
@@ -199,7 +206,7 @@ def csv_option_h5x(request, symbol):
 
             # because contract column is going delete in df_option, so no update require
             # update contract option_code
-            if len(code) < 9:  # old format
+            if len(code) < 9 or symbol.upper() not in code:  # old format or no symbol
                 ex_date = pd.Timestamp(get_dte_date(contract['ex_month'], int(contract['ex_year'])))
 
                 new_code = make_code2(
@@ -207,13 +214,6 @@ def csv_option_h5x(request, symbol):
                     ex_date, contract['name'], contract['strike']
                 )
                 print output % ('CODE', 'Update (old format):', '%-16s -> %-16s' % (
-                    contract['option_code'], new_code
-                ))
-                contract['option_code'] = new_code
-            elif symbol.upper() not in code:  # no symbol
-                code0 = re.search('^[A-Z]+(\d+[CP]+\d+)', contract['option_code']).group(1)
-                new_code = '%s%s' % (symbol.upper(), code0)
-                print output % ('CODE', 'Update (no symbol):', '%-16s -> %-16s' % (
                     contract['option_code'], new_code
                 ))
                 contract['option_code'] = new_code
@@ -235,14 +235,17 @@ def csv_option_h5x(request, symbol):
 
         df_option = pd.concat(options)
         """:type: pd.DataFrame"""
+        """
         df_option = df_option[[
             'ask', 'bid', 'date', 'delta', 'dte', 'extrinsic', 'gamma', 'impl_vol',
             'intrinsic', 'last', 'mark', 'open_int', 'option_code', 'prob_itm', 'prob_otm',
             'prob_touch', 'theo_price', 'theta', 'vega', 'volume'
         ]]
+        """
 
         print df_contract.tail(10).to_string(line_width=1000)
-        print df_option.tail(10).to_string(line_width=1000)
+        #print df_option.tail(10).to_string(line_width=1000)
+        print df_option.to_string(line_width=1000)
         print len(df_contract), len(df_option)
     # todo: valid
 
