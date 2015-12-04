@@ -3,158 +3,15 @@ from fractions import Fraction
 from glob import glob
 import os
 import re
-
 import time
 from django.shortcuts import render
 from numba import jit
-
 from data.extra import offday, holiday
 from data.models import Underlying
 from data.plugin.thinkback import ThinkBack
 from rivers.settings import QUOTE, BASE_DIR
 import numpy as np
 import pandas as pd
-
-
-def csv_stock_h5(request, symbol):
-    """
-    Import csv files stock data only
-    /stock/gld
-    :param request: request
-    :param symbol: str
-    :return: render
-    """
-    symbol = symbol.lower()
-
-    # get underlying
-    underlying = Underlying.objects.get(symbol=symbol.upper())
-    start = underlying.start
-    end = underlying.stop
-
-    # move files into year folder
-    # noinspection PyUnresolvedReferences
-    path = os.path.join(BASE_DIR, 'files', 'thinkback', symbol)
-    no_year_files = glob(os.path.join(path, '*.csv'))
-    years = sorted(list(set([os.path.basename(f)[:4] for f in no_year_files])))
-
-    for year in years:
-        year_dir = os.path.join(path, year)
-
-        # make dir if not exists
-        if not os.path.isdir(year_dir):
-            os.mkdir(year_dir)
-
-        # move all year files into dir
-        for no_year_file in no_year_files:
-            filename = os.path.basename(no_year_file)
-            if filename[:4] == year:
-                try:
-                    os.rename(no_year_file, os.path.join(year_dir, filename))
-                except WindowsError:
-                    # remove old file, use new file
-                    os.remove(os.path.join(year_dir, filename))
-                    os.rename(no_year_file, os.path.join(year_dir, filename))
-                    pass
-
-    # only get valid date
-    trading_dates = pd.Series([d.date() for d in pd.bdate_range(start, end)])
-    trading_dates = np.array(
-        trading_dates[
-            trading_dates.apply(lambda x: not offday(x) and not holiday(x))
-        ].apply(lambda x: x.strftime('%Y-%m-%d'))
-    )
-
-    files = []
-    for year in glob(os.path.join(path, '*')):
-        for csv in glob(os.path.join(year, '*.csv')):
-            # skip date if not within underlying dates
-            if os.path.basename(csv)[:10] in trading_dates:
-                files.append(csv)
-
-    # start save csv
-    error_dates = list()
-    stocks = {'date': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': []}
-    for i, f in enumerate(sorted(files)):
-        # get date and symbol
-        fdate, _ = os.path.basename(f)[:-4].split('-StockAndOptionQuoteFor')
-
-        bday = pd.datetime.strptime(fdate, '%Y-%m-%d').date()
-        trading_day = not (holiday(bday) or offday(bday))
-
-        if trading_day:
-            # output to console
-            print '%-05d | %-20s' % (i, os.path.basename(f))
-            stock_data, option_data = ThinkBack(f).read()
-
-            try:
-                if int(stock_data['volume']) == 0:
-                    error_dates.append(fdate)
-                    continue  # skip this part
-            except ValueError:
-                continue
-
-            # save stock
-            stocks['date'].append(pd.to_datetime(stock_data['date']))
-            stocks['open'].append(float(stock_data['open']))
-            stocks['high'].append(float(stock_data['high']))
-            stocks['low'].append(float(stock_data['low']))
-            stocks['close'].append(float(stock_data['last']))
-            stocks['volume'].append(int(stock_data['volume']))
-    else:
-        df_stock = pd.DataFrame(stocks)
-        df_stock['open'] = np.round(df_stock['open'], 2)
-        df_stock['high'] = np.round(df_stock['high'], 2)
-        df_stock['low'] = np.round(df_stock['low'], 2)
-        df_stock['close'] = np.round(df_stock['close'], 2)
-
-        if len(df_stock):
-            df_stock = df_stock.set_index('date')
-
-            db = pd.HDFStore(QUOTE)
-            try:
-                db.remove('stock/thinkback/%s' % symbol.lower())
-            except KeyError:
-                pass
-            db.append('stock/thinkback/%s' % symbol, df_stock,
-                      format='table', data_columns=True)
-            db.close()
-
-    # check missing dates
-    df_exist = get_exist_stocks(symbol)
-
-    missing = list()
-    bdays = pd.bdate_range(start=start, end=end, freq='B')
-    for bday in bdays:
-        if holiday(bday.date()) or offday(bday.date()):
-            continue
-
-        if bday not in df_exist.index:
-            missing.append(bday.strftime('%m/%d/%Y'))
-
-    # update underlying
-    underlying.thinkback = len(df_exist)
-    underlying.missing = '\n'.join(missing)
-    underlying.save()
-
-    # stats
-    stats = {'count': len(df_stock), 'start': start, 'stop': end}
-
-    completes = [{'date': i.strftime('%Y-%m-%d'), 'volume': v['volume'], 'close': round(v['close'], 2)}
-                 for i, v in df_stock.iterrows()]
-
-    # view
-    template = 'data/csv_stock_h5.html'
-
-    parameters = dict(
-        site_title='Csv Stock import',
-        title='Thinkback csv stock import: {symbol}'.format(symbol=symbol.upper()),
-        symbol=symbol,
-        stats=stats,
-        completes=completes,
-        missing=missing
-    )
-
-    return render(request, template, parameters)
 
 
 def make_code(c, extra, strike, symbol):
@@ -247,19 +104,14 @@ def new_code_format(symbol, c, df_contract):
         # change old code, not new code
         count = len(df_contract.query('option_code == %r' % c['option_code']))
         if count > 1:
-            # todo: LQHGL have 2, 44 and 60
-            print df_contract.to_string(line_width=1000)
             print c['option_code'], count
-            raise IndexError('Have %d of option_code %s' % (count, c['option_code']))
+            raise
 
-        df_contract.loc[
-            df_contract['option_code'] == c['option_code']
-            , 'option_code'
-        ] = new_code
+        df_contract.loc[df_contract['option_code'] == c['option_code'], 'option_code'] = new_code
 
         old_code = c['option_code']
 
-        if len(df_contract[df_contract['option_code'] == old_code]):
+        if len(df_contract[df_contract['option_code'] == c['option_code']]):
             raise IndexError('old code %s still exists: %s' % (old_code, new_code))
 
     return old_code, new_code
@@ -322,6 +174,151 @@ def code2key(option_code):
     :return: str
     """
     return str(option_code).replace('.', '_')
+
+
+def csv_stock_h5(request, symbol):
+    """
+    Import csv files stock data only
+    /stock/gld
+    :param request: request
+    :param symbol: str
+    :return: render
+    """
+    symbol = symbol.lower()
+
+    # remove all
+    db = pd.HDFStore(QUOTE)
+    try:
+        db.remove('stock/thinkback/%s' % symbol.lower())
+    except KeyError:
+        pass
+    db.close()
+
+    # get underlying
+    underlying = Underlying.objects.get(symbol=symbol.upper())
+    start = underlying.start
+    end = underlying.stop
+
+    # move files into year folder
+    # noinspection PyUnresolvedReferences
+    path = os.path.join(BASE_DIR, 'files', 'thinkback', symbol)
+    no_year_files = glob(os.path.join(path, '*.csv'))
+    years = sorted(list(set([os.path.basename(f)[:4] for f in no_year_files])))
+
+    for year in years:
+        year_dir = os.path.join(path, year)
+
+        # make dir if not exists
+        if not os.path.isdir(year_dir):
+            os.mkdir(year_dir)
+
+        # move all year files into dir
+        for no_year_file in no_year_files:
+            filename = os.path.basename(no_year_file)
+            if filename[:4] == year:
+                try:
+                    os.rename(no_year_file, os.path.join(year_dir, filename))
+                except WindowsError:
+                    # remove old file, use new file
+                    os.remove(os.path.join(year_dir, filename))
+                    os.rename(no_year_file, os.path.join(year_dir, filename))
+                    pass
+
+    # only get valid date
+    trading_dates = pd.Series([d.date() for d in pd.bdate_range(start, end)])
+    trading_dates = np.array(
+        trading_dates[
+            trading_dates.apply(lambda x: not offday(x) and not holiday(x))
+        ].apply(lambda x: x.strftime('%Y-%m-%d'))
+    )
+
+    files = []
+    for year in glob(os.path.join(path, '*')):
+        for csv in glob(os.path.join(year, '*.csv')):
+            # skip date if not within underlying dates
+            if os.path.basename(csv)[:10] in trading_dates:
+                files.append(csv)
+
+    # start save csv
+    error_dates = list()
+    stocks = {'date': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': []}
+    for i, f in enumerate(sorted(files)):
+        # get date and symbol
+        fdate, _ = os.path.basename(f)[:-4].split('-StockAndOptionQuoteFor')
+
+        bday = pd.datetime.strptime(fdate, '%Y-%m-%d').date()
+        trading_day = not (holiday(bday) or offday(bday))
+
+        if trading_day:
+            # output to console
+            print '%-05d | %-20s' % (i, os.path.basename(f))
+            stock_data, option_data = ThinkBack(f).read()
+
+            try:
+                if int(stock_data['volume']) == 0:
+                    error_dates.append(fdate)
+                    continue  # skip this part
+            except ValueError:
+                continue
+
+            # save stock
+            stocks['date'].append(pd.to_datetime(stock_data['date']))
+            stocks['open'].append(float(stock_data['open']))
+            stocks['high'].append(float(stock_data['high']))
+            stocks['low'].append(float(stock_data['low']))
+            stocks['close'].append(float(stock_data['last']))
+            stocks['volume'].append(int(stock_data['volume']))
+    else:
+        df_stock = pd.DataFrame(stocks)
+        df_stock['open'] = np.round(df_stock['open'], 2)
+        df_stock['high'] = np.round(df_stock['high'], 2)
+        df_stock['low'] = np.round(df_stock['low'], 2)
+        df_stock['close'] = np.round(df_stock['close'], 2)
+
+        if len(df_stock):
+            df_stock = df_stock.set_index('date')
+
+            quote = pd.HDFStore(QUOTE)
+            quote.append('stock/thinkback/%s' % symbol, df_stock,
+                         format='table', data_columns=True)
+            quote.close()
+
+    # check missing dates
+    df_exist = get_exist_stocks(symbol)
+
+    missing = list()
+    bdays = pd.bdate_range(start=start, end=end, freq='B')
+    for bday in bdays:
+        if holiday(bday.date()) or offday(bday.date()):
+            continue
+
+        if bday not in df_exist.index:
+            missing.append(bday.strftime('%m/%d/%Y'))
+
+    # update underlying
+    underlying.thinkback = len(df_exist)
+    underlying.missing = '\n'.join(missing)
+    underlying.save()
+
+    # stats
+    stats = {'count': len(df_stock), 'start': start, 'stop': end}
+
+    completes = [{'date': i.strftime('%Y-%m-%d'), 'volume': v['volume'], 'close': round(v['close'], 2)}
+                 for i, v in df_stock.iterrows()]
+
+    # view
+    template = 'data/csv_stock_h5.html'
+
+    parameters = dict(
+        site_title='Csv Stock import',
+        title='Thinkback csv stock import: {symbol}'.format(symbol=symbol.upper()),
+        symbol=symbol,
+        stats=stats,
+        completes=completes,
+        missing=missing
+    )
+
+    return render(request, template, parameters)
 
 
 @jit
@@ -442,6 +439,15 @@ def csv_option_h5(request, symbol):
     path = os.path.join(BASE_DIR, 'files', 'thinkback', symbol)
     df_stock = get_exist_stocks(symbol)
 
+    # open db
+    db = pd.HDFStore(QUOTE)
+
+    # remove all existing data
+    try:
+        db.remove('option/%s' % symbol)
+    except KeyError:
+        pass
+
     # all new
     df_contract = pd.DataFrame(columns=[
         'option_code',
@@ -450,7 +456,6 @@ def csv_option_h5(request, symbol):
         'missing'
     ])
     options = {}
-    df_expire = pd.DataFrame()
 
     # start loop every date
     inserted = 0
@@ -572,6 +577,7 @@ def csv_option_h5(request, symbol):
                     df_contract = df_contract[~df_contract['option_code'].isin(df_spec['old_code'])]
                     df_contract = pd.concat([df_contract, df_update])
                     """:type: pd.DataFrame"""
+                    del df_contract['old_code']
 
                     assert len(df_contract) == count['df_contract']
 
@@ -604,7 +610,6 @@ def csv_option_h5(request, symbol):
             # add new contract into df_contract
             df_new.loc[:, 'expire'] = df_new['expire'].astype('bool')
             df_new.loc[:, 'missing'] = 0
-
             if len(df_contract):
                 df_contract = pd.concat([df_contract, df_new])
             else:
@@ -645,9 +650,7 @@ def csv_option_h5(request, symbol):
                 try:
                     ex_data += options[c['option_code']]
                 except KeyError:
-                    print df_contract[
-                        df_contract['option_code'] == c['option_code']
-                    ].to_string(line_width=1000)
+                    print df_contract[df_contract['option_code'] == c['option_code']]
                     raise KeyError('No option code found %s' % c['option_code'])
 
                 print 'E | OPTION %-5d | %-30s | %-20s | %-6d' % (
@@ -658,13 +661,11 @@ def csv_option_h5(request, symbol):
                 )
                 del options[c['option_code']]
 
-            if len(df_expire):
-                df_expire = pd.concat([
-                    df_expire,
-                    pd.DataFrame(ex_data, index=range(len(ex_data))).set_index('date')
-                ])
-            else:
-                df_expire = pd.DataFrame(ex_data, index=range(len(ex_data))).set_index('date')
+            df_expire = pd.DataFrame(ex_data, index=range(len(ex_data))).set_index('date')
+            db.append(
+                'option/%s/raw/data' % symbol, df_expire,
+                format='table', data_columns=True, min_itemsize=100
+            )
 
             # set all expire
             # noinspection PyUnresolvedReferences
@@ -682,7 +683,12 @@ def csv_option_h5(request, symbol):
                 for i, o in enumerate(options[new_code]):
                     options[new_code][i]['option_code'] = new_code
 
-    df_data = pd.DataFrame()
+        # save into db
+        db.append(
+            'option/%s/raw/contract' % symbol, df_contract,
+            format='table', data_columns=True, min_itemsize=100
+        )
+
     if len(options):
         # finish, insert all new_data
         data = []
@@ -695,53 +701,10 @@ def csv_option_h5(request, symbol):
             print 'I | OPTION %-5d | INSERT OPTION CODE: %-20s | LENGTH: %-5s' % (inserted, k, len(l))
 
         df_data = pd.DataFrame(data, index=range(len(data))).set_index('date')
-        df_data = pd.concat([df_expire, df_data])
-        """:type: pd.DataFrame"""
-
-    # validating
-    df_contract = df_contract.reset_index()
-    del df_contract['index']
-    df_data = df_data.reset_index()
-
-    # valid df_contract
-    df_contract['valid1'] = valid_code(
-        list(df_contract['option_code']), df_data['option_code'].unique()
-    )
-    df_contract['valid2'] = valid_contract(symbol.upper(), df_contract)
-    df_contract = df_contract.query('valid1 == 1 and valid2 == 1')
-    del df_contract['valid1'], df_contract['valid2']
-    df_contract = df_contract.reset_index()
-    del df_contract['index']
-
-    # valid df_data
-    df_data = df_data[df_data['option_code'].isin(df_contract['option_code'])]
-    df_data = df_data.reset_index()
-    del df_data['index']
-    df_data['valid'] = valid_option(
-        df_data['bid'], df_data['ask'], df_data['volume'], df_data['open_int'], df_data['dte']
-    )
-    df_invalid = df_data.query('valid != 1')
-    if len(df_invalid):
-        df_invalid = df_invalid.groupby('option_code').size()
-        for index, value in df_invalid.iteritems():
-            df_contract.loc[df_contract['option_code'] == index, 'missing'] += value
-
-    df_data = df_data.query('valid == 1')
-    df_data = df_data.set_index('date')
-    del df_data['valid']
-
-    # save back into db
-    db = pd.HDFStore(QUOTE)
-    for key in ('contract', 'data'):
-        try:
-            db.remove('option/%s/raw/%s' % (symbol, key))
-        except KeyError:
-            pass
-
-    db.append('option/%s/raw/contract' % symbol, df_contract,
-              format='table', data_columns=True, min_itemsize=100)
-    db.append('option/%s/raw/data' % symbol, df_data,
-              format='table', data_columns=True, min_itemsize=100)
+        db.append(
+            'option/%s/raw/data' % symbol, df_data,
+            format='table', data_columns=True, min_itemsize=100
+        )
 
     missing = []
     try:
@@ -754,7 +717,37 @@ def csv_option_h5(request, symbol):
                 })
     except KeyError:
         pass
-    db.close()
+
+    # validating
+    df_contract = db.select('option/%s/raw/contract' % symbol)
+    df_contract = df_contract.copy().reset_index()
+    df_data = db.select('option/%s/raw/data' % symbol)
+    df_data = df_data.copy().reset_index()
+
+    df_data['valid'] = valid_option(
+        df_data['bid'], df_data['ask'], df_data['volume'], df_data['open_int'], df_data['dte']
+    )
+    df_data = df_data.query('valid == 1')
+    df_data = df_data.set_index('date')
+    del df_data['valid']
+
+    df_contract['valid'] = valid_code(
+        list(df_contract['option_code']), df_data['option_code'].unique()
+    )
+    df_contract = df_contract.query('valid == 1')
+    del df_contract['valid']
+    df_contract = df_contract.copy()
+
+    df_contract['valid'] = valid_contract(symbol.upper(), df_contract)
+    df_contract = df_contract.query('valid == 1')
+    del df_contract['valid']
+
+    # save back into db
+    db.remove('option/%s/raw/contract' % symbol)
+    db.remove('option/%s/raw/data' % symbol)
+
+    db.append('option/%s/raw/contract' % symbol, df_contract)
+    db.append('option/%s/raw/data' % symbol, df_data)
 
     # output html
     stats = {
@@ -768,8 +761,8 @@ def csv_option_h5(request, symbol):
         'special': ', '.join(df_contract['special'].unique())
     }
 
-    print 'total df_contract: %d' % len(df_contract)
-    print 'total df_option: %d' % len(df_data)
+    # close db
+    db.close()
 
     # update underlying
     underlying = Underlying.objects.get(symbol=symbol.upper())
