@@ -742,6 +742,12 @@ def csv_option_h5(request, symbol):
     df_contract = df_contract.query('valid == 1')
     del df_contract['valid']
 
+    # remove empty contract
+    empty_codes = np.setdiff1d(
+        df_contract['option_code'], df_data['option_code'].unique()
+    )
+    df_contract = df_contract[~df_contract['option_code'].isin(empty_codes)]
+
     # save back into db
     db.remove('option/%s/raw/contract' % symbol)
     db.remove('option/%s/raw/data' % symbol)

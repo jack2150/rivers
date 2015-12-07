@@ -19,7 +19,7 @@ weeks = range(1, 7)
 output = '%-6s | %-30s %s'
 
 
-def make_code2(symbol, others, right, special, ex_date, name, strike):
+def make_code2(symbol, others, right, special, ex_date, name, strike, extra=''):
     """
     Make new option code using contract data
     :param symbol:
@@ -32,15 +32,15 @@ def make_code2(symbol, others, right, special, ex_date, name, strike):
     :return:
     :return: str
     """
-    extra = ''
-    if special == 'Mini':
-        extra = 7
-    elif '; US$' in others:
-        extra = 2
-    elif 'US$' in others:
-        extra = 1
-    elif '/' in right:
-        extra = 1
+    if extra == '':
+        if special == 'Mini':
+            extra = 7
+        elif '; US$' in others:
+            extra = 2
+        elif 'US$' in others:
+            extra = 1
+        elif '/' in right:
+            extra = 1
 
     strike = str(strike)
     if strike[-2:] == '.0':
@@ -154,6 +154,165 @@ def valid_contract2(ex_month, ex_year, right, special):
     return valid
 
 
+def add_remain(contracts, options, df_save, df_stock, symbol):
+    contract = get_contract(df_save)
+    contract['option_code'] = check_code(symbol, contract)
+    df_save['option_code'] = contract['option_code']
+    print output % (len(contracts), 'Append contract and option:', '%-16s %d' % (
+        contract['option_code'], len(df_save)
+    ))
+    check_date(df_save)
+
+    # basic valid option here
+    df_save['valid'] = valid_option2(
+        df_save.index, df_save['bid'], df_save['ask'],
+        df_save['volume'], df_save['open_int'], df_save['dte']
+    )
+    df_save = df_save[df_save['valid'] == 1]
+    del df_save['valid']
+
+    # set missing
+    if len(df_save) > 1:
+        latest = df_save['date'].iloc[0]
+        oldest = df_save['date'].iloc[-1]
+        length = np.sum((oldest <= df_stock.index) & (df_stock.index <= latest))
+    else:
+        length = 1
+
+    contract['missing'] = length - len(df_save)
+
+    # print df_save.to_string(line_width=1000)
+
+    contracts.append(contract)
+    options.append(df_save)
+
+
+def add_contract(symbol, df_current, df_save, df_stock, contracts, options):
+    df_current, df_save = join_remain(df_current, df_save)
+    add_remain(contracts, options, df_save, df_stock, symbol)
+
+    return df_current
+
+
+def get_contract(df_current):
+    return df_current.iloc[0][[
+        'ex_month', 'ex_year', 'name', 'option_code',
+        'others', 'right', 'special', 'strike'
+    ]]
+
+
+def join_remain(df_current, df_start):
+    df_start = pd.concat([
+        df_start, df_current.query('date < %r' % df_start['date'].iloc[-1])
+    ])
+    """:type: pd.DataFrame"""
+    df_current = df_current[~df_current.index.isin(df_start.index)]
+
+    return df_current, df_start
+
+
+def check_date(df):
+    """
+
+    :param df: pd.DataFrame
+    :return:
+    """
+    if len(df) != len(df['date'].unique()):
+        print df.to_string(line_width=1000)
+        d = df['date'].value_counts()
+        print d[d >= 2]
+
+        raise IndexError('Duplicate date in dataframe')
+
+
+def check_code(symbol, contract):
+    if len(contract['option_code']) < 9:  # old format or no symbol
+        ex_date = pd.Timestamp(get_dte_date(contract['ex_month'], int(contract['ex_year'])))
+
+        new_code = make_code2(
+            symbol, contract['others'], contract['right'], contract['special'],
+            ex_date, contract['name'], contract['strike']
+        )
+        print output % ('CODE', 'Update (old format):', '%-16s -> %-16s' % (
+            contract['option_code'], new_code
+        ))
+    elif contract['option_code'][:len(symbol)] != symbol.upper():
+        # some ex_date is on thursday because holiday or special date
+        new_code = change_code(
+            symbol, contract['option_code'], contract['others'], contract['right'], contract['special']
+        )
+        print output % ('CODE', 'Update (no symbol):', '%-16s -> %-16s' % (
+            contract['option_code'], new_code
+        ))
+    else:
+        new_code = contract['option_code']
+
+    return new_code
+
+
+def multi_others(symbol, contracts, options, df_current, df_stock):
+    """
+
+    :param symbol: str
+    :param contracts: list
+    :param options: list
+    :param df_stock: pd.DataFrame
+    :param df_current: pd.DataFrame
+    :return: pd.DataFrame
+    """
+    print output % ('OTHERS', 'MULTI OTHERS FOUND', 'PROCESSING')
+
+    rights = {}
+    for i, code in enumerate(df_current['option_code'].unique(), start=1):
+        if len(df_current) == 0:
+            continue
+
+        data = []
+        df_temp = df_current[df_current['option_code'] == code].copy()
+        rights[code] = df_temp['right'].iloc[0]
+        for date in df_current['date'].unique():
+            df_date = df_current[
+                (df_current['option_code'] == code) &
+                (df_current['date'] == date)
+                ]
+
+            if len(df_date):
+                # option_code match
+                data.append(df_date)
+
+                continue
+            else:
+                df_similar = df_current[
+                    (df_current['date'] == date) &
+                    (df_current['right'] == rights[code])
+                    ]
+
+                if len(df_similar):
+                    # save, then update code
+                    new_code = df_similar['option_code'].iloc[0]
+                    data.append(df_date)
+
+                    rights[new_code] = rights[code]
+                    del rights[code]
+                    code = new_code
+
+        df_temp = pd.concat(data)
+        """:type: pd.DataFrame"""
+        contract = get_contract(df_temp)
+        ex_date = pd.Timestamp(get_dte_date(contract['ex_month'], int(contract['ex_year'])))
+        new_code = make_code2(
+            symbol, contract['others'], contract['right'], contract['special'],
+            ex_date, contract['name'], contract['strike'], '%d' % i
+        )
+
+        df_temp['option_code'] = new_code
+
+        d = df_temp['date'].value_counts()
+
+        """:type: pd.DataFrame"""
+        df_current = add_contract(symbol, df_current, df_temp, df_stock, contracts, options)
+
+
 def csv_option_h5x(request, symbol):
     """
     Import thinkback csv options into db,
@@ -169,7 +328,6 @@ def csv_option_h5x(request, symbol):
     :param symbol: str
     :return: render
     """
-    output = '%-6s | %-30s %s'
     symbol = symbol.lower()
     path = os.path.join(BASE_DIR, 'files', 'thinkback', symbol)
     df_stock = get_exist_stocks(symbol).sort_index(ascending=False)
@@ -211,23 +369,25 @@ def csv_option_h5x(request, symbol):
     df_all = pd.DataFrame(options)
     df_all['date'] = pd.to_datetime(df_all['date'])
     # print df_all.head().to_string(line_width=1000)
-    """
+
 
     # testing
-    # db = pd.HDFStore('test.h5')
-    # for key in ('option', 'tkeys'):
-    #    try:
-    #         db.remove(key)
-    #     except KeyError:
-    #         pass
-    # db.append('option', df_all)
-    # db.append('tkeys', pd.Series(keys))
-    # db.close()
+
+    db = pd.HDFStore('test.h5')
+    for key in ('option', 'tkeys'):
+        try:
+            db.remove(key)
+        except KeyError:
+            pass
+    db.append('option', df_all)
+    db.append('tkeys', pd.Series(keys))
+    db.close()
+    exit()
+    """
 
     db = pd.HDFStore('test.h5')
     df_all = db.select('option')
     df_all = df_all.sort_values('date', ascending=False)
-    # df_all = df_all.set_index('date')
     keys = db.select('tkeys')
     db.close()
 
@@ -247,25 +407,41 @@ def csv_option_h5x(request, symbol):
     # df_test = df_all.query('index == "MAR10CALL33.0"')  # wrong symbol
     # df_test = df_all[df_all['index'].isin(["AUG10CALL25.0"])]  # code change normal
     # df_test = df_all[df_all['index'] == 'JAN11CALL5.0']  # code change, split, special dividend,
-    #df_test = df_all[df_all['option_code'] == 'AIG110701P23']  # code change, split, special dividend,
-    #panel = [df_test]
+    # df_test = df_all[df_all['option_code'] == 'AIG110701P23']  # code change, split, special dividend,
+    # df_test = df_all[df_all['index'] == 'JAN10CALL70.0']  # code change, split, special dividend,
+    # df_test = df_all[df_all['index'] == 'APR9CALL10.0']  # double others
+    # df_test = df_all[df_all['index'] == 'APR9CALL25.0']  # double others
+    # df_test = df_all[df_all['option_code'].isin(['DDD140118C30', 'DDD1140118C30'])]  # double others
+    # df_test = df_all[df_all['index'].isin(['JAN15CALL30.0'])]  # double others
+    # panel = [df_test]
     # print df_test.to_string(line_width=1000)
     # print df_all.to_string(line_width=1000)
     # print df_all.head().to_string(line_width=1000)
     # print keys
 
-    count = 0
     contracts = []
     options = []
     # start matching
     for key, df_current in enumerate(panel):
+        df_current = df_current.copy()
+        # print df_current.to_string(line_width=1000)
+        # print len(df_current)
         if len(df_current) != len(df_current['date'].unique()):
+            df_current.loc[df_current['others'] == 'Non Standard', 'others'] = ""
             others = df_current.loc[df_current['others'] != '', 'others'].unique()
             right = df_current.loc[df_current['right'] != '100', 'right'].unique()
 
             df_others = pd.DataFrame()
             if len(others):
                 df_others = df_current.query('others != ""')
+
+
+                if len(df_others) != len(df_others['date'].unique()):
+                    multi_others(symbol, contracts, options, df_current, df_stock)
+                    continue
+
+                if len(df_others) == 1:  # DDD 150 for split
+                    df_others = pd.DataFrame()
 
             df_right = pd.DataFrame()
             if len(right):
@@ -282,7 +458,7 @@ def csv_option_h5x(request, symbol):
                     # if still have left, then is all normal
                     if len(df_current):
                         df_remain = df_current.copy()
-                        add_remain(contracts, df_remain, df_stock, options, symbol)
+                        add_remain(contracts, options, df_remain, df_stock, symbol)
 
                 elif len(df_others) < len(df_right):
                     # all right data + normal before
@@ -294,25 +470,30 @@ def csv_option_h5x(request, symbol):
                     # if still have left, then is all normal
                     if len(df_current):
                         df_remain = df_current.copy()
-                        add_remain(contracts, df_remain, df_stock, options, symbol)
+                        add_remain(contracts, options, df_remain, df_stock, symbol)
                 else:
-                    print df_others.to_string(line_width=1000)
-                    print df_right.to_string(line_width=1000)
-                    raise IndexError('Special dividend and split same date?')
+                    # both right and others contract
+                    df_double = df_current.query('others != "" & right != "100"')
+                    df_current = add_contract(symbol, df_current, df_double, df_stock, contracts, options)
 
+                    if len(df_current):
+                        df_remain = df_current.copy()
+                        add_remain(contracts, options, df_remain, df_stock, symbol)
+                                                
             elif len(df_others):
                 df_current = add_contract(symbol, df_current, df_others, df_stock, contracts, options)
 
                 if len(df_current):
                     df_remain = df_current.copy()
-                    add_remain(contracts, df_remain, df_stock, options, symbol)
+                    add_remain(contracts, options, df_remain, df_stock, symbol)
             elif len(df_right):
                 df_current = add_contract(symbol, df_current, df_right, df_stock, contracts, options)
 
                 if len(df_current):
                     df_remain = df_current.copy()
-                    add_remain(contracts, df_remain, df_stock, options, symbol)
+                    add_remain(contracts, options, df_remain, df_stock, symbol)
             else:
+                print df_current.to_string(line_width=1000)
                 raise IndexError('Multi date but no other or split.')
 
         else:
@@ -332,6 +513,8 @@ def csv_option_h5x(request, symbol):
             )
             df_save = df_save[df_save['valid'] == 1]
             del df_save['valid']
+
+            # print df_save.to_string(line_width=1000)
 
             # set missing
             if len(df_save) > 1:
@@ -412,94 +595,4 @@ def csv_option_h5x(request, symbol):
 
     return render(request, template, parameters)
 
-
-def add_remain(contracts, df_save, df_stock, options, symbol):
-    contract = get_contract(df_save)
-    contract['option_code'] = check_code(symbol, contract)
-    df_save['option_code'] = contract['option_code']
-    print output % (len(contracts), 'Append contract and option:', '%-16s %d' % (
-        contract['option_code'], len(df_save)
-    ))
-    check_date(df_save)
-
-    # basic valid option here
-    df_save['valid'] = valid_option2(
-        df_save.index, df_save['bid'], df_save['ask'],
-        df_save['volume'], df_save['open_int'], df_save['dte']
-    )
-    df_save = df_save[df_save['valid'] == 1]
-    del df_save['valid']
-
-    # set missing
-    if len(df_save) > 1:
-        latest = df_save['date'].iloc[0]
-        oldest = df_save['date'].iloc[-1]
-        length = np.sum((oldest <= df_stock.index) & (df_stock.index <= latest))
-    else:
-        length = 1
-
-    contract['missing'] = length - len(df_save)
-
-    contracts.append(contract)
-    options.append(df_save)
-
-
-def add_contract(symbol, df_current, df_save, df_stock, contracts, options):
-    df_current, df_save = join_remain(df_current, df_save)
-    add_remain(contracts, df_save, df_stock, options, symbol)
-
-    return df_current
-
-
-def get_contract(df_current):
-    return df_current.iloc[0][[
-        'ex_month', 'ex_year', 'name', 'option_code',
-        'others', 'right', 'special', 'strike'
-    ]]
-
-
-def join_remain(df_current, df_start):
-    df_start = pd.concat([
-        df_start, df_current.query('date < %r' % df_start['date'].iloc[-1])
-    ])
-    """:type: pd.DataFrame"""
-    df_current = df_current[~df_current.index.isin(df_start.index)]
-
-    return df_current, df_start
-
-
-def check_date(df):
-    """
-
-    :param df: pd.DataFrame
-    :return:
-    """
-    if len(df) != len(df['date'].unique()):
-        print df.to_string(line_width=1000)
-        raise IndexError('Duplicate date in dataframe')
-
-
-def check_code(symbol, contract):
-    if len(contract['option_code']) < 9:  # old format or no symbol
-        ex_date = pd.Timestamp(get_dte_date(contract['ex_month'], int(contract['ex_year'])))
-
-        new_code = make_code2(
-            symbol, contract['others'], contract['right'], contract['special'],
-            ex_date, contract['name'], contract['strike']
-        )
-        print output % ('CODE', 'Update (old format):', '%-16s -> %-16s' % (
-            contract['option_code'], new_code
-        ))
-    elif contract['option_code'][:len(symbol)] != symbol.upper():
-        # some ex_date is on thursday because holiday or special date
-        new_code = change_code(
-            symbol, contract['option_code'], contract['others'], contract['right'], contract['special']
-        )
-        print output % ('CODE', 'Update (no symbol):', '%-16s -> %-16s' % (
-            contract['option_code'], new_code
-        ))
-    else:
-        new_code = contract['option_code']
-
-    return new_code
 

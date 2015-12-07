@@ -14,7 +14,10 @@ class TestCsvToH5(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = ['AIG', 'FSLR', 'SNDK', 'DDD', 'BP', 'C', 'CELG'][0]
+        self.symbol = [
+            'AIG', 'FSLR', 'SNDK', 'DDD', 'BP', 'C', 'CELG',
+            'YUM', 'XOM', 'WMT', 'WFC', 'VZ', 'TWTR', 'TSLA', 'PG'
+        ][3]
         self.underlying = Underlying(
             symbol=self.symbol,
             start='2009-01-01',
