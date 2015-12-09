@@ -748,6 +748,9 @@ def csv_option_h5(request, symbol):
     )
     df_contract = df_contract[~df_contract['option_code'].isin(empty_codes)]
 
+    # drop duplicate
+    df_contract = df_contract.drop_duplicates('option_code')
+
     # save back into db
     db.remove('option/%s/raw/contract' % symbol)
     db.remove('option/%s/raw/data' % symbol)
