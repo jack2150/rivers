@@ -1,32 +1,31 @@
 import time
 from django.shortcuts import render
-import numpy as np
-import pandas as pd
-from data.plugin.clean.clean2 import CleanOption2, get_div_yield, extract_code
+from data.plugin.clean.clean import *
 from rivers.settings import QUOTE
 from numba import jit
 from multiprocessing import Process, Queue
 
 
 # change dtype
-def ex_code(code):
+def mass_extract_codes(option_codes):
     """
     Extract ex_date, option and strike from a list of option code 
-    :param code: str 
+    :param option_codes: str
     :return: list(str, float, float)
     """
-    a = ['' for _ in range(len(code))]
-    b = np.zeros(len(code))
-    c = np.zeros(len(code))
-    for i in range(len(code)):
-        a[i], b[i], c[i] = extract_code(code[i])
+    a = ['' for _ in range(len(option_codes))]
+    b = np.zeros(len(option_codes))
+    c = np.zeros(len(option_codes))
+    for i in range(len(option_codes)):
+        a[i], b[i], c[i] = extract_code(option_codes[i])
     return a, b, c
 
 
 @jit
-def clean(ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div):
+def run_clean(ex_date, name, strike, today,
+              rf_rate, close, bid, ask, impl_vol, div):
     """
-
+    Run a single clean loop for current list of data
     :param ex_date: np.array(str)
     :param name: np.array(int)
     :param strike: np.array(float)
@@ -49,7 +48,7 @@ def clean(ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div)
         if today[i] >= ex_date[i]:
             continue
 
-        c = CleanOption2(
+        c = CleanOption(
             ex_date[i], name[i], strike[i], today[i], rf_rate[i],
             close[i], bid[i], ask[i], impl_vol[i], div[i]
         )
@@ -63,9 +62,10 @@ def clean(ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div)
     return r
 
 
-def clean_queue(q, start, stop, ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div):
+def queue_cleaning(q, start, stop, ex_date, name, strike, today,
+                   rf_rate, close, bid, ask, impl_vol, div):
     """
-
+    Run a queue clean option process
     :param q: Queue
     :param start: int
     :param stop: int
@@ -80,10 +80,12 @@ def clean_queue(q, start, stop, ex_date, name, strike, today, rf_rate, close, bi
     :param impl_vol: list(float)
     :param div: list(float)
     """
-    q.put([start, stop, clean(ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div)])
+    q.put([start, stop, run_clean(
+        ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol, div
+    )])
 
 
-def clean_option3(request, symbol, core=6):
+def clean_option(request, symbol, core=6):
     """
     Cleaning option using multi process method
     multi thread is useless in heavy calculation process
@@ -165,10 +167,10 @@ def clean_option3(request, symbol, core=6):
     for start, stop in zip(l[:-1], l[1:]):
         df = df_all[start:stop].reset_index()
 
-        ex_date, name, strike = ex_code(df['option_code'])
+        ex_date, name, strike = mass_extract_codes(df['option_code'])
         df['date2'] = df['date'].apply(lambda d: d.date().strftime('%y%m%d'))
 
-        p.append(Process(target=clean_queue, args=(
+        p.append(Process(target=queue_cleaning, args=(
             q, start, stop,
             ex_date, name, strike, df['date2'],
             df['rate'], df['close'], df['bid'], df['ask'],

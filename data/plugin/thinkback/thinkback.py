@@ -1,7 +1,6 @@
 from calendar import month_name
 import codecs
 import os
-import re
 from base.ufunc import *
 
 
@@ -148,13 +147,3 @@ class ThinkBack(object):
             options += self.get_cycle_options(c)
 
         return self.get_stock(), options
-
-# todo: fill missing options using quant lib
-"""
-how do you access stock.last?
-from hdf5 get data using symbol and date,
-then create instance of Stock using that data (without save)
-
-how do you search data?
-in Stock class, create a search...
-"""

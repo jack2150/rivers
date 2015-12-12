@@ -2,11 +2,10 @@ from bootstrap3_datetime.widgets import DateTimePicker
 from django.contrib import admin
 
 from data.plugin.fillna.views import fillna_option
-from data.plugin.clean.views import clean_option3
+from data.plugin.clean.views import *
 from data.plugin.csv.views import *
 from data.plugin.raw.views import *
 from data.views import *
-from data.views2 import *
 
 
 class UnderlyingForm(forms.ModelForm):
@@ -157,18 +156,8 @@ admin.site.register_view(
 
 # clean option data
 admin.site.register_view(
-    'data/h5/clean/csv/option/(?P<symbol>\w+)/$',
+    'data/h5/clean/csv/option/(?P<symbol>\w+)/(?P<core>\d+)/$',
     urlname='clean_option', view=clean_option
-)
-
-admin.site.register_view(
-    'data/h5/clean2/csv/option/(?P<symbol>\w+)/$',
-    urlname='clean_option2', view=clean_option2
-)
-
-admin.site.register_view(
-    'data/h5/clean3/csv/option/(?P<symbol>\w+)/(?P<core>\d+)/$',
-    urlname='clean_option3', view=clean_option3
 )
 
 admin.site.register_view(

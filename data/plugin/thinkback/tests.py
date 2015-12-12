@@ -4,8 +4,7 @@ from glob import glob
 import os
 from pandas import DataFrame
 from base.tests import TestSetUp
-from data.plugin.thinkback import ThinkBack
-from data.models import *
+from data.plugin.thinkback.thinkback import ThinkBack
 from rivers.settings import BASE_DIR
 
 
@@ -82,13 +81,6 @@ class TestThinkBack(TestSetUp):
                 for contract, option in options:
                     print contract,
                     print option
-                    #if not contract['option_code'] in ('GLD150123C114', 'GLD150123P114'):
-                    #    continue
-                    #else:
-                    #    print contract
-                    #    print option
-                    #print 'current contract, option code: %s' % contract['option_code']
-                    #pprint(contract, width=400)
 
                     self.assertEqual(type(contract), dict)
                     self.assertEqual(sorted(contract.keys()), sorted(contract_keys))
@@ -117,9 +109,6 @@ class TestThinkBack(TestSetUp):
 
                     self.assertEqual(type(contract['option_code']), str)
 
-                    #print 'current option:'
-                    #pprint(option, width=400)
-
                     for key in option.keys():
                         self.assertIn(key, option_keys)
                         if key == 'date':
@@ -129,9 +118,6 @@ class TestThinkBack(TestSetUp):
                             self.assertEqual(type(option['dte']), int)
                         else:
                             self.assertEqual(type(option[key]), float)
-
-                    #print '.' * 80
-                    #print '\n' + '*' * 100 + '\n'
 
         print df_contract
 
@@ -154,6 +140,3 @@ class TestThinkBack(TestSetUp):
         for o in options:
             if o[0]['option_code'] in ('AIG160115C95', 'AIG160115P95'):
                 print o[0]['option_code']
-
-            #if o[0]['option_code'] == 'AIG160115C90':
-            #    print 'found last'

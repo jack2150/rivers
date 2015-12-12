@@ -2,7 +2,7 @@ from django.shortcuts import render
 import numpy as np
 import pandas as pd
 
-from data.plugin.clean.clean2 import CleanOption2, extract_code
+from data.plugin.clean.clean import CleanOption, extract_code
 from rivers.settings import QUOTE
 
 
@@ -88,7 +88,7 @@ def fillna_option(request, symbol):
 
             ex_date, name, strike = extract_code(data['option_code'])
 
-            clean = CleanOption2(
+            clean = CleanOption(
                 ex_date,
                 name,
                 strike,

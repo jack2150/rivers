@@ -1,13 +1,12 @@
 import calendar
 import os
 import re
-import time
 from fractions import Fraction
 from django.shortcuts import render
 from numba import jit
 from data.plugin.csv.views import get_exist_stocks, get_dte_date
 from data.plugin.thinkback import ThinkBack
-from rivers.settings import BASE_DIR
+from rivers.settings import BASE_DIR, QUOTE
 import numpy as np
 import pandas as pd
 
@@ -206,14 +205,19 @@ def valid_contract2(ex_month, ex_year, right, special):
     return valid
 
 
-def add_remain(contracts, options, df_save, df_stock, symbol):
+def add_data(contracts, options, df_save, df_stock, symbol):
     """
-
-    :param contracts:
-    :param options:
-    :param df_save:
-    :param df_stock:
-    :param symbol:
+    1. extra contract
+    2. set option_code
+    3. check date is unique
+    4. valid option data
+    5. set missing
+    6. append into list
+    :param contracts: list of Series
+    :param options: list of pd.DataFrame
+    :param df_save: pd.DataFrame
+    :param df_stock: pd.DataFrame
+    :param symbol: str
     """
     contract = get_contract(df_save)
     contract['option_code'] = check_code(symbol, contract)
@@ -248,13 +252,28 @@ def add_remain(contracts, options, df_save, df_stock, symbol):
 
 
 def add_contract(symbol, df_current, df_save, df_stock, contracts, options):
+    """
+    Join remain data then add remain data
+    :param symbol: str
+    :param df_current: pd.DataFrame
+    :param df_save: pd.DataFrame
+    :param df_stock: pd.DataFrame
+    :param contracts: list
+    :param options: list
+    :return:
+    """
     df_current, df_save = join_remain(df_current, df_save)
-    add_remain(contracts, options, df_save, df_stock, symbol)
+    add_data(contracts, options, df_save, df_stock, symbol)
 
     return df_current
 
 
 def get_contract(df_current):
+    """
+    Get contract data from first row of DataFrame
+    :param df_current: pd.DataFrame
+    :return: Series
+    """
     return df_current.iloc[0][[
         'ex_month', 'ex_year', 'name', 'option_code',
         'others', 'right', 'special', 'strike'
@@ -262,6 +281,12 @@ def get_contract(df_current):
 
 
 def join_remain(df_current, df_start):
+    """
+    Join remain data back into previous data
+    :param df_current: pd.DataFrame
+    :param df_start: pd.DataFrame
+    :return: pd.DataFrame, pd.DataFrame
+    """
     df_remain = df_current.query('date < %r' % df_start['date'].iloc[-1])
 
     if len(df_remain['date']) == len(df_remain['date'].unique()):
@@ -275,9 +300,8 @@ def join_remain(df_current, df_start):
 
 def check_date(df):
     """
-
+    Validate date is unique not duplcate
     :param df: pd.DataFrame
-    :return:
     """
     if len(df) != len(df['date'].unique()):
         print df.to_string(line_width=1000)
@@ -288,6 +312,13 @@ def check_date(df):
 
 
 def check_code(symbol, contract):
+    """
+    Check option_code is valid
+    no old code format and cannot without symbol
+    :param symbol: str
+    :param contract: Series
+    :return: str
+    """
     if len(contract['option_code']) < 9:  # old format or no symbol
         ex_date = pd.Timestamp(get_dte_date(contract['ex_month'], int(contract['ex_year'])))
 
@@ -314,7 +345,8 @@ def check_code(symbol, contract):
 
 def multi_others(symbol, contracts, options, df_current, df_stock):
     """
-
+    When multiple others cycle happen,
+    loop each of them and decide which to use
     :param symbol: str
     :param contracts: list
     :param options: list
@@ -402,15 +434,8 @@ def multi_others(symbol, contracts, options, df_current, df_stock):
 
 def csv_option_h5x(request, symbol):
     """
-    Import thinkback csv options into db,
-    every time this run, it will start from first date
-
-    /option/gld/date -> keep all inserted date
-    /option/gld/contract -> GLD150117C114 data
-    /option/gld/code/GLD7150102C110 -> values
-
-    how do you get daily all delta > 0.5 option?
-    if timeout when running script, remember change browser timeout value
+    Import thinkback csv options view
+    every time this run, it will start from last date
     :param request: request
     :param symbol: str
     :return: render
@@ -519,7 +544,7 @@ def csv_option_h5x(request, symbol):
                     # if still have left, then is all normal
                     if len(df_current):
                         df_remain = df_current.copy()
-                        add_remain(contracts, options, df_remain, df_stock, symbol)
+                        add_data(contracts, options, df_remain, df_stock, symbol)
 
                 elif len(df_others) < len(df_right):
                     # all right data + normal before
@@ -531,7 +556,7 @@ def csv_option_h5x(request, symbol):
                     # if still have left, then is all normal
                     if len(df_current):
                         df_remain = df_current.copy()
-                        add_remain(contracts, options, df_remain, df_stock, symbol)
+                        add_data(contracts, options, df_remain, df_stock, symbol)
                 else:
                     # both right and others contract
                     df_double = df_current.query('others != "" & right != "100"')
@@ -539,20 +564,20 @@ def csv_option_h5x(request, symbol):
 
                     if len(df_current):
                         df_remain = df_current.copy()
-                        add_remain(contracts, options, df_remain, df_stock, symbol)
+                        add_data(contracts, options, df_remain, df_stock, symbol)
                                                 
             elif len(df_others):
                 df_current = add_contract(symbol, df_current, df_others, df_stock, contracts, options)
 
                 if len(df_current):
                     df_remain = df_current.copy()
-                    add_remain(contracts, options, df_remain, df_stock, symbol)
+                    add_data(contracts, options, df_remain, df_stock, symbol)
             elif len(df_right):
                 df_current = add_contract(symbol, df_current, df_right, df_stock, contracts, options)
 
                 if len(df_current):
                     df_remain = df_current.copy()
-                    add_remain(contracts, options, df_remain, df_stock, symbol)
+                    add_data(contracts, options, df_remain, df_stock, symbol)
             else:
                 print df_current.to_string(line_width=1000)
                 raise IndexError('Multi date but no other or split.')
@@ -635,7 +660,7 @@ def csv_option_h5x(request, symbol):
         )
 
         # save into db
-        db = pd.HDFStore('quote2.h5')
+        db = pd.HDFStore(QUOTE)
         for key in ('contract', 'data'):
             try:
                 db.remove('option/%s/raw/%s' % (symbol.lower(), key))

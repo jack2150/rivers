@@ -50,10 +50,10 @@ class TestReverseCsvToH5(TestSetUp):
         )
         self.underlying.save()
 
-        self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
-        self.client.get(reverse('admin:csv_option_h5x', kwargs={'symbol': symbol.lower()}))
+        #self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
+        #self.client.get(reverse('admin:csv_option_h5x', kwargs={'symbol': symbol.lower()}))
 
-        db = pd.HDFStore('quote2.h5')
+        db = pd.HDFStore(QUOTE)
         df_contract = db.select('option/%s/raw/contract' % symbol.lower())
         df_option = db.select('option/%s/raw/data' % symbol.lower())
         db.close()
@@ -123,15 +123,3 @@ class TestReverseCsvToH5(TestSetUp):
                     print df1.to_string(line_width=1000)
                     print '*' * 200
                 print ''
-
-
-
-
-
-
-
-
-
-
-
-

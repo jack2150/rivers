@@ -3,8 +3,27 @@ from QuantLib import *
 import numpy as np
 import pandas as pd
 import re
-
 from pandas.tseries.offsets import BDay
+
+
+def extract_code(c):
+    """
+    Extract detail from option code
+    :param c: str
+    :return: set (str, TimeStamp, str, float)
+    """
+    ex_date = re.search('^[A-Z]+(\d+)[CP]+\d+', c).group(1)
+    if len(ex_date) >= 7:
+        return 0, 0, 0
+    ex_date = ex_date[-6:]
+    name = Option.Call if re.search('^[A-Z]+\d+([CP]+)\d+', c).group(1) == 'C' else Option.Put
+
+    if '.' in c:
+        strike = re.search('^[A-Z]+\d+[CP]+(\d*[.]\d+)', c).group(1)
+    else:
+        strike = re.search('^[A-Z]+\d+[CP]+(\d+)', c).group(1)
+
+    return ex_date, name, float(strike)
 
 
 def get_div_yield(df_stock, df_dividend):
@@ -21,51 +40,40 @@ def get_div_yield(df_stock, df_dividend):
         )
     )
 
-    df = pd.DataFrame(range(len(df_stock)), index=df_stock.index)
-    df['amount'] = 0.0
+    df = pd.DataFrame(np.zeros(len(df_stock)), index=df_stock.index, columns=['amount'])
 
     for index, data in df_temp.iterrows():
         df.loc[data['announce_date']:data['expire_date'], 'amount'] = data['amount']
 
-    df['div_yield'] = df['amount'] / df_stock['close']
+    df['div'] = df['amount'] / df_stock['close']
 
-    return df['div_yield']
+    return df
 
 
 class CleanOption(object):
-    @staticmethod
-    def extract_code(c):
-        """
-        Extract detail from option code
-        :param c: str
-        :return: set (str, TimeStamp, str, float)
-        """
-        symbol = re.search('(^[A-Z]+)\d+[CP]+\d+', c).group(1)
-        ex_date = re.search('^[A-Z]+(\d+)[CP]+\d+', c).group(1)
-        if len(ex_date) >= 7:
-            raise IndexError('skip special/right/split option.')
-        ex_date = pd.Timestamp(ex_date[-6:])
-        name = Option.Call if re.search('^[A-Z]+\d+([CP]+)\d+', c).group(1) == 'C' else Option.Put
-
-        if '.' in c:
-            strike = re.search('^[A-Z]+\d+[CP]+(\d*[.]\d+)', c).group(1)
-        else:
-            strike = re.search('^[A-Z]+\d+[CP]+(\d+)', c).group(1)
-
-        return symbol, ex_date, name, float(strike)
-
-    def __init__(self, option_code, today, rf_rate, close, bid, ask, impl_vol=0.01, div=0.0):
+    def __init__(self, ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol=0.01, div=0.0):
         """
         Prepare input for option model
-        :param option_code: str
-        :param today: TimeStamp
-        :param rf_rate: float
-        :param close: float
-        :param impl_vol: float
-        :param div: float
+        :param ex_date:
+        :param name:
+        :param strike:
+        :param today:
+        :param rf_rate:
+        :param close:
+        :param bid:
+        :param ask:
+        :param impl_vol:
+        :param div:
         """
+        # convert ex_date and today from int64 to date
+        ex_date = pd.to_datetime(ex_date)
+        today = pd.to_datetime(today)
+        if today >= ex_date:
+            raise IndexError('Last trading day')
+
         # extract detail from option code
-        self.symbol, ex_date, self.name, self.strike = self.extract_code(option_code)
+        self.name = name
+        self.strike = strike
 
         # not friday ex_date
         if ex_date.weekday() == 5:  # is saturday
@@ -75,7 +83,7 @@ class CleanOption(object):
 
         # today date
         self.today = Date(today.day, today.month, today.year)
-        #if today >= ex_date:
+        # if today >= ex_date:
         #    raise IndexError('last trading day.')
 
         Settings.instance().evaluationDate = self.today
@@ -94,6 +102,10 @@ class CleanOption(object):
         self.exercise = AmericanExercise(self.settle, self.ex_date)
 
         # option payoff
+        if self.name == 1:
+            self.name = Option.Call
+        elif self.name == -1:
+            self.name = Option.Put
         self.payoff = PlainVanillaPayoff(self.name, self.strike)
 
         # stock price
@@ -104,8 +116,32 @@ class CleanOption(object):
         self.div_yield = FlatForward(self.settle, self.div, Actual365Fixed())
 
         # implied volatility, not set yet
-        self.impl_vol = impl_vol / 100.0
-        self.volatility = BlackConstantVol(self.today, TARGET(), self.impl_vol, Actual365Fixed())
+        self.iv = impl_vol / 100.0
+
+        self.volatility = None
+        self.process = None
+        self.option = None
+        self.start_vanilla_option()
+
+        self.time_step = self.ex_date - self.today
+        self.grid_point = self.time_step - 1
+
+        # price
+        self.ref_value = 0.0
+
+        # set before use
+        self.bid = bid
+        self.ask = ask
+
+        # black calculator
+        self.term = 0
+        self.black_calc = None
+        """:type: BlackCalculator"""
+        self.start_black_calculator()
+
+    def start_vanilla_option(self):
+        # vanilla option
+        self.volatility = BlackConstantVol(self.today, TARGET(), self.iv, Actual365Fixed())
 
         # process and option
         self.process = BlackScholesMertonProcess(
@@ -117,53 +153,34 @@ class CleanOption(object):
 
         self.option = VanillaOption(self.payoff, self.exercise)
 
-        self.time_step = self.ex_date - self.today
-        self.grid_point = self.time_step - 1
-
-        # price
-        self.ref_value = 0.0
-
+    def start_black_calculator(self):
         # black calculator
         self.term = self.time_step / 365.0
         r = self.rate / 100.0
-        std = self.impl_vol * sqrt(self.term)
+        std = self.iv * sqrt(self.term)
         discount = exp(-r * self.term)
         div_yield = self.div
         spot = self.underlying.value()
         forward = spot * exp((r - div_yield) * self.term)
 
         self.black_calc = BlackCalculator(
-            PlainVanillaPayoff(-1, self.strike), forward, std, discount
+            PlainVanillaPayoff(self.name, self.strike), forward, std, discount
         )
 
-        # set before use
-        self.bid = bid
-        self.ask = ask
-
-    def get_impl_vol(self, assign=False):
+    def impl_vol(self):
         """
         Using bid price calculate the implied volatility
         :return: float
         """
         try:
-            impl_vol = self.option.impliedVolatility(self.bid, self.process)
-
-            if assign:
-                self.impl_vol = impl_vol
-            self.volatility = BlackConstantVol(self.today, TARGET(), impl_vol, Actual365Fixed())
-
-            # process and option
-            self.process = BlackScholesMertonProcess(
-                QuoteHandle(self.underlying),
-                YieldTermStructureHandle(self.div_yield),
-                YieldTermStructureHandle(self.rf_rate),
-                BlackVolTermStructureHandle(self.volatility)
-            )
-
-            self.option = VanillaOption(self.payoff, self.exercise)
-
+            impl_vol = self.option.impliedVolatility((self.bid + self.ask) / 2.0, self.process)
         except RuntimeError:
-            raise ValueError('impl_vol is 0 or greater than 400%')
+            impl_vol = 0.0
+
+        if impl_vol:
+            self.iv = impl_vol
+            self.start_vanilla_option()
+            self.start_black_calculator()
 
         return impl_vol
 
@@ -185,8 +202,11 @@ class CleanOption(object):
             value1 = self.black_calc.value()
 
             result = value0
-            if value1 > value0:
+            if np.isnan(value0) or value1 > value0:
                 result = value1
+
+            # if self.bid and self.ask:
+            #     result = (self.bid + self.ask) / 2.0
         except TypeError:
             result = 0.0
             if self.name == Option.Call:
@@ -226,34 +246,45 @@ class CleanOption(object):
             theta = 0
             vega = 0
 
-        return {
-            'delta': 0.0 if np.isnan(delta) else delta + 0,  # fix negative zero
-            'gamma': 0.0 if np.isnan(gamma) else gamma + 0,
-            'theta': 0.0 if np.isnan(theta) else theta + 0,
-            'vega': 0.0 if np.isnan(vega) else vega + 0
-        }
+        return (
+            0.0 if np.isnan(delta) else delta + 0,
+            0.0 if np.isnan(gamma) else gamma + 0,
+            0.0 if np.isnan(theta) else theta + 0,
+            0.0 if np.isnan(vega) else vega + 0
+        )
 
     def prob(self):
         """
         Calculate the probability of option
+        otm 8.27%,91.73%,16.24%,
+        itm 75.91%,24.09%,48.79%
+        deep itm 0.00%,100.00%,0.00%
         :return: dict
         """
-        prob_itm = round(self.black_calc.itmCashProbability() * 100, 2)
-        prob_otm = round((1 - self.black_calc.itmCashProbability()) * 100, 2)
-        prob_touch = round((1 - self.black_calc.itmCashProbability()) * 2 * 99, 2)
+        itm = float('%.2f' % (self.black_calc.itmCashProbability() * 100))
 
-        return {
-            'prob_itm': prob_itm,
-            'prob_otm': prob_otm,
-            'prob_touch': prob_touch,
-        }
+        if self.name == Option.Call:
+            prob_itm = itm
+            prob_otm = 100 - itm
+        else:
+            prob_itm = 100 - itm
+            prob_otm = itm
+
+        if prob_otm == 100 or prob_itm == 100:
+            prob_touch = 0.0
+        elif prob_itm > prob_otm:
+            prob_touch = prob_otm * 2
+        else:
+            prob_touch = prob_itm * 2
+
+        return prob_itm, prob_otm, prob_touch
 
     def dte(self):
         """
         Calculate the day to expire value
         :return: int
         """
-        return self.time_step
+        return int(self.time_step)
 
     def moneyness(self):
         """
@@ -294,5 +325,3 @@ class CleanOption(object):
             raise ValueError('Invalid option name')
 
         return intrinsic, extrinsic
-
-

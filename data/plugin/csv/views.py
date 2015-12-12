@@ -3,7 +3,6 @@ from fractions import Fraction
 from glob import glob
 import os
 import re
-import time
 from django.shortcuts import render
 from numba import jit
 from data.extra import offday, holiday
@@ -444,7 +443,7 @@ def csv_option_h5(request, symbol):
 
     # remove all existing data
     try:
-        db.remove('option/%s' % symbol)
+        db.remove('option/%s/csv' % symbol)
     except KeyError:
         pass
 
@@ -663,7 +662,7 @@ def csv_option_h5(request, symbol):
 
             df_expire = pd.DataFrame(ex_data, index=range(len(ex_data))).set_index('date')
             db.append(
-                'option/%s/raw/data' % symbol, df_expire,
+                'option/%s/csv/data' % symbol, df_expire,
                 format='table', data_columns=True, min_itemsize=100
             )
 
@@ -685,7 +684,7 @@ def csv_option_h5(request, symbol):
 
         # save into db
         db.append(
-            'option/%s/raw/contract' % symbol, df_contract,
+            'option/%s/csv/contract' % symbol, df_contract,
             format='table', data_columns=True, min_itemsize=100
         )
 
@@ -702,13 +701,13 @@ def csv_option_h5(request, symbol):
 
         df_data = pd.DataFrame(data, index=range(len(data))).set_index('date')
         db.append(
-            'option/%s/raw/data' % symbol, df_data,
+            'option/%s/csv/data' % symbol, df_data,
             format='table', data_columns=True, min_itemsize=100
         )
 
     missing = []
     try:
-        df_missing = db.select('option/%s/raw/contract' % symbol, 'missing > 0')
+        df_missing = db.select('option/%s/csv/contract' % symbol, 'missing > 0')
         if len(df_missing):
             for _, m in df_missing.sort_values(by='missing', ascending=False).iterrows():
                 missing.append({
@@ -719,9 +718,9 @@ def csv_option_h5(request, symbol):
         pass
 
     # validating
-    df_contract = db.select('option/%s/raw/contract' % symbol)
+    df_contract = db.select('option/%s/csv/contract' % symbol)
     df_contract = df_contract.copy().reset_index()
-    df_data = db.select('option/%s/raw/data' % symbol)
+    df_data = db.select('option/%s/csv/data' % symbol)
     df_data = df_data.copy().reset_index()
 
     df_data['valid'] = valid_option(
@@ -752,11 +751,11 @@ def csv_option_h5(request, symbol):
     df_contract = df_contract.drop_duplicates('option_code')
 
     # save back into db
-    db.remove('option/%s/raw/contract' % symbol)
-    db.remove('option/%s/raw/data' % symbol)
+    db.remove('option/%s/csv/contract' % symbol)
+    db.remove('option/%s/csv/data' % symbol)
 
-    db.append('option/%s/raw/contract' % symbol, df_contract)
-    db.append('option/%s/raw/data' % symbol, df_data)
+    db.append('option/%s/csv/contract' % symbol, df_contract)
+    db.append('option/%s/csv/data' % symbol, df_data)
 
     # output html
     stats = {
