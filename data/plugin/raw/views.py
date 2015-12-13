@@ -18,16 +18,16 @@ weeks = range(1, 7)
 output = '%-6s | %-30s %s'
 
 
-def read_file(df_stock, path, symbol):
+def read_file(df_stock, symbol):
     """
     Open thinkback file and read option data
     :param df_stock: pd.DataFrame
-    :param path: list
     :param symbol:  str
     :return: list, list
     """
     keys = []
     options = []
+    path = os.path.join(BASE_DIR, 'files', 'thinkback', symbol)
     for i, (index, values) in enumerate(df_stock.iterrows()):
         # open path get option data
         year = index.date().strftime('%Y')
@@ -130,6 +130,38 @@ def change_code(symbol, code, others, right, special):
     return new_code
 
 
+def check_code(symbol, contract):
+    """
+    Check option_code is valid
+    no old code format and cannot without symbol
+    :param symbol: str
+    :param contract: Series
+    :return: str
+    """
+    if len(contract['option_code']) < 9:  # old format or no symbol
+        ex_date = pd.Timestamp(get_dte_date(contract['ex_month'], int(contract['ex_year'])))
+
+        new_code = make_code2(
+            symbol, contract['others'], contract['right'], contract['special'],
+            ex_date, contract['name'], contract['strike']
+        )
+        print output % ('CODE', 'Update (old format):', '%-16s -> %-16s' % (
+            contract['option_code'], new_code
+        ))
+    elif contract['option_code'][:len(symbol)] != symbol.upper():
+        # some ex_date is on thursday because holiday or special date
+        new_code = change_code(
+            symbol, contract['option_code'], contract['others'], contract['right'], contract['special']
+        )
+        print output % ('CODE', 'Update (no symbol):', '%-16s -> %-16s' % (
+            contract['option_code'], new_code
+        ))
+    else:
+        new_code = contract['option_code']
+
+    return new_code
+
+
 @jit
 def valid_option2(index, bid, ask, volume, open_int, dte):
     """
@@ -205,6 +237,31 @@ def valid_contract2(ex_month, ex_year, right, special):
     return valid
 
 
+def get_contract(df_current):
+    """
+    Get contract data from first row of DataFrame
+    :param df_current: pd.DataFrame
+    :return: Series
+    """
+    return df_current.iloc[0][[
+        'ex_month', 'ex_year', 'name', 'option_code',
+        'others', 'right', 'special', 'strike'
+    ]]
+
+
+def check_date(df):
+    """
+    Validate date is unique not duplcate
+    :param df: pd.DataFrame
+    """
+    if len(df) != len(df['date'].unique()):
+        print df.to_string(line_width=1000)
+        d = df['date'].value_counts()
+        print d[d >= 2]
+
+        raise IndexError('Duplicate date in dataframe')
+
+
 def add_data(contracts, options, df_save, df_stock, symbol):
     """
     1. extra contract
@@ -268,18 +325,6 @@ def add_contract(symbol, df_current, df_save, df_stock, contracts, options):
     return df_current
 
 
-def get_contract(df_current):
-    """
-    Get contract data from first row of DataFrame
-    :param df_current: pd.DataFrame
-    :return: Series
-    """
-    return df_current.iloc[0][[
-        'ex_month', 'ex_year', 'name', 'option_code',
-        'others', 'right', 'special', 'strike'
-    ]]
-
-
 def join_remain(df_current, df_start):
     """
     Join remain data back into previous data
@@ -296,51 +341,6 @@ def join_remain(df_current, df_start):
         df_current = df_current[~df_current.index.isin(df_start.index)]
 
     return df_current, df_start
-
-
-def check_date(df):
-    """
-    Validate date is unique not duplcate
-    :param df: pd.DataFrame
-    """
-    if len(df) != len(df['date'].unique()):
-        print df.to_string(line_width=1000)
-        d = df['date'].value_counts()
-        print d[d >= 2]
-
-        raise IndexError('Duplicate date in dataframe')
-
-
-def check_code(symbol, contract):
-    """
-    Check option_code is valid
-    no old code format and cannot without symbol
-    :param symbol: str
-    :param contract: Series
-    :return: str
-    """
-    if len(contract['option_code']) < 9:  # old format or no symbol
-        ex_date = pd.Timestamp(get_dte_date(contract['ex_month'], int(contract['ex_year'])))
-
-        new_code = make_code2(
-            symbol, contract['others'], contract['right'], contract['special'],
-            ex_date, contract['name'], contract['strike']
-        )
-        print output % ('CODE', 'Update (old format):', '%-16s -> %-16s' % (
-            contract['option_code'], new_code
-        ))
-    elif contract['option_code'][:len(symbol)] != symbol.upper():
-        # some ex_date is on thursday because holiday or special date
-        new_code = change_code(
-            symbol, contract['option_code'], contract['others'], contract['right'], contract['special']
-        )
-        print output % ('CODE', 'Update (no symbol):', '%-16s -> %-16s' % (
-            contract['option_code'], new_code
-        ))
-    else:
-        new_code = contract['option_code']
-
-    return new_code
 
 
 def multi_others(symbol, contracts, options, df_current, df_stock):
@@ -441,11 +441,11 @@ def csv_option_h5x(request, symbol):
     :return: render
     """
     symbol = symbol.lower()
-    path = os.path.join(BASE_DIR, 'files', 'thinkback', symbol)
+
     df_stock = get_exist_stocks(symbol).sort_index(ascending=False)
     last_date = df_stock.index[0]
 
-    keys, options = read_file(df_stock, path, symbol)
+    keys, options = read_file(df_stock, symbol)
 
     # make all options df
     df_all = pd.DataFrame(options)
