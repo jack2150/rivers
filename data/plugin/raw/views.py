@@ -292,18 +292,6 @@ def add_data(contracts, options, df_save, df_stock, symbol):
     df_save = df_save[df_save['valid'] == 1]
     del df_save['valid']
 
-    # set missing
-    if len(df_save) > 1:
-        latest = df_save['date'].iloc[0]
-        oldest = df_save['date'].iloc[-1]
-        length = np.sum((oldest <= df_stock.index) & (df_stock.index <= latest))
-    else:
-        length = 1
-
-    contract['missing'] = length - len(df_save)
-
-    # print df_save.to_string(line_width=1000)
-
     contracts.append(contract)
     options.append(df_save)
 
@@ -432,6 +420,35 @@ def multi_others(symbol, contracts, options, df_current, df_stock):
         df_current = df_current.copy()
 
 
+def set_missing(df_contract, df_option, dates):
+    """
+    Set missing contract in option data
+    :param df_contract: pd.DataFrame
+    :param df_option: pd.DataFrame
+    :param dates: pd.TimeSeries
+    :return: np.array
+    """
+    results = np.zeros(len(df_contract), dtype='int')
+    code_counts = df_option['option_code'].value_counts()
+    oldest = df_option.groupby('option_code')['date'].min()
+
+    for i, c in df_contract.iterrows():
+        code = c['option_code']
+        length = np.count_nonzero((oldest[code] <= dates) & (dates <= c['ex_date']))
+        results[i] = length - code_counts[code]
+        # print i, code, length, code_counts[code]
+
+    return results
+
+
+def set_ex_date(ex_month, ex_year):
+    results = []
+    for month, year in zip(ex_month, ex_year):
+        results.append(get_dte_date(month, year))
+
+    return pd.to_datetime(results)
+
+
 def csv_option_h5x(request, symbol):
     """
     Import thinkback csv options view
@@ -440,6 +457,7 @@ def csv_option_h5x(request, symbol):
     :param symbol: str
     :return: render
     """
+
     symbol = symbol.lower()
 
     df_stock = get_exist_stocks(symbol).sort_index(ascending=False)
@@ -464,6 +482,7 @@ def csv_option_h5x(request, symbol):
     db.append('tkeys', pd.Series(keys))
     db.close()
     exit()
+
 
     db = pd.HDFStore('test.h5')
     df_all = db.select('option')
@@ -602,16 +621,6 @@ def csv_option_h5x(request, symbol):
 
             # print df_save.to_string(line_width=1000)
 
-            # set missing
-            if len(df_save) > 1:
-                latest = df_save['date'].iloc[0]
-                oldest = df_save['date'].iloc[-1]
-                length = np.sum((oldest <= df_stock.index) & (df_stock.index <= latest))
-            else:
-                length = 1
-
-            contract['missing'] = length - len(df_save)
-
             contracts.append(contract)
             options.append(df_save)
 
@@ -619,9 +628,14 @@ def csv_option_h5x(request, symbol):
         # merge all then save
         df_contract = pd.DataFrame(contracts)
         df_contract = df_contract.reset_index(drop=True)
-        df_contract['ex_date'] = df_contract.apply(
-            lambda x: pd.Timestamp(get_dte_date(x['ex_month'], int(x['ex_year']))), axis=1
-        )
+
+        print output % ('EXDATE', 'Set expire date for contracts', '')
+        df_contract['ex_date'] = set_ex_date(df_contract['ex_month'], df_contract['ex_year'])
+
+        # df_contract['ex_date'] = pd.to_datetime(df_contract.apply(
+        #    lambda c: get_dte_date(c['ex_month'], int(c['ex_year'])), axis=1
+        # ))
+        print output % ('EXPIRE', 'Set contract expire or not expire', '')
         df_contract['expire'] = df_contract['ex_date'] < last_date
 
         # print output % ('CLEAN', 'Validate Option Contract', '')
@@ -640,9 +654,9 @@ def csv_option_h5x(request, symbol):
             'intrinsic', 'last', 'mark', 'open_int', 'option_code', 'prob_itm', 'prob_otm',
             'prob_touch', 'theo_price', 'theta', 'vega', 'volume'
         ]]
-        df_option = df_option.set_index('date')
 
         # remove contract when no option
+        print output % ('REMOVE', 'Remove df_contract if duplicate or empty option data', '')
         empty_codes = np.setdiff1d(
             df_contract['option_code'], df_option['option_code'].unique()
         )
@@ -650,6 +664,11 @@ def csv_option_h5x(request, symbol):
 
         # remove duplicate contract (when option_code right, cycle date wrong)
         df_contract = df_contract.drop_duplicates('option_code')
+
+        # set missing, require
+        print output % ('MISS', 'Complete set missing count', '')
+        df_contract = df_contract.reset_index(drop=True)
+        df_contract['missing'] = set_missing(df_contract, df_option, df_stock.index)
 
         # print df_contract.dtypes
         # print df_option.dtypes
@@ -659,7 +678,11 @@ def csv_option_h5x(request, symbol):
             'TOTAL', 'df_contract: %d, df_option: %d' % (len(df_contract), len(df_option)), ''
         )
 
+        # set date as index before save
+        df_option = df_option.set_index('date')
+
         # save into db
+        print output % ('FINAL', 'df_contract and df_option is validated', 'start saving process')
         db = pd.HDFStore(QUOTE)
         for key in ('contract', 'data'):
             try:

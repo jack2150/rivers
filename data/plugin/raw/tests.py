@@ -252,6 +252,22 @@ class TestCsvOptionH5X(TestSetUp):
         self.assertNotEqual(contract['option_code'], new_code)
         self.assertEqual(option_code, new_code)
 
+    def test_set_missing(self):
+        symbol = self.symbols[0]
+
+        db = pd.HDFStore(QUOTE)
+        df_stock = db.select('stock/thinkback/%s' % symbol.lower())
+        df_contract = db.select('option/%s/raw/contract' % symbol.lower())
+        df_option = db.select('option/%s/raw/data' % symbol.lower())
+        db.close()
+
+        df_option = df_option.reset_index()
+        df_contract['missing'] = set_missing(df_contract, df_option, df_stock.index)
+
+        df_missing = df_contract[df_contract['missing'] > 0]
+        print df_missing.to_string(line_width=1000)
+        self.assertGreater(len(df_missing), 0)
+
     def test_mass_csv_option_h5x(self):
         """
         Test csv option import into h5 db after csv stock import
@@ -286,7 +302,7 @@ class TestCsvOptionH5X(TestSetUp):
         )
         self.underlying.save()
 
-        self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
+        # self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
         self.client.get(reverse('admin:csv_option_h5x', kwargs={'symbol': symbol.lower()}))
 
         db = pd.HDFStore(QUOTE)
@@ -297,7 +313,7 @@ class TestCsvOptionH5X(TestSetUp):
         print 'df_contract: %d' % len(df_contract)
         print 'df_option: %d' % len(df_option)
 
-    def test_both(self):
+    def test_both_raw_csv_equal(self):
         """
         Test old and new import by contract and option size
         """

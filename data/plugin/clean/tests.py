@@ -221,8 +221,7 @@ class TestCleanOptionView(TestSetUp):
     # noinspection PyUnresolvedReferences
     def test_mass_extract_codes(self):
         """
-
-        :return:
+        Test extract data from a list of option_code
         """
         db = pd.HDFStore(QUOTE)
         df_contract = db.select('option/%s/raw/contract' % self.symbol.lower())
@@ -256,7 +255,7 @@ class TestCleanOptionView(TestSetUp):
         """
         # self.client.get(reverse('admin:clean_option', kwargs={'symbol': self.symbol.lower()}))
         self.client.get(reverse('admin:clean_option', kwargs={
-            'symbol': self.symbol.lower(), 'core': 6
+            'symbol': self.symbol.lower(), 'core': 8
         }))
 
         db = pd.HDFStore(QUOTE)
