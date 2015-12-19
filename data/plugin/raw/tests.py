@@ -276,22 +276,27 @@ class TestCsvOptionH5X(TestSetUp):
         # self.skipTest('Only test when need!')
         print 'run mass csv option import 2...'
 
-        for symbol in self.symbols[-4:-3]:
+        db = pd.HDFStore(QUOTE)
+        for symbol in self.symbols:
             self.underlying = Underlying(
                 symbol=symbol,
                 start='2009-01-01',
                 stop='2016-01-01'
             )
             self.underlying.save()
-            self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
-            self.client.get(reverse('admin:csv_option_h5', kwargs={'symbol': symbol}))
+            # self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
+            # self.client.get(reverse('admin:csv_option_h5x', kwargs={'symbol': symbol}))
+            df = db.select('option/%s/raw/contract' % symbol.lower())
+            print symbol, df['right'].unique()
+
+        db.close()
 
     def test_csv_option_h5x(self):
         """
         Test csv option import into h5 db after csv stock import
         some of the csv can be wrong, for example fslr 08-25-2011 got wrong cycle info
         """
-        symbol = self.symbols[0]
+        symbol = self.symbols[1]
 
         # self.skipTest('Only test when need!')
         print 'run csv stock import view...', symbol
@@ -302,7 +307,7 @@ class TestCsvOptionH5X(TestSetUp):
         )
         self.underlying.save()
 
-        # self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
+        self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
         self.client.get(reverse('admin:csv_option_h5x', kwargs={'symbol': symbol.lower()}))
 
         db = pd.HDFStore(QUOTE)

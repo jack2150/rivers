@@ -120,6 +120,17 @@ class Underlying(models.Model):
         )
 
 
+class SplitHistory(models.Model):
+    symbol = models.CharField(max_length=20)
+    date = models.DateField()
+    fraction = models.CharField(max_length=20)
+
+    def __unicode__(self):
+        return '{symbol} {date} {fraction}'.format(
+            symbol=self.symbol, date=self.date, fraction=self.fraction
+        )
+
+
 class Treasury(models.Model):
     """
     "Series Description","Market yield on U.S. Treasury securities at 1-year   constant maturity, quoted on investment basis"

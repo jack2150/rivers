@@ -1,11 +1,13 @@
 from bootstrap3_datetime.widgets import DateTimePicker
 from django.contrib import admin
-
 from data.plugin.fillna.views import fillna_option
 from data.plugin.clean.views import *
 from data.plugin.csv.views import *
 from data.plugin.raw.views import *
+from data.plugin.raw2.views import csv_raw_option, merge_raw_option
+from data.plugin.split.views import *
 from data.views import *
+from data.models import *
 
 
 class UnderlyingForm(forms.ModelForm):
@@ -82,6 +84,31 @@ class UnderlyingAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
+class SplitHistoryForm(forms.ModelForm):
+    date = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
+
+class SplitHistoryAdmin(admin.ModelAdmin):
+    form = SplitHistoryForm
+
+    list_display = (
+        'symbol', 'date', 'fraction'
+    )
+
+    fieldsets = (
+        ('Primary Fields', {
+            'fields': (
+                'symbol', 'date', 'fraction'
+            )
+        }),
+    )
+
+    search_fields = ('symbol', 'date', 'fraction')
+    list_per_page = 20
+
+
 class TreasuryForm(forms.ModelForm):
     start_date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
@@ -113,6 +140,7 @@ class TreasuryAdmin(admin.ModelAdmin):
 
 # admin model
 admin.site.register(Underlying, UnderlyingAdmin)
+admin.site.register(SplitHistory, SplitHistoryAdmin)
 admin.site.register(Treasury, TreasuryAdmin)
 
 # admin view
@@ -156,16 +184,40 @@ admin.site.register_view(
 
 # clean option data
 admin.site.register_view(
-    'data/h5/clean/csv/option/(?P<symbol>\w+)/(?P<core>\d+)/$',
+    'data/h5/clean/raw/option/(?P<symbol>\w+)/(?P<core>\d+)/$',
     urlname='clean_option', view=clean_option
 )
 
 admin.site.register_view(
-    'data/h5/fillna/csv/option/(?P<symbol>\w+)/$',
+    'data/h5/fillna/raw/option/(?P<symbol>\w+)/$',
     urlname='fillna_option', view=fillna_option
 )
 
 admin.site.register_view(
-    'data/h5/import/csv/option2/(?P<symbol>\w+)/$',
+    'data/h5/import/raw/option/(?P<symbol>\w+)/$',
     urlname='csv_option_h5x', view=csv_option_h5x
 )
+
+admin.site.register_view(
+    'data/h5/clean/raw/split/option/(?P<symbol>\w+)/$',
+    urlname='clean_split_option', view=clean_split_option
+)
+
+admin.site.register_view(
+    'data/h5/clean/merge/split/option/(?P<symbol>\w+)/$',
+    urlname='merge_split_data', view=merge_split_data
+)
+
+############################
+
+"""
+admin.site.register_view(
+    'data/h5/import/raw2/option/(?P<symbol>\w+)/$',
+    urlname='csv_raw_option', view=csv_raw_option
+)
+
+admin.site.register_view(
+    'data/h5/merge/raw2/option/(?P<symbol>\w+)/$',
+    urlname='merge_raw_option', view=merge_raw_option
+)
+"""

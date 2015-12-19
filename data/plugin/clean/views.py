@@ -139,8 +139,7 @@ def clean_option(request, symbol, core=6):
     df_all = pd.merge(df_all, df_stock.reset_index(), how='inner', on=['date'])
     df_all = pd.merge(df_all, df_rate.reset_index(), how='inner', on=['date'])
     df_all = pd.merge(df_all, df_div.reset_index(), how='inner', on=['date'])
-    df_all = df_all.reset_index()
-    del df_all['index']
+    df_all = df_all.reset_index(drop=True)
 
     total = len(df_all)
     print output % ('', 'total length df_option', '%10d rows' % len(df_option))
