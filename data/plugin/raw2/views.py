@@ -10,6 +10,7 @@ from django.shortcuts import redirect
 from fractions import Fraction
 from rivers.settings import QUOTE, BASE_DIR
 
+# nothing new
 # constant for get_dte_date
 logger = logging.getLogger('views')
 output = '%-6s | %-30s %s'
