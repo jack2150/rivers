@@ -81,16 +81,7 @@ DATABASES = {
         'HOST': '127.0.0.1',
         'PORT': '5432',
         'CONN_MAX_AGE': 60
-    },
-    #'quote': {
-    #    'ENGINE': 'django.db.backends.postgresql_psycopg2',
-    #    'NAME': 'quote',
-    #    'USER': 'admin',
-    #    'PASSWORD': 'qwer1234',
-    #    'HOST': '127.0.0.1',
-    #    'PORT': '5432',
-    #    'CONN_MAX_AGE': 60
-    #},
+    }
 }
 
 #DATABASE_ROUTERS = ['rivers.router.DataRouter']
@@ -130,8 +121,46 @@ CACHES = {
     }
 }
 
+# Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)-10s %(message)s'
+        },
+    },
+    'handlers': {
+        'null': {
+            'level': 'DEBUG',
+            'class': 'django.utils.log.NullHandler',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        }
+    },
+    'loggers': {
+        'nothing': {
+            'handlers': ['null'],
+            'propagate': True,
+            'level': 'INFO',
+        },
+        'views': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    }
+}
+
 # HDF5 Store
 QUOTE = os.path.join(BASE_DIR, 'quote.h5')
+
 
 # for test only
 if 'test' in sys.argv:

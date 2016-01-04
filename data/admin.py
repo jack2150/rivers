@@ -4,7 +4,7 @@ from data.plugin.fillna.views import fillna_option
 from data.plugin.clean.views import *
 from data.plugin.csv.views import *
 from data.plugin.raw.views import *
-from data.plugin.raw2.views import csv_raw_option, merge_raw_option
+from data.plugin.raw2.views import raw_option_h5
 from data.plugin.split.views import *
 from data.views import *
 from data.models import *
@@ -193,10 +193,12 @@ admin.site.register_view(
     urlname='fillna_option', view=fillna_option
 )
 
+"""
 admin.site.register_view(
     'data/h5/import/raw/option/(?P<symbol>\w+)/$',
     urlname='csv_option_h5x', view=csv_option_h5x
 )
+"""
 
 admin.site.register_view(
     'data/h5/clean/raw/split/option/(?P<symbol>\w+)/$',
@@ -210,12 +212,12 @@ admin.site.register_view(
 
 ############################
 
-"""
-admin.site.register_view(
-    'data/h5/import/raw2/option/(?P<symbol>\w+)/$',
-    urlname='csv_raw_option', view=csv_raw_option
-)
 
+admin.site.register_view(
+    'data/h5/import/raw/option/(?P<symbol>\w+)/$',
+    urlname='raw_option_h5', view=raw_option_h5
+)
+"""
 admin.site.register_view(
     'data/h5/merge/raw2/option/(?P<symbol>\w+)/$',
     urlname='merge_raw_option', view=merge_raw_option

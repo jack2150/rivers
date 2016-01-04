@@ -1,0 +1,64 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags %}
+
+{% block extrastyle %}
+  <style>
+    .fblock {
+      width: 100%;
+      height: 400px;
+      overflow-y: scroll;
+    }
+  </style>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'data' %}">Data</a></li>
+      <li><a href="{% url 'admin:data_underlying_changelist' %}">Underlyings</a></li>
+      <li>Csv Import</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div class="panel panel-default">
+    <div class="panel-heading">{{ symbol|upper }} Report</div>
+    <div class="panel-body">
+      <table class="table">
+        <tr>
+          <th class="col-md-2">Normal count:</th>
+          <td class="col-md-2">{{ stats.normal }}</td>
+          <th class="col-md-2">Old split count:</th>
+          <td class="col-md-2">{{ stats.old_split.count }}</td>
+          <th class="col-md-2">Others count:</th>
+          <td>{{ stats.others.count }}</td>
+        </tr>
+        <tr>
+          <th>New split items:</th>
+          <td>{{ stats.new_split.count }}</td>
+          <th>Old split items:</th>
+          <td>{{ stats.old_split.items }}</td>
+          <th>Others items:</th>
+          <td>{{ stats.others.items }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <div class="pull-left"></div>
+    <div class="pull-right">
+      <button id="optionable" class="btn btn-success default" name="updated">
+        Set underlying optionable
+      </button>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    $('#optionable').click(function () {
+      $(location).attr("href", "{% url 'admin:set_underlying' symbol|lower 'optionable' %}");
+    });
+  </script>
+{% endblock %}

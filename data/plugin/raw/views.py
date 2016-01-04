@@ -60,108 +60,6 @@ def read_file(df_stock, symbol):
     return keys, options
 
 
-def make_code2(symbol, others, right, special, ex_date, name, strike, extra=''):
-    """
-    Make new option code using contract data
-    :return:
-    :param symbol: str
-    :param others: str
-    :param right: str
-    :param special: str
-    :param ex_date: pd.datetime64
-    :param name: str
-    :param strike: str
-    :param extra: str
-    :return: str
-    """
-    if extra == '':
-        if special == 'Mini':
-            extra = 7
-        elif '; US$' in others:
-            extra = 2
-        elif 'US$' in others:
-            extra = 1
-        elif '/' in right:
-            extra = 1
-
-    strike = str(strike)
-    if strike[-2:] == '.0':
-        strike = strike.replace('.0', '')
-
-    new_code = '{symbol}{extra}{year}{month}{day}{name}{strike}'.format(
-        symbol=symbol.upper(),
-        extra=extra,
-        year=ex_date.date().strftime('%y'),
-        month=ex_date.date().strftime('%m'),
-        day=ex_date.date().strftime('%d'),
-        name=name[0].upper(),
-        strike=strike
-    )
-
-    return new_code
-
-
-def change_code(symbol, code, others, right, special):
-    """
-    Make new option code using contract data
-    :param symbol: str
-    :param code: str
-    :param others: str
-    :param right: str
-    :param special: str
-    :return: str
-    """
-    extra = ''
-    if special == 'Mini':
-        extra = 7
-    elif '; US$' in others:
-        extra = 2
-    elif 'US$' in others:
-        extra = 1
-    elif '/' in right:
-        extra = 1
-
-    wrong = re.search('^([A-Z]+)\d+[CP]+\d+', code).group(1)
-
-    new_code = '{symbol}{extra}{right}'.format(
-        symbol=symbol.upper(), extra=extra, right=code[len(wrong):]
-    )
-
-    return new_code
-
-
-def check_code(symbol, contract):
-    """
-    Check option_code is valid
-    no old code format and cannot without symbol
-    :param symbol: str
-    :param contract: Series
-    :return: str
-    """
-    if len(contract['option_code']) < 9:  # old format or no symbol
-        ex_date = pd.Timestamp(get_dte_date(contract['ex_month'], int(contract['ex_year'])))
-
-        new_code = make_code2(
-            symbol, contract['others'], contract['right'], contract['special'],
-            ex_date, contract['name'], contract['strike']
-        )
-        print output % ('CODE', 'Update (old format):', '%-16s -> %-16s' % (
-            contract['option_code'], new_code
-        ))
-    elif contract['option_code'][:len(symbol)] != symbol.upper():
-        # some ex_date is on thursday because holiday or special date
-        new_code = change_code(
-            symbol, contract['option_code'], contract['others'], contract['right'], contract['special']
-        )
-        print output % ('CODE', 'Update (no symbol):', '%-16s -> %-16s' % (
-            contract['option_code'], new_code
-        ))
-    else:
-        new_code = contract['option_code']
-
-    return new_code
-
-
 @jit
 def valid_option2(index, bid, ask, volume, open_int, dte):
     """
@@ -457,7 +355,6 @@ def csv_option_h5x(request, symbol):
     :param symbol: str
     :return: render
     """
-
     symbol = symbol.lower()
 
     df_stock = get_exist_stocks(symbol).sort_index(ascending=False)

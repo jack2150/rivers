@@ -183,6 +183,10 @@ def csv_stock_h5(request, symbol):
     :param symbol: str
     :return: render
     """
+    print '=' * 130
+    print '%-6s | %-30s %s' % ('IMPORT', 'Save csv df_stock data:', symbol.upper())
+    print '=' * 130
+
     symbol = symbol.lower()
 
     # remove all
@@ -250,7 +254,7 @@ def csv_stock_h5(request, symbol):
 
         if trading_day:
             # output to console
-            print '%-05d | %-20s' % (i, os.path.basename(f))
+            print '%-6s | %-30s %s' % (i, 'Read file for stock data:', os.path.basename(f))
             stock_data, option_data = ThinkBack(f).read()
 
             try:

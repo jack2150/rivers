@@ -123,7 +123,9 @@ class Underlying(models.Model):
 class SplitHistory(models.Model):
     symbol = models.CharField(max_length=20)
     date = models.DateField()
-    fraction = models.CharField(max_length=20)
+    fraction = models.CharField(
+        max_length=20, help_text='Example: 3 for 2 is 2/3'
+    )
 
     def __unicode__(self):
         return '{symbol} {date} {fraction}'.format(

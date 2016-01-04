@@ -296,7 +296,7 @@ class TestCsvOptionH5X(TestSetUp):
         Test csv option import into h5 db after csv stock import
         some of the csv can be wrong, for example fslr 08-25-2011 got wrong cycle info
         """
-        symbol = self.symbols[1]
+        symbol = self.symbols[0]
 
         # self.skipTest('Only test when need!')
         print 'run csv stock import view...', symbol

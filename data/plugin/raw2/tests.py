@@ -1,85 +1,241 @@
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.test import Client
+
 from base.tests import TestSetUp
-from data.models import Underlying
+from data.models import Underlying, SplitHistory
 from rivers.settings import QUOTE
 import numpy as np
 import pandas as pd
 from views import *
 
+# aig for old others/split, ddd for new split, bxp for special dividend
+symbols = [
+    'AIG', 'FSLR', 'SNDK', 'DDD', 'BP', 'C', 'CELG',
+    'YUM', 'XOM', 'WMT', 'WFC', 'VZ', 'TWTR', 'TSLA', 'PG',
+    'DAL', 'DIS', 'EA', 'EBAY', 'FB', 'BXP'
+]
 
-class TestCsvRawOption(TestSetUp):
+
+class TestExtractOption(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbols = [
-            'AIG', 'FSLR', 'SNDK', 'DDD', 'BP', 'C', 'CELG',
-            'YUM', 'XOM', 'WMT', 'WFC', 'VZ', 'TWTR', 'TSLA', 'PG',
-            'DAL', 'DIS', 'EA', 'EBAY', 'FB'
-        ]
+        self.symbol = symbols[0]
 
-    def save_underlying(self, symbol):
-        self.underlying = Underlying(
-            symbol=symbol,
-            start='2009-01-01',
-            stop='2016-01-01'
+    def create_test_h5(self, symbol):
+        path = os.path.join(BASE_DIR, 'data', 'plugin', 'raw2', 'test.h5')
+        # if False:
+        if os.path.isfile(path):
+            db = pd.HDFStore(path)
+            self.df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
+            self.df_all = db.select('option/%s/raw/all' % self.symbol.lower())
+            self.df_normal0 = pd.DataFrame()
+            self.df_normal1 = pd.DataFrame()
+            self.df_split0 = pd.DataFrame()
+            self.df_split1 = pd.DataFrame()
+            self.df_others0 = pd.DataFrame()
+            self.df_others1 = pd.DataFrame()
+
+            keys = [('df_split0', 'raw/split'), ('df_others0', 'raw/others'),
+                    ('df_split1', 'merge/split'), ('df_others1', 'merge/others'),
+                    ('df_normal0', 'raw/split'), ('df_normal1', 'merge/normal')]
+            for var, key in keys:
+                try:
+                    setattr(
+                        self, var,
+                        db.select('option/%s/%s' % (self.symbol.lower(), key))
+                    )
+                except KeyError:
+                    pass
+            db.close()
+        else:
+            # get df_stock from quote if exists, if not create it
+            db = pd.HDFStore(QUOTE)
+            try:
+                self.df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
+            except KeyError:
+                print 'df_stock not found, inserting...'
+                self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': self.symbol}))
+                self.df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
+                print 'done insert df_stock'
+            db.close()
+
+            # save df_stock into test.h5
+            db = pd.HDFStore(path)
+            db.append('stock/thinkback/%s' % self.symbol.lower(), self.df_stock)
+
+            # create then save df_all
+            extract_option = ExtractOption(self.symbol, self.df_stock)
+            extract_option.get_data()
+            self.df_all = extract_option.df_all
+            db.append('option/%s/raw/all' % self.symbol.lower(), self.df_all)
+
+            # create then save df_normal, df_split, df_others
+            extract_option.group_data()
+            self.df_normal0 = extract_option.df_normal
+            self.df_split0 = extract_option.df_split0
+            self.df_others0 = extract_option.df_others0
+            db.append('option/%s/raw/normal' % self.symbol.lower(), self.df_normal0)
+            db.append('option/%s/raw/split' % self.symbol.lower(), self.df_split0)
+            db.append('option/%s/raw/others' % self.symbol.lower(), self.df_others0)
+
+            extract_option.merge_old_split_data()
+            extract_option.merge_others_data()
+
+            self.df_split1 = extract_option.df_split1
+            self.df_others1 = extract_option.df_others1
+            db.append('option/%s/merge/split' % self.symbol.lower(), self.df_split1)
+            db.append('option/%s/merge/others' % self.symbol.lower(), self.df_others1)
+
+            extract_option.continue_split_others()
+            self.df_normal1 = extract_option.df_normal
+            db.append('option/%s/merge/normal' % self.symbol.lower(), self.df_normal1)
+
+            db.close()
+
+    def test_get_data(self):
+        """
+        Test get option data only from
+        """
+        self.create_test_h5(self.symbol)
+        self.eo = ExtractOption(self.symbol, self.df_stock)
+
+        print 'run get_data...'
+        self.eo.get_data()
+
+        print 'df_all length: %d' % len(self.eo.df_all)
+        self.assertTrue(len(self.eo.df_all))
+
+    def test_group_data(self):
+        """
+        Test group data for df_all into normal, split, others
+        """
+        self.create_test_h5(self.symbol)
+        self.eo = ExtractOption(self.symbol, self.df_stock)
+
+        self.eo.df_all = self.df_all
+
+        print 'run group_data...'
+        self.eo.group_data()
+
+        self.assertTrue(len(self.eo.df_normal))
+        self.assertTrue(len(self.eo.df_split0))
+        self.assertTrue(len(self.eo.df_others0))
+
+    def test_merge_split_data(self):
+        """
+        Test merge all split option data into df_split
+        """
+        self.create_test_h5(self.symbol)
+        self.eo = ExtractOption(self.symbol, self.df_stock)
+
+        self.eo.df_split0 = self.df_split0
+        print 'run merge_split_data...'
+        self.eo.merge_old_split_data()
+
+        print 'df_split0 length: %d' % (len(self.df_split0['option_code']))
+        print 'df_split0 option_code: %d' % (len(self.df_split0['option_code'].unique()))
+        print 'df_split1 length: %d' % (len(self.eo.df_split1['option_code']))
+        print 'df_split1 option_code: %d' % (len(self.eo.df_split1['option_code'].unique()))
+        self.assertNotEqual(
+            len(self.df_split0['option_code'].unique()),
+            len(self.eo.df_split1['option_code'].unique())
         )
-        self.underlying.save()
 
-    def test_csv_raw_option(self):
+    def test_merge_others_data(self):
         """
-        Test csv option import into h5 db after csv stock import
-        some of the csv can be wrong, for example fslr 08-25-2011 got wrong cycle info
+        Test merge others option data int df_others
         """
-        symbol = self.symbols[0]
+        self.create_test_h5(self.symbol)
+        self.eo = ExtractOption(self.symbol, self.df_stock)
 
-        # self.skipTest('Only test when need!')
-        print 'run csv_raw_option...', symbol
-        self.save_underlying(symbol)
+        self.eo.df_others0 = self.df_others0
+        print 'run merge_others_data...'
+        self.eo.merge_others_data()
 
-        # self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
-        self.client.get(reverse('admin:csv_raw_option', kwargs={'symbol': symbol.lower()}))
+        print 'df_others0 length: %d' % (len(self.df_others0['option_code']))
+        print 'df_others0 option_code: %d' % (len(self.df_others0['option_code'].unique()))
+        print 'df_others1 length: %d' % (len(self.eo.df_others1['option_code']))
+        print 'df_others1 option_code: %d' % (len(self.eo.df_others1['option_code'].unique()))
+        self.assertEqual(len(self.df_others0), len(self.eo.df_others1))
 
-    def test_merge_raw_option(self):
+    def test_continue_split_others(self):
         """
-        Test csv option import into h5 db after csv stock import
-        some of the csv can be wrong, for example fslr 08-25-2011 got wrong cycle info
+        Test continue split and other row using
         """
-        symbol = self.symbols[0]
+        self.create_test_h5(self.symbol)
+        self.eo = ExtractOption(self.symbol, self.df_stock)
 
-        # self.skipTest('Only test when need!')
-        print 'run csv_raw_option...', symbol
-        self.save_underlying(symbol)
+        self.eo.df_normal = self.df_normal0
+        self.eo.df_split1 = self.df_split1
+        self.eo.df_others1 = self.df_others1
+        self.eo.continue_split_others()
 
-        # self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
-        # csv_raw_option(symbol.lower())
-        # merge_raw_option(symbol.lower())
-        merge_option_others(symbol.lower())
-
-    def test_both_others_same(self):
+    def test_merge_new_split_data(self):
         """
-
-        :return:
+        Test DDD with merge new split data
+        cleaning using another method
         """
-        symbol = self.symbols[0]
+        self.symbol = 'DDD'
+        self.create_test_h5(self.symbol)
+        self.eo = ExtractOption(self.symbol, self.df_stock)
+        self.eo.df_normal = self.df_normal1
 
-        db = pd.HDFStore(QUOTE)
-        df_contract = db.select('option/%s/raw/contract' % symbol.lower())
-        df_option = db.select('option/%s/raw/data' % symbol.lower())
-        df_others0 = db.select('test/%s/data/others' % symbol.lower())
-        db.close()
-
-        df_others1 = pd.merge(
-            df_option,
-            df_contract.query('others != ""'),
-            how='inner',
-            on='option_code'
+        self.split_history = SplitHistory(
+            symbol='DDD',
+            date='2013-02-25',
+            fraction='2/3'
         )
+        self.split_history.save()
 
-        print len(df_others0)
-        print len(df_others1)
+        print 'run merge_normal_event...'
+        self.eo.merge_new_split_data()
+
+    def test_format_normal_code(self):
+        """
+        Test format df_normal option_code
+        """
+        self.create_test_h5(self.symbol)
+        self.eo = ExtractOption(self.symbol, self.df_stock)
+        self.eo.df_normal = self.df_normal1
+
+        print 'run format_normal_code...'
+        self.eo.format_normal_code()
+
+    def test_start(self):
+        """
+        Test start all methods for extract option data
+        """
+        for symbol in symbols[:1]:
+            print 'using symbol: %s' % symbol
+            underlying = Underlying(
+                symbol=symbol,
+                start='2009-01-01',
+                stop='2016-01-01'
+            )
+            underlying.save()
+            symbol = symbol.lower()
+
+            self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}))
+
+            db = pd.HDFStore(QUOTE)
+            df_stock = db.select('stock/thinkback/%s' % symbol.lower())
+            db.close()
+
+            extract_option = ExtractOption(symbol, df_stock)
+            extract_option.start()
 
 
+# todo: import dividend can mark dividend as special, use for special dividend option calculation
+"""
+todo: validate
+wrong bid ask
+616075  5.00  0.00 2010-12-08      0   44      JAN       11      2.500      0         0  JAN11PUT2.5       0.00  16243  0.01  2.500  PUT      4758  AIG2110122P2.5                          100         0       100.0   100  Standard     2.5           0      0     0       0                   JAN11PUT2.5R100O
 
+same bid ask
+613658  0.19  0.19 2010-12-17      0   35      JAN       11     0.0620      0         0  JAN11CALL2.5     0.1280  16242  0.19  0.190  CALL     63135  AIG1110122C2.5                0       100      100.00  5/100  Standard     2.5           0      0     0      41  JAN11CALL2.5R5/100O
+"""
 
 
 

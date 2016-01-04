@@ -114,7 +114,7 @@ class ThinkBack(object):
 
         options = list()
         for line in self.lines[cycle['start'] + 1:cycle['stop']]:
-            data = [(0 if v in ('', '--', '++') else v)
+            data = [(0 if v in ('', '--', '++', '<empty>') else v)
                     for v in line[2:-2].replace('%', '').split(',')]
 
             """Bid,Ask,Exp,Strike,Bid,Ask"""

@@ -2,11 +2,15 @@ from HTMLParser import HTMLParser
 import os
 import re
 import urllib2
+from glob import glob
+
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from pandas_datareader.data import get_data_google, get_data_yahoo
+from shutil import rmtree
+
 from data.models import Underlying, Treasury
 from rivers.settings import QUOTE, BASE_DIR
 import numpy as np
@@ -346,6 +350,31 @@ def import_dividend(lines, symbol):
         underlying.save()
 
 
+def group_event_files():
+    """
+    Move files from fidelity __raw__ folder into earnings and dividends folder
+    :return: None
+    """
+    files = glob(os.path.join(BASE_DIR, 'files', 'fidelity', '__raw__', '*.html'))
+    earning_path = os.path.join(BASE_DIR, 'files', 'fidelity', 'earnings')
+    dividend_path = os.path.join(BASE_DIR, 'files', 'fidelity', 'dividends')
+
+    for f0 in files:
+        fname = os.path.basename(f0)
+        if 'Earnings' in f0:
+            f1 = os.path.join(earning_path, fname)
+        else:
+            f1 = os.path.join(dividend_path, fname)
+
+        if os.path.isfile(f1):
+            os.remove(f1)
+
+        os.rename(f0, f1)
+    else:
+        rmtree(os.path.join(BASE_DIR, 'files', 'fidelity', '__raw__'), ignore_errors=True)
+        os.mkdir(os.path.join(BASE_DIR, 'files', 'fidelity', '__raw__'))
+
+
 def html_event_import(request, symbol):
     """
     HTML event import without using form
@@ -353,6 +382,8 @@ def html_event_import(request, symbol):
     :param symbol: str
     :return: return
     """
+    group_event_files()
+
     symbol = symbol.upper()
     earning_lines = open(os.path.join(
         BASE_DIR, 'files', 'fidelity', 'earnings',

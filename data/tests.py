@@ -1,10 +1,9 @@
 import os
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.models import Underlying, Treasury
-from data.views import get_dte_date
+from data.views import group_event_files
 from rivers.settings import QUOTE, BASE_DIR
 import pandas as pd
 
@@ -160,6 +159,18 @@ class TestEventImport(TestSetUp):
             print df_dividend.to_string(line_width=600)
             self.assertTrue(len(df_dividend))
             db.close()
+
+    def test_group_event_files(self):
+        """
+        Test move file from __raw__ into earnings and dividends folder
+        """
+        group_event_files()
+
+        earning_files = os.path.join(BASE_DIR, 'files', 'fidelity', 'earnings', '*.*')
+        dividend_files = os.path.join(BASE_DIR, 'files', 'fidelity', 'dividends', '*.*')
+
+        self.assertGreater(len(earning_files), 1)
+        self.assertGreater(len(dividend_files), 1)
 
 
 class TestUnderlyingManage(TestSetUp):
