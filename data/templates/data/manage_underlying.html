@@ -1,0 +1,188 @@
+{% extends "admin/base_site.html" %}
+{% load i18n l10n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}"/>
+  <link rel="stylesheet" type="text/css" href="/static/admin/css/overrides.css"/>
+
+  <style>
+    .borderless td, .borderless th {
+      border-top: none !important;
+      border-left: none !important;
+    }
+
+    .green {
+      color: green;
+    }
+
+    .red {
+      color: red;
+    }
+
+    .status {
+      padding: 0 0.5em 0.5em 0.5em;
+    }
+
+    .log {
+      height: 200px;
+      overflow: scroll;
+    }
+
+    .missing {
+      height: 150px;
+      overflow: scroll;
+    }
+  </style>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'data' %}">Data</a></li>
+      <li><a href="{% url 'admin:data_underlying_changelist' %}">Underlyings</a></li>
+      <li>Manage</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block bodyclass %}change-form{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading">Underlying status</div>
+        <div class="panel-body">
+          <table class="table borderless">
+            <tr>
+              <td>Symbol:</td>
+              <td>{{ underlying.symbol }}</td>
+              <td>Start:</td>
+              <td>{{ underlying.start_date }}</td>
+              <td>Stop</td>
+              <td>{{ underlying.stop_date }}</td>
+            </tr>
+            <tr>
+              <td>Option:</td>
+              <td>
+                {% if underlying.option %}
+                  <span class="glyphicon glyphicon-ok green"></span>
+                {% else %}
+                  <span class="glyphicon glyphicon-remove red"></span>
+                {% endif %}
+              </td>
+              <td>Final:</td>
+              <td>
+                {% if underlying.final %}
+                  <span class="glyphicon glyphicon-ok green"></span>
+                {% else %}
+                  <span class="glyphicon glyphicon-remove red"></span>
+                {% endif %}
+              </td>
+              <td>Enable:</td>
+              <td>
+                {% if underlying.enable %}
+                  <span class="glyphicon glyphicon-ok green"></span>
+                {% else %}
+                  <span class="glyphicon glyphicon-remove red"></span>
+                {% endif %}
+              </td>
+            </tr>
+          </table>
+
+          <div class="status">
+            Log:
+            <pre class="log">{{ underlying.log }}</pre>
+
+            Missing:
+            <pre class="missing">{{ underlying.missing }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+
+    <div class="col-md-3">
+      <div class="list-group">
+        <a href="#" class="list-group-item disabled">Preparation</a>
+        <a href="{% url 'admin:html_event_import' symbol %}" class="list-group-item">
+          1. Import Earnings/Dividends
+        </a>
+        <a href="{% url 'admin:data_splithistory_add' %}" class="list-group-item">
+          2. Add Split History
+        </a>
+      </div>
+
+      <div class="list-group">
+        <a href="#" class="list-group-item disabled">Thinkback CSV</a>
+        <a href="{% url 'admin:raw_stock_h5' symbol %}" class="list-group-item">
+          1. Import Stock
+        </a>
+        <a href="{% url 'admin:raw_option_h5' symbol %}" class="list-group-item">
+          2. Import Raw Option
+        </a>
+        <a href="{% url 'admin:valid_option_h5' symbol %}" class="list-group-item">
+          3. Valid Raw Option
+        </a>
+        <a href="{% url 'admin:clean_normal_h5' symbol %}" class="list-group-item">
+          4. Clean Normal Option
+        </a>
+        <a href="{% url 'admin:clean_split_new_h5' symbol %}" class="list-group-item">
+          5. Clean Split/New Option
+        </a>
+        <a href="{% url 'admin:clean_split_old_h5' symbol %}" class="list-group-item">
+          6. Clean Split/Old Option
+        </a>
+        <a href="#" class="list-group-item">
+          7. Clean Others Option
+        </a>
+        <a href="{% url 'admin:fillna_normal_h5' symbol %}" class="list-group-item">
+          8. FillNA Normal Option
+        </a>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="list-group">
+        <a href="#" class="list-group-item disabled">Web Download</a>
+        <a href="{% url 'admin:web_stock_h5' 'google' symbol %}" class="list-group-item">
+          1. Import Google Data
+        </a>
+        <a href="{% url 'admin:web_stock_h5' 'yahoo' symbol %}" class="list-group-item">
+          2. Import Yahoo Data
+        </a>
+      </div>
+
+      <div class="list-group">
+        <a href="#" class="list-group-item disabled">Underlying Control</a>
+        <a href="{% url 'admin:truncate_symbol' symbol %}" class="list-group-item">
+          Truncate Symbol
+        </a>
+        <a href="{% url 'admin:set_underlying' symbol 'final' %}" class="list-group-item">
+          {% if underlying.final %}
+            Unset Underlying Final
+          {% else %}
+            Set Underlying Final
+          {% endif %}
+        </a>
+        <a href="{% url 'admin:set_underlying' symbol 'option' %}" class="list-group-item">
+          {% if underlying.final %}
+            Unset Underlying Optionable
+          {% else %}
+            Set Underlying Optionable
+          {% endif %}
+        </a>
+        <a href="{% url 'admin:set_underlying' symbol 'enable' %}" class="list-group-item">
+          {% if underlying.enable %}
+            Disable Symbol
+          {% else %}
+            Enable Symbol
+          {% endif %}
+        </a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

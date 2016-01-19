@@ -1,29 +1,20 @@
-from django.db import models
 import pandas as pd
+from django.db import models
 from rivers.settings import QUOTE
 
 
 class Underlying(models.Model):
     symbol = models.CharField(max_length=20, unique=True)
 
-    start = models.DateField(default='2009-01-01')
-    stop = models.DateField()
+    start_date = models.DateField(default='2009-01-01')
+    stop_date = models.DateField(null=True, blank=True)
 
-    thinkback = models.IntegerField(default=0)
-    contract = models.BigIntegerField(default=0)
-    option = models.BigIntegerField(default=0)
-
-    google = models.IntegerField(default=0)
-    yahoo = models.IntegerField(default=0)
-
-    earning = models.IntegerField(default=0)
-    dividend = models.IntegerField(default=0)
-
-    # for thinkback csv only
-    updated = models.BooleanField(default=False)   # is underlying up to date?
-    optionable = models.BooleanField(default=False)  # options imported
+    option = models.BooleanField(default=False)  # got option or not
+    final = models.BooleanField(default=False)  # ready to use or not
+    enable = models.BooleanField(default=False)  # use or not use
 
     missing = models.TextField(default='', blank=True)  # all missing dates
+    log = models.TextField(default='', blank=True)  # use for all process
 
     class Meta:
         ordering = ['symbol']
@@ -88,8 +79,6 @@ class Underlying(models.Model):
             except KeyError:
                 pass
 
-            #print df_stock
-
             if len(df_stock):
                 data = dict(df_stock.ix[df_stock.index[0]])
 
@@ -135,7 +124,8 @@ class SplitHistory(models.Model):
 
 class Treasury(models.Model):
     """
-    "Series Description","Market yield on U.S. Treasury securities at 1-year   constant maturity, quoted on investment basis"
+    "Series Description","Market yield on U.S. Treasury securities at 1-year
+    constant maturity, quoted on investment basis"
     "Unit:","Percent:_Per_Year"
     "Multiplier:","1"
     "Currency:","NA"
@@ -179,16 +169,3 @@ class Treasury(models.Model):
         return '{time_period}'.format(
             time_period=self.time_period
         )
-
-
-
-
-
-
-
-
-
-
-
-
-

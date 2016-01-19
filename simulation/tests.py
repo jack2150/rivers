@@ -70,14 +70,14 @@ class TestStrategyAnalysisForm2(TestSetUp):
 
         underlying = Underlying()
         underlying.symbol = self.algorithm_result.symbol.upper()
-        underlying.start = '2009-01-01'
-        underlying.stop = '2016-01-01'
+        underlying.start_date = '2009-01-01'
+        underlying.stop_date = '2016-01-01'
         underlying.save()
 
         underlying2 = Underlying()
         underlying2.symbol = 'SPY'
-        underlying2.start = '2009-01-01'
-        underlying2.stop = '2016-01-01'
+        underlying2.start_date = '2009-01-01'
+        underlying2.stop_date = '2016-01-01'
         underlying2.save()
 
         print self.algorithm_result.symbol

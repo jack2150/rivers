@@ -4,7 +4,6 @@ from simulation.models import Strategy
 from simulation.strategy.covered.covered_call import *
 
 
-# todo: here
 class TestStrategyCoveredCall(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
@@ -17,8 +16,6 @@ class TestStrategyCoveredCall(TestUnitSetUp):
         self.quant.seed_data(self.symbol)
         self.hd_args = {'dte': 45}
         self.cs_args = {'side': 'buy'}
-        #self.hd_args = {'span': 60, 'previous': 20}
-        #self.cs_args = {'holding': 20}
 
         self.strategy = Strategy.objects.get(name='Covered Call CS')
         self.args = {

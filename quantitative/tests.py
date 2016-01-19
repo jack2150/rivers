@@ -51,8 +51,8 @@ class TestAlgorithmAnalysis(TestUnitSetUp):
         try:
             self.underlying = Underlying()
             self.underlying.symbol = 'AIG'
-            self.underlying.start = '2009-01-01'
-            self.underlying.stop = '2016-01-01'
+            self.underlying.start_date = '2009-01-01'
+            self.underlying.stop_date = '2016-01-01'
         except IntegrityError:
             self.underlying = Underlying.objects.get(symbol='AIG')
 

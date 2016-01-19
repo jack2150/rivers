@@ -124,7 +124,7 @@ def strategy_analysis1(request, algorithmresult_id):
         )
 
         underlying = Underlying.objects.get(symbol=algorithm_result.symbol)
-        if not algorithm_result.algorithm.optionable or not underlying.optionable:
+        if not algorithm_result.algorithm.optionable or not underlying.option:
             form.fields['strategy'].choices = Strategy.objects.exclude(
                 instrument__in=('Covered', 'Option')
             ).order_by('id').reverse().values_list('id', 'name')

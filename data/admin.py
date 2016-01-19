@@ -1,21 +1,23 @@
 from bootstrap3_datetime.widgets import DateTimePicker
 from django.contrib import admin
-from data.plugin.fillna.views import fillna_option
-from data.plugin.clean.views import *
-from data.plugin.csv.views import *
-from data.plugin.raw.views import *
-from data.plugin.raw2.views import raw_option_h5
-from data.plugin.split.views import *
-from data.views import *
+from pandas.tseries.offsets import BDay
+
+from data.tb.clean.views import *
+from data.tb.fillna.views import fillna_normal_h5
+from data.tb.raw.views import raw_stock_h5, raw_option_h5
+from data.tb.valid.views import valid_option_h5
+from data.event.views import html_event_import
+from data.web.views import web_stock_h5, web_treasury_h5
 from data.models import *
+from data.views import *
 
 
 class UnderlyingForm(forms.ModelForm):
-    start = forms.DateField(
+    start_date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False}),
         initial=pd.datetime.strptime('2009-01-01', '%Y-%m-%d')
     )
-    stop = forms.DateField(
+    stop_date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False}),
         initial=pd.Timestamp('%s%02d%02d' % (
             pd.datetime.today().year, pd.datetime.today().month, 1
@@ -27,58 +29,26 @@ class UnderlyingAdmin(admin.ModelAdmin):
     form = UnderlyingForm
 
     def data_manage(self):
-        href = """
-        <div class="dropdown">
-          <button class="btn btn-default btn-xs dropdown-toggle" type="button"
-            id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-            Manage
-            <span class="caret"></span>
-          </button>
-          <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-            <li><a href="{stock_link}">Csv import stock</a></li>
-            <li><a href="{option_link}">Csv import options</a></li>
-            <li><a href="{google_link}">Web import google</a></li>
-            <li><a href="{yahoo_link}">Web import yahoo</a></li>
-            <li class="divider"></li>
-            <li><a href="{event_import}">Event import</a></li>
-            <li class="divider"></li>
-            <li><a href="{truncate_link}">Truncate data</a></li>
-          </ul>
-        </div>
-        """
-        symbol = self.symbol.lower()
-        return href.format(
-            stock_link=reverse('admin:csv_stock_h5', kwargs={'symbol': symbol}),
-            option_link=reverse('admin:csv_option_h5', kwargs={'symbol': symbol}),
-            google_link=reverse('admin:web_stock_h5', args=('google', symbol)),
-            yahoo_link=reverse('admin:web_stock_h5', args=('yahoo', symbol)),
-            event_import=reverse('admin:html_event_import', kwargs={'symbol': symbol}),
-            truncate_link=reverse('admin:truncate_symbol', kwargs={'symbol': symbol})
+        return "<a href='{link}'>Manage</a>".format(
+            link=reverse('admin:manage_underlying', kwargs={'symbol': self.symbol.lower()})
         )
 
     data_manage.short_description = ''
     data_manage.allow_tags = True
 
     list_display = (
-        'symbol', 'start', 'stop', 'thinkback', 'contract', 'option',
-        'google', 'yahoo', 'earning', 'dividend', 'updated', 'optionable',
-        data_manage
+        'symbol', 'start_date', 'stop_date', 'option', 'final', data_manage
     )
 
     fieldsets = (
         ('Primary Fields', {
             'fields': (
-                'symbol', 'start', 'stop',
-                'thinkback', 'contract', 'option',
-                'google', 'yahoo',
-                'earning', 'dividend',
-                'updated', 'optionable', 'missing'
+                'symbol', 'start_date', 'stop_date',
+                'option', 'final',
+                'missing', 'log'
             )
         }),
     )
-
-    readonly_fields = ('thinkback', 'google', 'yahoo',
-                       'contract', 'option', 'earning', 'dividend',)
 
     search_fields = ('symbol', 'start', 'stop')
     list_per_page = 20
@@ -143,7 +113,14 @@ admin.site.register(Underlying, UnderlyingAdmin)
 admin.site.register(SplitHistory, SplitHistoryAdmin)
 admin.site.register(Treasury, TreasuryAdmin)
 
-# admin view
+# manage underlying
+admin.site.register_view(
+    'data/underlying/manage/(?P<symbol>\w+)/$',
+    urlname='manage_underlying', view=manage_underlying
+)
+
+
+# truncate symbol
 admin.site.register_view(
     'data/underlying/truncate/(?P<symbol>\w+)/$',
     urlname='truncate_symbol', view=truncate_symbol
@@ -157,12 +134,32 @@ admin.site.register_view(
 
 # csv h5 stock and option
 admin.site.register_view(
-    'data/h5/import/csv/stock/(?P<symbol>\w+)/$',
-    urlname='csv_stock_h5', view=csv_stock_h5
+    'data/h5/import/raw/stock/(?P<symbol>\w+)/$',
+    urlname='raw_stock_h5', view=raw_stock_h5
 )
 admin.site.register_view(
-    'data/h5/import/csv/option/(?P<symbol>\w+)/$',
-    urlname='csv_option_h5', view=csv_option_h5
+    'data/h5/import/raw/option/(?P<symbol>\w+)/$',
+    urlname='raw_option_h5', view=raw_option_h5
+)
+admin.site.register_view(
+    'data/h5/import/valid/option/(?P<symbol>\w+)/$',
+    urlname='valid_option_h5', view=valid_option_h5
+)
+admin.site.register_view(
+    'data/h5/import/clean/normal/(?P<symbol>\w+)/$',
+    urlname='clean_normal_h5', view=clean_normal_h5
+)
+admin.site.register_view(
+    'data/h5/import/clean/split_new/(?P<symbol>\w+)/$',
+    urlname='clean_split_new_h5', view=clean_split_new_h5
+)
+admin.site.register_view(
+    'data/h5/import/clean/split_old/(?P<symbol>\w+)/$',
+    urlname='clean_split_old_h5', view=clean_split_old_h5
+)
+admin.site.register_view(
+    'data/h5/import/fillna/normal/(?P<symbol>\w+)/$',
+    urlname='fillna_normal_h5', view=fillna_normal_h5
 )
 
 # web h5 stock
@@ -180,46 +177,3 @@ admin.site.register_view(
     'data/h5/import/event/(?P<symbol>\w+)/$',
     urlname='html_event_import', view=html_event_import
 )
-
-
-# clean option data
-admin.site.register_view(
-    'data/h5/clean/raw/option/(?P<symbol>\w+)/(?P<core>\d+)/$',
-    urlname='clean_option', view=clean_option
-)
-
-admin.site.register_view(
-    'data/h5/fillna/raw/option/(?P<symbol>\w+)/$',
-    urlname='fillna_option', view=fillna_option
-)
-
-"""
-admin.site.register_view(
-    'data/h5/import/raw/option/(?P<symbol>\w+)/$',
-    urlname='csv_option_h5x', view=csv_option_h5x
-)
-"""
-
-admin.site.register_view(
-    'data/h5/clean/raw/split/option/(?P<symbol>\w+)/$',
-    urlname='clean_split_option', view=clean_split_option
-)
-
-admin.site.register_view(
-    'data/h5/clean/merge/split/option/(?P<symbol>\w+)/$',
-    urlname='merge_split_data', view=merge_split_data
-)
-
-############################
-
-
-admin.site.register_view(
-    'data/h5/import/raw/option/(?P<symbol>\w+)/$',
-    urlname='raw_option_h5', view=raw_option_h5
-)
-"""
-admin.site.register_view(
-    'data/h5/merge/raw2/option/(?P<symbol>\w+)/$',
-    urlname='merge_raw_option', view=merge_raw_option
-)
-"""

@@ -2,12 +2,13 @@ from pandas_datareader.data import get_data_google, get_data_yahoo
 from checklist.models import *
 from datetime import datetime
 from data.models import Underlying
-from data.plugin.csv.views import get_dte_date
-from data.views import web_stock_h5
 from django import forms
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
+
+from data.tb.raw.options import get_dte_date2
+from data.web.views import web_stock_h5
 from rivers.settings import QUOTE
 from simulation.models import StrategyResult
 from statement.models import *
@@ -88,19 +89,12 @@ def position_spreads(request, date):
             elif position.name == 'CUSTOM':
                 stage = '...'
             else:
-                #print position.symbol,
-                #print Underlying.get_price(position.symbol, date.date())
                 try:
-
-                    #print position.positionstage_set.all()
-                    #print position.make_conditions()
                     stage = position.current_stage(
                         Underlying.get_price(position.symbol, date.date())['close']
                     )
                 except (ObjectDoesNotExist, TypeError, IndexError):
                     stage = '...'
-
-        # todo: vxx problem
 
         opinion = dict(exists=False, condition='UNKNOWN', action='HOLD', name='')
         holding_opinion = position.holdingopinion_set.filter(date=date)
@@ -145,6 +139,7 @@ def create_opinion(request, opinion, id, date):
     """
     Get existing or create new holding opinion
     :param request: request
+    :param opinion: str
     :param id: int
     :param date: str
     :return: render
@@ -279,29 +274,22 @@ def position_report(request, id, date=None):
     position = Position.objects.get(id=id)
 
     if date:
-        #date_query1 = Q(date__gte=position.start) & Q(date__lte=date)
         date_query1 = {'start': position.start, 'stop': date}
         date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=date)
     else:
         if position.stop:
-            #date_query1 = Q(date__gte=position.start) & Q(date__lte=position.stop)
             date_query1 = {'start': position.start, 'stop': position.stop}
             date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=position.stop)
             date = position.stop.strftime('%Y-%m-%d')
         else:
             date = position.profitloss_set.order_by('statement__date')\
                 .last().statement.date.strftime('%Y-%m-%d')
-            #date_query1 = Q(date__gte=position.start) & Q(date__lte=date)
             date_query1 = {'start': position.start, 'stop': date}
             date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=date)
 
     # opinion
     holding_opinions = position.holdingopinion_set.all()
 
-    # stock
-    #stocks = Stock.objects.filter(
-    #    Q(symbol=position.symbol) & Q(source='google') & date_query1
-    #)
     try:
         stocks = Underlying.objects.get(symbol=position.symbol).get_stock(
             source='google', **date_query1
@@ -310,8 +298,8 @@ def position_report(request, id, date=None):
     except ObjectDoesNotExist:
         underlying = Underlying()
         underlying.symbol = position.symbol
-        underlying.start = '2009-01-01'
-        underlying.stop = position.stop if position.stop else date
+        underlying.start_date = '2009-01-01'
+        underlying.stop_date = position.stop if position.stop else date
         underlying.save()
 
         web_stock_h5(request, source='google', symbol=position.symbol.lower())
@@ -342,7 +330,7 @@ def position_report(request, id, date=None):
     basic['dte'] = None
     if position.name not in ('STOCK', ''):
         ex_month, ex_year = position.holdingoption_set.first().exp.split(' ')
-        basic['expire_date'] = get_dte_date(ex_month, int(ex_year))
+        basic['expire_date'] = get_dte_date2(ex_month, int(ex_year))
         basic['dte'] = (basic['expire_date'] - date0).days
 
     basic['quantity'] = '/'.join(['%+d' % a['qty'] for a in open_trades.values('qty')])
@@ -494,7 +482,6 @@ def position_report(request, id, date=None):
         quant['var_pct95'] = strategy_result.algorithm_result.var_pct95 - quant['min_pct']
 
         # drawdown using left right
-        #print strategy_result.algorithm_result.max_dd
         closes = [r['stock']['close'] for r in reports]
         basic['drawdown'] = round((min(closes) - max(closes)) / max(closes), 4)
         quant['drawdown'] = strategy_result.algorithm_result.max_dd - basic['drawdown']
@@ -521,10 +508,7 @@ def position_report(request, id, date=None):
 
     last_pl = 0.0
     for historical in historicals:
-        #print historical
-        #print historical.start, historical.stop
         pl_close = float(historical.profitloss_set.get(statement__date=historical.stop).pl_ytd)
-        #print 'current pl', pl_stop - last_pl
         historical.pl_close = pl_close - last_pl
         last_pl = pl_close
 
@@ -561,6 +545,7 @@ def daily_import(request, date, ready_all=0):
     Daily google and yahoo import
     :param request: request
     :param date: str
+    :param ready_all: int
     :return: render
     """
     statement = Statement.objects.get(date=date)
@@ -580,16 +565,16 @@ def daily_import(request, date, ready_all=0):
         end = date
         try:
             underlying = Underlying.objects.get(symbol=symbol)
-            start = underlying.stop
-            underlying.stop = date
+            start = underlying.stop_date
+            underlying.stop_date = date
             underlying.save()
         except ObjectDoesNotExist:
             underlying = Underlying()
             underlying.symbol = symbol
-            underlying.start = '2009-01-01'
-            underlying.stop = date
+            underlying.start_date = '2009-01-01'
+            underlying.stop_date = date
             underlying.save()
-            start = underlying.start
+            start = underlying.start_date
 
         if start == end:
             continue
@@ -626,11 +611,9 @@ def daily_import(request, date, ready_all=0):
                 )
 
                 # update symbol stat
-                if source == 'google':
-                    underlying.google += len(df_stock)
-                else:
-                    underlying.yahoo += len(df_stock)
-
+                underlying.log += 'Web stock imported, source: %s symbol: %s length: %d\n' % (
+                    source.upper(), symbol.upper(), len(df_stock)
+                )
                 underlying.save()
 
             except IOError:

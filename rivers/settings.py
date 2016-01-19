@@ -107,7 +107,7 @@ STATICFILES_DIRS = (
 )
 
 TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR,  'templates'),
+    os.path.join(BASE_DIR, 'templates'),
 )
 
 # fixtures
@@ -130,7 +130,8 @@ LOGGING = {
             'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
         'simple': {
-            'format': '%(levelname)-10s %(message)s'
+            'format': '[%(asctime)s] %(levelname)s: "%(message)s"',
+            'datefmt': '%d/%b/%Y %H:%M:%S'
         },
     },
     'handlers': {
