@@ -1,6 +1,6 @@
 from data.models import SplitHistory, Underlying
 from data.tb.fillna.calc import *
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE, CLEAN
 
 output = '%-6s | %-30s'
 
@@ -27,11 +27,8 @@ class FillNaSplitNew(object):
         print output % ('PROC', 'Receive data from db')
         print '-' * 70
         db = pd.HDFStore(QUOTE)
-        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
         df_stock = db.select('stock/thinkback/%s' % self.symbol)
-        df_split1 = db.select('option/%s/clean/split/new' % self.symbol)
-        df_split1 = df_split1.reset_index(drop=True)
-
+        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
         try:
             df_dividend = db.select('event/dividend/%s' % self.symbol.lower())
             df_div = get_div_yield(df_stock, df_dividend)
@@ -40,6 +37,11 @@ class FillNaSplitNew(object):
             df_div['date'] = df_stock.index
             df_div['amount'] = 0.0
             df_div['div'] = 0.0
+        db.close()
+
+        db = pd.HDFStore(CLEAN)
+        df_split1 = db.select('option/%s/clean/split/new' % self.symbol)
+        df_split1 = df_split1.reset_index(drop=True)
         db.close()
 
         print output % ('PROC', 'Prepare and merge data')
@@ -314,7 +316,7 @@ class FillNaSplitNew(object):
         df_split1 = pd.concat([self.df_split1, self.df_fillna])
         """:type: pd.DataFrame"""
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(CLEAN)
         try:
             db.remove('option/%s/fillna/split/new' % self.symbol)
         except KeyError:

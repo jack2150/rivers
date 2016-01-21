@@ -21,30 +21,6 @@ class TestCsvToH5(TestSetUp):
     def tearDown(self):
         TestSetUp.tearDown(self)
 
-    def test_csv_option_h5(self):
-        """
-        Test csv option import into h5 db after csv stock import
-        some of the csv can be wrong, for example fslr 08-25-2011 got wrong cycle info
-        """
-        self.skipTest('Only test when need!')
-
-        print 'run csv stock import view...'
-
-        self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': self.symbol}))
-        self.client.get(reverse('admin:csv_option_h5', kwargs={'symbol': self.symbol}))
-
-        db = pd.HDFStore(QUOTE)
-        df_contract = db.select('option/%s/raw/contract' % self.symbol.lower())
-        df_option = db.select('option/%s/raw/data' % self.symbol.lower()).sort_index()
-        db.close()
-
-        self.assertTrue(len(df_contract))
-        self.assertTrue(len(df_option))
-
-        self.assertGreater(len(df_option), len(df_contract))
-
-        # todo: wfc option import problem
-
     def test_csv_stock_h5(self):
         """
         Test csv stock import into h5 db

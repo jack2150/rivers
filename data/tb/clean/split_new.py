@@ -2,7 +2,7 @@ import pandas as pd
 from StringIO import StringIO
 from data.models import Underlying
 from data.tb.fillna.calc import get_div_yield
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE, CLEAN
 
 
 class CleanSplitNew(object):
@@ -17,16 +17,9 @@ class CleanSplitNew(object):
         Merge df_all data with stock close, risk free rate and div yield
         """
         db = pd.HDFStore(QUOTE)
-        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
         df_stock = db.select('stock/thinkback/%s' % self.symbol)
         df_stock = df_stock[['close']]
-
-        try:
-            df_split1 = db.select('option/%s/valid/split/new' % self.symbol)
-            df_split1 = df_split1.reset_index(drop=True)
-        except KeyError:
-            raise LookupError('No data for df_split/new')
-
+        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
         try:
             df_dividend = db.select('event/dividend/%s' % self.symbol.lower())
             df_div = get_div_yield(df_stock, df_dividend)
@@ -35,6 +28,14 @@ class CleanSplitNew(object):
             df_div['date'] = df_stock.index
             df_div['amount'] = 0.0
             df_div['div'] = 0.0
+        db.close()
+
+        db = pd.HDFStore(CLEAN)
+        try:
+            df_split1 = db.select('option/%s/valid/split/new' % self.symbol)
+            df_split1 = df_split1.reset_index(drop=True)
+        except KeyError:
+            raise LookupError('No data for df_split/new')
         db.close()
 
         # merge all into a single table
@@ -80,7 +81,7 @@ class CleanSplitNew(object):
         """:type: pd.DataFrame"""
 
         # save data
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(CLEAN)
         try:
             db.remove('option/%s/clean/split/new' % self.symbol)
         except KeyError:
@@ -97,6 +98,3 @@ class CleanSplitNew(object):
             self.symbol.upper(), len(self.df_all)
         )
         underlying.save()
-
-
-# todo: not remove new_code, after fillna, then remove new_code

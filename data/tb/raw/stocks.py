@@ -25,6 +25,7 @@ def extract_stock(symbol):
 
     # get underlying
     underlying = Underlying.objects.get(symbol=symbol.upper())
+    underlying.log = ''  # reset log
     start = underlying.start_date
     end = underlying.stop_date
 
@@ -132,7 +133,7 @@ def extract_stock(symbol):
     # update underlying
     underlying.missing = '\n'.join(missing)
     underlying.log += 'Thinkback stock imported, symbol: %s \n' % symbol.upper()
-    underlying.log += 'df_stock length: %d missing dates: %d' % (len(df_stock), len(missing))
+    underlying.log += 'df_stock length: %d missing dates: %d\n' % (len(df_stock), len(missing))
     underlying.save()
 
     print '=' * 60

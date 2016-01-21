@@ -6,40 +6,20 @@ from django.shortcuts import redirect
 logger = logging.getLogger('views')
 
 
-def clean_normal_h5(request, symbol):
+def clean_valid_h5(request, symbol, name):
     """
     Clean valid df_normal column
+
     :param request: request
     :param symbol: str
+    :param name: str ('normal', 'split_old', 'split_new')
     :return: render
     """
-    logger.info('Start cli for clean_normal: %s' % symbol.upper())
-    os.system("start cmd /k python data/manage.py read_clean --symbol=%s --name=normal" % symbol)
+    name = name.replace('_', '/')
 
-    return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
-
-
-def clean_split_new_h5(request, symbol):
-    """
-    Clean valid df_split/new column
-    :param request: request
-    :param symbol: str
-    :return: render
-    """
-    logger.info('Start cli for clean_split_new: %s' % symbol.upper())
-    os.system("start cmd /k python data/manage.py read_clean --symbol=%s --name=split/new" % symbol)
-
-    return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
-
-
-def clean_split_old_h5(request, symbol):
-    """
-    Clean valid df_split/old column
-    :param request: request
-    :param symbol: str
-    :return: render
-    """
-    logger.info('Start cli for clean_split_old: %s' % symbol.upper())
-    os.system("start cmd /k python data/manage.py read_clean --symbol=%s --name=split/old" % symbol)
+    logger.info('Start cli for clean: %s %s' % (symbol.upper(), name))
+    os.system("start cmd /k python data/manage.py read_clean --symbol=%s --name=%s" % (
+        symbol, name
+    ))
 
     return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))

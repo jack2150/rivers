@@ -27,7 +27,7 @@ def raw_option_h5(request, symbol):
     :param symbol: str
     :return: render
     """
-    logger.info('Start cli for import_raw: %s' % symbol)
-    os.system("start cmd /k python data/manage.py import_raw --symbol=%s" % symbol)
+    logger.info('Start cli for prepare_raw: %s' % symbol)
+    os.system("start cmd /k python data/manage.py prepare_raw --symbol=%s" % symbol)
 
     return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))

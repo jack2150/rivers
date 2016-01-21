@@ -2,7 +2,7 @@ import pandas as pd
 from StringIO import StringIO
 from data.models import Underlying
 from data.tb.fillna.calc import get_div_yield
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE, CLEAN
 
 
 class CleanNormal(object):
@@ -17,12 +17,9 @@ class CleanNormal(object):
         Merge df_all data with stock close, risk free rate and div yield
         """
         db = pd.HDFStore(QUOTE)
-        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
         df_stock = db.select('stock/thinkback/%s' % self.symbol)
         df_stock = df_stock[['close']]
-        df_normal = db.select('option/%s/valid/normal' % self.symbol)
-        df_normal = df_normal.reset_index(drop=True)
-
+        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
         try:
             df_dividend = db.select('event/dividend/%s' % self.symbol.lower())
             df_div = get_div_yield(df_stock, df_dividend)
@@ -31,6 +28,11 @@ class CleanNormal(object):
             df_div['date'] = df_stock.index
             df_div['amount'] = 0.0
             df_div['div'] = 0.0
+        db.close()
+
+        db = pd.HDFStore(CLEAN)
+        df_normal = db.select('option/%s/valid/normal' % self.symbol)
+        df_normal = df_normal.reset_index(drop=True)
         db.close()
 
         # merge all into a single table
@@ -78,7 +80,7 @@ class CleanNormal(object):
         """:type: pd.DataFrame"""
 
         # save data
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(CLEAN)
         try:
             db.remove('option/%s/clean/normal' % self.symbol)
         except KeyError:

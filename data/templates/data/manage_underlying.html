@@ -103,9 +103,44 @@
       </div>
     </div>
 
-
-
-
+    <div class="col-md-3">
+      <div class="list-group">
+        <a href="#" class="list-group-item disabled">Thinkback CSV</a>
+        <a href="{% url 'admin:raw_stock_h5' symbol %}" class="list-group-item">
+          1. Import Stock
+        </a>
+        <a href="{% url 'admin:raw_option_h5' symbol %}" class="list-group-item">
+          2. Import Raw Option
+        </a>
+        <a href="{% url 'admin:valid_option_h5' symbol %}" class="list-group-item">
+          3. Valid Raw Option
+        </a>
+        <a href="{% url 'admin:clean_valid_h5' symbol 'normal' %}" class="list-group-item">
+          4a. Clean Normal Option
+        </a>
+        <a href="{% url 'admin:clean_valid_h5' symbol 'split_new' %}" class="list-group-item">
+          4b. Clean Split/New Option
+        </a>
+        <a href="{% url 'admin:clean_valid_h5' symbol 'split_old' %}" class="list-group-item">
+          4c. Clean Split/Old Option
+        </a>
+        <a href="#" class="list-group-item">
+          4d. Clean Others Option
+        </a>
+        <a href="{% url 'admin:fillna_missing_h5' symbol 'normal' %}" class="list-group-item">
+          5a. FillNA Normal Option
+        </a>
+        <a href="{% url 'admin:fillna_missing_h5' symbol 'split_new' %}" class="list-group-item">
+          5b. FillNA Split/New Option
+        </a>
+        <a href="{% url 'admin:fillna_missing_h5' symbol 'split_old' %}" class="list-group-item">
+          5b. FillNA Split/Old Option
+        </a>
+        <a href="{% url 'admin:merge_final_h5' symbol %}" class="list-group-item">
+          6. Merge final data
+        </a>
+      </div>
+    </div>
     <div class="col-md-3">
       <div class="list-group">
         <a href="#" class="list-group-item disabled">Preparation</a>
@@ -118,34 +153,19 @@
       </div>
 
       <div class="list-group">
-        <a href="#" class="list-group-item disabled">Thinkback CSV</a>
+        <a href="#" class="list-group-item disabled">Clean Process</a>
         <a href="{% url 'admin:raw_stock_h5' symbol %}" class="list-group-item">
-          1. Import Stock
+          1. Import stocks
         </a>
-        <a href="{% url 'admin:raw_option_h5' symbol %}" class="list-group-item">
-          2. Import Raw Option
+        <a href="{% url 'admin:import_option_h5' symbol %}" class="list-group-item">
+          2. Import options
         </a>
-        <a href="{% url 'admin:valid_option_h5' symbol %}" class="list-group-item">
-          3. Valid Raw Option
+        <a href="{% url 'admin:remove_clean_h5' symbol %}" class="list-group-item">
+          3. Remove clean data
         </a>
-        <a href="{% url 'admin:clean_normal_h5' symbol %}" class="list-group-item">
-          4. Clean Normal Option
-        </a>
-        <a href="{% url 'admin:clean_split_new_h5' symbol %}" class="list-group-item">
-          5. Clean Split/New Option
-        </a>
-        <a href="{% url 'admin:clean_split_old_h5' symbol %}" class="list-group-item">
-          6. Clean Split/Old Option
-        </a>
-        <a href="#" class="list-group-item">
-          7. Clean Others Option
-        </a>
-        <a href="{% url 'admin:fillna_normal_h5' symbol %}" class="list-group-item">
-          8. FillNA Normal Option
-        </a>
+
       </div>
-    </div>
-    <div class="col-md-3">
+
       <div class="list-group">
         <a href="#" class="list-group-item disabled">Web Download</a>
         <a href="{% url 'admin:web_stock_h5' 'google' symbol %}" class="list-group-item">

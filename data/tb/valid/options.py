@@ -1,8 +1,7 @@
 import pandas as pd
 
 from data.models import Underlying
-from rivers.settings import QUOTE
-
+from rivers.settings import CLEAN
 
 output = '%-6s | %-30s'
 
@@ -129,14 +128,14 @@ class ValidOption(object):
         """
         names = ['normal', 'others', 'split0', 'split1']
         keys = ['normal', 'others', 'split/old', 'split/new']
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(CLEAN)
         for name, key in zip(names, keys):
             try:
                 self.df_list[name] = db.select('option/%s/raw/%s' % (self.symbol, key))
             except KeyError:
                 pass
         db.close()
-        
+
         df_result = {}
         for name, key in zip(names, keys):
             if name in self.df_list.keys():
@@ -150,8 +149,8 @@ class ValidOption(object):
                 df_result[name] = self.df_list[name].reset_index(drop=True)
             else:
                 df_result[name] = pd.DataFrame()
-        
-        db = pd.HDFStore(QUOTE)
+
+        db = pd.HDFStore(CLEAN)
         try:
             db.remove('option/%s/valid' % self.symbol)
         except KeyError:
@@ -160,7 +159,7 @@ class ValidOption(object):
             if len(df_result[name]):
                 db.append('option/%s/valid/%s' % (self.symbol, key), df_result[name])
         db.close()
-        
+
         print 'All validation complete and save'
 
     def update_underlying(self):

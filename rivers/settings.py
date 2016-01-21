@@ -161,7 +161,7 @@ LOGGING = {
 
 # HDF5 Store
 QUOTE = os.path.join(BASE_DIR, 'quote.h5')
-
+CLEAN = os.path.join(BASE_DIR, 'clean.h5')
 
 # for test only
 if 'test' in sys.argv:

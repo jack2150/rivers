@@ -1,6 +1,6 @@
 from data.models import Underlying
 from data.tb.fillna.calc import *
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE, CLEAN
 
 output = '%-6s | %-30s'
 
@@ -25,11 +25,8 @@ class FillNaNormal(object):
         print output % ('PROC', 'Receive data from db')
         print '-' * 70
         db = pd.HDFStore(QUOTE)
-        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
         df_stock = db.select('stock/thinkback/%s' % self.symbol)
-        df_normal = db.select('option/%s/clean/normal' % self.symbol)
-        df_normal = df_normal.reset_index(drop=True)
-
+        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
         try:
             df_dividend = db.select('event/dividend/%s' % self.symbol.lower())
             df_div = get_div_yield(df_stock, df_dividend)
@@ -40,6 +37,11 @@ class FillNaNormal(object):
             df_div['div'] = 0.0
         db.close()
 
+        db = pd.HDFStore(CLEAN)
+        df_normal = db.select('option/%s/clean/normal' % self.symbol)
+        df_normal = df_normal.reset_index(drop=True)
+        db.close()
+
         print output % ('PROC', 'Prepare and merge data')
         self.df_stock = df_stock['close']
         self.df_normal = df_normal
@@ -47,7 +49,7 @@ class FillNaNormal(object):
         self.df_div = df_div
 
         # output stat
-        print output % ('STAT', 'Length df_split/old: %d' % len(df_split1))
+        print output % ('STAT', 'Length df_normal: %d' % len(df_normal))
 
     def count_missing(self):
         """
@@ -280,7 +282,7 @@ class FillNaNormal(object):
         df_normal = pd.concat([self.df_normal, self.df_fillna])
         """:type: pd.DataFrame"""
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(CLEAN)
         try:
             db.remove('option/%s/fillna/normal' % self.symbol)
         except KeyError:

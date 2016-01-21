@@ -2,6 +2,7 @@ from django import forms
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from data.models import Underlying
+from data.tb.final.views import reshape_h5
 from rivers.settings import QUOTE
 import pandas as pd
 
@@ -49,10 +50,7 @@ def truncate_symbol(request, symbol):
             keys = [
                 'stock/thinkback/%s', 'stock/google/%s', 'stock/yahoo/%s',
                 'event/earning/%s', 'event/dividend/%s',
-                'option/%s/raw/contract', 'option/%s/raw/data',
-                'option/%s/clean/contract', 'option/%s/clean/data',
-                'option/%s/other/contract', 'option/%s/other/data',
-                'option/%s/final/contract', 'option/%s/final/data',
+                'option/%s/final/contract', 'option/%s/final/data'
             ]
             for key in keys:
                 try:
@@ -66,11 +64,15 @@ def truncate_symbol(request, symbol):
             underlying = Underlying.objects.get(symbol=symbol)
             underlying.option = False
             underlying.final = False
+            underlying.enable = False
             underlying.missing = ''
             underlying.log = ''
             underlying.save()
 
-            return redirect(reverse('admin:data_underlying_changelist'))
+            # reshape db
+            reshape_h5('quote.h5')
+
+            return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
     else:
         form = TruncateSymbolForm(
             initial={'symbol': symbol}
@@ -78,13 +80,10 @@ def truncate_symbol(request, symbol):
 
         db = pd.HDFStore(QUOTE)
 
-        names = ['thinkback', 'google', 'yahoo', 'contract', 'option', 'earning', 'dividend']
+        names = ['thinkback', 'google', 'yahoo', 'earning', 'dividend', 'contract', 'option']
         keys = [
             'stock/thinkback/%s', 'stock/google/%s', 'stock/yahoo/%s',
             'event/earning/%s', 'event/dividend/%s',
-            'option/%s/raw/contract', 'option/%s/raw/data',
-            'option/%s/clean/contract', 'option/%s/clean/data',
-            'option/%s/other/contract', 'option/%s/other/data',
             'option/%s/final/contract', 'option/%s/final/data'
         ]
 
@@ -132,8 +131,6 @@ def truncate_symbol(request, symbol):
     )
 
     return render(request, template, parameters)
-
-# todo: rework truncate
 
 
 def manage_underlying(request, symbol):

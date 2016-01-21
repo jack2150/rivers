@@ -107,7 +107,6 @@ def web_treasury_h5(request):
                 data0[name] = raw[3]
                 if name == 'multiplier':
                     data0[name] = float(raw[3])
-                print name
 
             # remove old treasury
             try:

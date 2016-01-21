@@ -6,8 +6,7 @@ from fractions import Fraction
 from django.db.models import Q
 from data.tb.thinkback import ThinkBack
 from data.models import SplitHistory, Underlying
-from rivers.settings import QUOTE, BASE_DIR
-
+from rivers.settings import BASE_DIR, CLEAN
 
 # constant for get_dte_date
 output = '%-6s | %-30s %s'
@@ -421,6 +420,10 @@ class ExtractOption(object):
         print output % ('STAT', 'df_others1 length: %d' % len(self.df_others1), '')
         print '-' * 70
 
+        if len(self.df_split1) == 0 and len(self.df_others1) == 0:
+            print output % ('INFO', 'No data for continue split/others', '')
+            return
+
         df_date0 = pd.DataFrame()
         if len(self.df_split1):
             group0 = self.df_split1.groupby('option_code')
@@ -699,7 +702,7 @@ class ExtractOption(object):
         print output % ('STAT', 'df_split1 length: %d' % len(self.df_split1), '')
         print output % ('STAT', 'df_split2 length: %d' % len(self.df_split2), '')
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(CLEAN)
 
         try:
             db.remove('option/%s/raw' % self.symbol.lower())
