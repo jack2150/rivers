@@ -4,9 +4,10 @@ from adminplus.sites import AdminSitePlus
 
 admin.site = AdminSitePlus()
 admin.autodiscover()
-admin.site.site_header = 'Rivers quantitative platform'
+admin.site.site_header = 'Rivers'
 
 urlpatterns = patterns(
     '',
     url(r'^admin/', include(admin.site.urls)),
+    # url(r'^algorithm/', include('research.algorithm.urls')),
 )

@@ -1,0 +1,148 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags staticfiles %}
+
+{% block extrahead %}
+  <link rel="stylesheet" type="text/css" href="{% static 'DataTables/datatables.min.css' %}"/>
+
+  <script type="text/javascript" src="{% static 'DataTables/jQuery-2.1.4/jquery-2.1.4.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'DataTables/datatables.min.js' %}"></script>
+  <script type="text/javascript" charset="utf-8">
+    $(document).ready(function () {
+      var table = $('#report').DataTable({
+        "scrollX": true,
+        "pageLength": 10,
+        "autoWidth": true,
+        "searching": false,
+        "dom": '<"top"i>rt<"bottom"flp><"clear">',
+
+        "processing": true,
+        "serverSide": true,
+        "ajax": {
+          url: '{% url 'admin:algorithm_report_json' symbol formula_id %}'
+        },
+
+
+        "columnDefs": [{
+          "targets": 33,
+          "data": 33,
+          "render": function (data, type, full, meta) {
+            return '<a href="' + data + '" target="_blank">Trade</a>';
+          }},
+          {
+            "targets": 32,
+            "data": 32,
+            "render": function (data, type, full, meta) {
+              return '<a href="' + data + '" target="_blank">Signal</a>';
+            }
+          }
+        ]
+      });
+
+      $('#mini').on('click', function (e) {
+        e.preventDefault();
+        var cars = [
+          1, 2, 3, 4, 5, 7,
+          14, 15, 17, 18, 19, 21, 22,
+          23, 24, 25,
+          26, 27, 28, 29, 30, 31
+        ];
+
+        for (var i = 0; i < cars.length; i++) {
+          // Get the column API object
+          var column = table.column(cars[i]);
+
+          // Toggle the visibility
+          column.visible(!column.visible());
+        }
+
+        if ($(this).text() == 'Mini') {
+          $(this).text('Large');
+        }
+        else {
+          $(this).text('Mini');
+        }});
+    });
+
+
+  </script>
+  <style>
+    .dataTables_scrollBody {
+      margin-bottom: 10px;
+    }
+
+    .dataTables_length {
+      width: 50%;
+      float: left;
+    }
+  </style>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'algorithm' %}">Algorithm</a></li>
+      <li><a href="{% url 'admin:algorithm_formula_changelist' %}">Formulas</a></li>
+      <li>Report</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block object-tools %}
+  {{ block.super }}
+
+  <div id="content-navbar-collapse" class="navbar-collapse collapse">
+    <div class="nav navbar-nav navbar-right">
+      <button id="mini" type="button" class="btn btn-primary">Mini</button>
+    </div>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <table id="report">
+    <thead>
+    <tr>
+      <th>Date</th>
+      <th style="width: 180px;">HD Args</th>
+      <th style="width: 180px;">CS Args</th>
+      <th>Start</th>
+      <th>Stop</th>
+      <th>Sharpe RF</th>
+      <th>Sharpe Spy</th>
+      <th>Sortino RF</th>
+      <th>Sortino Spy</th>
+      <th>Buy Hold</th>
+      <th style="width: 56px;">PL Count</th>
+      <th style="width: 56px;">PL Sum</th>
+      <th>PL Cumprod</th>
+      <th>PL Mean</th>
+      <th>PL Std</th>
+      <th>Profit Count</th>
+      <th>Profit Chance</th>
+      <th>Profit Max</th>
+      <th>Profit Min</th>
+      <th>Loss Count</th>
+      <th>Loss Chance</th>
+      <th>Loss Max</th>
+      <th>Loss Min</th>
+      <th>VaR 95</th>
+      <th>VaR 99</th>
+      <th>Max DD</th>
+      <th>DP Count</th>
+      <th>DP Chance</th>
+      <th>DP Mean</th>
+      <th>DL Count</th>
+      <th>DL Chance</th>
+      <th>DL Mean</th>
+      <th>Signal</th>
+      <th>Trade</th>
+    </tr>
+    </thead>
+  </table>
+
+  <script type="text/javascript">
+    // For demo to fit into DataTables site builder...
+    $('#report').addClass('table table-striped table-bordered small');
+  </script>
+{% endblock %}
+

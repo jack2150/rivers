@@ -11,7 +11,7 @@ class TestStrategy(TestUnitSetUp):
         self.symbol = 'AIG'
         self.algorithm = Algorithm.objects.get(rule='EWMA change direction')
 
-        self.quant = self.algorithm.make_quant()
+        self.quant = self.algorithm.start_backtest()
         self.quant.seed_data(self.symbol)
         self.quant.arguments = {'span': 120, 'previous': 20}
         self.df_stock = self.quant.handle_data(self.quant.data[self.symbol], **self.quant.arguments)

@@ -38,7 +38,8 @@ INSTALLED_APPS = (
     'bootstrap3_datetime',  # django-bootstrap3-datetimepicker
     'django_extensions',
 
-    'django.contrib.admin',
+    # 'django.contrib.admin',
+    'django.contrib.admin.apps.SimpleAdminConfig',  # adminplus replace
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -48,8 +49,10 @@ INSTALLED_APPS = (
     'base',
     'data',
     'statement',
-    'quantitative',
+    # 'quantitative',
     'simulation',
+    'research.algorithm',
+    # 'research.strategy',
     'checklist',
 )
 
@@ -162,6 +165,7 @@ LOGGING = {
 # HDF5 Store
 QUOTE = os.path.join(BASE_DIR, 'quote.h5')
 CLEAN = os.path.join(BASE_DIR, 'clean.h5')
+RESEARCH = os.path.join(BASE_DIR, 'store')
 
 # for test only
 if 'test' in sys.argv:

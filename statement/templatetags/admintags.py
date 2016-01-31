@@ -100,3 +100,8 @@ def percent2(obj):
     except TypeError:
         result = obj
     return result
+
+
+@register.filter
+def index(item, i):
+    return item[int(i - 1)]

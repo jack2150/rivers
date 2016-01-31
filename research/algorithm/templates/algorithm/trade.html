@@ -1,0 +1,250 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags staticfiles %}
+
+{% block extrastyle %}
+  <style>
+    .trade-select option {
+      line-height: 3;
+    }
+
+    .trade-pad {
+      padding: 4px;
+    }
+
+    .dataTables_length {
+      width: 50%;
+      float: left;
+    }
+
+    .dataTables_paginate {
+
+    }
+  </style>
+{% endblock %}
+
+{% block extrahead %}
+  <link rel="stylesheet" type="text/css" href="{% static 'DataTables/datatables.min.css' %}"/>
+
+  <script type="text/javascript" src="{% static 'DataTables/jQuery-2.1.4/jquery-2.1.4.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'DataTables/datatables.min.js' %}"></script>
+  <script type="text/javascript" charset="utf-8">
+    $(document).ready(function () {
+      $('.trade-table').DataTable({
+        "searching": false,
+
+        //"bFilter": false,
+        "bInfo": false,
+        "dom": '<"top"i>rt<"bottom"flp><"clear">',
+        //"bLengthChange": true,
+        oLanguage: {
+          sLengthMenu: "_MENU_"
+        }
+      });
+
+      $('#trade-select').on('change', function () {
+        $('.trade').hide();
+        $('.signal').hide();
+        $('#trade-' + this.value).show();
+        $('#signal-' + this.value).show();
+      });
+    });
+  </script>
+
+  <script src="{% static 'Highstock-4.2.1/js/highstock.js' %}"></script>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'algorithm' %}">Algorithm</a></li>
+      <li><a href="{% url 'admin:algorithm_formula_changelist' %}">Formulas</a></li>
+      <li>Report</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-8">
+      {% for trade in trades %}
+        <div class="trade" id="trade-{{ forloop.counter|add:-1 }}">
+          <div id="container-{{ forloop.counter|add:-1 }}"
+               style="height: 400px; width: 98%"></div>
+
+          <script>
+            var ohlc = [
+              {% for s in trade %}
+                [{{ s.index0 }},{{ s.open }},{{ s.high }},{{ s.low }},{{ s.close }}],
+              {% endfor %}
+            ];
+
+            var volume = [
+              {% for s in trade %}
+                [{{ s.index0 }}, {{ s.volume }}],
+              {% endfor %}
+            ];
+
+            // create the chart
+            $('#container' + '-{{ forloop.counter|add:-1 }}').highcharts('StockChart', {
+              plotOptions: {
+                series: {
+                  animation: false
+                }
+              },
+              credits: {
+                enabled: false
+              },
+              title: {
+                text: '{{ symbol|upper }} Historical'
+              },
+
+              yAxis: [{
+                labels: {
+                  align: 'right',
+                  x: -3
+                },
+                title: {
+                  text: 'OHLC'
+                },
+                height: '60%',
+                lineWidth: 2
+              }, {
+                labels: {
+                  align: 'right',
+                  x: -3
+                },
+                title: {
+                  text: 'Volume'
+                },
+                top: '70%',
+                height: '30%',
+                offset: 0,
+                lineWidth: 2
+              }],
+
+              series: [{
+                type: 'candlestick',
+                name: 'AAPL',
+                data: ohlc,
+                dataGrouping: {
+                  units: [[
+                    'week',                         // unit name
+                    [1]                             // allowed multiples
+                  ], [
+                    'month',
+                    [1, 2, 3, 4, 6]
+                  ]]
+                }
+              }, {
+                type: 'column',
+                name: 'Volume',
+                data: volume,
+                yAxis: 1,
+                dataGrouping: {
+                  units: [[
+                    'week',                         // unit name
+                    [1]                             // allowed multiples
+                  ], [
+                    'month',
+                    [1, 2, 3, 4, 6]
+                  ]]
+                }
+              }]
+            });
+
+
+          </script>
+
+          <div class="trade-pad">
+          <table class="trade-table">
+            <thead>
+            <tr>
+              <th>Date</th>
+              <th>Open</th>
+              <th>High</th>
+              <th>Low</th>
+              <th>Close</th>
+              <th>Volume</th>
+              <th>% Change</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for stock in trade %}
+              <tr>
+                <td>{{ stock.index1 }}</td>
+                <td>{{ stock.open }}</td>
+                <td>{{ stock.high }}</td>
+                <td>{{ stock.low }}</td>
+                <td>{{ stock.close }}</td>
+                <td>{{ stock.volume }}</td>
+                <td>{{ stock.pct_chg }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="col-md-4">
+      {% for signal in signals %}
+        <div class="signal" id="signal-{{ forloop.counter|add:-1 }}"
+             {% if forloop.counter > 1 %}style="display: none;"{% endif %}>
+          <label for="signal-{{ forloop.counter|add:-1 }}">Signal:</label>
+          <table class="table table-bordered table-striped small">
+            <tr>
+              <th class="col-md-4">Date:</th>
+              <td>{{ signal.date0 }} to {{ signal.date1 }}</td>
+            </tr>
+            <tr>
+              <th>Holding:</th>
+              <td>{{ signal.holding }} Days</td>
+            </tr>
+            <tr>
+              <th>Signal:</th>
+              <td>{{ signal.signal0 }} then {{ signal.signal1 }}</td>
+            </tr>
+            <tr>
+              <th>Price:</th>
+              <td>{{ signal.close0 }} to {{ signal.close1 }}</td>
+            </tr>
+            <tr>
+              <th>% Change:</th>
+              <td>{{ signal.pct_chg }}%</td>
+            </tr>
+          </table>
+        </div>
+      {% endfor %}
+
+      <div class="form-group">
+        <label for="trade-select">Trade list:</label>
+        <select class="form-control trade-select" id="trade-select" size="12">
+          {% for signal in signals %}
+            <option value="{{ signal.index }}" {% if signal.index == 0 %}selected{% endif %}>
+              Date: {{ signal.date0 }} ~ {{ signal.date1 }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="trade-select">Handle Data:</label>
+        <pre>{{ handle_data }}</pre>
+        <label for="trade-select">Create Signal:</label>
+        <pre>{{ create_signal }}</pre>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    // For demo to fit into DataTables site builder...
+    $('.trade').hide();
+    $('.trade-table').addClass('table table-striped table-bordered small');
+
+    $('#trade-0').show();
+    $('#trade-select').val('0');
+  </script>
+{% endblock %}
+

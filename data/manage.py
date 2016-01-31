@@ -1,11 +1,6 @@
 import os
 import sys
 
-from data.tb.fillna.normal import FillNaNormal
-from data.tb.fillna.split_new import FillNaSplitNew
-from data.tb.fillna.split_old import FillNaSplitOld
-from data.tb.final.views import merge_final
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
 
@@ -21,6 +16,10 @@ from data.tb.raw.options import ExtractOption
 from data.tb.raw.stocks import extract_stock
 from data.tb.clean.split_new import CleanSplitNew
 from data.tb.clean.split_old import CleanSplitOld
+from data.tb.fillna.normal import FillNaNormal
+from data.tb.fillna.split_new import FillNaSplitNew
+from data.tb.fillna.split_old import FillNaSplitOld
+from data.tb.final.views import merge_final
 from rivers.settings import QUOTE, CLEAN
 
 

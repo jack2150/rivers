@@ -1,7 +1,9 @@
-from base.views import *
-from rivers.urls import *
+# from base.views import df_view
+from django.contrib import admin
 
+"""
 admin.site.register_view(
-    'data/df/(?P<model>\w+)/(?P<id>\d+)/$',
+    'base/df/(?P<model>\w+)/(?P<id>\d+)/$',
     urlname='df_view', view=df_view
 )
+"""

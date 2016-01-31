@@ -1,7 +1,9 @@
-from django.shortcuts import render
 from StringIO import StringIO
+
 import pandas as pd
-from quantitative.models import AlgorithmResult
+from django.shortcuts import render
+
+from research.algorithm.models import AlgorithmResult
 from simulation.models import StrategyResult
 
 

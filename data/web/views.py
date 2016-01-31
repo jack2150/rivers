@@ -69,9 +69,6 @@ def web_stock_h5(request, source, symbol):
     underlying.log += 'Web stock imported, source: %s symbol: %s length: %d\n' % (
         source.upper(), symbol.upper(), len(df_stock)
     )
-    underlying.log += 'Web stock imported, source: %s symbol: %s length: %d\n' % (
-        source.upper(), symbol.upper(), len(df_stock)
-    )
     underlying.save()
 
     return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))

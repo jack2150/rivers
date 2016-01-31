@@ -1,5 +1,7 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
+import django
+django.setup()
 
 # noinspection PyUnresolvedReferences
 from rivers import settings
@@ -9,6 +11,7 @@ from django.test.utils import setup_test_environment
 import sys
 
 
+# remember to set default test runner in pycharm
 class TestUnitSetUp(UnitTestCase):
     def setUp(self):
         UnitTestCase.setUp(self)
@@ -18,7 +21,7 @@ class TestUnitSetUp(UnitTestCase):
             self.skipTest('Only can run with unittest.')
 
         self.client = Client()
-        self.client.login(username='jack', password='qwer1234')
+        self.client.login(username='bvc100x', password='qwer1234')
 
         print '.' * 100
         print "<%s> currently run: %s" % (self.__class__.__name__, self._testMethodName)

@@ -1,7 +1,9 @@
 from itertools import product
+
 import numpy as np
 import pandas as pd
-from quantitative.models import AlgorithmResult
+
+from research.algorithm.models import AlgorithmResult
 from simulation.models import Strategy, Commission
 
 
@@ -12,7 +14,7 @@ class StrategyQuant(object):
         self.commission = Commission.objects.get(id=commission_id)
         self.capital = np.float(capital)
 
-        self.quant = self.algorithm_result.algorithm.make_quant()
+        self.quant = self.algorithm_result.algorithm.start_backtest()
         self.quant.args = eval(self.algorithm_result.arguments)
         self.quant.seed_data(self.algorithm_result.symbol)
 

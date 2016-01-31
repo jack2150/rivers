@@ -1,6 +1,7 @@
-from base.utests import TestUnitSetUp
-from quantitative.models import Algorithm
 import pandas as pd
+
+from base.utests import TestUnitSetUp
+from research.algorithm.models import Formula
 from simulation.models import Strategy
 
 
@@ -10,9 +11,9 @@ class TestStrategyBuy(TestUnitSetUp):
 
         self.symbol = 'AIG'
 
-        self.algorithm = Algorithm.objects.get(id=1)
+        self.algorithm = Formula.objects.get(id=1)
 
-        self.quant = self.algorithm.make_quant()
+        self.quant = self.algorithm.start_backtest()
         self.quant.seed_data(self.symbol)
         self.arguments = {'span': 20, 'previous': 20}
 
@@ -40,9 +41,9 @@ class TestStrategyStopLoss(TestUnitSetUp):
 
         self.symbol = 'AIG'
 
-        self.algorithm = Algorithm.objects.get(id=1)
+        self.algorithm = Formula.objects.get(id=1)
 
-        self.quant = self.algorithm.make_quant()
+        self.quant = self.algorithm.start_backtest()
         self.quant.seed_data(self.symbol)
         self.arguments = {'span': 20, 'previous': 20}
 
@@ -80,9 +81,9 @@ class TestStrategyLimit(TestUnitSetUp):
 
         self.symbol = 'AIG'
 
-        self.algorithm = Algorithm.objects.get(id=1)
+        self.algorithm = Formula.objects.get(id=1)
 
-        self.quant = self.algorithm.make_quant()
+        self.quant = self.algorithm.start_backtest()
         self.quant.seed_data(self.symbol)
         self.arguments = {'span': 20, 'previous': 20}
 
@@ -120,9 +121,9 @@ class TestStrategyOneCancelOther(TestUnitSetUp):
 
         self.symbol = 'AIG'
 
-        self.algorithm = Algorithm.objects.get(id=1)
+        self.algorithm = Formula.objects.get(id=1)
 
-        self.quant = self.algorithm.make_quant()
+        self.quant = self.algorithm.start_backtest()
         self.quant.seed_data(self.symbol)
         self.arguments = {'span': 60, 'previous': 20}
 

@@ -1,8 +1,7 @@
 from base.utests import TestUnitSetUp
 from data.models import Underlying
-from quantitative.models import Algorithm
+from research.algorithm.models import Formula
 from simulation.models import Strategy
-import numpy as np
 
 
 class TestStrategyLongCall(TestUnitSetUp):
@@ -10,10 +9,10 @@ class TestStrategyLongCall(TestUnitSetUp):
         TestUnitSetUp.setUp(self)
 
         self.symbol = 'AIG'
-        self.algorithm = Algorithm.objects.get(rule='Options DTE - No Dup')
+        self.algorithm = Formula.objects.get(rule='Options DTE - No Dup')
         # self.algorithm = Algorithm.objects.get(rule='EWMA change direction - H')
 
-        self.quant = self.algorithm.make_quant()
+        self.quant = self.algorithm.start_backtest()
         self.quant.seed_data(self.symbol)
         self.hd_args = {'dte': 45}
         self.cs_args = {'side': 'buy'}

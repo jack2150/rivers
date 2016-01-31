@@ -1,8 +1,7 @@
 from importlib import import_module
 from inspect import getargspec
-from django.db import models
 import numpy as np
-from quantitative.models import Algorithm, AlgorithmResult
+from django.db import models
 
 
 class Commission(models.Model):
@@ -91,7 +90,7 @@ class StrategyResult(models.Model):
     symbol = models.CharField(max_length=20)
     date = models.DateField()
 
-    algorithm_result = models.ForeignKey(AlgorithmResult)
+    # algorithm_result = models.ForeignKey(AlgorithmResult)
     strategy = models.ForeignKey(Strategy)
     arguments = models.CharField(max_length=500)
     commission = models.ForeignKey(Commission)
