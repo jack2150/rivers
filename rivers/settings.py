@@ -50,8 +50,9 @@ INSTALLED_APPS = (
     'data',
     'statement',
     # 'quantitative',
-    'simulation',
+    # 'simulation',
     'research.algorithm',
+    'research.strategy',
     # 'research.strategy',
     'checklist',
 )

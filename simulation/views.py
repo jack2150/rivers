@@ -9,9 +9,6 @@ from simulation.quant import StrategyQuant
 from simulation.models import *
 
 
-#get_strategy = lambda: Strategy.objects.values_list('id', 'name')
-
-
 # noinspection PyUnusedLocal
 class StrategyAnalysisForm1(forms.Form):
     algorithmresult_id = forms.IntegerField(widget=forms.HiddenInput())

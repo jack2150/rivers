@@ -5,13 +5,11 @@ from research.algorithm.models import Formula
 # noinspection PyArgumentList
 class TestMoveDaySwing(TestUnitSetUp):
     def algorithm_analysis(self, rule):
-        self.algorithm = Formula.objects.get(rule=rule)
+        self.formula = Formula.objects.get(rule=rule)
 
-        self.quant = self.algorithm.start_backtest()
-
-        self.df = None
-        self.df_stock = None
-        self.df_signal = None
+        self.backtest = self.formula.start_backtest()
+        self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
+        self.backtest.get_data()
 
     def setUp(self):
         TestUnitSetUp.setUp(self)
@@ -27,19 +25,17 @@ class TestMoveDaySwing(TestUnitSetUp):
             'side': 'buy',
         }
 
-        self.quant = None
+        self.backtest = None
         self.algorithm_analysis('Day Swing')
 
     def test_handle_data(self):
         """
         Test handle data generate new columns base on algorithm
         """
-        self.df = self.quant.make_df(self.symbol)
-
         for close in ('higher', 'lower'):
             print 'close:', close
             self.hd_args['close'] = close
-            self.df_stock = self.quant.handle_data(self.df, **self.hd_args)
+            self.df_stock = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
             print self.df_stock.to_string(line_width=400)
 
             print '=' * 100
@@ -53,12 +49,11 @@ class TestMoveDaySwing(TestUnitSetUp):
         """
         Test create signal based on data frame that handle data generate
         """
-        self.df = self.quant.make_df(self.symbol)
-        self.df_stock = self.quant.handle_data(self.df, **self.hd_args)
+        self.df_stock = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
 
         for side in ('buy', 'sell'):
             self.cs_args['side'] = side
-            self.df_signal = self.quant.create_signal(self.df_stock, **self.cs_args)
+            self.df_signal = self.backtest.create_signal(self.df_stock, **self.cs_args)
 
             print self.df_signal.to_string(line_width=400)
 
@@ -83,15 +78,13 @@ class TestMoveDaySwingDistance(TestMoveDaySwing):
             'close': 'higher',
             'bdays': 5
         }
-        self.quant = None
+        self.backtest = None
         self.algorithm_analysis('Day Swing Distance')
 
     def test_handle_data(self):
-        self.df = self.quant.make_df(self.symbol)
-
         for close in ('higher', 'lower'):
             self.hd_args['close'] = close
-            self.df_stock = self.quant.handle_data(self.df, **self.hd_args)
+            self.df_stock = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
             print self.df_stock.to_string(line_width=400)
 
             new_columns = ('found0', 'found1', 'high_to_low', 'open_to_close')

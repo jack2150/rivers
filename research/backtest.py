@@ -1,11 +1,12 @@
 import click
 import os
 import sys
+import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
 
-from research.algorithm.models import Formula
+from research.algorithm.models import Formula, FormulaResult
 
 
 @click.group()
@@ -27,7 +28,17 @@ def algorithm(symbol, formula_id, start, stop, fields):
     exec('fields = %s' % fields)
 
     formula.start_backtest()
-    formula.backtest.save(fields, symbol, start, stop)
+    length = formula.backtest.save(fields, symbol, start, stop)
+
+    # save formula result
+    formula_result = FormulaResult(
+        symbol=symbol.upper(),
+        formula=formula,
+        date=pd.datetime.today().date(),
+        arguments=fields,
+        length=length
+    )
+    formula_result.save()
 
     click.pause()
 

@@ -5,9 +5,11 @@ from research.algorithm.models import Formula
 # noinspection PyArgumentList
 class TestEWMAChangeDirection(TestUnitSetUp):
     def algorithm_analysis(self, rule):
-        self.algorithm = Formula.objects.get(rule=rule)
+        self.formula = Formula.objects.get(rule=rule)
 
-        self.quant = self.algorithm.start_backtest()
+        self.backtest = self.formula.start_backtest()
+        self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
+        self.backtest.get_data()
 
     def setUp(self):
         TestUnitSetUp.setUp(self)
@@ -18,16 +20,14 @@ class TestEWMAChangeDirection(TestUnitSetUp):
         }
         self.cs_args = {}
 
-        self.quant = None
+        self.backtest = None
         self.algorithm_analysis('Price minus SMA rule')
 
     def test_handle_data(self):
         """
         Test handle data generate new columns base on algorithm
         """
-        df = self.quant.make_df(self.symbol)
-
-        df_stock = self.quant.handle_data(df, **self.hd_args)
+        df_stock = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
 
         print df_stock.to_string(line_width=200)
 
@@ -39,9 +39,8 @@ class TestEWMAChangeDirection(TestUnitSetUp):
         """
         Test create signal based on data frame that handle data generate
         """
-        df = self.quant.make_df(self.symbol)
-        df_stock = self.quant.handle_data(df, **self.hd_args)
-        df_signal = self.quant.create_signal(df_stock, **self.cs_args)
+        df_stock = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
+        df_signal = self.backtest.create_signal(df_stock, **self.cs_args)
 
         print df_signal.to_string(line_width=200)
 

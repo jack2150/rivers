@@ -1,5 +1,7 @@
 import logging
 import os
+import re
+from fractions import Fraction
 
 import pandas as pd
 from django.core.urlresolvers import reverse
@@ -12,6 +14,32 @@ from rivers.settings import QUOTE, CLEAN, BASE_DIR
 logger = logging.getLogger('views')
 
 
+def update_strike(df_split):
+    """
+    Update option_code strike with new strike
+    :param df_split: pd.DataFrame
+    :return: pd.DataFrame
+    """
+    df_change = df_split[df_split['right'].apply(lambda x: '/' in x)]
+
+    df_change['strike'] = df_change.apply(
+        lambda x: x['strike'] / Fraction(x['right']), axis=1
+    )
+    df_change['option_code'] = df_change.apply(
+        lambda x: '%s%s' % (
+            re.search('^([A-Z]+\d+[CP])[0-9]*\.?[0-9]*', x['option_code']).group(1),
+            int(x['strike']) if int(x['strike']) == x['strike'] else x['strike']
+        ), axis=1
+    )
+
+    df_split = df_split[~df_split.index.isin(df_change.index)]
+    df_split = pd.concat([df_split, df_change])
+    """:type: pd.DataFrame"""
+    df_split['right'] = '100'
+
+    return df_split
+
+
 def merge_final(symbol):
     """
     Merge fillna normal, split/new, split/old into
@@ -22,13 +50,13 @@ def merge_final(symbol):
 
     # get data
     df_list = {}
-    keys = ['normal', 'split/new', 'split/old']
     db = pd.HDFStore(QUOTE)
     df_stock = db.select('stock/thinkback/%s' % symbol)
     db.close()
     last_date = df_stock.index[-1]
 
     db = pd.HDFStore(CLEAN)
+    keys = ['normal', 'split/new', 'split/old']
     for key in keys:
         try:
             df_list[key] = db.select('option/%s/fillna/%s' % (symbol, key))
@@ -36,10 +64,17 @@ def merge_final(symbol):
         except KeyError:
             pass
     db.close()
+
     # replace option_code in df_split/new
     if 'split/new' in df_list.keys():
+        logger.info('Update df_split/new option_code')
         df_list['split/new']['option_code'] = df_list['split/new']['new_code']
         del df_list['split/new']['new_code']
+
+    if 'split/old' in df_list.keys():
+        logger.info('Update df_split/old option_code')
+        df_list['split/old'] = update_strike(df_list['split/old'])
+
     df_all = pd.concat(df_list.values())
     """:type: pd.DataFrame"""
     logger.info('Merge all data length: %d' % len(df_all))
@@ -55,6 +90,7 @@ def merge_final(symbol):
         'ex_date', 'ex_month', 'ex_year', 'name', 'others', 'right', 'special', 'strike'
     ]]
     df_contract = df_contract.reset_index()
+    del df_contract['date']
     df_contract['expire'] = df_contract['ex_date'].apply(lambda x: x < last_date)
     # format df_option
     df_option = df_all[[
@@ -64,7 +100,7 @@ def merge_final(symbol):
     ]]
     logger.info('Save df_contract, df_option into h5 db')
     db = pd.HDFStore(QUOTE)
-    for key in ('contract', 'option'):
+    for key in ('contract', 'data'):
         try:
             db.remove('option/%s/final/%s' % (symbol, key))
         except KeyError:
@@ -126,12 +162,13 @@ def remove_clean_h5(request, symbol):
     return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
 
 
-def reshape_h5(fname):
+def reshape_h5(fname, dir_name=None):
     """
     Reshape the size of h5 db
+    :param dir_name: str
     :param fname: str
     """
-    os.chdir(BASE_DIR)
+    os.chdir(dir_name if dir_name else BASE_DIR)
     p = Popen(r'ptrepack --chunkshape=auto %s temp.h5' % fname)
     p.communicate()  # wait complete
     os.remove(fname)

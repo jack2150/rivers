@@ -4,6 +4,7 @@ import pandas as pd
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.models import Underlying
+from data.tb.final.views import update_strike
 from rivers.settings import QUOTE, CLEAN, BASE_DIR
 
 
@@ -58,3 +59,17 @@ class TestMergeFinal(TestSetUp):
         size1 = os.path.getsize(path)
         print 'clean.h5 file size: %d -> %d' % (size0, size1)
         self.assertGreaterEqual(size0, size1)
+
+    def test_update_strike(self):
+        """
+        Test update strike for df_split/old
+        """
+        db = pd.HDFStore(CLEAN)
+        df_split = db.select('option/aig/clean/split/old')
+        db.close()
+
+        print 'run update_strike...'
+        df_result = update_strike(df_split)
+        self.assertEqual(len(df_split), len(df_result))
+
+        print df_result.tail(100).to_string(line_width=1000)

@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from data.models import Underlying
 from itertools import product
+from inspect import getargspec
 from scipy.stats import norm
 from rivers.settings import QUOTE, RESEARCH
 
@@ -33,7 +34,8 @@ class FormulaBacktest(object):
         """
         self.formula = formula
         self.data = None
-        self.args = None
+        self.fields = ''
+        self.args = list()
 
         self.symbol = ''
         self.start = None
@@ -45,6 +47,12 @@ class FormulaBacktest(object):
         self.df_signal = pd.DataFrame()
         self.df_list = pd.DataFrame()
         self.df_join = pd.DataFrame()
+
+        self.df_earning = pd.DataFrame()
+        self.df_dividend = pd.DataFrame()
+        self.df_contract = pd.DataFrame()
+        self.df_option = pd.DataFrame()
+        self.df_all = pd.DataFrame()
 
     @staticmethod
     def make_dict(args, func):
@@ -81,6 +89,7 @@ class FormulaBacktest(object):
             'create_signal_holding': '30:60:30',
         }
         """
+        self.fields = fields
         arguments = self.formula.get_args()
         args = dict()
 
@@ -175,6 +184,7 @@ class FormulaBacktest(object):
 
         db = pd.HDFStore(QUOTE)
         df_stock = pd.DataFrame()
+        df_think = db.select('stock/thinkback/%s' % symbol)
         for source in ('google', 'yahoo'):
             try:
                 df_stock = db.select('stock/%s/%s' % (source, symbol))
@@ -183,9 +193,10 @@ class FormulaBacktest(object):
                 pass
 
         if len(df_stock) == 0:
-            raise LookupError('Symbol < %s > stock not found' % symbol.upper())
+            raise LookupError('Symbol < %s > stock not found (Google/Yahoo)' % symbol.upper())
 
         df_stock = df_stock[start:stop]  # slice date range
+        df_stock = df_stock[df_stock.index.isin(df_think.index)]  # make sure in thinkback
         df_spy = db.select('stock/google/spy')
         df_spy = df_spy[start:stop]
         df_rate = db.select('treasury/RIFLGFCY01_N_B')
@@ -225,6 +236,38 @@ class FormulaBacktest(object):
         logger.info('Seed data, df_stock: %d, df_change: %d' % (
             len(self.df_stock), len(self.df_change)
         ))
+
+    def extra_data(self):
+        """
+        Add extra data that require for testing
+        can continue add more data
+        df_earning: earning
+        df_dividend: dividend
+        df_contract, df_option, df_all: option data
+        """
+        hd_args = getargspec(self.handle_data)[0]
+        cs_args = getargspec(self.create_signal)[0]
+
+        args = set(hd_args + cs_args)
+
+        # check which data is require
+        if 'df_earning' in args:
+            db = pd.HDFStore(QUOTE)
+            self.df_earning = db.select('event/earning/%s' % self.symbol)
+            db.close()
+
+        if 'df_dividend' in args:
+            db = pd.HDFStore(QUOTE)
+            self.df_dividend = db.select('event/dividend/%s' % self.symbol)
+            db.close()
+
+        if 'df_contract' in args or 'df_option' in args or 'df_all' in args:
+            db = pd.HDFStore(QUOTE)
+            self.df_contract = db.select('option/%s/final/contract' % self.symbol)
+            self.df_option = db.select('option/%s/final/data' % self.symbol)
+            db.close()
+
+            self.df_all = pd.merge(self.df_option, self.df_contract, on='option_code')
 
     def set_signal(self, df_signal):
         """
@@ -550,6 +593,7 @@ class FormulaBacktest(object):
         :param symbol: str
         :param start: str or datetime
         :param stop: str or datetime
+        :return: int
         """
         logger.info('Start backtest formula')
 
@@ -557,17 +601,31 @@ class FormulaBacktest(object):
         self.set_symbol_date(symbol, start, stop)
         self.set_args(fields)
         self.get_data()
+        self.extra_data()
 
         # generate reports
         df_report, df_signals = self.generate()
 
         # save
         path = os.path.join(RESEARCH, symbol.lower())
-        fpath = os.path.join(path, 'algo.h5')
+        fpath = os.path.join(path, 'algorithm.h5')
         if not os.path.isdir(path):
             os.mkdir(path)
         db = pd.HDFStore(fpath)
+
+        # remove old same item
+        try:
+            db.remove('report', where='formula == %r' % self.formula.path)
+            db.remove('signal', where='formula == %r' % self.formula.path)
+        except NotImplementedError:
+            db.remove('report')
+            db.remove('signal')
+        except KeyError:
+            pass
+
         db.append('report', df_report, format='table', data_columns=True, min_itemsize=100)
         db.append('signal', df_signals, format='table', data_columns=True, min_itemsize=100)
         db.close()
         logger.info('Backtest save: %s' % fpath)
+
+        return len(df_report)

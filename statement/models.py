@@ -256,9 +256,10 @@ class Position(models.Model):
         'checklist.EnterOpinion', null=True, blank=True, default=None
     )
 
-    strategy_result = models.OneToOneField(
-        'simulation.StrategyResult', null=True, blank=True, default=None
-    )
+    # strategy_result = models.OneToOneField(
+    #     'simulation.StrategyResult', null=True, blank=True, default=None
+    # )
+    strategy_result = models.IntegerField(default=1)
 
     def set_open(self, trades):
         """

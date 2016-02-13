@@ -9,6 +9,8 @@ import pandas as pd
 from rivers.settings import QUOTE
 
 
+# todo: remake
+
 def handle_data(df, move=('up', 'down'), percent=0, bdays=0):
     symbol = df.ix[df.index.values[0]]['symbol']
 

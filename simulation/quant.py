@@ -3,13 +3,13 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
-from research.algorithm.models import AlgorithmResult
+from research.algorithm.models import FormulaResult
 from simulation.models import Strategy, Commission
 
 
 class StrategyQuant(object):
     def __init__(self, algorithmresult_id, strategy_id, commission_id, capital):
-        self.algorithm_result = AlgorithmResult.objects.get(id=algorithmresult_id)
+        self.algorithm_result = FormulaResult.objects.get(id=algorithmresult_id)
         self.strategy = Strategy.objects.get(id=strategy_id)
         self.commission = Commission.objects.get(id=commission_id)
         self.capital = np.float(capital)

@@ -1,3 +1,4 @@
+import numpy as np
 from pandas_datareader.data import get_data_google, get_data_yahoo
 from checklist.models import *
 from datetime import datetime
@@ -6,13 +7,10 @@ from django import forms
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
-
 from data.tb.raw.options import get_dte_date2
 from data.web.views import web_stock_h5
 from rivers.settings import QUOTE
-from simulation.models import StrategyResult
 from statement.models import *
-import numpy as np
 from pandas import Series
 
 

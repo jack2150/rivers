@@ -1,11 +1,11 @@
 import numpy as np
 
 
-def create_order(df_stock, df_signal, side=('follow', 'buy', 'sell')):
+def create_order(df_signal, side=('follow', 'reverse', 'buy', 'sell')):
     """
     Trade stock with stop loss order
-    :param df_stock: DataFrame
     :param df_signal: DataFrame
+    :param side: str
     :return: DataFrame
     """
     df = df_signal.copy()
@@ -16,6 +16,10 @@ def create_order(df_stock, df_signal, side=('follow', 'buy', 'sell')):
     elif side == 'sell':
         df['signal0'] = 'SELL'
         df['signal1'] = 'BUY'
+    elif side == 'reverse':
+        temp = df['signal0'].copy()
+        df['signal0'] = df['signal1']
+        df['signal1'] = temp
 
     df['holding'] = df['date1'] - df['date0']
 

@@ -1,9 +1,5 @@
-# from base.views import df_view
 from django.contrib import admin
+from django.contrib.auth.models import User, Group
 
-"""
-admin.site.register_view(
-    'base/df/(?P<model>\w+)/(?P<id>\d+)/$',
-    urlname='df_view', view=df_view
-)
-"""
+admin.site.unregister(User)
+admin.site.unregister(Group)

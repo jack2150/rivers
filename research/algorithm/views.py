@@ -15,7 +15,7 @@ from django.views.decorators.http import require_http_methods
 from pandas.tseries.offsets import BDay
 from data.models import Underlying
 from research.algorithm.backtest import dtype
-from research.algorithm.models import Formula, FormulaArgument
+from research.algorithm.models import Formula, FormulaArgument, FormulaResult
 from rivers.settings import BASE_DIR, RESEARCH
 
 logger = logging.getLogger('views')
@@ -160,18 +160,10 @@ class AlgorithmAnalysisForm(forms.Form):
         Using generate variables and run algorithm backtest
         """
         # prepare values and formula
-        formula = Formula.objects.get(id=self.cleaned_data['formula_id'])
         fields = {
             key: value for key, value in self.cleaned_data.items()
             if 'formula_' not in key and key not in ('symbol', 'start_date', 'stop_date')
-            }
-
-        formula_arg = FormulaArgument(
-            formula=formula,
-            arguments=str({k: dtype(v) for k, v in fields.items()}),
-            backtest=True
-        )
-        formula_arg.save()
+        }
 
         logger.info('Start backtest algorithm')
 
@@ -262,7 +254,7 @@ def algorithm_signal_view(request, symbol, formula_id, backtest_id):
     """
     formula = Formula.objects.get(id=formula_id)
 
-    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algo.h5'))
+    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algorithm.h5'))
     df_report = db.select('report', where='index == %d' % int(backtest_id))
     report = df_report.iloc[0]
     """:type: pd.DataFrame"""
@@ -339,7 +331,7 @@ def algorithm_trade_view(request, symbol, formula_id, backtest_id):
     """
     formula = Formula.objects.get(id=formula_id)
 
-    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algo.h5'))
+    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algorithm.h5'))
     df_report = db.select('report', where='index == %d' % int(backtest_id))
     report = df_report.iloc[0]
     """:type: pd.DataFrame"""
@@ -412,13 +404,13 @@ def algorithm_trade_view(request, symbol, formula_id, backtest_id):
     return render(request, template, parameters)
 
 
-def algorithm_report_views(request, symbol, formula_id):
+def algorithm_report_view(request, symbol, formula_id):
     """
-
-    :param request:
-    :param symbol:
-    :param formula_id:
-    :return:
+    Algorithm research report view
+    :param request: reqeust
+    :param symbol: str
+    :param formula_id: int
+    :return: render
     """
     formula = Formula.objects.get(id=formula_id)
 
@@ -437,33 +429,24 @@ def algorithm_report_views(request, symbol, formula_id):
 @csrf_exempt
 def algorithm_report_json(request, symbol, formula_id):
     """
-    <QueryDict: {u'columns[0][data]': [u'0'], u'columns[1][name]': [u''], u'columns[1][orderable]':
-     [u'true'], u'order[0][column]': [u'0'], u'columns[2][orderable]': [u'true'], u'order[0][dir]':
-      [u'asc'], u'columns[1][search][regex]': [u'false'], u'columns[0][search][value]': [u''],
-      u'columns[2][searchable]': [u'true'], u'columns[0][search][regex]': [u'false'], u'start':
-       [u'0'], u'columns[0][searchable]': [u'true'], u'draw': [u'1'], u'columns[2][search][value]':
-       [u''], u'columns[2][search][regex]': [u'false'], u'columns[1][data]': [u'1'],
-       u'columns[0][orderable]': [u'true'], u'columns[1][searchable]': [u'true'],
-       u'columns[0][name]': [u''], u'columns[2][data]': [u'2'], u'search[value]': [u''],
-       u'_': [u'1454225715302'], u'search[regex]': [u'false'], u'columns[1][search][value]':
-       [u''], u'columns[2][name]': [u''], u'length': [u'10']}>"
-    :param request:
-    :param symbol:
-    :param formula_id:
-    :return:
+    output report data into json format using datatable query
+    :param request: request
+    :param symbol: str
+    :param formula_id: int
+    :return: HttpResponse
     """
     draw = int(request.GET.get('draw'))
     order_column = int(request.GET.get('order[0][column]'))
     order_dir = request.GET.get('order[0][dir]')
     logger.info('order column: %s, dir: %s' % (order_column, order_dir))
 
-    length = int(request.GET.get('length'))
     start = int(request.GET.get('start'))
+    length = int(request.GET.get('length'))
     logger.info('start: %d length: %d' % (start, length))
 
     formula = Formula.objects.get(id=formula_id)
 
-    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algo.h5'))
+    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algorithm.h5'))
     df_report = db.select('report', where='formula == %r' % formula.path)
     """:type: pd.DataFrame"""
     db.close()
@@ -536,28 +519,3 @@ def algorithm_report_json(request, symbol, formula_id):
     )
 
     return HttpResponse(data, content_type="application/json")
-
-    # todo: not work, maybe need login, try normal view
-
-
-# todo: analysis button, truncate
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

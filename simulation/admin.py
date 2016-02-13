@@ -102,26 +102,16 @@ class StrategyResultAdmin(admin.ModelAdmin):
     short_args.short_description = 'Args1'
     short_args.admin_order_field = 'arguments'
 
-    def html_view(self, obj):
-        return '<a href="{link}">DF</a>'.format(
-            link=reverse('admin:df_view', kwargs={
-                'model': 'strategy', 'id': obj.id
-            })
-        )
-
-    html_view.short_description = ''
-    html_view.allow_tags = True
-
     list_display = (
         'strategy', 'short_args', 'algorithm', 'algorithm_args',
         'symbol', 'pl_sum', # 'sharpe_spy',
         'trades', 'profit_prob', 'loss_prob',
-        'capital0', 'roi_mean', 'html_view'
+        'capital0', 'roi_mean',
     )
     fieldsets = (
         ('Foreign Key', {
             'fields': (
-                'algorithm_result',  'commission', 'date'
+                'algorithm_result', 'commission', 'date'
             )
         }),
         ('Strategy Fields', {

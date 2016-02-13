@@ -138,7 +138,7 @@ class TestAlgorithmAnalysisForm(TestUnitSetUp):
         # run analysis
         self.form.analysis()
 
-        db = pd.HDFStore(os.path.join(RESEARCH, self.symbol.lower(), 'algo.h5'))
+        db = pd.HDFStore(os.path.join(RESEARCH, self.symbol.lower(), 'algorithm.h5'))
         df_report = db.select('report')
         df_signal = db.select('signal')
         db.close()
@@ -152,7 +152,7 @@ class TestAlgorithmAnalysisForm(TestUnitSetUp):
         self.assertTrue(len(df_report))
 
 
-class TestAlgorithmBacktest(TestUnitSetUp):
+class TestFormulaBacktest(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
@@ -216,6 +216,26 @@ class TestAlgorithmBacktest(TestUnitSetUp):
             self.assertEqual(len(self.backtest.df_stock), len(self.backtest.df_change))
 
             print '.' * 70
+
+    def test_extra_data(self):
+        """
+        Test get extra data if require for handle_data and create_signal
+        """
+        self.backtest.set_symbol_date(self.symbol)
+
+        self.backtest.handle_data = lambda df, df_earning, df_dividend, df_contract: False
+
+        self.backtest.extra_data()
+
+        print 'df_earning: %d' % len(self.backtest.df_earning)
+        self.assertTrue(len(self.backtest.df_earning))
+        print 'df_dividend: %d' % len(self.backtest.df_dividend)
+        self.assertTrue(len(self.backtest.df_dividend))
+        print 'df_contract: %d' % len(self.backtest.df_contract)
+        self.assertTrue(len(self.backtest.df_contract))
+        print 'df_option: %d' % len(self.backtest.df_option)
+        self.assertTrue(len(self.backtest.df_option))
+        self.assertEqual(len(self.backtest.df_option), len(self.backtest.df_all))
 
     def test_prepare_join(self):
         """
@@ -431,7 +451,7 @@ class TestAlgorithmBacktest(TestUnitSetUp):
             stop='2014-12-31'
         )
 
-        db = pd.HDFStore(os.path.join(RESEARCH, self.symbol.lower(), 'algo.h5'))
+        db = pd.HDFStore(os.path.join(RESEARCH, self.symbol.lower(), 'algorithm.h5'))
 
         df_report = db.select('report')
         df_signal = db.select('signal')
@@ -452,7 +472,53 @@ class TestBacktestTradeView(TestUnitSetUp):
         self.symbol = 'AIG'
         self.formula = Formula.objects.first()
 
-    def test123(self):
+    def test_algorithm_report_view(self):
+        """
+        Test empty algorithm report view page
+        """
+        self.client.get(reverse(
+            'admin:algorithm_report_view', kwargs={
+                'symbol': self.symbol.lower(),
+                'formula_id': self.formula.id
+            }
+        ))
+
+    def test_algorithm_report_json(self):
+        """
+        Test algorithm report json data
+        """
+        response = self.client.get(reverse(
+            'admin:algorithm_report_json', kwargs={
+                'symbol': self.symbol.lower(),
+                'formula_id': self.formula.id,
+
+            },
+        ), {
+            'draw': 1,
+            'order[0][column]': 0,
+            'order[0][dir]': 0,
+            'start': 0,
+            'length': 10
+        })
+
+        print response
+
+    def test_algorithm_signal_view(self):
+        """
+        Test algorithm df_signal view for a report
+        """
+        self.client.get(reverse(
+            'admin:algorithm_signal_view', kwargs={
+                'symbol': self.symbol.lower(),
+                'formula_id': self.formula.id,
+                'backtest_id': 1
+            }
+        ))
+
+    def test_algorithm_trade_view(self):
+        """
+        Test deep df_list view for a report
+        """
         self.client.get(reverse(
             'admin:algorithm_trade_view', kwargs={
                 'symbol': self.symbol.lower(),
@@ -460,13 +526,3 @@ class TestBacktestTradeView(TestUnitSetUp):
                 'backtest_id': 1
             }
         ))
-
-    def test_server1(self):
-        response = self.client.get(reverse(
-            'admin:server_side1', kwargs={
-                'symbol': self.symbol.lower(),
-                'formula_id': self.formula.id
-            }
-        ))
-
-        print response

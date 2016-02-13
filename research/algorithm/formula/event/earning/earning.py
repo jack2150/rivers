@@ -7,6 +7,7 @@ import itertools
 import numpy as np
 import pandas as pd
 from rivers.settings import QUOTE
+# todo: remake
 
 
 def handle_data(df):

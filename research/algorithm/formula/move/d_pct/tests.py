@@ -5,18 +5,16 @@ from research.algorithm.models import Formula
 # noinspection PyArgumentList
 class TestBasicPercentMove(TestUnitSetUp):
     def algorithm_analysis(self, rule):
-        self.algorithm = Formula.objects.get(rule=rule)
+        self.formula = Formula.objects.get(rule=rule)
 
-        self.quant = self.algorithm.start_backtest()
-
-        self.df = None
-        self.df_stock = None
-        self.df_signal = None
+        self.backtest = self.formula.start_backtest()
+        self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
+        self.backtest.get_data()
 
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'EBAY'
+        self.symbol = 'AIG'
         self.hd_args = {
             'move': 'down',
             'pct_from': 5,
@@ -27,15 +25,14 @@ class TestBasicPercentMove(TestUnitSetUp):
             'side': 'buy',
         }
 
-        self.quant = None
+        self.backtest = None
         self.algorithm_analysis('Basic % Move')
 
     def test_handle_data(self):
         """
         Test handle data generate new columns base on algorithm
         """
-        self.df = self.quant.make_df(self.symbol)
-        self.df_stock = self.quant.handle_data(self.df, **self.hd_args)
+        self.df_stock = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
 
         print self.df_stock.to_string(line_width=200)
 
@@ -47,12 +44,11 @@ class TestBasicPercentMove(TestUnitSetUp):
         """
         Test create signal based on data frame that handle data generate
         """
-        self.df = self.quant.make_df(self.symbol)
-        self.df_stock = self.quant.handle_data(self.df, **self.hd_args)
+        self.df_stock = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
 
-        for side in ('buy', 'sell'):
+        for side in ('buy', 'sell')[:1]:
             self.cs_args['side'] = side
-            self.df_signal = self.quant.create_signal(self.df_stock, **self.cs_args)
+            self.df_signal = self.backtest.create_signal(self.df_stock, **self.cs_args)
 
             print self.df_signal.to_string(line_width=400)
 

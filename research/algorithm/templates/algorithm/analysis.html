@@ -24,8 +24,9 @@
   {% block breadcrumbs %}
     <ul class="breadcrumb">
       <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
-      <li><a href="{% url 'admin:app_list' 'algorithm' %}">Quantitative</a></li>
-      <li>Stock</li>
+      <li><a href="{% url 'admin:app_list' 'algorithm' %}">Algorithm</a></li>
+      <li><a href="{% url 'admin:algorithm_formula_changelist' %}">Formulas</a></li>
+      <li>Analysis</li>
     </ul>
   {% endblock %}
 {% endif %}

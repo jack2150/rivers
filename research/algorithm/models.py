@@ -1,7 +1,6 @@
 from importlib import import_module
 from inspect import getargspec
 from django.db import models
-from research.algorithm.quant import AlgorithmQuant
 from research.algorithm.backtest import FormulaBacktest
 
 
@@ -38,21 +37,21 @@ class Formula(models.Model):
         """
         path = 'research.algorithm.formula.{path}'.format(path=self.path)
 
-        quant = None
+        backtest = None
         try:
             module = import_module(path)
 
             handle_data = getattr(module, 'handle_data')
             create_signal = getattr(module, 'create_signal')
 
-            quant = FormulaBacktest(self)
-            quant.handle_data = handle_data
-            quant.create_signal = create_signal
+            backtest = FormulaBacktest(self)
+            backtest.handle_data = handle_data
+            backtest.create_signal = create_signal
         except (ImportError, KeyError):
             self.path = ''
             self.save()
 
-        return quant
+        return backtest
 
     def get_args(self):
         """
@@ -106,7 +105,6 @@ class FormulaArgument(models.Model):
     description = models.TextField(
         null=True, blank=True, default='', help_text='Explain this arguments.'
     )
-    backtest = models.BooleanField(default=False)
 
     def get_args(self):
         """
@@ -116,62 +114,18 @@ class FormulaArgument(models.Model):
         return eval(self.arguments)
 
 
-class AlgorithmResult(models.Model):
+class FormulaResult(models.Model):
     """
     An algorithm contain different of variables test
     """
     symbol = models.CharField(max_length=20)
+    formula = models.ForeignKey(Formula)
+
     date = models.DateField()
-
-    algorithm = models.ForeignKey(Formula)
-    arguments = models.CharField(max_length=500)
-
-    sharpe_rf = models.FloatField()
-    sharpe_spy = models.FloatField(verbose_name='Sharpe')
-    sortino_rf = models.FloatField()
-    sortino_spy = models.FloatField()
-
-    bh_sum = models.FloatField(verbose_name='BH Sum')
-    bh_cumprod = models.FloatField(verbose_name='BH *')
-
-    trades = models.IntegerField()
-    profit_trades = models.IntegerField()
-    profit_prob = models.FloatField(verbose_name='Profit %')
-    loss_trades = models.IntegerField()
-    loss_prob = models.FloatField(verbose_name='Loss %')
-    max_profit = models.FloatField()
-    max_loss = models.FloatField()
-
-    pl_sum = models.FloatField(verbose_name='PL Sum')
-    pl_cumprod = models.FloatField(verbose_name='PL *')
-    pl_mean = models.FloatField()
-
-    var_pct99 = models.FloatField(verbose_name='VaR 99%')
-    var_pct95 = models.FloatField(verbose_name='VaR 95%')
-
-    max_dd = models.FloatField()
-    r_max_dd = models.FloatField()
-    max_bh_dd = models.FloatField()
-    r_max_bh_dd = models.FloatField()
-
-    pct_mean = models.FloatField()
-    pct_median = models.FloatField()
-    pct_max = models.FloatField()
-    pct_min = models.FloatField()
-    pct_std = models.FloatField()
-
-    day_profit_mean = models.FloatField()
-    day_loss_mean = models.FloatField()
-
-    pct_bull = models.FloatField(verbose_name='Bull %')
-    pct_even = models.FloatField(verbose_name='Even %')
-    pct_bear = models.FloatField(verbose_name='Bear %')
-
-    df_signal = models.TextField()
+    arguments = models.TextField()
+    length = models.IntegerField()
 
     def __unicode__(self):
-        return 'AlgorithmResult: {sharpe_spy} {trades} {profit_prob}'.format(
-            sharpe_spy=self.sharpe_spy,
-            trades=self.trades,
-            profit_prob=self.profit_prob
+        return '{date} < {symbol} > {formula}'.format(
+            date=self.date, symbol=self.symbol, formula=self.formula.path
         )
