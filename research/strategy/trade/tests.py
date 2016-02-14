@@ -29,7 +29,7 @@ class TestStrategy(TestUnitSetUp):
         """
         self.backtest = TradeBacktest(self.symbol, self.trade)
         self.backtest.set_algorithm(
-            formula=self.formula, report_id=1, df_signal=self.df_signal
+            formula_id=self.formula.id, report_id=1, df_signal=self.df_signal
         )
         self.backtest.get_data()
         self.backtest.get_extra()

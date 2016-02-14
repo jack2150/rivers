@@ -70,8 +70,8 @@ def import_earning(lines, symbol):
         e['year'] = int(e['report_date'].split(' ')[1])
         e['actual_date'] = pd.datetime.strptime(e['actual_date'], '%m/%d/%y')  # .date()
         e['analysts'] = int(e['analysts'][1:-1].replace(' Analysts', ''))
-        e['low'] = float(e['hl'].split(' / ')[0])
-        e['high'] = float(e['hl'].split(' / ')[1])
+        e['est_low'] = float(e['hl'].split(' / ')[0])
+        e['est_high'] = float(e['hl'].split(' / ')[1])
         del e['report_date'], e['hl'], e['diff']
 
         for key in ('estimate_eps', 'adjusted_eps', 'gaap', 'actual_eps'):

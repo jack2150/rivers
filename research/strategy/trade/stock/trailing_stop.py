@@ -2,18 +2,31 @@ import numpy as np
 import pandas as pd
 
 
-def create_order(df_signal, df_stock, percent=0):
+def create_order(df_signal, df_stock, side=('follow', 'reverse', 'buy', 'sell'), percent=0):
     """
     Trade stock with trailing stop loss order
     :param df_signal: DataFrame
     :param df_stock: DataFrame
+    :param side: str
     :param percent: float
     :return: DataFrame
     """
     df = df_stock.copy()
 
+    df_signal1 = df_signal.copy()
+    if side == 'buy':
+        df_signal1['signal0'] = 'BUY'
+        df_signal1['signal1'] = 'SELL'
+    elif side == 'sell':
+        df_signal1['signal0'] = 'SELL'
+        df_signal1['signal1'] = 'BUY'
+    elif side == 'reverse':
+        temp = df_signal1['signal0'].copy()
+        df_signal1['signal0'] = df_signal1['signal1']
+        df_signal1['signal1'] = temp
+
     trailing_stop = []
-    for index, signal in df_signal.iterrows():
+    for index, signal in df_signal1.iterrows():
         df_temp = df.ix[signal['date0']:signal['date1']][1:]
 
         if signal['signal0'] == 'BUY':
@@ -95,7 +108,7 @@ def create_order(df_signal, df_stock, percent=0):
         })
 
     df_result = pd.DataFrame(trailing_stop)
-    df_trade = df_signal.copy()
+    df_trade = df_signal1.copy()
     """:type: pd.DataFrame"""
 
     df_trade['date1'] = df_result['exit_date']

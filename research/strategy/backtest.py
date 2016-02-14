@@ -51,29 +51,29 @@ class TradeBacktest(object):
         # backtest result
         self.df_trade = pd.DataFrame()
 
-    def set_algorithm(self, formula, report_id, df_signal):
+    def set_algorithm(self, formula_id, report_id, df_signal):
         """
         Set df_signal into class
-        :param formula: Formula
+        :param formula_id: int
         :param report_id: int
         :param df_signal: pd.DataFrame
         """
-        self.formula = formula
+        self.formula = Formula.objects.get(id=formula_id)
         self.report_id = report_id
 
         self.df_signal = df_signal[[
             'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding', 'pct_chg'
         ]]
         logger.info('formula: %s' % self.formula)
-        logger.info('report_id: %d' % self.report_id)
+        logger.info('report_id: %d' % int(self.report_id))
         logger.info('df_signal: %d' % len(self.df_signal))
 
-    def set_commission(self, commission):
+    def set_commission(self, commission_id):
         """
         Set commission object
-        :param commission: Commission
+        :param commission_id: Commission
         """
-        self.commission = commission
+        self.commission = Commission.objects.get(id=commission_id)
         self.stock_order_fee = float(self.commission.stock_order_fee)
         self.option_contract_fee = float(self.commission.option_contract_fee)
         self.option_order_fee = float(self.commission.option_order_fee)
@@ -504,23 +504,23 @@ class TradeBacktest(object):
 
         return df_report, df_trades
 
-    def save(self, fields, formula, report_id, df_signal, commission, capital):
+    def save(self, fields, formula_id, report_id, commission_id, capital, df_signal):
         """
         Setup all, generate test, then save into db
-        :param formula: Formula
-        :param report_id: int
-        :param df_signal: pd.DataFrame
-        :param commission: Commission
-        :param capital: Capital
         :param fields: dict
+        :param formula_id: int
+        :param report_id: int
+        :param commission_id: int
+        :param capital: int
+        :param df_signal: pd.DataFrame
         :return: int
         """
         logger.info('Start backtest formula')
 
         # set symbol and args
-        self.set_commission(commission)  # worng
+        self.set_commission(commission_id)
         self.set_capital(capital)
-        self.set_algorithm(formula, report_id, df_signal)
+        self.set_algorithm(formula_id, report_id, df_signal)
         self.set_args(fields)
         self.get_data()
         self.get_extra()

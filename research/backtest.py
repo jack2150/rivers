@@ -6,7 +6,10 @@ import pandas as pd
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
 
+from rivers.settings import RESEARCH
 from research.algorithm.models import Formula, FormulaResult
+from research.strategy.backtest import TradeBacktest
+from research.strategy.models import Trade
 
 
 @click.group()
@@ -42,6 +45,41 @@ def algorithm(symbol, formula_id, start, stop, fields):
 
     click.pause()
 
+
+@backtest.command()
+@click.option('--symbol', required=True)
+@click.option('--formula_id', required=True)
+@click.option('--report_id', required=True)
+@click.option('--trade_id', required=True)
+@click.option('--commission_id', required=True)
+@click.option('--capital', required=True)
+@click.option('--fields', required=True)
+def strategy(symbol, formula_id, report_id, trade_id, commission_id, capital, fields):
+    trade = Trade.objects.get(id=trade_id)
+    formula = Formula.objects.get(id=formula_id)
+
+    exec ('fields = %s' % fields)
+
+    click.echo('Backtest strategy trade: %s symbol: %s' % (trade, symbol.upper()))
+    click.echo('-' * 70)
+
+    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algorithm.h5'))
+    df_report = db.select('report', where='formula == %r' % formula.path)
+    report = df_report.iloc[0]
+    df_signal = db.select('signal', where='formula == %r & hd == %r & cs == %r' % (
+        report['formula'], report['hd'], report['cs']
+    ))
+    db.close()
+
+    trade_bt = TradeBacktest(symbol, trade)
+    trade_bt.save(
+        fields=fields,
+        formula_id=int(formula_id),
+        report_id=int(report_id),
+        commission_id=int(commission_id),
+        capital=int(capital),
+        df_signal=df_signal
+    )
 
 if __name__ == '__main__':
     # sleep(10)

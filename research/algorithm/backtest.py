@@ -577,6 +577,11 @@ class FormulaBacktest(object):
 
         df_signals = pd.concat(signals)
         """:type: pd.DataFrame"""
+        df_signals = df_signals[[
+            'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1',
+            'holding', 'pct_chg'
+        ]]
+
         df_signals['date'] = pd.to_datetime(df_signals['date'])
         df_signals['start'] = pd.to_datetime(df_signals['start'])
         df_signals['stop'] = pd.to_datetime(df_signals['stop'])

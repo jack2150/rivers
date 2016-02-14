@@ -281,10 +281,10 @@ class TestStrategyBacktest(TestUnitSetUp):
                 'side': 'follow,reverse,buy,sell',
                 'percent': '0:10:5'
             },
-            formula=self.formula,
+            formula_id=self.formula,
             report_id=self.report.name,
             df_signal=self.df_signal,
-            commission=self.commission,
+            commission_id=self.commission,
             capital=self.capital
         )
 
@@ -338,20 +338,3 @@ class TestStrategyAnalysisView(TestUnitSetUp):
         })
 
         print '-' * 70
-
-    # todo: cont
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

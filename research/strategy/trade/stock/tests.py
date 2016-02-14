@@ -63,11 +63,15 @@ class TestStrategyLimit(TestStrategy):
         """
         Test trade using stop loss order
         """
-        kwargs = {'percent': 5}
-        df_trade = self.backtest.create_order(
-            self.df_signal, self.backtest.df_stock, **kwargs
-        )
-        print df_trade.to_string(line_width=500)
+        for side in ('follow', 'reverse', 'buy', 'sell'):
+            print 'side:', side
+            kwargs = {'side': side, 'percent': 5}
+            df_trade = self.backtest.create_order(
+                self.df_signal, self.backtest.df_stock, **kwargs
+            )
+            print df_trade['pct_chg'].sum()
+            print df_trade.to_string(line_width=500)
+            print '-' * 70
 
 
 class TestStrategyOCO(TestStrategy):
@@ -83,11 +87,15 @@ class TestStrategyOCO(TestStrategy):
         """
         Test trade using stop loss order
         """
-        kwargs = {'profit_pct': 10, 'loss_pct': 5}
-        df_trade = self.backtest.create_order(
-            self.df_signal, self.backtest.df_stock, **kwargs
-        )
-        print df_trade.to_string(line_width=500)
+        for side in ('follow', 'reverse', 'buy', 'sell'):
+            print 'side:', side
+            kwargs = {'side': side, 'profit_pct': 10, 'loss_pct': 5}
+            df_trade = self.backtest.create_order(
+                self.df_signal, self.backtest.df_stock, **kwargs
+            )
+            print df_trade['pct_chg'].sum()
+            print df_trade.to_string(line_width=500)
+            print '-' * 70
 
 
 class TestStrategyTrailingStop(TestStrategy):
@@ -103,15 +111,11 @@ class TestStrategyTrailingStop(TestStrategy):
         """
         Test trade using stop loss order
         """
-        kwargs = {'percent': 10}
-        df_trade = self.backtest.create_order(
-            self.df_signal, self.backtest.df_stock, **kwargs
-        )
-        print df_trade.to_string(line_width=500)
-        print df_trade['pct_chg'].sum()
-
-
-
-
-
-
+        for side in ('follow', 'reverse', 'buy', 'sell'):
+            print 'side:', side
+            kwargs = {'side': side, 'percent': 10}
+            df_trade = self.backtest.create_order(
+                self.df_signal, self.backtest.df_stock, **kwargs
+            )
+            print df_trade.to_string(line_width=500)
+            print df_trade['pct_chg'].sum()

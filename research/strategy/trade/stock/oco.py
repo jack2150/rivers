@@ -1,16 +1,30 @@
 import numpy as np
 
 
-def create_order(df_signal, df_stock, profit_pct=0, loss_pct=0):
+def create_order(df_signal, df_stock, side=('follow', 'reverse', 'buy', 'sell'),
+                 profit_pct=0, loss_pct=0):
     """
     Trade stock with stop loss order
     :param df_signal: DataFrame
     :param df_stock: DataFrame
-    :param profit_pct:
-    :param loss_pct:
+    :param side: str
+    :param profit_pct: int
+    :param loss_pct: int
     :return: DataFrame
     """
     df0 = df_stock.copy()
+
+    df_signal1 = df_signal.copy()
+    if side == 'buy':
+        df_signal1['signal0'] = 'BUY'
+        df_signal1['signal1'] = 'SELL'
+    elif side == 'sell':
+        df_signal1['signal0'] = 'SELL'
+        df_signal1['signal1'] = 'BUY'
+    elif side == 'reverse':
+        temp = df_signal1['signal0'].copy()
+        df_signal1['signal0'] = df_signal1['signal1']
+        df_signal1['signal1'] = temp
 
     limit_pct = profit_pct / 100.0
     stop_loss_pct = loss_pct / 100.00
@@ -19,7 +33,7 @@ def create_order(df_signal, df_stock, profit_pct=0, loss_pct=0):
     exit_times = list()
     exit_prices = list()
 
-    for index, signal in df_signal.iterrows():
+    for index, signal in df_signal1.iterrows():
         df_temp = df0.ix[signal['date0']:signal['date1']][1:]
 
         limit_hit = False
@@ -133,21 +147,22 @@ def create_order(df_signal, df_stock, profit_pct=0, loss_pct=0):
         exit_times.append(exit_time)
         exit_prices.append(exit_price)
 
-    df = df_signal.copy()
+    df = df_signal1.copy()
     df['date1'] = exit_dates
     df['time1'] = exit_times
     df['order'] = order_hits
     df['close1'] = np.round(exit_prices, 2)
     df['holding'] = df['date1'] - df['date0']
 
-    f = lambda x: x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg']
     df['pct_chg'] = (df['close1'] - df['close0']) / df['close0']
-    df['pct_chg'] = np.round(df.apply(f, axis=1), 4)
+    df['pct_chg'] = np.round(df.apply(
+        lambda x: x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg']
+        , axis=1), 4
+    )
 
     # for stock option quantity multiply
-    f = lambda x: -1 if x['signal0'] == 'SELL' else 1
-    df['sqm0'] = df.apply(f, axis=1)
-    df['sqm1'] = df.apply(f, axis=1) * -1
+    df['sqm0'] = df.apply(lambda x: -1 if x['signal0'] == 'SELL' else 1, axis=1)
+    df['sqm1'] = -df['sqm0']
     df['oqm0'] = 0
     df['oqm1'] = 0
 

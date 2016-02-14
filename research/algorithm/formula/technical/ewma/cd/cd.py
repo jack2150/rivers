@@ -40,7 +40,7 @@ def create_signal(df):
         lambda x: x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg'],
         axis=1
     )
-    df2['pct_chg'] = df2['pct_chg']
+    # df2['pct_chg'] = df2['pct_chg']
 
     return df2.copy()
 
