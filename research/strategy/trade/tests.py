@@ -46,8 +46,8 @@ class TestStrategy2(TestUnitSetUp):
         """
         Ready df_signal for trade backtest
         """
-        algorithm = Formula.objects.get(rule='Ewma Chg D - H')
-        backtest = algorithm.start_backtest()
+        self.formula = Formula.objects.get(rule='Ewma Chg D - H')
+        backtest = self.formula.start_backtest()
         backtest.set_symbol_date(self.symbol, '2010-01-01', '2014-12-31')
         backtest.get_data()
         hd_args = {'span': 20, 'previous': 20}
@@ -62,7 +62,9 @@ class TestStrategy2(TestUnitSetUp):
         Ready up trade backtest
         """
         self.backtest = TradeBacktest(self.symbol, self.trade)
-        self.backtest.set_algorithm(self.df_signal)
+        self.backtest.set_algorithm(
+            formula_id=self.formula.id, report_id=1, df_signal=self.df_signal
+        )
         self.backtest.get_data()
         self.backtest.get_extra()
         self.backtest.set_commission(1)

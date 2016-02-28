@@ -5,8 +5,6 @@ from research.strategy.trade.tests import TestStrategy2
 import pandas as pd
 
 
-
-
 class TestSingleCallCS(TestStrategy2):
     def setUp(self):
         TestStrategy2.setUp(self)
@@ -33,6 +31,21 @@ class TestSingleCallCS(TestStrategy2):
 
             break
 
+    def test_join_data(self):
+        """
+        Test join df_trade data into daily data
+        """
+        df_trade = self.backtest.create_order(
+            self.df_signal,
+            self.backtest.df_all,
+            **{'side': 'follow', 'cycle': 0, 'strike': 3}
+        )
+
+        df_list = self.backtest.join_data(df_trade, self.backtest.df_all)
+
+        for df_daily in df_list:
+            print df_daily
+
 
 class TestSinglePutCS(TestStrategy2):
     def setUp(self):
@@ -57,3 +70,18 @@ class TestSinglePutCS(TestStrategy2):
             print df_trade.to_string(line_width=500)
 
             print df_trade['pct_chg'].sum()
+
+    def test_join_data(self):
+        """
+        Test join df_trade data into daily data
+        """
+        df_trade = self.backtest.create_order(
+            self.df_signal,
+            self.backtest.df_all,
+            **{'side': 'follow', 'cycle': 0, 'strike': 0}
+        )
+
+        df_list = self.backtest.join_data(df_trade, self.backtest.df_all)
+
+        for df_daily in df_list:
+            print df_daily

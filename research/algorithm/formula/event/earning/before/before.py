@@ -18,6 +18,7 @@ def handle_data(df, df_earning):
 
 
 def create_signal(df, side=('follow', 'reverse'), percent=0, days=0):
+    percent = abs(percent / 100.0)
     signals = []
     for index, data in df[~df['actual_date'].isnull()].iterrows():
         # print index, data

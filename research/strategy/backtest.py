@@ -22,7 +22,9 @@ class TradeBacktest(object):
         # primary
         self.symbol = symbol.lower()
         self.trade = trade
-        self.create_order = self.trade.get_order()
+        logger.info('Trade: %s' % self.trade)
+        self.create_order = self.trade.get_method('create_order')
+        self.join_data = self.trade.get_method('join_data')
 
         # formula, previous report, df_signal
         self.formula = Formula()
@@ -64,7 +66,7 @@ class TradeBacktest(object):
         self.df_signal = df_signal[[
             'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding', 'pct_chg'
         ]]
-        logger.info('formula: %s' % self.formula)
+        logger.info('Formula: %s' % self.formula)
         logger.info('report_id: %d' % int(self.report_id))
         logger.info('df_signal: %d' % len(self.df_signal))
 
@@ -269,7 +271,7 @@ class TradeBacktest(object):
                 price, sqm, oqm, capital
             )
 
-        return stock_qty, option_qty
+        return int(stock_qty), int(option_qty)
 
     @staticmethod
     def calc_amount(price, sqty, oqty, capital):
@@ -327,6 +329,7 @@ class TradeBacktest(object):
             kwargs['df_option'] = self.df_option
 
         df_order = self.create_order(self.df_signal, **kwargs)
+        df_order = df_order.reset_index(drop=True)
 
         trades = []
         for index, data in df_order.iterrows():
@@ -365,7 +368,7 @@ class TradeBacktest(object):
         df_trade = pd.concat([df_order, df_extra], axis=1)
         """:type: pd.DataFrame"""
 
-        df_trade['net_chg'] = (df_trade['amount1'] + df_trade['amount0']) * -1
+        df_trade['net_chg'] = np.round((df_trade['amount1'] + df_trade['amount0']) * -1, 2)
         df_trade['remain1'] = (
             df_trade['net_chg'] + np.abs(df_trade['amount0']) +
             df_trade['remain0'] - df_trade['fee1']
@@ -426,6 +429,38 @@ class TradeBacktest(object):
             loss_max, loss_min,
         )
 
+    def holding_period(self, df_trade):
+        """
+        Calculate the holding period daily stats
+        :param df_trade: pd.DataFrame
+        :return: list of float
+        """
+        args = [
+            a for a in getargspec(self.join_data)[0]
+        ]
+
+        kwargs = {'df_trade': df_trade}
+        for key in ('df_stock', 'df_all', 'df_contract', 'df_option'):
+            if key in args:
+                kwargs[key] = getattr(self, key)
+
+        df_list = self.join_data(**kwargs)
+
+        df_join = pd.concat(df_list)
+        """:type: pd.DataFrame"""
+        pct_chg = df_join['pct_chg']
+        profit = pct_chg[pct_chg > 0]
+        loss = pct_chg[pct_chg < 0]
+
+        dp_count = len(profit)
+        dp_chance = len(profit) / float(len(pct_chg))
+        dp_mean = profit.mean()
+        dl_count = len(loss)
+        dl_chance = len(loss) / float(len(pct_chg))
+        dl_mean = loss.mean()
+
+        return dp_count, dp_chance, dp_mean, dl_count, dl_chance, dl_mean
+
     def report(self, df_trade):
         """
         Generate a dict report for current formula
@@ -436,21 +471,28 @@ class TradeBacktest(object):
         """
         profit_loss = self.profit_loss(df_trade)
         trade_summary = self.trade_summary(df_trade)
+        holding_period = self.holding_period(df_trade)
 
         return {
-            'pl_sum': round(profit_loss[0], 4),
-            'pl_cumprod': round(profit_loss[1], 4),
-            'pl_mean': round(profit_loss[2], 4),
-            'pl_std': round(profit_loss[3], 4),
+            'pl_sum': profit_loss[0],
+            'pl_cumprod': profit_loss[1],
+            'pl_mean': profit_loss[2],
+            'pl_std': profit_loss[3],
             'pl_count': trade_summary[0],
             'profit_count': trade_summary[1],
-            'profit_chance': round(trade_summary[2], 4),
+            'profit_chance': trade_summary[2],
             'loss_count': trade_summary[3],
-            'loss_chance': round(trade_summary[4], 4),
-            'profit_max': round(trade_summary[5], 4),
-            'profit_min': round(trade_summary[6], 4),
-            'loss_max': round(trade_summary[7], 4),
-            'loss_min': round(trade_summary[8], 4)
+            'loss_chance': trade_summary[4],
+            'profit_max': trade_summary[5],
+            'profit_min': trade_summary[6],
+            'loss_max': trade_summary[7],
+            'loss_min': trade_summary[8],
+            'dp_count': holding_period[0],
+            'dp_chance': holding_period[1],
+            'dp_mean': holding_period[2],
+            'dl_count': holding_period[3],
+            'dl_chance': holding_period[4],
+            'dl_mean': holding_period[5]
         }
 
     def generate(self):
@@ -494,13 +536,20 @@ class TradeBacktest(object):
             'date', 'formula', 'report_id', 'trade', 'args',
             'pl_count', 'pl_sum', 'pl_cumprod', 'pl_mean', 'pl_std',
             'profit_count', 'profit_chance', 'profit_max', 'profit_min',
-            'loss_count', 'loss_chance', 'loss_max', 'loss_min'
+            'loss_count', 'loss_chance', 'loss_max', 'loss_min',
+            'dp_count', 'dp_chance', 'dp_mean', 'dl_count', 'dl_chance', 'dl_mean'
         ]]
 
         df_trades = pd.concat(trades)
         """:type: pd.DataFrame"""
         df_trades['date'] = pd.to_datetime(df_trades['date'])
         df_trades.reset_index(drop=True, inplace=True)
+        df_trades = df_trades[[
+            'date', 'formula', 'report_id', 'trade', 'args',
+            'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding',
+            'sqty0', 'sqty1', 'oqty0', 'oqty1', 'amount0', 'fee0', 'remain0', 'amount1',
+            'fee1', 'net_chg', 'remain1', 'pct_chg'
+        ]]
 
         return df_report, df_trades
 
@@ -551,6 +600,3 @@ class TradeBacktest(object):
         logger.info('Backtest save: %s' % fpath)
 
         return len(df_report)
-
-
-# todo: day profit loss report for stock, option

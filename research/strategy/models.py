@@ -41,18 +41,19 @@ class Trade(models.Model):
     arguments = models.TextField(null=True, blank=True, default='',
                                  help_text='Default arguments.')
 
-    def get_order(self):
+    def get_method(self, name):
         """
         Import module then get method and make quant class
+        :param name: str
         :return: Quant
         """
-        create_order = None
+        method = None
         if self.id:
             path = 'research.strategy.trade.{path}'.format(path=self.path)
             module = import_module(path)
-            create_order = getattr(module, 'create_order')
+            method = getattr(module, name)
 
-        return create_order
+        return method
 
     def get_args(self):
         """

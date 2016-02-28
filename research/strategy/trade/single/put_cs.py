@@ -70,3 +70,38 @@ def create_order(df_signal, df_all, side=('follow', 'long', 'short'), cycle=0, s
     df['oqm1'] = -df['oqm0']
 
     return df
+
+
+def join_data(df_trade, df_all):
+    """
+    Join df_trade data into daily trade data
+
+    :param df_trade: pd.DataFrame
+    :param df_all: pd.DataFrame
+    :return: list
+    """
+    df_list = []
+    for index, data in df_trade.iterrows():
+        df_code = df_all.query('option_code == %r' % data['option_code']).copy()
+        df_date = df_code.query('%r <= date & date <= %r' % (data['date0'], data['date1']))
+
+        if data['signal0'] == 'BUY':
+            column = 'ask'
+        else:  # sell
+            column = 'bid'
+
+        df_date = df_date[['date', column]]
+        df_date['pct_chg'] = df_date[column].pct_change()
+        df_date['pct_chg'] = df_date['pct_chg'].fillna(value=0)
+        df_date['pct_chg'] = df_date['pct_chg'].apply(
+            lambda x: 0 if x == np.inf else x
+        )
+
+        if data['signal0'] == 'SELL':
+            df_date['pct_chg'] = -df_date['pct_chg'] + 0
+
+        df_date.columns = ['date', 'price', 'pct_chg']
+
+        df_list.append(df_date)
+
+    return df_list

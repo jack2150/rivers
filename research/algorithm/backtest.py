@@ -450,7 +450,7 @@ class FormulaBacktest(object):
     def holding_period(self):
         """
         Calculate the holding period daily stats
-        :return: float, float, float, float
+        :return: list of float
         """
         df_join = self.df_join.copy()
         """:type: pd.DataFrame"""
@@ -569,7 +569,7 @@ class FormulaBacktest(object):
             'date', 'formula', 'hd', 'cs', 'start', 'stop',
             'sharpe_rf', 'sharpe_spy', 'sortino_rf', 'sortino_spy',
             'buy_hold', 'pl_count', 'pl_sum', 'pl_cumprod', 'pl_mean', 'pl_std',
-            'dp_count', 'dp_chance', 'dp_mean','dl_count', 'dl_chance', 'dl_mean',
+            'dp_count', 'dp_chance', 'dp_mean', 'dl_count', 'dl_chance', 'dl_mean',
             'profit_count', 'profit_chance', 'profit_max', 'profit_min',
             'loss_count', 'loss_chance', 'loss_max', 'loss_min',
             'var_95', 'var_99', 'max_dd'

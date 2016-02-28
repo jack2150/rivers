@@ -15,7 +15,22 @@ class TestStrategyBacktest(TestUnitSetUp):
 
         self.symbol = 'AIG'
         self.formula = Formula.objects.get(rule='Ewma Chg D')
+        self.formula.start_backtest()
+        self.backtest0 = self.formula.backtest
 
+        self.backtest0.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
+        self.backtest0.get_data()
+        self.backtest0.handle_data(
+            self.backtest0.df_stock,
+            **{
+                'span': 20,
+                'previous': 20
+            }
+        )
+        self.df_signal = self.backtest0.create_signal(self.backtest0.df_stock)
+        self.report_id = 1
+
+        """
         db = pd.HDFStore(os.path.join(RESEARCH, self.symbol.lower(), 'algorithm.h5'))
         df_report = db.select('report', where='formula == %r' % self.formula.path)
         self.report = df_report.iloc[0]
@@ -23,16 +38,15 @@ class TestStrategyBacktest(TestUnitSetUp):
             self.report['formula'], self.report['hd'], self.report['cs']
         ))
         db.close()
-
-        print self.formula, self.formula.id
+        """
 
         self.commission = Commission.objects.get(id=1)
         self.capital = 10000
 
         self.trade = Trade.objects.get(name='Stop Loss')
         self.backtest = TradeBacktest(self.symbol, self.trade)
-        self.backtest.set_algorithm(self.formula, self.report.name, self.df_signal)
-        self.backtest.set_commission(self.commission)
+        self.backtest.set_algorithm(self.formula.id, self.report_id, self.df_signal)
+        self.backtest.set_commission(self.commission.id)
         self.backtest.set_capital(self.capital)
 
     def test_set_args(self):
@@ -239,6 +253,18 @@ class TestStrategyBacktest(TestUnitSetUp):
         self.assertEqual(type(df_trade), pd.DataFrame)
         self.assertGreater(len(df_trade), 0)
 
+    def test_holding_period(self):
+        """
+        Test holding period in
+        """
+        args = {'side': 'follow', 'percent': 10}
+        self.backtest.get_data()
+        self.backtest.get_extra()
+        df_trade = self.backtest.make_trade(**args)
+
+        result = self.backtest.holding_period(df_trade)
+        print pd.DataFrame([result])
+
     def test_report(self):
         """
         Test make report using df_trade
@@ -260,7 +286,7 @@ class TestStrategyBacktest(TestUnitSetUp):
         self.backtest.get_extra()
         self.backtest.set_args(fields={
             'side': 'follow,reverse,buy,sell',
-            'percent': '0:10:5'
+            'percent': '5'
         })
         df_report, df_trades = self.backtest.generate()
 
@@ -272,6 +298,30 @@ class TestStrategyBacktest(TestUnitSetUp):
         self.assertTrue(len(df_report))
         self.assertTrue(len(df_trades))
 
+    def test_generate2(self):
+        """
+
+        :return:
+        """
+        self.trade = Trade.objects.get(name='Single PUT *CS')
+        self.backtest = TradeBacktest(self.symbol, self.trade)
+        self.backtest.set_algorithm(self.formula.id, self.report_id, self.df_signal)
+        self.backtest.set_commission(self.commission.id)
+        self.backtest.set_capital(self.capital)
+
+        self.backtest.get_data()
+        self.backtest.get_extra()
+        self.backtest.set_args(fields={
+            'side': 'follow',
+            'cycle': '0',
+            'strike': '0'
+        })
+
+        df_report, df_trades = self.backtest.generate()
+
+        print df_report.to_string(line_width=1000)
+        print df_trades.to_string(line_width=1000)
+
     def test_save(self):
         """
         Test save df_reports and df_signals
@@ -282,7 +332,7 @@ class TestStrategyBacktest(TestUnitSetUp):
                 'percent': '0:10:5'
             },
             formula_id=self.formula,
-            report_id=self.report.name,
+            report_id=self.report_id,
             df_signal=self.df_signal,
             commission_id=self.commission,
             capital=self.capital

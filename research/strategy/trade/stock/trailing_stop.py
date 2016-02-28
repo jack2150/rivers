@@ -124,3 +124,35 @@ def create_order(df_signal, df_stock, side=('follow', 'reverse', 'buy', 'sell'),
     )
 
     return df_trade
+
+
+def join_data(df_trade, df_stock):
+    """
+    Join df_trade data into daily trade data
+    :param df_trade: pd.DataFrame
+    :param df_stock: pd.DataFrame
+    :return: list
+    """
+    df_list = []
+    for index, data in df_trade.iterrows():
+        df_date = df_stock[data['date0']:data['date1']].copy()
+
+        # change last close price into limit or stop loss price
+        df_date.loc[df_date.index.values[-1], 'close'] = data['close1']
+
+        df_date['pct_chg'] = df_date['close'].pct_change()
+        df_date['pct_chg'] = df_date['pct_chg'].fillna(value=0)
+        df_date['pct_chg'] = df_date['pct_chg'].apply(
+            lambda x: 0 if x == np.inf else x
+        )
+
+        if data['signal0'] == 'SELL':
+            df_date['pct_chg'] = -df_date['pct_chg'] + 0
+
+        df_date.reset_index(inplace=True)
+        df_date = df_date[['date', 'close', 'pct_chg']]
+        df_date.columns = ['date', 'price', 'pct_chg']
+
+        df_list.append(df_date)
+
+    return df_list
