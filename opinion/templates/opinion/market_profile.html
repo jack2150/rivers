@@ -1,0 +1,831 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+
+{% block extrastyle %}
+  <style>
+    .padtop10 {
+      padding-top: 10px;
+    }
+
+    .borderless td, .borderless th {
+      border: none !important;
+    }
+  </style>
+{% endblock %}
+
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'opinion' %}">Opinions</a></li>
+      <li>Market profile</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a class="" href="#market_indicator" data-parent="#accordion" data-toggle="collapse">
+          Market indicators: {{ market_indicator.date }}
+        </a>
+      </h4>
+    </div>
+
+    <table class="panel-collapse collapse in table table-bordered" id="market_indicator">
+      <tr>
+        <td class="col-md-4">
+          <label>Fund Cash Ratio:</label>
+          <div>
+            {% if market_indicator.fund_cash_ratio == 'increase' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% elif market_indicator.fund_cash_ratio == 'decrease' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.fund_cash_ratio == 'increase' %}
+              High cash position is a bullish indicator because of potential buying power.
+              Large cash balance will eventually be invested and will cause stock
+              prices to increase.
+            {% elif market_indicator.fund_cash_ratio == 'decrease' %}
+              Low cash ratio would mean that the institutions have bought
+              heavily and are left with little potential buying power.
+              No new cash to invest eventually will cause stock to fall.
+            {% else %}
+              Same cash position as last cycle. No effect on stock.
+            {% endif %}
+          </p>
+        </td>
+        <td class="col-md-4">
+          <label>Fear & Greed Index:</label>
+          <div>
+            {% if market_indicator.fear_greek_index == 'greed' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% elif market_indicator.fear_greek_index == 'fear' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.fear_greek_index == 'greed' %}
+              Current investors emotion are greed. Greed drives investors to buy more
+              shares and reduce investment in security.
+            {% elif market_indicator.fear_greek_index == 'fear' %}
+              Current investors emotion are fear. Fear drives investors to enhance security.
+              Investors will eventually more careful cause stock to fall.
+            {% else %}
+              Investors feel normal. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td class="col-md-4">
+          <label>Credit Balance:</label>
+          <div>
+            {% if market_indicator.credit_balance == 'increase' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% elif market_indicator.credit_balance == 'decrease' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.credit_balance == 'increase' %}
+              Credit balance increase indicates an increase
+              in buying power and is a bullish signal.
+            {% elif market_indicator.credit_balance == 'decrease' %}
+              Credit balance decline is considered bearish because
+              it indicates lower purchasing power as the market approaches a peak.
+            {% else %}
+              Average credit balance. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>CBOE Put/Call Ratio:</label>
+          <div>
+            {% if market_indicator.put_call_ratio == 'increase' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% elif market_indicator.put_call_ratio == 'decrease' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.put_call_ratio == 'increase' %}
+              Increase in put/call ratio considered bullish because investors
+              avoid selling short or buying puts.
+            {% elif market_indicator.put_call_ratio == 'decrease' %}
+              Decrease in put/call ratio considered bearish because investors
+              buying puts and selling calls.
+            {% else %}
+              Ranging put/call ratio. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Investor Sentiment, % Bull-Bear Spread:</label>
+          <div>
+            {% if market_indicator.investor_sentiment == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif market_indicator.investor_sentiment == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.investor_sentiment == 'bullish' %}
+              Individual investors are bullish on the stock market for the next six months
+              ; polled from the ranks of the AAII membership on a weekly basis.
+            {% elif market_indicator.investor_sentiment == 'bearish' %}
+              Individual investors are bearish on the stock market for the next six months
+              ; polled from the ranks of the AAII membership on a weekly basis.
+            {% else %}
+              Individual investors are neutral on the stock market for the next six months.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Traders in S&P 500 Futures:</label>
+          <div>
+            {% if market_indicator.futures_trader == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif market_indicator.futures_trader == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.futures_trader == 'bullish' %}
+              Asset manager/institutional last week are increase size
+              for their long position. This indicate bullish in the stock market.
+            {% elif market_indicator.futures_trader == 'bearish' %}
+              Asset manager/institutional last week are closing their long position.
+              This indicate bearish in the stock market.
+            {% else %}
+              Asset manager/institutional have don't increase or decrease their position.
+              No significant effect.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Confidence Index:</label>
+          <div>
+            {% if market_indicator.confidence_index == 'increase' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% elif market_indicator.confidence_index == 'decrease' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.confidence_index == 'increase' %}
+              A increase confidence in the bond market reflects the investors
+              willing to invest in bond. Investors will invest in stock consider bearish.
+            {% elif market_indicator.confidence_index == 'decrease' %}
+              A decrease confidence in the bond market reflects the investors
+              not willing to invest in bond. Investors will invest in stock consider bullish.
+            {% else %}
+              Average confidence in bond market. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>T-Bill and EuroDollar Spread:</label>
+          <div>
+            {% if market_indicator.ted_spread == 'increase' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% elif market_indicator.ted_spread == 'decrease' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.ted_spread == 'increase' %}
+              Increase in the TED spread is lenders believe the risk of default on loans is increase.
+              Investors not willing to borrow money to invest stock consider bearish.
+            {% elif market_indicator.ted_spread == 'decrease' %}
+              Decrease in the TED spread is lenders believe the risk of default on loans is decrease.
+              Investors are willing to borrow more money to invest stock consider bullish.
+            {% else %}
+              TED spread is ranging. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Margin debt:</label>
+          <div>
+            {% if market_indicator.margin_debt == 'increase' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif market_indicator.margin_debt == 'decrease' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.margin_debt == 'increase' %}
+              Increase in margin debt implies these investors borrow more to invest
+              and is considered a bullish sign.
+            {% elif market_indicator.margin_debt == 'decrease' %}
+              Decrease in margin debt implies these investors selling stock
+              and is considered a bearish sign.
+            {% else %}
+              Margin debt is ranging. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Market Breadth Data:</label>
+          <div>
+            {% if market_indicator.market_breadth == 'increase' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif market_indicator.market_breadth == 'decrease' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.market_breadth == 'increase' %}
+              Increase in market breadth index indicate investors trading more advance price
+              than decline price.
+            {% elif market_indicator.market_breadth == 'decrease' %}
+              Decrease in market breadth index indicate investors trading less advance price
+              than decline price.
+            {% else %}
+              Advance and decline trade is same. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>% of S&P500 Stocks Above 200-Day Moving Average:</label>
+          <div>
+            {% if market_indicator.ma200day_pct == 'overbought' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% elif market_indicator.ma200day_pct == 'oversold' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.ma200day_pct == 'overbought' %}
+              Market is consider overbought and subject to a negative correction (bearish)
+              when stocks are trading above their 200-day moving average.
+            {% elif market_indicator.ma200day_pct == 'oversold' %}
+              Market is consider oversold and subject to a positive correction (bullish)
+              when stocks are trading above their 200-day moving average.
+            {% else %}
+              Most S&P 500 Stocks are within standard deviation price range.
+              It indicate a fair value market.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Short-Term Trading Arms Index</label>
+          <div>
+            {% if market_indicator.arms_index == 'overbought' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% elif market_indicator.arms_index == 'oversold' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_indicator.arms_index == 'overbought' %}
+              Arms index below .50 are indicate overbought of the market and
+              will subject to a negative correlation (bearish).
+            {% elif market_indicator.arms_index == 'oversold' %}
+              Arms index above 2 are indicate oversold of the market and
+              will subject to a positive correlation (bullish).
+            {% else %}
+              Arms index close to 1 are indicate market are trading fair value.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Support/Resistant</label>
+          <p class="padtop10">
+            Support price: {{ market_indicator.support_price }}<br>
+            Resistant price: {{ market_indicator.resistant_price }}<br>
+
+          </p>
+        </td>
+        <td>
+          <label>50-Days Moving Average Volume Confirm</label>
+          <p class="padtop10">
+            {% if market_indicator.ma50_confirm %}
+              Trend have been confirm (bullish/bearish) because 50-days moving average
+              have been cross with large volume.
+            {% else %}
+              50-days moving average no cross and no large volume. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Dow theory for S&P 500</label>
+
+          <p class="padtop10">
+            {% if market_indicator.dow_phase == 'accumulate' %}
+              Current dow theory phase is <b>accumulate</b>, investors are buying
+              more stock.
+            {% elif market_indicator.dow_phase == 'distribute' %}
+              Current dow theory phase is <b>distribute</b>, investors are selling
+              stock back into market.
+            {% else %}
+              Current dow theory phase is <b>trending</b>.
+            {% endif %}
+
+            {% if market_indicator.dow_movement == 'bullish' %}
+              Current market dow movement is bullish.
+            {% elif market_indicator.dow_movement == 'bearish' %}
+              Current market dow movement is bearish.
+            {% elif market_indicator.dow_movement == 'medium_swing' %}
+              Current market dow movement is medium swig.
+            {% else %}
+              Current market dow movement is small swig.
+            {% endif %}
+
+            {% if market_indicator.dow_ma200x50 %}
+              Both 200-days and 50-days moving average are moving in same direction.
+            {% else %}
+              200-days and 50-days moving average are not moving in same direction.
+            {% endif %}
+
+            {% if market_indicator.dow_volume %}
+              Big volume confirm the market trend.
+            {% else %}
+              No volume confirm for any market trend.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+    <tr>
+      <td>
+        <label>Morningstar Market Fair Value</label>
+        <div>
+          {% if market_indicator.fair_value_trend == 'increase' %}
+            <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+          {% elif market_indicator.fair_value_trend == 'decrease' %}
+            <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+          {% endif %}
+        </div>
+        <p class="padtop10">
+          {% if market_indicator.fair_value_trend == 'increase' %}
+            Morningstar estimate current market fair value is increase and it indicate a bullish sign.
+          {% elif market_indicator.fair_value_trend == 'decrease' %}
+            Morningstar estimate current market fair value is decrease and it indicate a bearish sign.
+          {% else %}
+            Market fair value is stable. No significant effect.
+          {% endif %}
+        </p>
+      </td>
+      <td></td>
+      <td>
+        <label>Market Indicators Summary</label>
+        {% if summary0.total.score > 0 %}
+          <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+        {% elif summary0.total.score < 0 %}
+          <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+        {% else %}
+          <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+        {% endif %}
+      <div class="col-md-10 padtop10">
+        <table class="table table-condensed borderless">
+          <tr>
+            <td></td>
+            <td>Bullish</td>
+            <td> {{ summary0.bullish }}</td>
+          </tr>
+          <tr>
+            <td>+</td>
+            <td>Neutral</td>
+            <td>{{ summary0.neutral }}</td>
+          </tr>
+          <tr>
+            <td>+</td>
+            <td>Bearish</td>
+            <td>{{ summary0.bearish }}</td>
+          </tr>
+          <tr style="border-top: solid 1px darkgrey">
+            <td>=</td>
+            <td>Summary</td>
+            <td>{{ summary0.total }} / 13</td>
+          </tr>
+        </table>
+      </div>
+      </td>
+
+    </tr>
+    </table>
+  </div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a class="" href="#macro_valuation" data-parent="#accordion" data-toggle="collapse">
+          Macro valuation: {{ macro_valuation.date }}
+        </a>
+      </h4>
+    </div>
+
+    <table class="panel-collapse collapse in table table-bordered" id="macro_valuation">
+      <tr>
+        <td class="col-md-4">
+          <label>Composite leading indicator:</label>
+          <div>
+            {% if macro_valuation.cli_trend == 'increase' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% elif macro_valuation.cli_trend == 'decrease' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if macro_valuation.cli_trend == 'increase' %}
+              Composite leading indicator series is rising, market condition is getting better.
+            {% elif macro_valuation.cli_trend == 'decrease' %}
+              Composite leading indicator series is declining, market condition is getting worst.
+            {% else %}
+              Composite leading indicator series is ranging, market condition is the same.
+            {% endif %}
+          </p>
+        </td>
+        <td class="col-md-4">
+          <label>Business Cycle Indicator:</label>
+          <div>
+            {% if macro_valuation.bci_trend == 'increase' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% elif macro_valuation.bci_trend == 'decrease' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if macro_valuation.bci_trend == 'increase' %}
+              Business cycle indicator series is rising, most business is doing better.
+            {% elif macro_valuation.bci_trend == 'decrease' %}
+              Business cycle indicator series is declining, most business is doing worst.
+            {% else %}
+              Business cycle indicator series is ranging, most business is doing the same.
+            {% endif %}
+        </td>
+        <td class="col-md-4">
+          <label>Market Scenario:</label>
+          <div>
+            {% if macro_valuation.market_scenario == 'positive' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% elif macro_valuation.market_scenario == 'midly_negative' %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if macro_valuation.market_scenario == 'positive' %}
+              <b>Positive scenario.</b> Interest rates rise due to an increase in the rate
+              of inflation, and corporate earnings likewise experience an increase in growth
+              because firms are able to increase prices in line with cost increases.
+            {% elif macro_valuation.market_scenario == 'midly_negative' %}
+              <b>Mildly negative scenario.</b> Interest rates and the required return increase
+              due to inflation, but expected cash flows continue to grow at the prior rate assuming
+              small increases in prices at rates below the increase in the inflation rate and cost
+              increases. This would cause a decline in stock prices similar to what happens with a bond.
+            {% else %}
+              <b>Very negative scenario.</b> Interest rates and the required return increase due to
+              inflation, while the growth rate of cash flows declines because during the period of
+              inflation the costs of production increase, but many firms are not able to increase
+              prices at all, which causes a major decline in profit margins.
+            {% endif %}
+        </td>
+      </tr>
+    <tr>
+      <td>
+        <label>M2 Money Supply:</label>
+        <div>
+          {% if macro_valuation.money_supply == 'increase' %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% elif macro_valuation.money_supply == 'decrease' %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+          {% endif %}
+        </div>
+        <p class="padtop10">
+          {% if macro_valuation.money_supply == 'increase' %}
+            Increases in the growth rate of the money supply have consistently preceded economic
+            expansions. More money to buy stock and more money for consumer to spend.
+          {% elif macro_valuation.money_supply == 'decrease' %}
+            Decreases in the growth rate of the money supply have consistently reduce economic
+            expansions. Less money to buy stock and less money for consumer to spend.
+          {% else %}
+            No growth rate or decline for M2 money supply. No significant effect.
+          {% endif %}
+      </td>
+      <td>
+        <label>Lastest Monetary Policy:</label>
+        <p class="padtop10">
+          {{ macro_valuation.monetary_policy }}
+        </p>
+      </td>
+      <td>
+        <label>Macro valuation Summary:</label>
+        {% if summary1.total > 0 %}
+          <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+        {% elif summary1.total < 0 %}
+          <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+        {% else %}
+          <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+        {% endif %}
+        <div class="col-md-10 padtop10">
+          <table class="table table-condensed borderless">
+            <tr>
+              <td></td>
+              <td>Bullish</td>
+              <td> {{ summary1.bullish }}</td>
+            </tr>
+            <tr>
+              <td>+</td>
+              <td>Neutral</td>
+              <td>{{ summary1.neutral }}</td>
+            </tr>
+            <tr>
+              <td>+</td>
+              <td>Bearish</td>
+              <td>{{ summary1.bearish }}</td>
+            </tr>
+            <tr style="border-top: solid 1px darkgrey">
+              <td>=</td>
+              <td>Summary</td>
+              <td>{{ summary1.total }} / 13</td>
+            </tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+    </table>
+  </div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a class="" href="#market_opinion" data-parent="#accordion" data-toggle="collapse">
+          Market opinion: {{ market_opinion.date }}
+        </a>
+      </h4>
+    </div>
+
+    <table class="panel-collapse collapse table in table-bordered" id="market_opinion">
+      <tr>
+        <td class="col-md-4">
+          <label>Market volatility:</label>
+          <div>
+            {% if market_opinion.volatility == 'high' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% elif market_opinion.volatility == 'low' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_opinion.volatility == 'high' %}
+              Higher volatility will have larger swings in price over a given period of time.
+              It can be very bullish or ver bearish in the up coming period. If you are not sure,
+              reduce position if necessary; if you confident, increase position on side; do not
+              try to enter neutral position.
+            {% elif market_opinion.volatility == 'low' %}
+              Low volatility mean price will have tighter swings in price over a given period of time.
+              If it is bullish trend, enter bullish position; if it is bearish, enter bearish position;
+              neutral position not profitable because no enough premium.
+            {% else %}
+              Volatility is ranging. No significant trend effect. Neutral strategy will work well
+              on ranging volatility period.
+            {% endif %}
+        </td>
+        <td class="col-md-4">
+          <label>Bond market:</label>
+          <div>
+            {% if market_opinion.bond == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% elif market_opinion.bond == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_opinion.bond == 'bullish' %}
+              Bond market price is trending higher. Bond market have negative correlation with
+              stock market. Bond bullish indicate stock market bearish.
+            {% elif market_opinion.bond == 'bearish' %}
+              Bond market price is trending lower. Bond market have negative correlation with
+              stock market. Bond bearish indicate stock market bullish.
+            {% else %}
+              Bond market price keep in a range. No significant effect on stock market price.
+            {% endif %}
+          </p>
+        </td>
+        <td class="col-md-4">
+          <label>Commodity market:</label>
+          <div>
+            {% if market_opinion.bond == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif market_opinion.bond == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_opinion.bond == 'bullish' %}
+              Most of the commodity futures are trading higher. Increase in common product will
+              result greater cost for most company and generate increase profit for some company.
+              If company you invest is related to commodity market, it should follow trend. If is
+              do not related to commodity market, it should no effect no it.
+            {% elif market_opinion.bond == 'bearish' %}
+              Most of the commodity futures are trading lower. Decrease in common product will
+              result lower cost for most company and generate decrease profit for some company.
+              If company you invest is related to commodity market, it should follow trend. If is
+              do not related to commodity market, it should no effect no it.
+            {% else %}
+              Commodity market are trading in range. No significant effect on stock market.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Currency market:</label>
+          <div>
+            {% if market_opinion.currency == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% elif market_opinion.currency == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_opinion.currency == 'bullish' %}
+              Increase in foreign currency will result higher cost and higher profit for
+              some international business.
+              It will also attract more foreign investment into stock market.
+            {% elif market_opinion.currency == 'bearish' %}
+              Decrease in foreign currency will result lower cost and
+              lower profit for some international business.
+              It will also attract more foreign investment into stock market.
+            {% else %}
+              Ranging foreign currency. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Short-term market trend:</label>
+          <div>
+            {% if market_opinion.current_short_trend == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif market_opinion.current_short_trend == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            Previous short-term market trend is {{ market_opinion.previous_short_trend }}.
+            Current short-term market trend is {{ market_opinion.current_short_trend }}.
+            Position can only adjust according to current market trend.
+            Unless you have a very good reason to enter reverse position,
+            follow market trend is always work well.
+          </p>
+        </td>
+        <td>
+          <label>Long-term market trend:</label>
+          <div>
+            {% if market_opinion.current_long_trend == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif market_opinion.current_long_trend == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            Previous long-term market trend is {{ market_opinion.previous_long_trend }}.
+            Current long-term market trend is {{ market_opinion.current_long_trend }}.
+            Position can only adjust according to current market trend.
+            Unless you have a very good reason to enter reverse position,
+            follow market trend is always work well.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Events in Economics Calendar:</label>
+          <div>
+            {% if market_opinion.market_indicator > 3 %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% elif market_opinion.market_indicator > 0 or market_opinion.extra_attention > 2 %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_opinion.market_indicator > 3 %}
+              There was totally {{ market_opinion.market_indicator }} Market Moving Indicator
+              release today. It will move the stock market heavy because uncertainty.
+              Today also onclude {{ market_opinion.extra_attention }} Merit Extra Attention and
+              {{ market_opinion.key_indicator }} Other Key Indicator.
+              Trading should be carefully and caution.
+            {% elif market_opinion.market_indicator > 0 or market_opinion.extra_attention > 2 %}
+              There was totally {{ market_opinion.market_indicator }} Market Moving Indicator
+              and {{ market_opinion.extra_attention }} Merit Extra Attention
+              release today. It will effect the stock market but not too strong.
+              Today include {{ market_opinion.key_indicator }} Other Key Indicator.
+              Need to pay extra attention to market.
+            {% else %}
+              Today got {{ market_opinion.market_indicator }} Market Moving Indicator,
+              {{ market_opinion.extra_attention }} Merit Extra Attention and
+              {{ market_opinion.key_indicator }} Other Key Indicator.
+              Trading should be smooth and entering position or adjustment is recommended.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Stock market condition:</label>
+          <p class="padtop10">
+            {% if market_opinion.special_news %}
+              Market movement news happen today.
+            {% else %}
+              No market move news today.
+            {% endif %}
+            {{ market_opinion.market_news }}
+          </p>
+        </td>
+        <td>
+          <label>Market opinion Summary:</label>
+          {% if summary2.total > 0 %}
+            <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+          {% elif summary2.total < 0 %}
+            <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+          {% endif %}
+          <div class="col-md-10 padtop10">
+            <table class="table table-condensed borderless">
+              <tr>
+                <td></td>
+                <td>Bullish</td>
+                <td> {{ summary2.bullish }}</td>
+              </tr>
+              <tr>
+                <td>+</td>
+                <td>Neutral</td>
+                <td>{{ summary2.neutral }}</td>
+              </tr>
+              <tr>
+                <td>+</td>
+                <td>Bearish</td>
+                <td>{{ summary2.bearish }}</td>
+              </tr>
+              <tr style="border-top: solid 1px darkgrey">
+                <td>=</td>
+                <td>Summary</td>
+                <td>{{ summary2.total }} / 5</td>
+              </tr>
+            </table>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+
+
+{% endblock %}

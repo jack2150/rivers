@@ -499,12 +499,6 @@ def position_profile(request, symbol, date, portfolio=0):
     else:
         score['event_period'] = True
 
-    # section: close opinion
-    # sometime it can be close at same date of enter date
-
-
-
-
     template = 'opinion/position_profile.html'
 
     parameters = dict(

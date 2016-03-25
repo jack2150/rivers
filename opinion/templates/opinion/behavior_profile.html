@@ -1,0 +1,257 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+
+{% block extrastyle %}
+  <style>
+    .pad_top10 {
+      padding-top: 10px;
+    }
+
+    .borderless td, .borderless th {
+      border: none !important;
+    }
+  </style>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'opinion' %}">Opinions</a></li>
+      <li>Behavior profile</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a class="" href="#market_indicator" data-parent="#accordion" data-toggle="collapse">
+        Behavior opinion
+      </a>
+    </h4>
+  </div>
+
+  <table class="panel-collapse collapse in table table-bordered" id="market_indicator">
+    <tr>
+      <td class="col-md-4">
+        <label>Prospect Theory:</label>
+        <div>
+          {% if behavior_opinion.prospect_theory %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% endif %}
+        </div>
+        <p class="pad_top10">
+          {% if behavior_opinion.prospect_theory %}
+            I was hold on to <b>losers too long</b> and <b>sell winners too soon</b>.
+            Investors fear losses much more than they value gains a tendency
+            toward loss aversion. This aversion is explained by prospect theory, which contends that
+            utility depends on deviations from moving reference points rather than absolute wealth.
+            You should sell loser if it reach stop loss; hold more winner for longer period.
+          {% else %}
+            I was <b>hold on to winners</b> and <b>sell losers</b>. This is how portfolio
+            management should be working.
+          {% endif %}
+        </p>
+      </td>
+      <td class="col-md-4">
+        <label>Belief Perseverance:</label>
+        <div>
+          {% if behavior_opinion.belief_perseverance %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% endif %}
+        </div>
+        <p class="pad_top10">
+          {% if behavior_opinion.belief_perseverance %}
+            I was <b>hold initial opinion too long</b> without update; also
+            <b>skeptical and misinterpret new info</b>. Belief Perseverance which
+            means that once people have formed an opinion (on a company or stock)
+            they hold to it too tightly and for too long. As a result, they are reluctant to
+            search for contradictory beliefs, and even when they find such evidence, they are very
+            skeptical about it or even misinterpret such information.
+          {% else %}
+            I keep update initial opinion everyday and keep stock valuation reflect to
+            new information.
+          {% endif %}
+        </p>
+      </td>
+      <td class="col-md-4">
+        <label>Anchoring:</label>
+        <div>
+          {% if behavior_opinion.anchoring %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% endif %}
+        </div>
+        <p class="pad_top10">
+          {% if behavior_opinion.anchoring %}
+            I was <b>wrong estimate initial stock value</b> and <b>adjustment from it is not enough</b>.
+            Anchoring is when estimate stock value, start with an initial arbitrary
+            (casual) value and then adjust away from it. The problem is that the
+            adjustment is often insufficient. Therefore, if your initial estimate is low,
+            you may raise it with information, but it is likely you will not
+            raise it enough and thus will still end up below the “best estimates.”
+          {% else %}
+            I was correctly estimate initial stock value range and make valid price adjustment
+            range that reflect to new information.
+          {% endif %}
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label>Over Confidence:</label>
+        <div>
+          {% if behavior_opinion.over_confidence %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% endif %}
+        </div>
+        <p class="pad_top10">
+          {% if behavior_opinion.over_confidence %}
+            You have <b>over estimate the rates of growth</b> and its duration for growth companies
+            and <b>overemphasize good news and ignore negative news</b> for these firms. Analysts and
+            many investors also suffer from representativeness, which causes them to believe
+            that the stocks of growth companies will be “good” stocks.
+          {% else %}
+            You have correct estimate the rates of growth and valid verify good news and bad news.
+          {% endif %}
+        </p>
+      </td>
+      <td>
+        <label>Confirmation Bias:</label>
+        <div>
+          {% if behavior_opinion.confirmation_bias %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% endif %}
+        </div>
+        <p class="pad_top10">
+          {% if behavior_opinion.confirmation_bias %}
+            You have <b>look for information that supports prior opinions and decisions they have
+            made</b>. They also experience sample size neglect wherein they are prone to extrapolate
+            the high growth results from a few past years (e.g., 4–6 years) for long-term periods.
+            As a result, you will <b>mis-value the stocks</b> of these generally popular companies.
+          {% else %}
+            You have look all the new information that supports and reject the opinions you made.
+            It is good because you don't mis-value the stocks too much.
+          {% endif %}
+        </p>
+      </td>
+      <td>
+        <label>Self Attribution:</label>
+        <div>
+          {% if behavior_opinion.self_attribution %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% endif %}
+        </div>
+        <p class="pad_top10">
+          {% if behavior_opinion.self_attribution %}
+            You have a tendency to ascribe any success to their own talents while <b>blaming any
+            failure on bad luck</b>, which causes you to <b>overestimate your talent</b>.
+          {% else %}
+            You don't blame your failure on bad luck, because you cannot overestimate your talent.
+          {% endif %}
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label>Hindsight Bias:</label>
+        <div>
+          {% if behavior_opinion.hindsight_bias %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% endif %}
+        </div>
+        <p class="pad_top10">
+          {% if behavior_opinion.hindsight_bias %}
+            You tendency after an event for an individual to believe that he or she predicted it,
+            which causes people to think that they can predict better than they can.
+            You cannot predict better than hedge fund manager or analysts.
+          {% else %}
+            You don't believe you can predict better than hedge fund manager or analysts.
+          {% endif %}
+        </p>
+      </td>
+      <td>
+        <label>Noise Trading:</label>
+        <div>
+          {% if behavior_opinion.noise_trading %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% endif %}
+        </div>
+        <p class="pad_top10">
+          {% if behavior_opinion.noise_trading %}
+            You have using <b>nonprofessionals with no special information</b> to trade stock.
+            When there is a shift in sentiment, these traders move together, which increases
+            the prices and the volatility of these securities during trading hours. Also, noise traders
+            tend to follow newsletter writers, who in turn tend to <b>follow the herd</b>.
+            These writers and the herd are almost always wrong, which contributes to excess volatility.
+          {% else %}
+            You don't use nonprofessionals with no special information to trade stock.
+            You also don't follow the herd because it almost alwayst wrong.
+          {% endif %}
+        </p>
+      </td>
+      <td>
+        <label>Escalation Bias:</label>
+        <div>
+          {% if behavior_opinion.escalation_bias %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% endif %}
+        </div>
+        <p class="pad_top10">
+          {% if behavior_opinion.escalation_bias %}
+            You have <b>put more money into a failure</b> that they feel responsible for rather
+            than into a success. This leads to the relatively popular investor practice of
+            <b>averaging down</b> on an investment that has declined in value since the initial
+            purchase rather than consider selling the stock if it was a mistake.
+          {% else %}
+            You do not put more money into a failure position. You also keep average up on
+            your portfolio value.
+          {% endif %}
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label>Serious Analysis:</label>
+        <div>
+          {% if behavior_opinion.serious_analysis %}
+            <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+          {% endif %}
+        </div>
+        <p class="pad_top10">
+          {% if behavior_opinion.serious_analysis %}
+            You do not seriously look for the bad news and do not consider the negative effects
+            on the valuation.
+          {% else %}
+            You have and must seriously look for the bad news and consider the negative effects
+            of this news on the valuation.
+          {% endif %}
+        </p>
+      </td>
+      <td></td>
+      <td></td>
+    </tr>
+  </table>
+</div>
+{% endblock %}
