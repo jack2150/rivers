@@ -105,3 +105,23 @@ def percent2(obj):
 @register.filter
 def index(item, i):
     return item[int(i - 1)]
+
+
+@register.filter
+def minus(value0, value1):
+    return value0 - value1
+
+
+@register.filter
+def divide_pct(value0, value1):
+    return round(value0 / value1 * 100, 2)
+
+
+@register.filter
+def r_divide_pct(value0, value1):
+    return round((1 - value0 / value1) * 100, 2)
+
+
+@register.filter
+def sign_float(value):
+    return '{0:+.2f}'.format(value)

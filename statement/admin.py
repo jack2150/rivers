@@ -329,26 +329,10 @@ class PositionForm(forms.ModelForm):
         options={"format": "YYYY-MM-DD", "pickTime": False}))
 
 
-class HoldingOpinionInline(StatementInline):
-    model = HoldingOpinion
-    fields = ('condition', 'action', 'opinion', 'news_level', 'news_effect', 'check_all', 'special')
-    readonly_fields = ('condition', 'action', 'opinion', 'news_level',
-                       'news_effect', 'check_all', 'special')
-    ordering = ('date', )
-
-
-class ExitOpinionInline(StatementInline):
-    model = ExitOpinion
-    fields = ('auto_trigger', 'condition', 'result', 'amount', 'price', 'timing', 'wait')
-    readonly_fields = ('auto_trigger', 'condition', 'result', 'amount', 'price', 'timing', 'wait')
-    ordering = ('date', )
-
-
 class PositionAdmin(admin.ModelAdmin):
     form = PositionForm
     inlines = (CashBalanceInline, AccountOrderInline, AccountTradeInline,
-               HoldingEquityInline, HoldingOptionInline, ProfitLossInline,
-               HoldingOpinionInline, ExitOpinionInline)
+               HoldingEquityInline, HoldingOptionInline, ProfitLossInline)
 
     def report(self):
         return '<a href="{link}">Report</a>'.format(

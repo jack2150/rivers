@@ -166,7 +166,7 @@ class Statement(models.Model):
             :param position: Position
             :return: Position
             """
-            checklist_models = import_module('checklist.models')
+            checklist_models = import_module('opinion.models')
             market_opinion = getattr(checklist_models, 'MarketOpinion')
             enter_opinion = getattr(checklist_models, 'EnterOpinion')
 
@@ -249,12 +249,12 @@ class Position(models.Model):
     start = models.DateField()
     stop = models.DateField(null=True, blank=True, default=None)
 
-    market_opinion = models.ForeignKey(
-        'checklist.MarketOpinion', null=True, blank=True, default=None
-    )
-    enter_opinion = models.OneToOneField(
-        'checklist.EnterOpinion', null=True, blank=True, default=None
-    )
+    #market_opinion = models.ForeignKey(
+    #    'checklist.models.MarketMovement', null=True, blank=True, default=None
+    #)
+    #enter_opinion = models.OneToOneField(
+    #    'checklist.EnterOpinion', null=True, blank=True, default=None
+    #)
 
     # strategy_result = models.OneToOneField(
     #     'simulation.StrategyResult', null=True, blank=True, default=None

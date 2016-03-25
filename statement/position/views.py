@@ -1,6 +1,6 @@
 import numpy as np
 from pandas_datareader.data import get_data_google, get_data_yahoo
-from checklist.models import *
+from opinion.models import *
 from datetime import datetime
 from data.models import Underlying
 from django import forms
@@ -158,10 +158,10 @@ def create_opinion(request, opinion, id, date):
             link = reverse('admin:checklist_holdingopinion_change', args=(holding_opinion.id,))
     elif opinion == 'exit':
         try:
-            exit_opinion = ExitOpinion.objects.get(Q(position=position) & Q(date=date))
+            exit_opinion = CloseOpinion.objects.get(Q(position=position) & Q(date=date))
             link = reverse('admin:checklist_exitopinion_change', args=(exit_opinion.id,))
         except ObjectDoesNotExist:
-            exit_opinion = ExitOpinion()
+            exit_opinion = CloseOpinion()
             exit_opinion.position = position
             exit_opinion.date = date
             exit_opinion.save()
