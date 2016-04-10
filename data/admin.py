@@ -4,7 +4,7 @@ from pandas.tseries.offsets import BDay
 
 from data.tb.clean.views import *
 from data.tb.fillna.views import fillna_missing_h5
-from data.tb.final.views import merge_final_h5, remove_clean_h5, import_option_h5
+from data.tb.final.views import merge_final_h5, remove_clean_h5, import_option_h5, import_weekday_h5
 from data.tb.raw.views import raw_stock_h5, raw_option_h5
 from data.tb.valid.views import valid_option_h5
 from data.event.views import html_event_import
@@ -44,10 +44,18 @@ class UnderlyingAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Primary Fields', {
             'fields': (
-                'symbol', 'start_date', 'stop_date',
-                'option', 'final',
+                'symbol', 'start_date', 'stop_date', 'option', 'final',
+            ),
+        }),
+        ('Primary Fields', {
+            'fields': (
+                'sector', 'industry', 'market_cap', 'country', 'activity', 'classify',
+            ),
+        }),
+        ('Primary Fields', {
+            'fields': (
                 'missing', 'log'
-            )
+            ),
         }),
     )
 
@@ -165,6 +173,10 @@ admin.site.register_view(
 admin.site.register_view(
     'data/h5/import/option/(?P<symbol>\w+)/$',
     urlname='import_option_h5', view=import_option_h5
+)
+admin.site.register_view(
+    'data/h5/import/weekday/(?P<symbol>\w+)/$',
+    urlname='import_weekday_h5', view=import_weekday_h5
 )
 
 # web h5 stock

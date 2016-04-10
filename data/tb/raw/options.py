@@ -261,7 +261,7 @@ class ExtractOption(object):
         self.df_split0 = df_split
         self.df_others0 = df_others
 
-    def merge_old_split_data(self):
+    def get_old_split_data(self):
         """
         Split is always merge with normal data
         because old data is always normal
@@ -304,7 +304,7 @@ class ExtractOption(object):
             self.df_split1 = df_split
         print '=' * 70
 
-    def merge_others_data(self):
+    def get_others_data(self):
         """
         Others is always old format, new format got no others or right
         """
@@ -464,13 +464,14 @@ class ExtractOption(object):
             print output % ('NORMAL', 'Get normal row using', 'index: %s' % index)
             oldest = df_current['date'].iloc[-1]
             df_continue = self.df_normal.query('index == %r & date < %r' % (index, oldest))
-            # print df_continue.to_string(line_width=1000)
+
             if len(df_continue) == len(df_continue['date'].unique()):
                 print output % ('NORMAL', 'Merge normal continue option data', len(df_continue))
                 df_current = pd.concat([df_current, df_continue])
 
                 # remove data in df_normal
                 print output % ('REMOVE', 'old data in df_normal removed', '')
+
                 self.df_normal = self.df_normal[
                     ~self.df_normal.index.isin(df_continue.index)
                 ]
@@ -607,6 +608,9 @@ class ExtractOption(object):
         """
         Format option code for DataFrame
         """
+        print output % ('CODE', 'start format option_code', '')
+        print '=' * 70
+
         if not len(self.df_normal):
             return
 
@@ -672,6 +676,8 @@ class ExtractOption(object):
             self.df_normal = df_format
             """:type: pd.DataFrame"""
 
+        print '=' * 70
+
     def start(self):
         """
         Start extract all option from raw csv data
@@ -679,8 +685,8 @@ class ExtractOption(object):
         # main functions
         self.get_data()
         self.group_data()
-        self.merge_old_split_data()
-        self.merge_others_data()
+        self.get_old_split_data()
+        self.get_others_data()
         self.continue_split_others()
         self.merge_new_split_data()
         self.format_normal_code()

@@ -47,7 +47,7 @@ class FillNaSplitOld(object):
         db.close()
 
         print output % ('PROC', 'Prepare and merge data')
-        self.df_stock = df_stock['close']
+        self.df_stock = df_stock['close'].copy()
         self.df_split0 = df_split0
         self.df_rate = df_rate['rate']
         self.df_div = df_div

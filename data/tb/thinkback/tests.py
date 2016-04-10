@@ -130,7 +130,7 @@ class TestThinkBack(TestSetUp):
         Testing for some bug only
         """
         symbol = 'AIG'
-        date = '2014-05-01'
+        date = '2009-09-04'
         fpath = os.path.join(
             BASE_DIR, 'files', 'thinkback', symbol.lower(), date[:4],
             '%s-StockAndOptionQuoteFor%s.csv' % (date, symbol)
@@ -139,6 +139,15 @@ class TestThinkBack(TestSetUp):
         tb = ThinkBack(fpath=fpath)
         stocks, options = tb.read()
 
-        for o in options:
-            if o[0]['option_code'] in ('AIG160115C95', 'AIG160115P95'):
-                print o[0]['option_code']
+        data = []
+        for c, o in options:
+            d = c
+            d.update(o)
+            data.append(d)
+
+        import pandas
+        df = pandas.DataFrame(data)
+        print df.to_string(line_width=1000)
+        print df['dte'].unique()
+
+

@@ -25,6 +25,7 @@ class TradeBacktest(object):
         logger.info('Trade: %s' % self.trade)
         self.create_order = self.trade.get_method('create_order')
         self.join_data = self.trade.get_method('join_data')
+        self.expected_return = self.trade.get_method('expected_return')
 
         # formula, previous report, df_signal
         self.formula = Formula()

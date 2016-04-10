@@ -4,7 +4,7 @@ import pandas as pd
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.models import Underlying
-from data.tb.final.views import update_strike
+from data.tb.final.views import update_old_strike
 from rivers.settings import QUOTE, CLEAN, BASE_DIR
 
 
@@ -69,7 +69,7 @@ class TestMergeFinal(TestSetUp):
         db.close()
 
         print 'run update_strike...'
-        df_result = update_strike(df_split)
+        df_result = update_old_strike(df_split)
         self.assertEqual(len(df_split), len(df_result))
 
         print df_result.tail(100).to_string(line_width=1000)

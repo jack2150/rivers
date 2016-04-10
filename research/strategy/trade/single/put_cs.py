@@ -72,12 +72,13 @@ def create_order(df_signal, df_all, side=('follow', 'long', 'short'), cycle=0, s
     return df
 
 
-def join_data(df_trade, df_all):
+def join_data(df_trade, df_all, raw=False):
     """
     Join df_trade data into daily trade data
 
     :param df_trade: pd.DataFrame
     :param df_all: pd.DataFrame
+    :param raw: bool
     :return: list
     """
     df_list = []
@@ -90,7 +91,7 @@ def join_data(df_trade, df_all):
         else:  # sell
             column = 'bid'
 
-        df_date = df_date[['date', column]]
+        df_date = df_date[['date', 'option_code', column]]
         df_date['pct_chg'] = df_date[column].pct_change()
         df_date['pct_chg'] = df_date['pct_chg'].fillna(value=0)
         df_date['pct_chg'] = df_date['pct_chg'].apply(
@@ -100,7 +101,9 @@ def join_data(df_trade, df_all):
         if data['signal0'] == 'SELL':
             df_date['pct_chg'] = -df_date['pct_chg'] + 0
 
-        df_date.columns = ['date', 'price', 'pct_chg']
+        if not raw:
+            df_date = df_date[['date', column, 'pct_chg']]
+            df_date.columns = ['date', 'price', 'pct_chg']
 
         df_list.append(df_date)
 

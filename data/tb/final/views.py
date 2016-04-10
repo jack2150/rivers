@@ -12,15 +12,31 @@ from data.models import Underlying
 from rivers.settings import QUOTE, CLEAN, BASE_DIR
 
 logger = logging.getLogger('views')
+output = '%-6s | %-30s'
 
 
-def update_strike(df_split):
+def change_right(x):
+    """
+    Update right without '/'
+    :param x: str
+    :return:
+    """
+    r = 100 * Fraction(x)
+    if r == round(r):
+        r = '%d' % round(r)
+    else:
+        r = '%.2f' % r
+
+    return r
+
+
+def update_old_strike(df_split):
     """
     Update option_code strike with new strike
     :param df_split: pd.DataFrame
     :return: pd.DataFrame
     """
-    df_change = df_split[df_split['right'].apply(lambda x: '/' in x)]
+    df_change = df_split[df_split['right'].apply(lambda x: '/' in x)].copy()
 
     df_change['strike'] = df_change.apply(
         lambda x: x['strike'] / Fraction(x['right']), axis=1
@@ -31,11 +47,10 @@ def update_strike(df_split):
             int(x['strike']) if int(x['strike']) == x['strike'] else x['strike']
         ), axis=1
     )
+    df_change['right'] = df_change['right'].apply(change_right)
 
     df_split = df_split[~df_split.index.isin(df_change.index)]
     df_split = pd.concat([df_split, df_change])
-    """:type: pd.DataFrame"""
-    df_split['right'] = '100'
 
     return df_split
 
@@ -46,6 +61,8 @@ def merge_final(symbol):
     df_contract and df_option data
     :param symbol: str
     """
+    print output % ('FINAL', 'merge all data into df_contract, df_option')
+    print '=' * 70
     symbol = symbol.lower()
 
     # get data
@@ -56,8 +73,8 @@ def merge_final(symbol):
     last_date = df_stock.index[-1]
 
     db = pd.HDFStore(CLEAN)
-    keys = ['normal', 'split/new', 'split/old']
-    for key in keys:
+    option_keys = ['normal', 'split/new', 'split/old']
+    for key in option_keys:
         try:
             df_list[key] = db.select('option/%s/fillna/%s' % (symbol, key))
             logger.info('Get df_%s data length: %d' % (key, len(df_list[key])))
@@ -73,7 +90,7 @@ def merge_final(symbol):
 
     if 'split/old' in df_list.keys():
         logger.info('Update df_split/old option_code')
-        df_list['split/old'] = update_strike(df_list['split/old'])
+        df_list['split/old'] = update_old_strike(df_list['split/old'])
 
     df_all = pd.concat(df_list.values())
     """:type: pd.DataFrame"""
@@ -86,18 +103,28 @@ def merge_final(symbol):
     index = [(key, value) for key, value in group['date'].max().iteritems()]
     df_index = df_all.set_index(['option_code', 'date'])
     df_contract = df_index[df_index.index.isin(index)]
-    df_contract = df_contract[[
+    contract_keys = [
         'ex_date', 'ex_month', 'ex_year', 'name', 'others', 'right', 'special', 'strike'
-    ]]
+    ]
+    df_contract = df_contract[contract_keys]
     df_contract = df_contract.reset_index()
     del df_contract['date']
     df_contract['expire'] = df_contract['ex_date'].apply(lambda x: x < last_date)
     # format df_option
-    df_option = df_all[[
+    option_keys = [
         'ask', 'bid', 'date', 'delta', 'dte', 'extrinsic',
         'gamma', 'impl_vol', 'intrinsic', 'last', 'mark', 'open_int', 'option_code',
         'prob_itm', 'prob_otm', 'prob_touch', 'theo_price', 'theta', 'vega', 'volume'
-    ]]
+    ]
+    df_option = df_all[option_keys].copy()
+
+    # format option
+    for key in option_keys:
+        if key not in ('date', 'dte', 'open_int', 'volume', 'option_code'):
+            df_option[key] = df_option[key].astype('float')
+        elif key in ('open_int', 'volume'):
+            df_option[key] = df_option[key].astype('int')
+
     logger.info('Save df_contract, df_option into h5 db')
     db = pd.HDFStore(QUOTE)
     for key in ('contract', 'data'):
@@ -105,6 +132,7 @@ def merge_final(symbol):
             db.remove('option/%s/final/%s' % (symbol, key))
         except KeyError:
             pass
+
     db.append('option/%s/final/contract' % symbol, df_contract,
               format='table', data_columns=True, min_itemsize=100)
     db.append('option/%s/final/data' % symbol, df_option,
@@ -184,5 +212,18 @@ def import_option_h5(request, symbol):
     """
     logger.info('Start cli for prepare_raw: %s' % symbol)
     os.system("start cmd /k python data/manage.py import_option --symbol=%s" % symbol)
+
+    return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
+
+
+def import_weekday_h5(request, symbol):
+    """
+    Run all from import raw until fillna then merge
+    :param request: request
+    :param symbol: str
+    :return: render
+    """
+    logger.info('Start cli for prepare_raw: %s' % symbol)
+    os.system("start cmd /k python data/manage.py import_weekday --symbol=%s" % symbol)
 
     return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))

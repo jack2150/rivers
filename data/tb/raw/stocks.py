@@ -25,7 +25,6 @@ def extract_stock(symbol):
 
     # get underlying
     underlying = Underlying.objects.get(symbol=symbol.upper())
-    underlying.log = ''  # reset log
     start = underlying.start_date
     end = underlying.stop_date
 

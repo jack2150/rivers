@@ -1,7 +1,7 @@
 from django import forms
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
-from data.models import Underlying
+from data.models import Underlying, SplitHistory
 from data.tb.final.views import reshape_h5
 from rivers.settings import QUOTE
 import pandas as pd
@@ -141,13 +141,16 @@ def manage_underlying(request, symbol):
     :return: render
     """
     underlying = Underlying.objects.get(symbol=symbol.upper())
+    split_history = SplitHistory.objects.filter(symbol=symbol)
+    split_history = '\n'.join('%s | %s | %s' % (s.symbol, s.date, s.fraction) for s in split_history)
 
     template = 'data/manage_underlying.html'
     parameters = dict(
         site_title='Manage underlying',
         title='Manage underlying: %s' % symbol.upper(),
         symbol=symbol,
-        underlying=underlying
+        underlying=underlying,
+        split_history=split_history
     )
 
     return render(request, template, parameters)

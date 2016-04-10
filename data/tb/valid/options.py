@@ -136,6 +136,28 @@ class ValidOption(object):
                 pass
         db.close()
 
+        df_result = self.valid()
+
+        db = pd.HDFStore(CLEAN)
+        try:
+            db.remove('option/%s/valid' % self.symbol)
+        except KeyError:
+            pass
+        for name, key in zip(names, keys):
+            if len(df_result[name]):
+                db.append('option/%s/valid/%s' % (self.symbol, key), df_result[name])
+        db.close()
+
+        print 'All validation complete and save'
+
+    def valid(self):
+        """
+        Loop valid each df in df_list
+        :return: list of pd.DataFrame
+        """
+        names = ['normal', 'others', 'split0', 'split1']
+        keys = ['normal', 'others', 'split/old', 'split/new']
+
         df_result = {}
         for name, key in zip(names, keys):
             if name in self.df_list.keys():
@@ -150,17 +172,7 @@ class ValidOption(object):
             else:
                 df_result[name] = pd.DataFrame()
 
-        db = pd.HDFStore(CLEAN)
-        try:
-            db.remove('option/%s/valid' % self.symbol)
-        except KeyError:
-            pass
-        for name, key in zip(names, keys):
-            if len(df_result[name]):
-                db.append('option/%s/valid/%s' % (self.symbol, key), df_result[name])
-        db.close()
-
-        print 'All validation complete and save'
+        return df_result
 
     def update_underlying(self):
         """

@@ -6,6 +6,34 @@ from rivers.settings import QUOTE
 class Underlying(models.Model):
     symbol = models.CharField(max_length=20, unique=True)
 
+    # basic detail
+    sector = models.CharField(max_length=20, default='none')
+    industry = models.CharField(max_length=100, default='none')
+    market_cap = models.CharField(
+        max_length=20, default='nano',
+        choices=(
+            ('mega', '200bln or more'), ('large', '10bln to 200bln'), ('mid', '2bln to 10bln'),
+            ('small', '300mln to 2bn'), ('micro', '50mln to 300mln'), ('nano', 'less than 50mln')
+        )
+    )
+    country = models.CharField(max_length=50, default='USA')
+
+    # other detail
+    activity = models.CharField(
+        max_length=20, default='moderately',
+        choices=(
+            ('highly', 'Highly Followed'), ('moderately', 'Moderately Followed'),
+            ('neglected', 'Neglected')
+        )
+    )
+    classify = models.CharField(
+        max_length=20, default='normal',
+        choices=(
+            ('growth', 'Growth Stock'), ('value', 'Value Stock'), ('normal', 'Normal Stock')
+        )
+    )
+
+    # data detail
     start_date = models.DateField(default='2009-01-01')
     stop_date = models.DateField(null=True, blank=True)
 

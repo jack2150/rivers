@@ -29,8 +29,8 @@
       overflow: scroll;
     }
 
-    .missing {
-      height: 150px;
+    .sec {
+      height: 100px;
       overflow: scroll;
     }
   </style>
@@ -97,7 +97,15 @@
             <pre class="log">{{ underlying.log }}</pre>
 
             Missing:
-            <pre class="missing">{{ underlying.missing }}</pre>
+            <pre class="sec">{{ underlying.missing }}</pre>
+
+            {% if split_history|length %}
+              Split History:
+
+              <pre class="sec">{{ split_history }}</pre>
+            {% endif %}
+
+
           </div>
         </div>
       </div>
@@ -154,11 +162,13 @@
 
       <div class="list-group">
         <a href="#" class="list-group-item disabled">Clean Process</a>
-        <a href="{% url 'admin:raw_stock_h5' symbol %}" class="list-group-item">
-          1. Import stocks
+        <a href="{% url 'admin:import_option_h5' symbol %}" class="list-group-item"
+          title="For backtest/analysis">
+          1. Import stocks/options
         </a>
-        <a href="{% url 'admin:import_option_h5' symbol %}" class="list-group-item">
-          2. Import options
+        <a href="{% url 'admin:import_weekday_h5' symbol %}" class="list-group-item"
+          title="For calculate IV">
+          2. Import weekday options
         </a>
         <a href="{% url 'admin:remove_clean_h5' symbol %}" class="list-group-item">
           3. Remove clean data

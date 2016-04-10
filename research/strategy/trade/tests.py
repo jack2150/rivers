@@ -15,7 +15,7 @@ class TestStrategy(TestUnitSetUp):
         """
         self.formula = Formula.objects.get(rule='Ewma Chg D')
         backtest = self.formula.start_backtest()
-        backtest.set_symbol_date(self.symbol, '2010-01-01', '2014-12-31')
+        backtest.set_symbol_date(self.symbol, '2010-01-01', '2015-12-31')
         backtest.get_data()
         hd_args = {'span': 20, 'previous': 20}
 
@@ -48,7 +48,7 @@ class TestStrategy2(TestUnitSetUp):
         """
         self.formula = Formula.objects.get(rule='Ewma Chg D - H')
         backtest = self.formula.start_backtest()
-        backtest.set_symbol_date(self.symbol, '2010-01-01', '2014-12-31')
+        backtest.set_symbol_date(self.symbol, '2010-01-01', '2015-12-31')
         backtest.get_data()
         hd_args = {'span': 20, 'previous': 20}
         cs_args = {'holding': 20}
