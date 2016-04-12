@@ -11,10 +11,14 @@ class TestSingleCallCS(TestUnitSetUp):
         self.symbol = 'AIG'
         db = pd.HDFStore(QUOTE)
         self.df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
-        self.df_contract = db.select('option/%s/final/contract' % self.symbol.lower())
-        self.df_option = db.select('option/%s/final/data' % self.symbol.lower())
-        self.df_all = pd.merge(self.df_option, self.df_contract, on='option_code')
         db.close()
+
+        db = pd.HDFStore(CLEAN)
+        df_normal = db.select('iv/%s/clean/normal' % self.symbol.lower())
+        df_split0 = db.select('iv/%s/clean/split/old' % self.symbol.lower())
+        db.close()
+        self.df_all = pd.concat([df_normal, df_split0])
+        """:type: pd.DataFrame"""
 
         self.today_iv = TodayIV(self.symbol)
         self.today_iv.df_stock = self.df_stock
@@ -27,67 +31,101 @@ class TestSingleCallCS(TestUnitSetUp):
         20150625 - 19.03
         """
 
-    def test_exists_365days(self):
+    def test_range_expr(self):
         """
-
-        :return:
+        Test range expression using at least 3 items data
         """
-        date = pd.to_datetime(self.df_all.query('dte == 365')['date'].unique()[-1])
-        print 'date: %s' % date.strftime('%Y-%m-%d')
+        x = [49.0, 133.0, 378.0, 749.0]
+        y = [109.02, 109.98, 101.17, 105.49]
 
-        poly1d_iv, linear_iv = self.today_iv.exists_365days(date=date, plot=False)
-        print 'poly1d_iv: %.2f, linear_iv: %.2f' % (poly1d_iv, linear_iv)
+        skip = [(0, 0), (1, 0), (0, -1)]
+        for i, j in skip:
+            print 'range: %d:%d' % (0 + i, len(x) + j)
+            a = x[0 + i:len(x) + j]
+            b = y[0 + i:len(x) + j]
+            print 'x:', a
+            print 'y:', b
 
-        self.assertEqual(type(poly1d_iv), float)
-        self.assertEqual(type(linear_iv), float)
-        self.assertAlmostEqual(poly1d_iv / 100.0, linear_iv / 100.0, 0)
+            range_iv = self.today_iv.range_expr(a, b, 365)
+            print 'range_iv: %.2f' % range_iv
+            self.assertTrue(y[1] > range_iv > y[2])
+            print '-' * 70
 
     def test_remove_split(self):
         """
-
-        :return:
+        Test remove duplicate ('dte', 'strike') split data in DataFrame
         """
         date = pd.to_datetime('2009-09-04')
         print 'date: %s' % date.strftime('%Y-%m-%d')
 
         df_date0 = self.df_all.query('date == %r & name == "CALL"' % date)
         df_date1 = self.today_iv.remove_split(df_date0)
+        print df_date1.sort_values('dte').to_string(line_width=1000)
 
         self.assertGreater(len(df_date0), len(df_date1))
 
-    def test_exists_close_strike(self):
+    def test_nearby_365days(self):
         """
+        Test calc using exists nearby 365-days in dte cycles
+        """
+        date = pd.to_datetime('2010-01-21')
+        print 'date: %s' % date.strftime('%Y-%m-%d')
+        close = self.df_stock.ix[date]['close']
+        df_date = self.df_all.query('date == %r & name =="CALL"' % date)
 
-        :return:
+        range_iv, poly1d_iv, linear_iv = self.today_iv.nearby_365days(close, 365, df_date)
+        print 'poly1d_iv: %.2f, linear_iv: %.2f' % (poly1d_iv, linear_iv)
+
+        self.assertEqual(type(range_iv), float)
+        self.assertEqual(type(poly1d_iv), float)
+        self.assertEqual(type(linear_iv), float)
+        self.assertAlmostEqual(poly1d_iv / 100.0, linear_iv / 100.0, 0)
+
+    def test_nearby_strike(self):
+        """
+        Test calc iv using nearby strike exists in dataframe
         """
         date = pd.to_datetime('2009-09-04')
         print 'date: %s' % date.strftime('%Y-%m-%d')
 
         df_date = self.df_all.query('date == %r & name == "CALL"' % date)
-        #print df_date.to_string(line_width=1000)
-
-        # todo: 504-days missing in data???
-
         df_date = self.today_iv.remove_split(df_date)
-        self.today_iv.exists_close_strike(date, df_date, False)
+        range_iv, poly1d_iv, linear_iv = self.today_iv.nearby_strike(date, df_date, False)
 
+        self.assertEqual(type(range_iv), float)
+        self.assertEqual(type(poly1d_iv), float)
+        self.assertEqual(type(linear_iv), float)
+        self.assertAlmostEqual(poly1d_iv / 100.0, linear_iv / 100.0, 0)
 
+    def test_single_nearby_strike(self):
         """
-        db = pd.HDFStore(CLEAN)
-        df_normal = db.select('iv/%s/clean/normal' % self.symbol.lower())
-        df_split0 = db.select('iv/%s/clean/split/old' % self.symbol.lower())
-        db.close()
-
-        df_option = pd.concat([df_normal, df_split0])
-        df_temp = df_option.query('date == %r & name == "CALL"' % date).sort_values('dte')
-        print df_temp.to_string(line_width=1000)
-        #print df_temp['dte'].unique()
-
-        df_all = self.df_all.query('date == %r & name == "CALL"' % date).sort_values('dte')
-        print df_all.to_string(line_width=1000)
+        Test single nearby strike found on all cycles
         """
+        date = pd.to_datetime('2009-01-02')
+        close = self.df_stock.ix[date]['close']
+        df_date = self.df_all.query('date == %r & name == "CALL" & right == "100"' % date)
 
-        # todo: you clean everyday without merging data, using
+        range_iv, linear_iv = self.today_iv.single_nearby_strike(close, df_date, True)
+        self.assertEqual(type(range_iv), float)
+        self.assertEqual(type(linear_iv), float)
+        self.assertAlmostEqual(range_iv / 100.0, linear_iv / 100.0, 0)
+
+    def test_single_nearby_cycle(self):
+        """
+        Test single nearby cycle found for 365-days
+        """
+        date = pd.to_datetime('2010-01-22')
+        close = self.df_stock.ix[date]['close']
+        df_date = self.df_all.query('date == %r & name == "CALL"' % date)
+        df_date = df_date.query('dte < 365')
+        dtes = np.sort(np.array(df_date['dte'].unique()))
+        d0, d1 = self.today_iv.two_nearby(dtes, 365)
+        print 'i0: %d, dte0: %d, i1: %d, dte1: %d' % (d0, dtes[d0], d1, dtes[d1])
+
+        range_iv, linear_iv = self.today_iv.single_nearby_cycle(close, df_date, False)
+        self.assertEqual(type(range_iv), float)
+        self.assertEqual(type(linear_iv), float)
+        self.assertAlmostEqual(range_iv / 100.0, linear_iv / 100.0, 0)
 
     def test_calc_cycles(self):
         """
@@ -116,36 +154,7 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         self.today_iv.calc_iv(date=self.date)
 
-    def test_no_duplicated_strike(self):
-        """
 
-        :return:
-        """
-        dates = [pd.to_datetime('2009-06-23'), pd.to_datetime('2009-01-02')]
-        for date in dates[1:]:
-            close = self.df_stock.ix[date]['close']
-
-            df_date = self.df_all.query('date == %r & name == "CALL"' % date)
-            dtes = np.sort(np.array(df_date['dte'].unique()))
-            d0, d1 = self.today_iv.two_nearby(dtes, 365)
-            df_near = df_date.query('dte == %r | dte == %r' % (dtes[d0], dtes[d1]))
-
-            self.today_iv.no_duplicated_strike(close, df_near)
-
-    def test_single_nearby_cycle(self):
-        """
-
-        :return:
-        """
-        date = pd.to_datetime('2010-01-22')
-        close = self.df_stock.ix[date]['close']
-        df_date = self.df_all.query('date == %r & name == "CALL"' % date)
-        dtes = np.sort(np.array(df_date['dte'].unique()))
-        d0, d1 = self.today_iv.two_nearby(dtes, 365)
-        print 'i0: %d, dte0: %d, i1: %d, dte1: %d' % (d0, dtes[d0], d1, dtes[d1])
-
-        if d0 == d1:
-            self.today_iv.single_nearby_cycle(close, df_date, False)
 
 
 

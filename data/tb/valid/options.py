@@ -187,3 +187,5 @@ class ValidOption(object):
                 underlying.log += 'Raw df_%s length: %d\n' % (key, len(self.df_list[name]))
 
         underlying.save()
+
+# todo: add bid ask too wide

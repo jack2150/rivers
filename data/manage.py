@@ -21,7 +21,7 @@ from data.tb.clean.split_old import CleanSplitOld
 from data.tb.fillna.normal import FillNaNormal
 from data.tb.fillna.split_new import FillNaSplitNew
 from data.tb.fillna.split_old import FillNaSplitOld
-from data.tb.final.views import merge_final
+from data.tb.final.views import merge_final, change_right
 from rivers.settings import QUOTE, CLEAN
 
 
@@ -312,6 +312,7 @@ def import_weekday(symbol):
                 lambda x: x['strike'] / float(Fraction(x['right'])),
                 axis=1
             )
+            df_clean['right'] = df_clean['right'].apply(change_right)
 
         # save data
         db = pd.HDFStore(CLEAN)
