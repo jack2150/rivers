@@ -21,15 +21,9 @@ class TestSingleCallCS(TestUnitSetUp):
         """:type: pd.DataFrame"""
 
         self.today_iv = TodayIV(self.symbol)
-        self.today_iv.df_stock = self.df_stock
+        self.today_iv.df_stock = self.df_stock['20091120':'20101231']
         self.today_iv.df_all = self.df_all
         self.date = pd.to_datetime('20150625')
-        """
-        20150630 - 22.98
-        20150629 - 22.97
-        20150626 - 19.41
-        20150625 - 19.03
-        """
 
     def test_range_expr(self):
         """
@@ -59,7 +53,7 @@ class TestSingleCallCS(TestUnitSetUp):
         print 'date: %s' % date.strftime('%Y-%m-%d')
 
         df_date0 = self.df_all.query('date == %r & name == "CALL"' % date)
-        df_date1 = self.today_iv.remove_split(df_date0)
+        df_date1 = self.today_iv.format_data(df_date0)
         print df_date1.sort_values('dte').to_string(line_width=1000)
 
         self.assertGreater(len(df_date0), len(df_date1))
@@ -68,13 +62,12 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test calc using exists nearby 365-days in dte cycles
         """
-        date = pd.to_datetime('2010-01-21')
-        print 'date: %s' % date.strftime('%Y-%m-%d')
+        date = pd.to_datetime('2010-01-20')
+        dte = 366
         close = self.df_stock.ix[date]['close']
         df_date = self.df_all.query('date == %r & name =="CALL"' % date)
 
-        range_iv, poly1d_iv, linear_iv = self.today_iv.nearby_365days(close, 365, df_date)
-        print 'poly1d_iv: %.2f, linear_iv: %.2f' % (poly1d_iv, linear_iv)
+        range_iv, poly1d_iv, linear_iv = self.today_iv.nearby_365days(close, dte, df_date)
 
         self.assertEqual(type(range_iv), float)
         self.assertEqual(type(poly1d_iv), float)
@@ -85,12 +78,14 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test calc iv using nearby strike exists in dataframe
         """
-        date = pd.to_datetime('2009-09-04')
-        print 'date: %s' % date.strftime('%Y-%m-%d')
-
+        date = pd.to_datetime('2009-11-20')
+        days = 365
+        close = self.df_stock.ix[date]['close']
         df_date = self.df_all.query('date == %r & name == "CALL"' % date)
-        df_date = self.today_iv.remove_split(df_date)
-        range_iv, poly1d_iv, linear_iv = self.today_iv.nearby_strike(date, df_date, False)
+        df_date = self.today_iv.format_data(df_date)
+        print '-' * 70
+
+        range_iv, poly1d_iv, linear_iv = self.today_iv.nearby_strike(close, days, df_date)
 
         self.assertEqual(type(range_iv), float)
         self.assertEqual(type(poly1d_iv), float)
@@ -100,12 +95,15 @@ class TestSingleCallCS(TestUnitSetUp):
     def test_single_nearby_strike(self):
         """
         Test single nearby strike found on all cycles
+        2009-01-14
         """
-        date = pd.to_datetime('2009-01-02')
+        # todo: check need new version
+        # date = pd.to_datetime('2009-01-02')
+        date = pd.to_datetime('2009-02-13')
         close = self.df_stock.ix[date]['close']
         df_date = self.df_all.query('date == %r & name == "CALL" & right == "100"' % date)
 
-        range_iv, linear_iv = self.today_iv.single_nearby_strike(close, df_date, True)
+        range_iv, linear_iv = self.today_iv.single_nearby_strike(close, df_date)
         self.assertEqual(type(range_iv), float)
         self.assertEqual(type(linear_iv), float)
         self.assertAlmostEqual(range_iv / 100.0, linear_iv / 100.0, 0)
@@ -114,6 +112,7 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test single nearby cycle found for 365-days
         """
+        # todo: check need new version
         date = pd.to_datetime('2010-01-22')
         close = self.df_stock.ix[date]['close']
         df_date = self.df_all.query('date == %r & name == "CALL"' % date)
@@ -122,7 +121,7 @@ class TestSingleCallCS(TestUnitSetUp):
         d0, d1 = self.today_iv.two_nearby(dtes, 365)
         print 'i0: %d, dte0: %d, i1: %d, dte1: %d' % (d0, dtes[d0], d1, dtes[d1])
 
-        range_iv, linear_iv = self.today_iv.single_nearby_cycle(close, df_date, False)
+        range_iv, linear_iv = self.today_iv.single_nearby_cycle(close, df_date)
         self.assertEqual(type(range_iv), float)
         self.assertEqual(type(linear_iv), float)
         self.assertAlmostEqual(range_iv / 100.0, linear_iv / 100.0, 0)
@@ -131,39 +130,45 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test calculate iv using cycle method
         """
-        poly1d_iv, linear_iv = self.today_iv.calc_cycles(date=self.date, plot=False)
+        date = pd.to_datetime('2009-12-29')
+        close = self.df_stock.ix[date]['close']
+        days = 365
+        df_date = self.df_all.query('date == %r & name == "CALL" & right == "100"' % date)
 
+        range_iv, poly1d_iv, linear_iv = self.today_iv.multi_cycles_3d(close, days, df_date)
+
+        self.assertEqual(type(range_iv), float)
         self.assertEqual(type(poly1d_iv), float)
         self.assertEqual(type(linear_iv), float)
+        self.assertAlmostEqual(range_iv / 100.0, linear_iv / 100.0, 0)
         self.assertAlmostEqual(poly1d_iv / 100.0, linear_iv / 100.0, 0)
 
     def test_calc_strike(self):
         """
-        Test calculate iv using strike method
+        Test calculate iv using strike method, new version
         """
-        self.today_iv.calc_strikes(date=self.date, plot=False)
-        poly1d_iv, linear_iv = self.today_iv.calc_strikes(date=self.date)
+        close = self.df_stock.ix[self.date]['close']
+        days = 365
+        df_date = self.df_all.query('date == %r & name == "CALL" & right == "100"' % self.date)
 
+        range_iv, poly1d_iv, linear_iv = self.today_iv.multi_strikes_3d(close, days, df_date)
+
+        self.assertEqual(type(range_iv), float)
         self.assertEqual(type(poly1d_iv), float)
         self.assertEqual(type(linear_iv), float)
+        self.assertAlmostEqual(range_iv / 100.0, linear_iv / 100.0, 0)
         self.assertAlmostEqual(poly1d_iv / 100.0, linear_iv / 100.0, 0)
-
-    def test_calc_iv(self):
-        """
-        Test calculate iv using strike method
-        """
-        self.today_iv.calc_iv(date=self.date)
-
-
-
-
 
     def test_calc(self):
         """
 
         :return:
         """
-        self.today_iv.calc()
+        days = 365
+        self.today_iv.calc_by_days(days)
+
+        # todo: 2010-01-20
+
 
 
 
