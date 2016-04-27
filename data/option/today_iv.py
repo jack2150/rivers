@@ -1,9 +1,5 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pprint import pprint
-from pandas.tseries.offsets import BDay, Day
-
 from rivers.settings import QUOTE, CLEAN
 
 output = '%-6s | %-s'
@@ -19,6 +15,7 @@ class TodayIV(object):
         """
         Get data from hdf5 db
         """
+        print output % ('DATA', 'symbol: %s' % self.symbol.upper())
         db = pd.HDFStore(QUOTE)
         self.df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
         # df_contract = db.select('option/%s/final/contract' % self.symbol.lower())
@@ -32,6 +29,9 @@ class TodayIV(object):
         db.close()
         self.df_all = pd.concat([df_normal, df_split0])
         """:type: pd.DataFrame"""
+        print output % ('DATA', 'df_normal: %d, df_split0: %d' % (len(df_normal), len(df_split0)))
+        print output % ('DATA', 'df_stock: %d, df_all: %d' % (len(self.df_stock), len(self.df_all)))
+        print '-' * 70
 
     @staticmethod
     def list_index(data, index0, index1, value):
@@ -93,7 +93,12 @@ class TodayIV(object):
         :param base: float
         :return: float
         """
-        return round(y0 + ((y1 - y0) / (x1 - x0) * (base - x0)), 2)
+        if y0 == y1:
+            result = y0
+        else:
+            result = round(y0 + ((y1 - y0) / (x1 - x0) * (base - x0)), 2)
+
+        return result
 
     def range_expr(self, x, y, base):
         """
@@ -104,7 +109,12 @@ class TodayIV(object):
         :return: float
         """
         if not len(x) == len(y) >= 3:
-            raise ValueError('Input list should have greater than 3')
+            if len(x) == len(y) == 1:
+                return y[0]
+            elif len(x) == len(y) == 2:
+                return self.linear_expr(x[0], x[1], y[0], y[1], base)
+            else:
+                raise ValueError('Range expr x, y list is empty')
 
         for a, b in zip(x, y):
             print output % ('DATA', 'calc range, strike: %.2f, impl_vol: %.2f' % (a, b))
@@ -131,11 +141,17 @@ class TodayIV(object):
         print output % ('NEAR', 'index0: %d, index1: %d' % (i0, i1))
         print output % ('CALC', 'range_ivs: %s' % [round(r, 2) for r in results])
 
-        result = np.mean(results)
-        if not (y[i0] <= result <= y[i1] or y[i0] >= result >= y[i1]):
-            result = np.mean([
-                r for r in results if y[i0] < r < y[i1] or y[i0] > r > y[i1]
-            ])
+        if len(results) == 1:
+            result = results[0]
+        else:
+            result = np.mean(results)
+            if not (y[i0] <= result <= y[i1] or y[i0] >= result >= y[i1]):
+                result = np.mean(
+                    [r for r in results if y[i0] < r < y[i1] or y[i0] > r > y[i1]]
+                )
+
+            if np.isnan(result):
+                result = self.linear_expr(x[i0], x[i1], y[i0], y[i1], base)
 
         return round(result, 2)
 
@@ -176,18 +192,21 @@ class TodayIV(object):
     @staticmethod
     def format_data(df_date):
         """
-
-        :param df_date:
-        :return:
+        Format data remove zero impl_vol and others
+        Remove duplicate split data
+        :param df_date: pd.DataFrame
+        :return: pd.DataFrame
         """
         # remove 0 impl_vol and 0 days
-        df_date = df_date.query('impl_vol > 0').copy()
+        df_date = df_date.query('impl_vol > 0 & others == ""').copy()
+        # print df_date.sort_values(['dte', 'strike']).to_string(line_width=1000)
 
         # remove split
         rights = df_date['right'].unique()
         if len(rights) > 1:
             print output % ('SPLIT', 'rights: %s' % list(rights))
             df_split = df_date.query('right != "100"')
+            """:type: pd.DataFrame"""
             df_normal = df_date.query('right == "100"')
             if len(df_normal) and len(df_split):
                 length0 = len(df_date)
@@ -204,6 +223,7 @@ class TodayIV(object):
 
                 length1 = len(df_date)
                 print output % ('DATA', 'df_date0: %d, df_date1: %d' % (length0, length1))
+                print '-' * 70
 
         return df_date.copy()
 
@@ -221,6 +241,7 @@ class TodayIV(object):
         print output % ('SEED', 'close: %.2f, df_dte: %d' % (close, len(df_dte)))
 
         # find nearest
+        print dte, df_date['dte'].unique()
         strikes = np.array(df_dte['strike'])
         impl_vols = np.array(df_dte['impl_vol'])
         s0, s1 = self.two_nearby(strikes, close)
@@ -284,6 +305,7 @@ class TodayIV(object):
         df_strike = df_date.query('strike == %.2f' % strikes[s]).sort_values('dte')
         dtes = np.array(df_strike['dte'])
         impl_vols = np.array(df_strike['impl_vol'])
+        d0, d1 = self.two_nearby(dtes, days)
         print output % ('DATA', 'dte0: %d(%d), dte1: %d(%d)' % (d0, dtes[d0], d1, dtes[d1]))
         print output % ('SEED', 'index: %d, strike: %.2f, close: %.2f' % (s, strikes[s], close))
 
@@ -293,47 +315,113 @@ class TodayIV(object):
         impl_vols = impl_vols[i0:i1]
         d0, d1 = self.two_nearby(dtes, days)
         linear_iv = self.linear_expr(dtes[d0], dtes[d1], impl_vols[d0], impl_vols[d1], days)
-        range_iv = self.range_expr(dtes, impl_vols, days)
+
         print output % ('CALC', 'linear_iv for %d-days: %.2f' % (days, linear_iv))
-        print output % ('CALC', 'range_iv for %d-days: %.2f' % (days, range_iv))
+
         print '-' * 70
 
-        str0, str1 = self.make_expr(impl_vols[d0], impl_vols[d1])
-        cond0 = str0.format(iv0='impl_vol0', r='result', iv1='impl_vol1')
-        cond1 = str1.format(linear='linear_iv', r='result')
-
-        results = []
-        for degree in range(1, 4):
-            z = np.polyfit(dtes, impl_vols, degree)
-            f = np.poly1d(z)
-
-            poly1d0 = round(f(days), 2)
-            print output % ('CALC', 'degree: %d, poly1d_iv: %.2f' % (degree, poly1d0))
-
-            arg0 = str0.format(iv0=impl_vols[d0], r=poly1d0, iv1=impl_vols[d1])
-            arg1 = str1.format(linear=linear_iv, r=poly1d0)
-            print output % ('COND', '%s, %s, %s' % (cond0, arg0, eval(arg0)))
-            print output % ('COND', '%s, %s, %s' % (cond1, arg1, eval(arg1)))
-
-            if eval(arg0) and eval(arg1):
-                results.append(poly1d0)
-
-        if len(results):
-            poly1d_iv = round(np.mean(results), 2)
-        else:
+        if impl_vols[d0] == impl_vols[d1]:
+            range_iv = linear_iv
             poly1d_iv = linear_iv
+            print output % ('CALC', 'range_iv for %d-days: %.2f' % (days, range_iv))
+            print output % ('CALC', 'poly1d_iv for %d-days: %.2f' % (days, poly1d_iv))
+        else:
+            range_iv = self.range_expr(dtes, impl_vols, days)
+            print output % ('CALC', 'range_iv for %d-days: %.2f' % (days, range_iv))
 
-        print output % ('CALC', 'poly1d_iv for %d-days: %.2f' % (days, poly1d_iv))
-        print ''
+            str0, str1 = self.make_expr(impl_vols[d0], impl_vols[d1])
+            cond0 = str0.format(iv0='impl_vol0', r='result', iv1='impl_vol1')
+            cond1 = str1.format(linear='linear_iv', r='result')
+
+            results = []
+            for degree in range(1, 4):
+                z = np.polyfit(dtes, impl_vols, degree)
+                f = np.poly1d(z)
+
+                poly1d0 = round(f(days), 2)
+                print output % ('CALC', 'degree: %d, poly1d_iv: %.2f' % (degree, poly1d0))
+
+                arg0 = str0.format(iv0=impl_vols[d0], r=poly1d0, iv1=impl_vols[d1])
+                arg1 = str1.format(linear=linear_iv, r=poly1d0)
+                print output % ('COND', '%s, %s, %s' % (cond0, arg0, eval(arg0)))
+                print output % ('COND', '%s, %s, %s' % (cond1, arg1, eval(arg1)))
+
+                if eval(arg0) and eval(arg1):
+                    results.append(poly1d0)
+
+            if len(results):
+                poly1d_iv = round(np.mean(results), 2)
+            else:
+                poly1d_iv = linear_iv
+
+            print output % ('CALC', 'poly1d_iv for %d-days: %.2f' % (days, poly1d_iv))
+            print ''
 
         return range_iv, poly1d_iv, linear_iv
 
-    def single_nearby_strike(self, close, df_date):
+    def single_nearby_cycle(self, close, days, df_date):
+        """
+        use every cycle to calc close price result iv to calc 365-days
+        linear_iv of final linear_iv, range_iv of final linear_iv
+        :param close: float
+        :param days: int
+        :param df_date: pd.DataFrame
+        :return: float
+        """
+        dtes = np.sort(np.array(df_date['dte'].unique()))
+
+        results = []
+        for dte in dtes:
+            print output % ('SEC', 'dte: %d' % dte)
+            print '-' * 70
+
+            df_dte = df_date.query('dte == %r & impl_vol > 0' % dte).sort_values('strike')
+
+            # only use nearest strikes
+            strikes = np.array(df_dte['strike'])
+            impl_vols = np.array(df_dte['impl_vol'])
+            s0, s1 = self.two_nearby(strikes, close)
+            i0, i1 = self.list_index(strikes, s0, s1, 1)
+            strikes = strikes[i0:i1]
+            impl_vols = impl_vols[i0:i1]
+            s0, s1 = self.two_nearby(strikes, close)
+            linear_iv = self.linear_expr(strikes[s1], strikes[s0], impl_vols[s1], impl_vols[s0], close)
+
+            if len(strikes) < 3:
+                print output % ('WARN', 'less than 3 strikes')
+                print output % ('CALC', 'linear_iv == range_iv = %.2f' % linear_iv)
+                range_iv = linear_iv
+                results.append((linear_iv, range_iv))
+                continue
+
+            range_iv = self.range_expr(strikes, impl_vols, close)
+            print output % ('CALC', 'dte: %d, range_iv: %.2f' % (dte, range_iv))
+            print output % ('CALC', 'dte: %d, linear_iv: %.2f' % (dte, linear_iv))
+            results.append((linear_iv, range_iv))
+            print '-' * 70
+
+        linear_ivs = [a for a, b in results]
+        range_ivs = [b for a, b in results]
+
+        if days > dtes[-1]:
+            linear_iv = self.linear_expr(dtes[-1], dtes[-2], linear_ivs[-1], linear_ivs[-2], days)
+            range_iv = self.linear_expr(dtes[-1], dtes[-2], range_ivs[-1], range_ivs[-2], days)
+        else:
+            linear_iv = self.linear_expr(dtes[0], dtes[1], linear_ivs[0], linear_ivs[1], days)
+            range_iv = self.linear_expr(dtes[0], dtes[1], range_ivs[0], range_ivs[1], days)
+
+        print output % ('CALC', 'linear_iv in %d-days: %.2f' % (days, linear_iv))
+        print output % ('CALC', 'range_iv in %d-days: %.2f' % (days, range_iv))
+
+        return range_iv, linear_iv
+
+    def single_nearby_strike(self, close, days, df_date):
         """
         Calculate IV when no duplicated strike in nearby 365-days cycles
         using direct poly1d linear method to estimate approximate result
         linear_iv of final linear_iv and range_iv
         :param close: float
+        :param days: int
         :param df_date: pd.DataFrame
         :return: float
         """
@@ -361,68 +449,21 @@ class TodayIV(object):
                 results.append((dte, linear))
                 print '-' * 70
 
-        x = [a for a, b in results]
-        y = [b for a, b in results]
-        d0, d1 = self.two_nearby(x, 365)
-        for a, b in zip(x, y):
+        dtes = [a for a, b in results]
+        impl_vols = [b for a, b in results]
+        d0, d1 = self.two_nearby(dtes, days)
+        i0, i1 = self.list_index(dtes, d0, d1, 1)
+        for a, b in results:
             print output % ('DATA', 'dte: %d, impl_vol: %.2f' % (a, b))
 
         print output % ('DATA', 'iv %d: %.2f, iv %d: %.2f' % (
-            x[d0], y[d0], x[d1], y[d1]
+            dtes[d0], impl_vols[d0], dtes[d1], impl_vols[d1]
         ))
 
-        linear_iv = self.linear_expr(x[d0], x[d1], y[d0], y[d1], 365)
+        linear_iv = self.linear_expr(dtes[d0], dtes[d1], impl_vols[d0], impl_vols[d1], days)
+        range_iv = self.range_expr(dtes[i0:i1], impl_vols[i0:i1], days)
         print output % ('CALC', 'final linear_iv: %.2f' % linear_iv)
-
-        range_iv = self.range_expr(x[d0 - 1:d1 + 2], y[d0 - 1:d1 + 2], 365)
         print output % ('CALC', 'range linear_iv: %.2f' % range_iv)
-
-        return range_iv, linear_iv
-
-    def single_nearby_cycle(self, close, df_date):
-        """
-        use every cycle to calc close price result iv to calc 365-days
-        linear_iv of final linear_iv, range_iv of final linear_iv
-        :param close: float
-        :param df_date: pd.DataFrame
-        :return: float
-        """
-        dtes = np.sort(np.array(df_date['dte'].unique()))
-        # df_near = df_date.query('dte == %r' % dtes[-1]).sort_values('strike')
-        # print df_near.to_string(line_width=1000)
-
-        results = []
-        for dte in dtes:
-            print output % ('SEC', 'dte: %d' % dte)
-            print '-' * 70
-
-            df_dte = df_date.query('dte == %r & impl_vol > 0' % dte).sort_values('strike')
-
-            # only use nearest strikes
-            strikes = np.array(df_dte['strike'])
-            impl_vols = np.array(df_dte['impl_vol'])
-            s0, s1 = self.two_nearby(strikes, close)
-            # print zip(strikes, impl_vols)
-            linear_iv = self.linear_expr(strikes[s1], strikes[s0], impl_vols[s1], impl_vols[s0], close)
-            range_iv = self.range_expr(strikes[s0 - 1:s1 + 2], impl_vols[s0 - 1:s1 + 2], close)
-            print output % ('CALC', 'dte: %d, range_iv: %.2f' % (dte, range_iv))
-            print output % ('CALC', 'dte: %d, linear_iv: %.2f' % (dte, linear_iv))
-            results.append((dte, linear_iv, range_iv))
-            print '-' * 70
-
-        x = [r[0] for r in results]
-        y0 = [r[1] for r in results]
-        y1 = [r[2] for r in results]
-
-        if 365 > x[-1]:
-            linear_iv = self.linear_expr(x[-1], x[-2], y0[-1], y0[-2], 365)
-            range_iv = self.linear_expr(x[-1], x[-2], y1[-1], y1[-2], 365)
-        else:
-            linear_iv = self.linear_expr(x[0], x[1], y0[0], y0[1], 365)
-            range_iv = self.linear_expr(x[0], x[1], y1[0], y1[1], 365)
-
-        print output % ('CALC', 'linear_iv in 365-days: %.2f' % linear_iv)
-        print output % ('CALC', 'range_iv in 365-days: %.2f' % range_iv)
 
         return range_iv, linear_iv
 
@@ -442,7 +483,7 @@ class TodayIV(object):
         :return: float, float
         """
         print output % ('PROC', 'calc using close strike nearby cycles, same dte')
-        print output % ('SEED', 'close: %.2f, days: %d' % (close, days))
+        print output % ('SEED', 'close: %.2f, days: %d, df_date: %d' % (close, days, len(df_date)))
 
         # get nearest to close price, 2 nearest 365-days cycle
         dtes = df_date['dte'].unique().astype(np.int)
@@ -565,26 +606,24 @@ class TodayIV(object):
         :return: float, float, float
         """
         print output % ('PROC', 'calc using two nearby strike, diff dte')
-        print output % ('CLOSE', 'close: %.2f, days: %d' % (close, days))
+        print output % ('CLOSE', 'close: %.2f, days: %d, df_date: %d' % (close, days, len(df_date)))
         print '-' * 70
 
         cycles = np.array(df_date['dte'].unique())
         c0, c1 = self.two_nearby(cycles, days)
-        print output % ('NEAR', 'dte0: %d(%d), dte1: %d(%d)' % (c0, cycles[c0], c1, cycles[c1]))
-
-        print output % ('DATA', 'use strike exists in both dtes')
         df_cycles = df_date.query('dte == %d | dte == %d' % (cycles[c0], cycles[c1]))
         counts = df_cycles['strike'].value_counts()
         strikes = np.sort(counts[counts == 2].index)
-
         s0, s1 = self.two_nearby(strikes, close)
+        i0, i1 = self.list_index(strikes, s0, s1, 1)
+        strikes = strikes[i0:i1]
+        s0, s1 = self.two_nearby(strikes, close)
+        print output % ('NEAR', 'dte0: %d(%d), dte1: %d(%d)' % (c0, cycles[c0], c1, cycles[c1]))
+        print output % ('DATA', 'use strike exists in both dtes')
         print output % ('NEAR', 'strike0: %d(%.2f), strike1: %d(%.2f)' % (
             s0, strikes[s0], s1, strikes[s1]
         ))
 
-        # reduce size of strikes
-        i0, i1 = self.list_index(strikes, s0, s1, 1)
-        strikes = strikes[i0:i1]
         print '-' * 70
 
         results = []
@@ -602,6 +641,12 @@ class TodayIV(object):
 
             d0, d1 = self.two_nearby(dtes, days)
             linear0 = self.linear_expr(dtes[d0], dtes[d1], impl_vols[d0], impl_vols[d1], days)
+            if len(dtes) < 3:  # require more than 2 to calc range/poly1d
+                results.append((
+                    strike, linear0, linear0, linear0, []
+                ))
+                continue
+
             range0 = self.range_expr(dtes, impl_vols, days)
             print output % ('CALC', 'linear_iv for %.2f: %.2f' % (strike, linear0))
             print output % ('CALC', 'range_iv for %.2f: %.2f' % (strike, range0))
@@ -676,6 +721,10 @@ class TodayIV(object):
         z = np.polyfit(strikes, poly1d_ivs, 2)
         f = np.poly1d(z)
 
+        print output % ('NEAR', 'strike0: %d(%.2f), strike1: %d(%.2f)' % (
+            s0, strikes[s0], s1, strikes[s1]
+        ))
+
         linear_iv = self.linear_expr(strikes[s0], strikes[s1], linear_ivs[s0], linear_ivs[s1], close)
         range_iv = self.range_expr(strikes[i0:i1], range_ivs[i0:i1], close)
         poly1d_iv = round(f(close), 2)
@@ -691,14 +740,14 @@ class TodayIV(object):
         Loop each date and select calculate method
         the run calc for certain days
         :param days: int
-        :return:
+        :return: list
         """
         results = []
         for index, data in self.df_stock.iterrows():
             action = ''
 
             close = data['close']
-            df_date = self.df_all.query('date == %r & name == "CALL"' % index)
+            df_date = self.df_all.query('date == %r & name == "CALL" & others == ""' % index)
 
             # if have not 100 right, remove duplicate split data
             df_date = self.format_data(df_date)
@@ -747,7 +796,7 @@ class TodayIV(object):
             elif action == 'single_dte':
                 print output % ('WARN', 'single nearby DTE cycle found: %d' % dtes[d0])
                 print '-' * 70
-                range_iv, linear_iv = self.single_nearby_cycle(close, df_date)
+                range_iv, linear_iv = self.single_nearby_cycle(close, days, df_date)
                 poly1d_iv = linear_iv
             elif action in ('no_dup_strike', 'single_strike'):
                 if action == 'single_strike':
@@ -757,7 +806,7 @@ class TodayIV(object):
                     print output % ('WARN', 'no dup STRIKE found both cycles')
                     print '-' * 70
 
-                range_iv, linear_iv = self.single_nearby_strike(close, df_date)
+                range_iv, linear_iv = self.single_nearby_strike(close, days, df_date)
                 poly1d_iv = linear_iv
             elif action == 'nearby_strike':
                 print output % ('EXIST', 'nearby %.2f price found in strike: %.2f' % (close, strike))
@@ -769,32 +818,54 @@ class TodayIV(object):
                 print '-' * 70
                 range_iv0, poly1d_iv0, linear_iv0 = self.multi_cycles_3d(close, days, df_date)
                 range_iv1, poly1d_iv1, linear_iv1 = self.multi_strikes_3d(close, days, df_date)
+
+                print output % ('SEED', 'results0: %s' % [range_iv0, poly1d_iv0, linear_iv0])
+                print output % ('SEED', 'results1: %s' % [range_iv1, poly1d_iv1, linear_iv1])
                 range_iv = np.mean([range_iv0, range_iv1])
                 poly1d_iv = np.mean([poly1d_iv0, poly1d_iv1])
                 linear_iv = np.mean([linear_iv0, linear_iv1])
 
             print '-' * 70
 
+            for iv in (range_iv, poly1d_iv, linear_iv):
+                if iv <= 0:
+                    raise ValueError('IV less than zero: %.2f' % iv)
+                if np.isnan(iv):
+                    raise ValueError('IV is not a number: %.2f' % iv)
+
             results.append({
                 'date': index,
-                'range_iv': range_iv,
-                'poly1d_iv': poly1d_iv,
-                'linear_iv': linear_iv,
+                'range_iv': round(range_iv, 2),
+                'poly1d_iv': round(poly1d_iv, 2),
+                'linear_iv': round(linear_iv, 2),
             })
 
+        return results
 
+    def start(self, days):
+        """
+        After complete estimate daily iv, save it into db
+        :param days: int
+        :param results: list
+        """
+        # get data from db
+        self.get_data()
 
+        # calc all
+        results = self.calc_by_days(days)
 
+        # save data
+        df_vol = pd.DataFrame(results)
+        df_vol['days'] = days
+        df_vol = df_vol[['days', 'date', 'range_iv', 'poly1d_iv', 'linear_iv']]
 
-
-
-
-
-
-
-
-
-
-
-
-
+        path = '/option/%s/final/today_iv' % self.symbol.lower()
+        db = pd.HDFStore(QUOTE)
+        try:
+            db.remove(path, where='days == %d' % days)
+        except NotImplementedError:
+            db.remove(path)
+        except KeyError:
+            pass
+        db.append(path, df_vol, format='table', data_columns=True, min_itemsize=100)
+        db.close()

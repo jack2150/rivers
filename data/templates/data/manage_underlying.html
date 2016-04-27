@@ -135,17 +135,20 @@
         <a href="#" class="list-group-item">
           4d. Clean Others Option
         </a>
+        <a href="{% url 'admin:valid_clean_h5' symbol %}" class="list-group-item">
+          5. Valid Clean Option
+        </a>
         <a href="{% url 'admin:fillna_missing_h5' symbol 'normal' %}" class="list-group-item">
-          5a. FillNA Normal Option
+          6a. FillNA Normal Option
         </a>
         <a href="{% url 'admin:fillna_missing_h5' symbol 'split_new' %}" class="list-group-item">
-          5b. FillNA Split/New Option
+          6b. FillNA Split/New Option
         </a>
         <a href="{% url 'admin:fillna_missing_h5' symbol 'split_old' %}" class="list-group-item">
-          5b. FillNA Split/Old Option
+          6b. FillNA Split/Old Option
         </a>
         <a href="{% url 'admin:merge_final_h5' symbol %}" class="list-group-item">
-          6. Merge final data
+          7. Merge final data
         </a>
       </div>
     </div>

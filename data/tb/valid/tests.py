@@ -1,11 +1,10 @@
 import pandas as pd
-
 from base.tests import TestSetUp
-from data.tb.valid.options import ValidOption
-from rivers.settings import QUOTE
+from data.tb.valid.options import ValidRawOption
+from rivers.settings import CLEAN, QUOTE
 
 symbol = 'aig'
-db = pd.HDFStore(QUOTE)
+db = pd.HDFStore(CLEAN)
 df_normal = db.select('option/%s/raw/normal' % symbol.lower())
 df_others = db.select('option/%s/raw/others' % symbol.lower())
 df_split0 = db.select('option/%s/raw/split/old' % symbol.lower())
@@ -16,7 +15,7 @@ class TestValidRawOption(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.valid_raw = ValidOption(symbol)
+        self.valid_raw = ValidRawOption(symbol)
 
     def test_bid_gt_ask(self):
         old_length = len(df_normal)

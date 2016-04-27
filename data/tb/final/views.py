@@ -140,9 +140,10 @@ def merge_final(symbol):
     db.close()
     # update log
     underlying = Underlying.objects.get(symbol=symbol.upper())
-    underlying.log += 'Merge final data: %s' % symbol.upper()
-    underlying.log += 'df_contract length: %d' % len(df_contract)
-    underlying.log += 'df_option length: %d' % len(df_option)
+    underlying.log += 'Merge final data: %s\n' % symbol.upper()
+    underlying.log += 'df_contract length: %d\n' % len(df_contract)
+    underlying.log += 'df_option length: %d\n' % len(df_option)
+    underlying.log += 'All data saved\n'
     underlying.enable = True
     underlying.save()
 

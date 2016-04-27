@@ -9,20 +9,24 @@ class TestSingleCallCS(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
         self.symbol = 'AIG'
+        self.days = 30
         db = pd.HDFStore(QUOTE)
         self.df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
         db.close()
 
         db = pd.HDFStore(CLEAN)
         df_normal = db.select('iv/%s/clean/normal' % self.symbol.lower())
-        df_split0 = db.select('iv/%s/clean/split/old' % self.symbol.lower())
+        path = '/iv/%s/clean/split/old' % self.symbol.lower()
+        df_split0 = pd.DataFrame()
+        if path in db.keys():
+            df_split0 = db.select(path)
         db.close()
         self.df_all = pd.concat([df_normal, df_split0])
         """:type: pd.DataFrame"""
 
         self.today_iv = TodayIV(self.symbol)
-        self.today_iv.df_stock = self.df_stock['20091120':'20101231']
-        self.today_iv.df_all = self.df_all
+        self.today_iv.df_stock = self.df_stock['20090101':'20150630']
+        self.today_iv.df_all = self.today_iv.format_data(self.df_all)
         self.date = pd.to_datetime('20150625')
 
     def test_range_expr(self):
@@ -45,16 +49,15 @@ class TestSingleCallCS(TestUnitSetUp):
             self.assertTrue(y[1] > range_iv > y[2])
             print '-' * 70
 
-    def test_remove_split(self):
+    def test_format_data(self):
         """
         Test remove duplicate ('dte', 'strike') split data in DataFrame
         """
-        date = pd.to_datetime('2009-09-04')
-        print 'date: %s' % date.strftime('%Y-%m-%d')
-
+        date = pd.to_datetime('2011-04-15')
         df_date0 = self.df_all.query('date == %r & name == "CALL"' % date)
+        print len(df_date0)
         df_date1 = self.today_iv.format_data(df_date0)
-        print df_date1.sort_values('dte').to_string(line_width=1000)
+        print len(df_date1)
 
         self.assertGreater(len(df_date0), len(df_date1))
 
@@ -62,8 +65,8 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test calc using exists nearby 365-days in dte cycles
         """
-        date = pd.to_datetime('2010-01-20')
-        dte = 366
+        date = pd.to_datetime('2012-10-17')
+        dte = 364
         close = self.df_stock.ix[date]['close']
         df_date = self.df_all.query('date == %r & name =="CALL"' % date)
 
@@ -78,14 +81,14 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test calc iv using nearby strike exists in dataframe
         """
-        date = pd.to_datetime('2009-11-20')
-        days = 365
+        date = pd.to_datetime('2009-01-14')
         close = self.df_stock.ix[date]['close']
         df_date = self.df_all.query('date == %r & name == "CALL"' % date)
         df_date = self.today_iv.format_data(df_date)
         print '-' * 70
 
-        range_iv, poly1d_iv, linear_iv = self.today_iv.nearby_strike(close, days, df_date)
+        range_iv, poly1d_iv, linear_iv = self.today_iv.nearby_strike(close, self.days, df_date)
+        print range_iv, poly1d_iv, linear_iv
 
         self.assertEqual(type(range_iv), float)
         self.assertEqual(type(poly1d_iv), float)
@@ -97,13 +100,11 @@ class TestSingleCallCS(TestUnitSetUp):
         Test single nearby strike found on all cycles
         2009-01-14
         """
-        # todo: check need new version
-        # date = pd.to_datetime('2009-01-02')
-        date = pd.to_datetime('2009-02-13')
+        date = pd.to_datetime('2009-01-14')
         close = self.df_stock.ix[date]['close']
         df_date = self.df_all.query('date == %r & name == "CALL" & right == "100"' % date)
 
-        range_iv, linear_iv = self.today_iv.single_nearby_strike(close, df_date)
+        range_iv, linear_iv = self.today_iv.single_nearby_strike(close, self.days, df_date)
         self.assertEqual(type(range_iv), float)
         self.assertEqual(type(linear_iv), float)
         self.assertAlmostEqual(range_iv / 100.0, linear_iv / 100.0, 0)
@@ -112,16 +113,12 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test single nearby cycle found for 365-days
         """
-        # todo: check need new version
-        date = pd.to_datetime('2010-01-22')
+        date = pd.to_datetime('2009-02-17')
         close = self.df_stock.ix[date]['close']
         df_date = self.df_all.query('date == %r & name == "CALL"' % date)
-        df_date = df_date.query('dte < 365')
-        dtes = np.sort(np.array(df_date['dte'].unique()))
-        d0, d1 = self.today_iv.two_nearby(dtes, 365)
-        print 'i0: %d, dte0: %d, i1: %d, dte1: %d' % (d0, dtes[d0], d1, dtes[d1])
+        df_date = self.today_iv.format_data(df_date)
 
-        range_iv, linear_iv = self.today_iv.single_nearby_cycle(close, df_date)
+        range_iv, linear_iv = self.today_iv.single_nearby_cycle(close, self.days, df_date)
         self.assertEqual(type(range_iv), float)
         self.assertEqual(type(linear_iv), float)
         self.assertAlmostEqual(range_iv / 100.0, linear_iv / 100.0, 0)
@@ -130,10 +127,11 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test calculate iv using cycle method
         """
-        date = pd.to_datetime('2009-12-29')
+        date = pd.to_datetime('2015-05-21')
         close = self.df_stock.ix[date]['close']
         days = 365
         df_date = self.df_all.query('date == %r & name == "CALL" & right == "100"' % date)
+        df_date = self.today_iv.format_data(df_date)
 
         range_iv, poly1d_iv, linear_iv = self.today_iv.multi_cycles_3d(close, days, df_date)
 
@@ -141,15 +139,18 @@ class TestSingleCallCS(TestUnitSetUp):
         self.assertEqual(type(poly1d_iv), float)
         self.assertEqual(type(linear_iv), float)
         self.assertAlmostEqual(range_iv / 100.0, linear_iv / 100.0, 0)
-        self.assertAlmostEqual(poly1d_iv / 100.0, linear_iv / 100.0, 0)
 
     def test_calc_strike(self):
         """
         Test calculate iv using strike method, new version
         """
-        close = self.df_stock.ix[self.date]['close']
+        date = pd.to_datetime('2015-01-27')
+        close = self.df_stock.ix[date]['close']
         days = 365
-        df_date = self.df_all.query('date == %r & name == "CALL" & right == "100"' % self.date)
+        df_date = self.df_all.query(
+            'date == %r & name == "CALL" & right == "100" & others == ""' % date
+        )
+        df_date = self.today_iv.format_data(df_date)
 
         range_iv, poly1d_iv, linear_iv = self.today_iv.multi_strikes_3d(close, days, df_date)
 
@@ -164,10 +165,81 @@ class TestSingleCallCS(TestUnitSetUp):
 
         :return:
         """
-        days = 365
-        self.today_iv.calc_by_days(days)
+        symbol = 'AIG'
+        day = 150
+        today_iv = TodayIV(symbol)
+        today_iv.get_data()
+        results = today_iv.calc_by_days(day)
+        self.assertGreater(len(results), 0)
 
-        # todo: 2010-01-20
+    def test_diff_symbols_days(self):
+        """
+        Test different symbols and days for calc
+        """
+        symbols = ['AIG', 'C', 'DDD', 'EBAY', 'FSLR', 'HD', 'JPM', 'WFC']
+        days = [30, 60, 90, 150, 365]
+
+        f = open(r'D:/rivers/debug.txt', mode='a')
+        for symbol in symbols:
+            today_iv = TodayIV(symbol)
+            for day in days:
+                f.writelines('<%s> %s start\n' % (symbol, day))
+                today_iv.start(day)
+                f.writelines('<%s> %s end\n' % (symbol, day))
+                print '.' * 40
+                #break
+            print '-' * 70
+            #break
+        f.close()
+
+        # todo: error aig 90
+
+    def test123(self):
+        # self.symbol = 'EBAY'
+        db = pd.HDFStore(QUOTE)
+        df_vol = db.select('option/%s/final/today_iv' % self.symbol.lower())
+        df_vol365 = df_vol.query('days == 365')
+        df_vol30 = df_vol.query('days == 30')
+        db.close()
+
+        import matplotlib.pyplot as plt
+        df_vol30 = df_vol365
+        df_vol30 = df_vol30.set_index('date')
+        df_vol30 = df_vol30.ix['20090101':'20091231']
+
+        plt.plot(df_vol30.index, df_vol30['linear_iv'], '-')
+        #plt.plot(df_vol365['date'], df_vol365['range_iv'], '-')
+        plt.show()
+
+        """
+        df_join = pd.merge(df_vol30, df_vol365, on='date')
+
+        print df_join.query('date < %r' % '20100101').to_string(line_width=1000)
+
+        self.assertFalse(np.count_nonzero(np.isnan(df_vol30['range_iv'])))
+        self.assertFalse(np.count_nonzero(np.isnan(df_vol30['linear_iv'])))
+        self.assertFalse(np.count_nonzero(np.isnan(df_vol30['poly1d_iv'])))
+        """
+
+
+        # AIG160115C48, 2015-06-30, wrong bid-ask
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

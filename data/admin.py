@@ -6,6 +6,7 @@ from data.tb.clean.views import *
 from data.tb.fillna.views import fillna_missing_h5
 from data.tb.final.views import merge_final_h5, remove_clean_h5, import_option_h5, import_weekday_h5
 from data.tb.raw.views import raw_stock_h5, raw_option_h5
+from data.tb.revalid.views import valid_clean_h5
 from data.tb.valid.views import valid_option_h5
 from data.event.views import html_event_import
 from data.web.views import web_stock_h5, web_treasury_h5
@@ -155,8 +156,12 @@ admin.site.register_view(
     urlname='valid_option_h5', view=valid_option_h5
 )
 admin.site.register_view(
-    'data/h5/process/clean/normal/(?P<symbol>\w+)/(?P<name>\w+)/$',
+    'data/h5/process/clean/option/(?P<symbol>\w+)/(?P<name>\w+)/$',
     urlname='clean_valid_h5', view=clean_valid_h5
+)
+admin.site.register_view(
+    'data/h5/process/valid/clean/(?P<symbol>\w+)/$',
+    urlname='valid_clean_h5', view=valid_clean_h5
 )
 admin.site.register_view(
     'data/h5/process/fillna/normal/(?P<symbol>\w+)/(?P<name>\w+)/$',

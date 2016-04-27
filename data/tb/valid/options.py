@@ -6,7 +6,7 @@ from rivers.settings import CLEAN
 output = '%-6s | %-30s'
 
 
-class ValidOption(object):
+class ValidRawOption(object):
     def __init__(self, symbol):
         self.symbol = symbol.lower()
         self.df_list = {}
@@ -187,5 +187,3 @@ class ValidOption(object):
                 underlying.log += 'Raw df_%s length: %d\n' % (key, len(self.df_list[name]))
 
         underlying.save()
-
-# todo: add bid ask too wide

@@ -1,14 +1,13 @@
 import os
 import sys
 
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
 
 import click
 import pandas as pd
 import time
-from data.tb.valid.options import ValidOption
+from data.tb.valid.options import ValidRawOption
 from data.tb.clean import CleanNormal
 from datetime import timedelta
 from fractions import Fraction
@@ -18,6 +17,7 @@ from data.tb.raw.options import ExtractOption
 from data.tb.raw.stocks import extract_stock
 from data.tb.clean.split_new import CleanSplitNew
 from data.tb.clean.split_old import CleanSplitOld
+from data.tb.revalid.options import ValidCleanOption
 from data.tb.fillna.normal import FillNaNormal
 from data.tb.fillna.split_new import FillNaSplitNew
 from data.tb.fillna.split_old import FillNaSplitOld
@@ -63,14 +63,14 @@ def proc_raw(symbol):
 @manage.command()
 @click.option('--symbol', prompt='Symbol', help='Symbol of valid raw options.')
 def valid_raw(symbol):
-    proc_valid(symbol)
+    proc_valid_raw(symbol)
     click.pause()
 
 
-def proc_valid(symbol):
+def proc_valid_raw(symbol):
     click.echo('Valid raw data for: %s' % symbol.upper())
     # run valid raw option
-    valid_option = ValidOption(symbol)
+    valid_option = ValidRawOption(symbol)
     valid_option.start()
     valid_option.update_underlying()
 
@@ -146,6 +146,21 @@ def proc_clean(symbol, name):
 
 
 @manage.command()
+@click.option('--symbol', prompt='Symbol', help='Symbol of valid raw options.')
+def valid_clean(symbol):
+    proc_valid_clean(symbol)
+    click.pause()
+
+
+def proc_valid_clean(symbol):
+    click.echo('Valid clean data for: %s' % symbol.upper())
+    # run valid raw option
+    valid_option = ValidCleanOption(symbol)
+    valid_option.start()
+    valid_option.update_underlying()
+
+
+@manage.command()
 @click.option('--symbol', prompt='Symbol', help='Symbol of stock data.')
 @click.option('--name', prompt='Name', help='(normal, others, split/old, split/new)')
 def fillna_missing(symbol, name):
@@ -173,7 +188,7 @@ def proc_fillna(symbol, name):
 def import_option(symbol):
     proc_stock(symbol)
     proc_raw(symbol)
-    proc_valid(symbol)
+    proc_valid_raw(symbol)
 
     db = pd.HDFStore(CLEAN)
     keys = list(db.keys())
@@ -191,6 +206,7 @@ def import_option(symbol):
             continue
 
         proc_clean(symbol, name)
+        proc_valid_clean(symbol)
         proc_fillna(symbol, name)
 
     # merge final
@@ -252,7 +268,7 @@ def import_weekday(symbol):
     extract_option.group_data()
 
     # run valid raw option
-    valid_option = ValidOption(symbol)
+    valid_option = ValidRawOption(symbol)
     valid_option.df_list['normal'] = extract_option.df_normal
     valid_option.df_list['split0'] = extract_option.df_split0
     df_result = valid_option.valid()
