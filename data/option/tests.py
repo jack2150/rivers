@@ -9,7 +9,7 @@ class TestSingleCallCS(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
         self.symbol = 'AIG'
-        self.days = 30
+        self.days = 365
         db = pd.HDFStore(QUOTE)
         self.df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
         db.close()
@@ -17,16 +17,17 @@ class TestSingleCallCS(TestUnitSetUp):
         db = pd.HDFStore(CLEAN)
         df_normal = db.select('iv/%s/clean/normal' % self.symbol.lower())
         path = '/iv/%s/clean/split/old' % self.symbol.lower()
-        df_split0 = pd.DataFrame()
         if path in db.keys():
             df_split0 = db.select(path)
+            self.df_all = pd.concat([df_normal, df_split0])
+            """:type: pd.DataFrame"""
+        else:
+            self.df_all = df_normal
         db.close()
-        self.df_all = pd.concat([df_normal, df_split0])
-        """:type: pd.DataFrame"""
 
         self.today_iv = TodayIV(self.symbol)
         self.today_iv.df_stock = self.df_stock['20090101':'20150630']
-        self.today_iv.df_all = self.today_iv.format_data(self.df_all)
+        self.today_iv.df_all = self.df_all
         self.date = pd.to_datetime('20150625')
 
     def test_range_expr(self):
@@ -53,11 +54,11 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test remove duplicate ('dte', 'strike') split data in DataFrame
         """
-        date = pd.to_datetime('2011-04-15')
+        date = pd.to_datetime('2009-04-16')
         df_date0 = self.df_all.query('date == %r & name == "CALL"' % date)
-        print len(df_date0)
+        print df_date0.to_string(line_width=1000)
         df_date1 = self.today_iv.format_data(df_date0)
-        print len(df_date1)
+        print df_date1.to_string(line_width=1000)
 
         self.assertGreater(len(df_date0), len(df_date1))
 
@@ -100,11 +101,13 @@ class TestSingleCallCS(TestUnitSetUp):
         Test single nearby strike found on all cycles
         2009-01-14
         """
-        date = pd.to_datetime('2009-01-14')
+        date = pd.to_datetime('2009-04-24')
         close = self.df_stock.ix[date]['close']
-        df_date = self.df_all.query('date == %r & name == "CALL" & right == "100"' % date)
+        df_date = self.df_all.query('date == %r & name == "CALL"' % date)
+        df_date = self.today_iv.format_data(df_date)
+        # print df_date.to_string(line_width=1000)
 
-        range_iv, linear_iv = self.today_iv.single_nearby_strike(close, self.days, df_date)
+        range_iv, linear_iv = self.today_iv.price_not_in_strike_range(close, self.days, df_date)
         self.assertEqual(type(range_iv), float)
         self.assertEqual(type(linear_iv), float)
         self.assertAlmostEqual(range_iv / 100.0, linear_iv / 100.0, 0)
@@ -113,10 +116,12 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test single nearby cycle found for 365-days
         """
-        date = pd.to_datetime('2009-02-17')
+        date = pd.to_datetime('2011-05-23')
         close = self.df_stock.ix[date]['close']
         df_date = self.df_all.query('date == %r & name == "CALL"' % date)
+        # print df_date.to_string(line_width=1000)
         df_date = self.today_iv.format_data(df_date)
+        # print df_date.to_string(line_width=1000)
 
         range_iv, linear_iv = self.today_iv.single_nearby_cycle(close, self.days, df_date)
         self.assertEqual(type(range_iv), float)
@@ -127,10 +132,10 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test calculate iv using cycle method
         """
-        date = pd.to_datetime('2015-05-21')
+        date = pd.to_datetime('2009-04-16')
         close = self.df_stock.ix[date]['close']
-        days = 365
-        df_date = self.df_all.query('date == %r & name == "CALL" & right == "100"' % date)
+        days = 30
+        df_date = self.df_all.query('date == %r & name == "CALL"' % date)
         df_date = self.today_iv.format_data(df_date)
 
         range_iv, poly1d_iv, linear_iv = self.today_iv.multi_cycles_3d(close, days, df_date)
@@ -144,11 +149,11 @@ class TestSingleCallCS(TestUnitSetUp):
         """
         Test calculate iv using strike method, new version
         """
-        date = pd.to_datetime('2015-01-27')
+        date = pd.to_datetime('2011-05-23')
         close = self.df_stock.ix[date]['close']
-        days = 365
+        days = 30
         df_date = self.df_all.query(
-            'date == %r & name == "CALL" & right == "100" & others == ""' % date
+            'date == %r & name == "CALL" & others == ""' % date
         )
         df_date = self.today_iv.format_data(df_date)
 
@@ -166,7 +171,7 @@ class TestSingleCallCS(TestUnitSetUp):
         :return:
         """
         symbol = 'AIG'
-        day = 150
+        day = 365
         today_iv = TodayIV(symbol)
         today_iv.get_data()
         results = today_iv.calc_by_days(day)
@@ -192,7 +197,7 @@ class TestSingleCallCS(TestUnitSetUp):
             #break
         f.close()
 
-        # todo: error aig 90
+        # todo: 2009-04-24, c, 60 days, negative impl_vol
 
     def test123(self):
         # self.symbol = 'EBAY'

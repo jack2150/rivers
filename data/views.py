@@ -141,7 +141,7 @@ def manage_underlying(request, symbol):
     :return: render
     """
     underlying = Underlying.objects.get(symbol=symbol.upper())
-    split_history = SplitHistory.objects.filter(symbol=symbol)
+    split_history = SplitHistory.objects.filter(symbol=symbol.upper())
     split_history = '\n'.join('%s | %s | %s' % (s.symbol, s.date, s.fraction) for s in split_history)
 
     template = 'data/manage_underlying.html'

@@ -18,7 +18,7 @@ class TestExtractOption(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = symbols[0]
+        self.symbol = symbols[5]
 
     def create_test_h5(self, symbol):
         # noinspection PyUnresolvedReferences
@@ -224,7 +224,7 @@ class TestExtractOption(TestSetUp):
             underlying.save()
             symbol = symbol.lower()
 
-            #self.client.get(reverse('admin:raw_stock_h5', kwargs={'symbol': symbol}))
+            # self.client.get(reverse('admin:raw_stock_h5', kwargs={'symbol': symbol}))
 
             db = pd.HDFStore(QUOTE)
             df_stock = db.select('stock/thinkback/%s' % symbol.lower())

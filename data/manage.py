@@ -1,6 +1,8 @@
 import os
 import sys
 
+from data.models import SplitHistory
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
 
@@ -267,10 +269,29 @@ def import_weekday(symbol):
     extract_option.get_data()
     extract_option.group_data()
 
+    # missing split here
+    df_normal = extract_option.df_normal
+    df_split0 = extract_option.df_split0
+    split_history = SplitHistory.objects.filter(symbol='C')
+
+    for split in split_history:
+        df = df_normal.query(
+            'date == %r & special != "Mini"' % pd.to_datetime(split.date)
+        )
+        rights = df['right'].unique()
+        if len(rights) < 2:
+            df_normal.loc[
+                df_normal.index.isin(df.index), 'strike'
+            ] /= float(Fraction(split.fraction))
+
+            df_normal.loc[
+                df_normal.index.isin(df.index), 'right'
+            ] = str(Fraction(split.fraction) * 100)
+
     # run valid raw option
     valid_option = ValidRawOption(symbol)
-    valid_option.df_list['normal'] = extract_option.df_normal
-    valid_option.df_list['split0'] = extract_option.df_split0
+    valid_option.df_list['normal'] = df_normal
+    valid_option.df_list['split1'] = df_split0
     df_result = valid_option.valid()
 
     # save into db
