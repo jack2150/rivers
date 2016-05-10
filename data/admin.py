@@ -2,6 +2,7 @@ from bootstrap3_datetime.widgets import DateTimePicker
 from django.contrib import admin
 from pandas.tseries.offsets import BDay
 
+from data.option.views import calc_day_iv
 from data.tb.clean.views import *
 from data.tb.fillna.views import fillna_missing_h5
 from data.tb.final.views import merge_final_h5, remove_clean_h5, import_option_h5, import_weekday_h5
@@ -198,4 +199,10 @@ admin.site.register_view(
 admin.site.register_view(
     'data/h5/import/event/(?P<symbol>\w+)/$',
     urlname='html_event_import', view=html_event_import
+)
+
+# calc iv
+admin.site.register_view(
+    'data/h5/calc/iv/(?P<symbol>\w+)/$',
+    urlname='calc_day_iv', view=calc_day_iv
 )

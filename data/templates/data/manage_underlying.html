@@ -163,15 +163,19 @@
       <div class="list-group">
         <a href="#" class="list-group-item disabled">Clean Process</a>
         <a href="{% url 'admin:import_option_h5' symbol %}" class="list-group-item"
-          title="For backtest/analysis">
+          title="Data for backtest/analysis">
           1. Import stocks/options
         </a>
         <a href="{% url 'admin:import_weekday_h5' symbol %}" class="list-group-item"
-          title="For calculate IV">
+          title="Data for calculate IV">
           2. Import weekday options
         </a>
+        <a href="{% url 'admin:calc_day_iv' symbol %}" class="list-group-item"
+           title="Calculate IV">
+          3. Calc day Implied Volatility
+        </a>
         <a href="{% url 'admin:remove_clean_h5' symbol %}" class="list-group-item">
-          3. Remove clean data
+          4. Remove clean data
         </a>
 
       </div>

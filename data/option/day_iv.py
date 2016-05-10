@@ -469,7 +469,7 @@ class DayIVCalc(object):
                         'strike': close,
                         'dte_iv': dte_iv,
                         'strike_iv': strike_iv,
-                        'impl_vol': np.mean([dte_iv, strike_iv])
+                        'impl_vol': round(np.mean([dte_iv, strike_iv]), 2)
                     })
 
             # result iv
