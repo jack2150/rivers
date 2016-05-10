@@ -105,14 +105,14 @@ class DayImplVol(object):
             dtes = list(np.sort(df_date['dte'].unique()))
 
             if len(dtes) == 1:  # single dte only
-                calc = DaySingleDte2dCalc(close, days, df_date)
+                calc = DaySingleDte2dDteCalc(close, days, df_date)
                 linear_iv, range_iv, poly1d_iv = calc.estimate()
                 results.append((date, days, linear_iv, range_iv, poly1d_iv))
                 print '=' * 70
                 continue
 
             if days in dtes:  # exact day in dtes
-                calc = DayInDte2dCalc(close, days, df_date)
+                calc = DayInDte2dDteCalc(close, days, df_date)
                 linear_iv, range_iv, poly1d_iv = calc.estimate()
                 results.append((date, days, linear_iv, range_iv, poly1d_iv))
                 print '=' * 70
@@ -127,7 +127,7 @@ class DayImplVol(object):
                 continue
 
             # 3d cycle by cycle calc
-            calc = DayInRangeDtes3dCalc(close, days, df_date)
+            calc = DayInRangeDtes3dDteCalc(close, days, df_date)
             linear_iv, range_iv, poly1d_iv = calc.estimate()
             results.append((date, days, linear_iv, range_iv, poly1d_iv))
             print '=' * 70
@@ -164,6 +164,11 @@ class DayImplVol(object):
                 print '=' * 70
                 continue
 
+            if days in dtes:
+                print output % ('SKIP', 'days in dtes, skip...')
+                print '=' * 70
+                continue
+
             d0, d1 = self.static.two_nearby(dtes, days)
             if not dtes[d0] <= days <= dtes[d1]:
                 calc = DayGtLtDtes3dStrikeCalc(close, days, df_date)
@@ -173,40 +178,33 @@ class DayImplVol(object):
                 continue
 
             df_dte = df_date[df_date['dte'].isin([dtes[d0], dtes[d1]])]
-            strikes = np.array(df_dte[df_dte['strike'].duplicated()]['strike'].unique())
+            strikes = np.sort(df_dte[df_dte['strike'].duplicated()]['strike'].unique())
+            if len(strikes) == 0:
+                i0, i1 = self.static.list_index(dtes, d0, d1, 1)
+                df_dte = df_date[df_date['dte'].isin(dtes[i0:i1])]
+                counts = df_dte['strike'].value_counts()
+
+                print counts
+
+
+
+                print df_dte.to_string(line_width=1000)
+                break
+                pass
+
             if close in strikes:
                 df_strike = df_date[df_date['strike'] == close]
-                calc = CloseInStrike2dCalc(close, days, df_strike)
+                calc = CloseInStrike2dStrikeCalc(close, days, df_strike)
                 linear_iv, range_iv, poly1d_iv = calc.estimate()
                 results.append((date, days, linear_iv, range_iv, poly1d_iv))
                 print '=' * 70
                 continue
 
-            i0, i1 = self.static.list_index(dtes, d0, d1, 1)
-            dtes = dtes[i0:i1]
-            print output % ('DATA', 'dtes: %s' % dtes)
-            df_dte = df_date[df_date['dte'].isin(dtes)]
-            count = df_dte['strike'].value_counts()
-            count = count[count > 1].sort_index()
-            strikes = list(count.index)
-            s0, s1 = self.static.two_nearby(strikes, close)
-            print output % ('NEAR', 'strike0: %d(%.2f), strike1: %d(%.2f)' % (
-                s0, count.index[s0], s1, count.index[s1]
-            ))
-            c0, c1 = self.static.list_index(count.index, s0, s1, 1)
-            count = count[count.index[c0:c1]]
-            strikes = count.index
-            df_nearby = df_dte[df_dte['strike'].isin(strikes)]
-            if len(count) < 2:  # only 1 strike nearby, impossible
-                print output % ('ERROR', 'single strike, unable calc using strike')
-                print '=' * 70
-                break
-            else:
-                calc = CloseInRangeStrikes3dCalc(close, days, df_nearby)
-                linear_iv, range_iv, poly1d_iv = calc.estimate()
-                results.append((date, days, linear_iv, range_iv, poly1d_iv))
+            # close in range strikes or part in range strikes
+            calc = DayInRangeDtes3dStrikeCalc(close, days, df_date)
+            linear_iv, range_iv, poly1d_iv = calc.estimate()
 
-            print '=' * 70
+            results.append((date, days, linear_iv, range_iv, poly1d_iv))
 
         return results
 
@@ -327,9 +325,6 @@ class DayImplVolStatic(object):
             results = [iv0, iv1, iv2]
             i0, i1 = 1, 2
 
-        print output % ('NEAR', 'index0: %d, index1: %d' % (i0, i1))
-        print output % ('CALC', 'range_ivs: %s' % [round(r, 2) for r in results])
-
         if len(results) == 1:
             result = results[0]
         else:
@@ -341,6 +336,9 @@ class DayImplVolStatic(object):
 
             if np.isnan(result):
                 result = self.linear_expr(x[i0], x[i1], y[i0], y[i1], base)
+
+        print output % ('NEAR', 'index0: %d, index1: %d' % (i0, i1))
+        print output % ('CALC', 'range_ivs: %s' % [round(r, 2) for r in results])
 
         return round(result, 2)
 
@@ -453,7 +451,7 @@ class DayImplVolStatic(object):
 
 
 # dte method
-class DaySingleDte2dCalc(DayImplVolStatic):
+class DaySingleDte2dDteCalc(DayImplVolStatic):
     def __init__(self, close, days, df_date):
         """
         :param close: float
@@ -536,7 +534,7 @@ class DaySingleDte2dCalc(DayImplVolStatic):
         return linear_iv, range_iv, poly1d_iv
 
 
-class DayInDte2dCalc(DayImplVolStatic):
+class DayInDte2dDteCalc(DayImplVolStatic):
     def __init__(self, close, days, df_date):
         """
         :param close: float
@@ -778,7 +776,7 @@ class DayGtLtDtes3dDteCalc(DayImplVolStatic):
         return linear_iv, range_iv, poly1d_iv
 
 
-class DayInRangeDtes3dCalc(DayImplVolStatic):
+class DayInRangeDtes3dDteCalc(DayImplVolStatic):
     def __init__(self, close, days, df_date):
         """
         :param close: float
@@ -870,7 +868,7 @@ class DayInRangeDtes3dCalc(DayImplVolStatic):
 
 
 # strike method
-class CloseInStrike2dCalc(DayImplVolStatic):
+class CloseInStrike2dStrikeCalc(DayImplVolStatic):
     def __init__(self, close, days, df_date):
         """
         :param close: float
@@ -1051,25 +1049,47 @@ class DayGtLtDtes3dStrikeCalc(DayImplVolStatic):
         return linear_iv, range_iv, poly1d_iv
 
 
-class CloseInRangeStrikes3dCalc(DayImplVolStatic):
-    def __init__(self, close, days, df_nearby):
+class DayInRangeDtes3dStrikeCalc(DayImplVolStatic):
+    def __init__(self, close, days, df_date):
         """
         :param close: float
         :param days: int
-        :param df_nearby: pd.DataFrame
+        :param df_date: pd.DataFrame
         """
         self.close = close
         self.days = days
-        self.df_nearby = df_nearby
+        self.df_date = df_date
 
     def estimate(self):
         """
         When df_date have 2 or more nearby strikes
         :return: float, float, float
         """
-        print output % ('PROC', 'calc iv when days gt/lt dtes')
+        print output % ('PROC', 'close price in range strikes')
         print '-' * 70
-        df_nearby = self.df_nearby.sort_values('dte')
+
+        df_date = self.df_date.sort_values(['dte', 'strike'])
+        dtes = np.sort(df_date['dte'].unique())
+        d0, d1 = self.two_nearby(dtes, self.days)
+        df_dte = df_date[df_date['dte'].isin([dtes[d0], dtes[d1]])]
+        strikes = np.sort(df_dte[df_dte['strike'].duplicated()]['strike'].unique())
+
+        if self.close < min(strikes):
+            s0, s1 = 0, 1
+            i0, i1 = self.list_index(strikes, s0, s1, 0)
+
+        elif self.close > max(strikes):
+            s0, s1 = len(strikes) - 1, len(strikes) - 2
+            i0, i1 = self.list_index(strikes, s0, s1, 0)
+        else:
+            s0, s1 = self.two_nearby(strikes, self.close)
+            i0, i1 = self.list_index(strikes, s0, s1, 1)
+
+        strikes = strikes[i0:i1]
+        i0, i1 = self.list_index(dtes, d0, d1, 1)
+        dtes = dtes[i0:i1]
+        df_dte = df_date[df_date['dte'].isin(dtes)]
+        df_nearby = df_dte[df_dte['strike'].isin(strikes)].sort_values('dte')
         counts = df_nearby['strike'].value_counts().sort_index()
 
         results = []
@@ -1083,7 +1103,7 @@ class CloseInRangeStrikes3dCalc(DayImplVolStatic):
             impl_vols = np.array(df_strike['impl_vol'])
             print '-' * 70
             for a, b in zip(dtes, impl_vols):
-                print output % ('DATA', 'strike: %d, impl_vol: %.2f' % (a, b))
+                print output % ('DATA', 'dte: %d, impl_vol: %.2f' % (a, b))
             print '-' * 70
 
             # if only 2 above/below dtes, it will auto get correct index for linear
@@ -1132,3 +1152,15 @@ class CloseInRangeStrikes3dCalc(DayImplVolStatic):
         print '-' * 70
 
         return linear_iv, range_iv, poly1d_iv
+
+
+
+
+
+
+
+# todo: full strike calc
+# idea: generate every strike/impl_vol in every dtes
+# it will have all strikes and in all dtes
+#
+

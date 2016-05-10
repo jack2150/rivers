@@ -71,16 +71,22 @@ class TestDayImplVol(TestUnitSetUp):
 
         :return:
         """
-        date = pd.to_datetime('2009-01-15')
+        #date = pd.to_datetime('2009-01-07')
+        date = pd.to_datetime('2009-06-23')
         days = 365
         self.day_iv.get_data()
         self.day_iv.df_stock = self.day_iv.df_stock[date:date]
+
+
 
         results0 = self.day_iv.calc_days_by_dtes(days)
         print
         print '.' * 70
         print
         results1 = self.day_iv.calc_days_by_strike(days)
+
+        print results0
+        print results1
 
         # todo: wrong here
 
@@ -118,7 +124,7 @@ class TestDaySingleDte2dCalc(TestDayImplVol):
         for x in ('>', '<'):
             df_date = self.df_date.query('strike %s %r' % (x, self.close))
 
-            self.calc = DaySingleDte2dCalc(self.close, self.days, df_date)
+            self.calc = DaySingleDte2dDteCalc(self.close, self.days, df_date)
             linear_iv, range_iv, poly1d_iv = self.calc.estimate()
 
             self.assertTrue(linear_iv)
@@ -132,7 +138,7 @@ class TestDaySingleDte2dCalc(TestDayImplVol):
         Test calc iv when days in below/above dtes and
         both dtes close is below strikes
         """
-        self.calc = DaySingleDte2dCalc(self.close, self.days, self.df_date)
+        self.calc = DaySingleDte2dDteCalc(self.close, self.days, self.df_date)
         linear_iv, range_iv, poly1d_iv = self.calc.estimate()
 
         self.assertTrue(linear_iv)
@@ -157,7 +163,7 @@ class TestExactDte2dCalc(TestDayImplVol):
         self.df_date = self.day_iv.format_data(df_date)
         print 'close: %.2f, df_date: %d' % (self.close, len(self.df_date))
 
-        self.calc = DayInDte2dCalc
+        self.calc = DayInDte2dDteCalc
 
     def test_less_than_2rows(self):
         """
@@ -165,7 +171,7 @@ class TestExactDte2dCalc(TestDayImplVol):
         """
         df_error = self.df_date.query('dte == %d' % self.days)[:1]
         print 'df_dte length: %d' % len(df_error)
-        self.calc = DayInDte2dCalc(self.close, self.days, df_error)
+        self.calc = DayInDte2dDteCalc(self.close, self.days, df_error)
 
         self.assertRaises(lambda: self.calc.estimate())
         print 'df_dte less than 2 rows, error raised!'
@@ -180,7 +186,7 @@ class TestExactDte2dCalc(TestDayImplVol):
         close = strikes[index]
         print 'change close: %.2f -> %.2f' % (self.close, close)
 
-        self.calc = DayInDte2dCalc(close, self.days, self.df_date)
+        self.calc = DayInDte2dDteCalc(close, self.days, self.df_date)
         linear_iv, range_iv, poly1d_iv = self.calc.exact_close_in_strikes(df_dte)
 
         impl_vol = df_dte.query('strike == %r' % close).iloc[0]['impl_vol']
@@ -201,14 +207,14 @@ class TestExactDte2dCalc(TestDayImplVol):
         print 'df_above: %d, df_below: %d' % (len(df_above), len(df_below))
 
         print 'testing close is above all strikes, df_above...'
-        self.calc = DayInDte2dCalc(self.close, self.days, df_above)
+        self.calc = DayInDte2dDteCalc(self.close, self.days, df_above)
         linear_iv, range_iv, poly1d_iv = self.calc.close_above_below_strikes('above', df_above)
         self.assertTrue(linear_iv == range_iv == poly1d_iv)
 
         print '-' * 70
 
         print 'testing close is below all strikes, df_below...'
-        self.calc = DayInDte2dCalc(self.close, self.days, df_above)
+        self.calc = DayInDte2dDteCalc(self.close, self.days, df_above)
         linear_iv, range_iv, poly1d_iv = self.calc.close_above_below_strikes('below', df_below)
         self.assertTrue(linear_iv == range_iv == poly1d_iv)
 
@@ -222,7 +228,7 @@ class TestExactDte2dCalc(TestDayImplVol):
         df_two = df_dte[df_dte['strike'].isin([strikes[s0], strikes[s1]])]
 
         print 'testing close within two strikes, df_dte (length == 2)...'
-        self.calc = DayInDte2dCalc(self.close, self.days, df_two)
+        self.calc = DayInDte2dDteCalc(self.close, self.days, df_two)
         linear_iv, range_iv, poly1d_iv = self.calc.close_within_two_strikes(df_two)
         self.assertTrue(linear_iv == range_iv == poly1d_iv)
 
@@ -231,7 +237,7 @@ class TestExactDte2dCalc(TestDayImplVol):
         Test close price is within strikes range
         """
         df_dte = self.df_date.query('dte == %d' % self.days)
-        self.calc = DayInDte2dCalc(self.close, self.days, df_dte)
+        self.calc = DayInDte2dDteCalc(self.close, self.days, df_dte)
         print 'testing close within strike range...'
         linear_iv, range_iv, poly1d_iv = self.calc.close_within_strike_range(df_dte)
 
@@ -251,7 +257,7 @@ class TestExactDte2dCalc(TestDayImplVol):
             df_date = self.day_iv.format_data(df_date)
             print 'date: %s, df_date: %d' % (date.strftime('%Y-%m-%d'), len(df_date))
 
-            calc = DayInDte2dCalc(self.close, self.days, df_date)
+            calc = DayInDte2dDteCalc(self.close, self.days, df_date)
             linear_iv, range_iv, poly1d_iv = calc.estimate()
 
             self.assertTrue(linear_iv)
@@ -350,7 +356,7 @@ class TestDayInRangeDtes3dCalc(TestDayImplVol):
         dtes = np.sort(df_date['dte'].unique())
         i0, i1 = self.static.two_nearby(dtes, self.days)
         df_date = df_date[df_date['dte'].isin([dtes[i0], dtes[i1]])]
-        self.calc = DayInRangeDtes3dCalc(self.close, self.days, df_date)
+        self.calc = DayInRangeDtes3dDteCalc(self.close, self.days, df_date)
         self.calc.estimate()
 
     def test_estimate_days_in_exact_four_dtes(self):
@@ -362,7 +368,7 @@ class TestDayInRangeDtes3dCalc(TestDayImplVol):
         self.close = self.day_iv.df_stock.ix[date]['close']
         df_date = self.day_iv.df_all.query('date == %r' % date)
         self.df_date = self.day_iv.format_data(df_date)
-        self.calc = DayInRangeDtes3dCalc(self.close, self.days, self.df_date)
+        self.calc = DayInRangeDtes3dDteCalc(self.close, self.days, self.df_date)
         self.calc.estimate()
 
     def test_all_days_in_range_dtes(self):
@@ -381,7 +387,7 @@ class TestDayInRangeDtes3dCalc(TestDayImplVol):
             i0, i1 = self.static.two_nearby(dtes, self.days)
 
             if dtes[i0] < self.days < dtes[i1]:
-                self.calc = DayInRangeDtes3dCalc(close, self.days, df_date)
+                self.calc = DayInRangeDtes3dDteCalc(close, self.days, df_date)
                 self.calc.estimate()
                 print '=' * 70
 
@@ -401,7 +407,7 @@ class TestExactStrike2dCalc(TestDayImplVol):
         df_date = self.day_iv.df_all.query('date == %r' % date)
         self.df_date = self.day_iv.format_data(df_date)
         self.days = 30
-        self.calc = CloseInStrike2dCalc
+        self.calc = CloseInStrike2dStrikeCalc
         print 'close: %.2f, days: %d, df_date: %d' % (self.close, self.days, len(self.df_date))
 
     def test_days_within_two_dtes(self):
@@ -414,7 +420,7 @@ class TestExactStrike2dCalc(TestDayImplVol):
         d0, d1, dtes, impl_vols = self.static.reduce_samples(self.days, dtes, impl_vols)
         df_strike = df_strike[df_strike['dte'].isin([dtes[d0], dtes[d1]])]
         print 'reduce sample size to df_strikes: %d' % len(df_strike)
-        calc = CloseInStrike2dCalc(self.close, self.days, self.df_date)
+        calc = CloseInStrike2dStrikeCalc(self.close, self.days, self.df_date)
         linear_iv, range_iv, poly1d_iv = calc.days_within_two_dtes(df_strike)
 
         self.assertTrue(linear_iv == range_iv == poly1d_iv)
@@ -428,7 +434,7 @@ class TestExactStrike2dCalc(TestDayImplVol):
         df_date = self.day_iv.df_all.query('date == %r' % date)
         df_strike = df_date.query('strike == %r' % close)
         print 'df_strikes: %d' % len(df_strike)
-        calc = CloseInStrike2dCalc(close, self.days, df_date)
+        calc = CloseInStrike2dStrikeCalc(close, self.days, df_date)
         linear_iv, range_iv, poly1d_iv = calc.days_within_range_dtes(df_strike)
 
         self.assertTrue(linear_iv)
@@ -476,7 +482,7 @@ class TestExactStrike2dCalc(TestDayImplVol):
             close = self.day_iv.df_stock.ix[date]['close']
             df_date = self.day_iv.df_all.query('date == %r' % date)
 
-            calc = CloseInStrike2dCalc(close, self.days, df_date)
+            calc = CloseInStrike2dStrikeCalc(close, self.days, df_date)
             linear_iv, range_iv, poly1d_iv = calc.estimate()
 
             self.assertTrue(linear_iv)
@@ -562,7 +568,7 @@ class TestCloseInRangeStrikes3dCalc(TestDayImplVol):
         :return:
         """
 
-        self.calc = CloseInRangeStrikes3dCalc(self.close, self.days, self.df_nearby)
+        self.calc = DayInRangeDtes3dStrikeCalc(self.close, self.days, self.df_nearby)
         self.calc.estimate()
 
 

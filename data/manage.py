@@ -272,7 +272,7 @@ def import_weekday(symbol):
     # missing split here
     df_normal = extract_option.df_normal
     df_split0 = extract_option.df_split0
-    split_history = SplitHistory.objects.filter(symbol='C')
+    split_history = SplitHistory.objects.filter(symbol=symbol.upper())
 
     for split in split_history:
         df = df_normal.query(
