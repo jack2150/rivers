@@ -1,7 +1,7 @@
 import os
 import sys
 
-from data.option.day_iv import DayIVCalc
+from data.option.day_iv.day_iv import DayIVCalc
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
@@ -24,7 +24,7 @@ from data.tb.fillna.split_new import FillNaSplitNew
 from data.tb.fillna.split_old import FillNaSplitOld
 from data.tb.final.views import merge_final, change_right
 from rivers.settings import QUOTE, CLEAN
-from data.option.cli import *
+from data.option.day_iv.cli import *
 
 
 @click.group()

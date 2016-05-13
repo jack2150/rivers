@@ -2,7 +2,7 @@ from bootstrap3_datetime.widgets import DateTimePicker
 from django.contrib import admin
 from pandas.tseries.offsets import BDay
 
-from data.option.views import calc_day_iv
+from data.option.day_iv.views import calc_day_iv
 from data.tb.clean.views import *
 from data.tb.fillna.views import fillna_missing_h5
 from data.tb.final.views import merge_final_h5, remove_clean_h5, import_option_h5, import_weekday_h5

@@ -493,7 +493,7 @@ class DayIVCalc(object):
         """:type: pd.DataFrame"""
 
         # format dataframe
-        df_iv['symbol'] = self.symbol.upper()
+        df_iv['symbol'] = str(self.symbol.upper())
         df_iv = df_iv[[
             'symbol', 'date', 'dte', 'strike', 'dte_iv', 'strike_iv', 'impl_vol'
         ]]
