@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+{% block object-tools-items %}
+
+  {{ block.super }}
+
+  <li>
+    <a class="btn btn-primary" href="{% url 'admin:timesale_insert_view' %}" role="button">
+      <span class="glyphicon glyphicon-plus"></span>
+      Add option time sale
+    </a>
+  </li>
+
+{% endblock %}

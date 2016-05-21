@@ -1,0 +1,98 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags staticfiles %}
+
+{% block extrahead %}
+  <link rel="stylesheet" type="text/css" href="{% static 'DataTables/datatables.min.css' %}"/>
+  <script type="text/javascript" src="{% static 'DataTables/jQuery-2.1.4/jquery-2.1.4.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'DataTables/datatables.min.js' %}"></script>
+
+  <script type="text/javascript" src="{% static 'clipboard/clipboard.min.js' %}"></script>
+  <script type="text/javascript" charset="utf-8">
+    $(document).ready(function () {
+      $('#report').DataTable({
+        "searching": false,
+        "dom": '<"top"i>rt<"bottom"flp><"clear">',
+        "createdRow": function (row, data, index) {
+          $('td', row).eq(6).html(this.value);
+        }
+      });
+
+      new Clipboard('.clip');
+    });
+  </script>
+
+  <style>
+    .dataTables_scrollBody {
+      margin-bottom: 10px;
+    }
+
+    .dataTables_length {
+      width: 50%;
+      float: left;
+    }
+  </style>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'subtool' %}">Subtool</a></li>
+      <li><a href="{% url 'admin:subtool_optiontimesale_changelist' %}">Option time sales</a></li>
+      <li>Report</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block object-tools %}
+  {{ block.super }}
+
+  <div id="content-navbar-collapse" class="navbar-collapse collapse">
+    <div class="nav navbar-nav navbar-right">
+      <button id="mini" type="button" class="btn btn-primary">Mini</button>
+    </div>
+  </div>
+{% endblock %}
+
+{% block content %}
+
+
+  <table id="report">
+    <thead>
+    <tr>
+      <th>Date</th>
+      <th>Option</th>
+      <th>Trade</th>
+      <th>Quantity</th>
+      <th>Price</th>
+      <th>Mark</th>
+      <th>Order</th>
+      <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for timesale in timesales %}
+      <tr>
+        <td>{{ timesale.date }}</td>
+        <td>{{ timesale.option }}</td>
+        <td>{{ timesale.trade }}</td>
+        <td>{{ timesale.qty }}</td>
+        <td>{{ timesale.price }}</td>
+        <td>{{ timesale.mark }}</td>
+        <td>{{ timesale.order }}</td>
+        <td>
+          <a href="#" class="clip" data-clipboard-text="{{ timesale.order }}">
+            Copy
+          </a>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <script type="text/javascript">
+    // For demo to fit into DataTables site builder...
+    $('#report').addClass('table table-striped table-bordered small');
+  </script>
+{% endblock %}
+

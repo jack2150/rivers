@@ -407,7 +407,7 @@ def algorithm_trade_view(request, symbol, formula_id, backtest_id):
 def algorithm_report_view(request, symbol, formula_id):
     """
     Algorithm research report view
-    :param request: reqeust
+    :param request: request
     :param symbol: str
     :param formula_id: int
     :return: render

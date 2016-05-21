@@ -55,6 +55,7 @@ INSTALLED_APPS = (
     'research.strategy',
     # 'research.strategy',
     'opinion',
+    'subtool',
 )
 
 # for django-admin-bootsrapped

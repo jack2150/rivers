@@ -189,7 +189,7 @@ def group_event_files():
         # noinspection PyUnresolvedReferences
         rmtree(os.path.join(BASE_DIR, 'files', 'fidelity', '__raw__'), ignore_errors=True)
         # noinspection PyUnresolvedReferences
-        os.mkdir(os.path.join(BASE_DIR, 'files', 'fidelity', '__raw__'))
+        # os.mkdir(os.path.join(BASE_DIR, 'files', 'fidelity', '__raw__'))
 
 
 def html_event_import(request, symbol):

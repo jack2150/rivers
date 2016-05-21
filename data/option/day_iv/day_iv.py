@@ -497,6 +497,7 @@ class DayIVCalc(object):
         df_iv = df_iv[[
             'symbol', 'date', 'dte', 'strike', 'dte_iv', 'strike_iv', 'impl_vol'
         ]]
+        df_iv = df_iv.round({'dte_iv': 2, 'strike_iv': 2, 'impl_vol': 2})
 
         return df_iv
 

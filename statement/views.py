@@ -20,20 +20,19 @@ def statement_import(request):
     :return: render
     """
     template = 'statement/import.html'
-
     last_index = lambda x, y: [k for k, l in enumerate(y[x:], start=x) if l == ''][0]
 
     files = list()
     fpaths = glob.glob(os.path.join(BASE_DIR, 'files', 'statement', statement_path, '*.csv'))
 
-    #for fpath in [f for f in fpaths if '05-11' in f]:
+    # for fpath in [f for f in fpaths if '05-11' in f]:
     for fpath in fpaths:  #
         date = os.path.basename(fpath)[:10]
 
         # duplicate date
         if Statement.objects.filter(date=date).exists():
             continue  # skip below and next file
-        #else:
+        # else:
         #    print 'saving statement: ', fpath
 
         lines = [
