@@ -1,3 +1,4 @@
+import logging
 import glob
 import os
 import codecs
@@ -11,6 +12,24 @@ from statement.models import *
 
 # use for import
 statement_path = 'demo'
+logger = logging.getLogger('views')
+
+
+def last_index(x, y):
+    """
+    :param x: list
+    :param y: list
+    :return: int
+    """
+    return [k for k, l in enumerate(y[x:], start=x) if l == ''][0]
+
+
+def get_value(x):
+    """
+    :param x: str
+    :return: float
+    """
+    return float((x[1:-1] if '(' in x else x).replace('$', ''))
 
 
 def statement_import(request):
@@ -19,10 +38,11 @@ def statement_import(request):
     :param request: request
     :return: render
     """
+    logger.info('Import all statement in folder')
     template = 'statement/import.html'
-    last_index = lambda x, y: [k for k, l in enumerate(y[x:], start=x) if l == ''][0]
 
     files = list()
+    # noinspection PyUnresolvedReferences
     fpaths = glob.glob(os.path.join(BASE_DIR, 'files', 'statement', statement_path, '*.csv'))
 
     # for fpath in [f for f in fpaths if '05-11' in f]:
@@ -31,25 +51,29 @@ def statement_import(request):
 
         # duplicate date
         if Statement.objects.filter(date=date).exists():
+            logger.info('Statement import skip, date exists: %s' % date)
             continue  # skip below and next file
-        # else:
-        #    print 'saving statement: ', fpath
+        else:
+            logger.info('Statement date not exists, import: %s' % date)
 
         lines = [
-            #remove_comma(str(re.sub('[\r\n]', '', line))) for line in  # replace dash
+            # remove_comma(str(re.sub('[\r\n]', '', line))) for line in  # replace dash
             remove_comma(str(line.rstrip())) for line in  # replace dash
             codecs.open(fpath, encoding="ascii", errors="ignore").readlines()
         ]
 
         # statement section
+        logger.info('Statement obj section')
         acc_index = lines.index('Account Summary')
         statement = Statement()
         statement.date = date
         statement.csv_data = codecs.open(fpath, encoding="ascii", errors="ignore").read()
         statement.load_csv(lines[acc_index + 1:acc_index + 5])
         statement.save()
+        logger.info('Statement obj end')
 
         # cash balance
+        logger.info('Cash balance obj section')
         cb_index = lines.index('Cash Balance')
         for line in lines[cb_index + 2:last_index(cb_index, lines) - 1]:
             values = line.split(',')
@@ -58,8 +82,10 @@ def statement_import(request):
                 cash_balance.statement = statement
                 cash_balance.load_csv(line)
                 cash_balance.save()
+        logger.info('Cash balance obj end')
 
         # account order, more than 14 split
+        logger.info('Account order obj section')
         ao_index = lines.index('Account Order History')
         ao_lines = list()
         for key, line in enumerate(lines[ao_index + 2:last_index(ao_index, lines)]):
@@ -74,7 +100,7 @@ def statement_import(request):
 
         if len(ao_lines):
             df = DataFrame(ao_lines, columns=lines[ao_index + 1].split(','))
-            #df['Spread'] = df.apply(lambda x: np.nan if 'RE #' in x['Spread'] else x['Spread'], axis=1)
+            # df['Spread'] = df.apply(lambda x: np.nan if 'RE #' in x['Spread'] else x['Spread'], axis=1)
             df = df.replace('', np.nan).fillna(method='pad')  # fill empty
             df['Exp'] = df.apply(
                 lambda x: np.nan if 'STOCK' in (x['Spread'], x['Type']) else x['Exp'], axis=1
@@ -91,12 +117,14 @@ def statement_import(request):
                 account_order.statement = statement
                 account_order.load_csv(line)
                 account_order.save()
+        logger.info('Account order obj end')
 
         # account trade
+        logger.info('Account trade obj section')
         at_index = lines.index('Account Trade History')
         at_lines = [line.split(',') for line in lines[at_index + 2:last_index(at_index, lines)]]
         if len(at_lines):
-            df = DataFrame(at_lines, columns=lines[at_index+1].split(','))
+            df = DataFrame(at_lines, columns=lines[at_index + 1].split(','))
             df = df.replace('', np.nan).replace('DEBIT', np.nan).fillna(method='pad')  # remove debit
             df['Exp'] = df.apply(
                 lambda x: np.nan if 'STOCK' in (x['Spread'], x['Type']) else x['Exp'], axis=1
@@ -122,7 +150,10 @@ def statement_import(request):
                 account_trade.load_csv(line)
                 account_trade.save()
 
+        logger.info('Account trade obj end')
+
         # holding equity
+        logger.info('Holding equity obj section')
         symbols = list()
         try:
             he_index = lines.index('Equities')
@@ -135,9 +166,12 @@ def statement_import(request):
 
                 symbols.append(holding_equity.symbol)
         except ValueError:
+            logger.info('No holding equity')
             pass
+        logger.info('Holding equity obj end')
 
         # holding option
+        logger.info('Holding options obj section')
         try:
             ho_index = lines.index('Options')
             for line in lines[ho_index + 2:last_index(ho_index, lines) - 1]:
@@ -148,10 +182,11 @@ def statement_import(request):
 
                 symbols.append(holding_option.symbol)
         except ValueError:
-            pass
+            logger.info('No holding options')
+        logger.info('Holding options obj end')
 
         # profit loss
-        # df = DataFrame()
+        logger.info('Profit loss obj section')
         symbols = set(symbols)
         pl_index = lines.index('Profits and Losses')
         for line in lines[pl_index + 2:last_index(pl_index, lines) - 1]:
@@ -163,19 +198,19 @@ def statement_import(request):
                     profit_loss.load_csv(line)
                     profit_loss.save()
                 elif len(values[0]):
-                    f = lambda x: float((x[1:-1] if '(' in x else x).replace('$', ''))
-                    if f(values[4]) or (f(values[6]) and f(values[7])):
+
+                    if get_value(values[4]) or (get_value(values[6]) and get_value(values[7])):
                         profit_loss.load_csv(line)
                         profit_loss.save()
+        logger.info('Profit loss obj end')
 
         # create positions
         statement.controller.add_relations()
         statement.controller.position_trades()
         statement.controller.position_expires()
 
+        # append into files data
         files.append(dict(
-            #path=fpath,
-            # date=date,
             fname=os.path.basename(fpath),
             net_liquid=statement.net_liquid,
             stock_bp=statement.stock_bp,
@@ -194,7 +229,7 @@ def statement_import(request):
         files=files
     )
 
-    #Statement.objects.all().delete()
+    # Statement.objects.all().delete()
 
     return render(request, template, parameters)
 
@@ -221,12 +256,14 @@ def truncate_statement(request):
     :param request: request
     :return: render
     """
+    logger.info('Truncate all statements')
     stats = None
     if request.method == 'POST':
         form = TruncateStatementForm(request.POST)
 
         if form.is_valid():
             form.truncate_data()
+            logger.info('All statements removed')
             return redirect(reverse('admin:app_list', args=('statement',)))
     else:
         form = TruncateStatementForm(

@@ -351,9 +351,6 @@ class PositionAdmin(admin.ModelAdmin):
         ('Primary Fields', {
             'fields': ('symbol', 'name', 'spread', 'status', 'start', 'stop')
         }),
-        ('Foreign Fields', {
-            'fields': ('market_opinion', 'enter_opinion', 'strategy_result')
-        })
     )
 
     def has_add_permission(self, request):
@@ -405,18 +402,6 @@ admin.site.register_view(
     'statement/position/spreads/(?P<date>\d{4}-\d{2}-\d{2})/$',
     urlname='position_spreads',
     view=position_spreads
-)
-
-admin.site.register_view(
-    'checklist/create/(?P<opinion>\w{4})/(?P<id>\d+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
-    urlname='create_opinion',
-    view=create_opinion
-)
-
-admin.site.register_view(
-    'statement/position/blind_strategy/(?P<id>\d+)/$',
-    urlname='blind_strategy',
-    view=blind_strategy
 )
 
 admin.site.register_view(

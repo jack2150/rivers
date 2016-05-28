@@ -157,36 +157,6 @@
                   </li>
                   <li class="divider"></li>
                   <li>
-                    <a href="{% url 'admin:create_opinion' 'hold' spread.position.id date %}">
-                      {% if spread.opinion.name == 'hold' %}
-                        <b>Hold opinion</b>
-                      {% else %}
-                        Hold opinion
-                      {% endif %}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="{% url 'admin:create_opinion' 'exit' spread.position.id date %}">
-                      {% if spread.opinion.name == 'exit' %}
-                        <b>Exit opinion</b>
-                      {% else %}
-                        Exit opinion
-                      {% endif %}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="{% url 'admin:blind_strategy' spread.position.id %}">
-                    {% if spread.position.strategy_result %}
-                      <b>Blinded</b>
-                    {% else %}
-                      Blind strategy
-                    {% endif %}
-                    </a>
-                  </li>
-
-                  <li class="divider"></li>
-
-                  <li>
                     <a href="{% url 'admin:statement_position_change' spread.position.id %}">
                       Position
                     </a>

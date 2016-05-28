@@ -1,9 +1,9 @@
 import numpy as np
+import pandas as pd
+from django.core.exceptions import ObjectDoesNotExist
 from pandas_datareader.data import get_data_google, get_data_yahoo
-from opinion.models import *
 from datetime import datetime
 from data.models import Underlying
-from django import forms
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
@@ -94,25 +94,9 @@ def position_spreads(request, date):
                 except (ObjectDoesNotExist, TypeError, IndexError):
                     stage = '...'
 
-        opinion = dict(exists=False, condition='UNKNOWN', action='HOLD', name='')
-        holding_opinion = position.holdingopinion_set.filter(date=date)
-        if holding_opinion.exists():
-            holding_opinion = holding_opinion.first()
-            opinion['name'] = 'hold'
-            opinion['exists'] = True
-            opinion['condition'] = holding_opinion.condition
-            opinion['action'] = holding_opinion.action
-
-        exit_opinion = position.exitopinion_set.filter(date=date)
-        if exit_opinion.exists():
-            opinion['name'] = 'exit'
-            opinion['exists'] = True
-            opinion['action'] = 'CLOSE'
-
         spreads.append(dict(
             position=position,
             profit_loss=position.profitloss_set.get(statement__date=date.date()),
-            opinion=opinion,
             stage=stage,
         ))
 
@@ -127,134 +111,6 @@ def position_spreads(request, date):
         spreads=spreads,
         date=date.date(),
         page=date_page(dates, date.strftime('%Y-%m-%d'), 'admin:position_spreads', {})
-    )
-
-    return render(request, template, parameters)
-
-
-# noinspection PyShadowingBuiltins
-def create_opinion(request, opinion, id, date):
-    """
-    Get existing or create new holding opinion
-    :param request: request
-    :param opinion: str
-    :param id: int
-    :param date: str
-    :return: render
-    """
-    position = Position.objects.get(id=id)
-
-    if opinion == 'hold':
-        try:
-            # exists open it
-            holding_opinion = HoldingOpinion.objects.get(Q(position=position) & Q(date=date))
-            link = reverse('admin:checklist_holdingopinion_change', args=(holding_opinion.id,))
-        except ObjectDoesNotExist:
-            # not exists create new
-            holding_opinion = HoldingOpinion()
-            holding_opinion.position = position
-            holding_opinion.date = date
-            holding_opinion.save()
-            link = reverse('admin:checklist_holdingopinion_change', args=(holding_opinion.id,))
-    elif opinion == 'exit':
-        try:
-            exit_opinion = CloseOpinion.objects.get(Q(position=position) & Q(date=date))
-            link = reverse('admin:checklist_exitopinion_change', args=(exit_opinion.id,))
-        except ObjectDoesNotExist:
-            exit_opinion = CloseOpinion()
-            exit_opinion.position = position
-            exit_opinion.date = date
-            exit_opinion.save()
-            link = reverse('admin:checklist_exitopinion_change', args=(exit_opinion.id,))
-    else:
-        raise ValueError('Invalid url argument opinion.')
-
-    return redirect(link)
-
-
-class BlindPositionForm(forms.Form):
-    position = forms.IntegerField(widget=forms.HiddenInput)
-    strategy_result = forms.IntegerField()
-
-    def clean(self):
-        pos_id = self.cleaned_data['position']
-        sr_id = self.cleaned_data['strategy_result']
-
-        position = None
-        try:
-            position = Position.objects.get(id=int(pos_id))
-        except ObjectDoesNotExist:
-            self._errors['position'] = self.error_class(
-                ['Position id: {id} not found.'.format(id=pos_id)]
-            )
-
-        strategy_result = None
-        try:
-            strategy_result = StrategyResult.objects.get(id=int(sr_id))
-        except ObjectDoesNotExist:
-            self._errors['strategy_result'] = self.error_class(
-                ['Strategy result id: {id} not found.'.format(id=sr_id)]
-            )
-
-        # make sure both are same symbol
-        if position and strategy_result:
-            if position.symbol != strategy_result.symbol:
-                self._errors['position'] = self.error_class(
-                    ['Different symbol {symbol0} and {symbol1}'.format(
-                        symbol0=position.symbol,
-                        symbol1=strategy_result.symbol
-                    )]
-                )
-
-        return self.cleaned_data
-
-
-# noinspection PyShadowingBuiltins
-def blind_strategy(request, id):
-    """
-    A position can be blind into a strategy result for anlaysis
-    :param request:
-    :param id: int
-    :return: render
-    """
-    position = Position.objects.get(id=id)
-    account_trades = position.accounttrade_set.filter(pos_effect='TO OPEN')
-    strategy_results = StrategyResult.objects.filter(symbol=position.symbol)
-
-    if strategy_results.exists():
-        strategy_results = strategy_results.order_by('id').reverse()
-
-    if request.method == 'POST':
-        # create a form instance and populate it with data from the request:
-        form = BlindPositionForm(request.POST)
-
-        if form.is_valid():
-            position_id = form.cleaned_data['position']
-            strategy_result_id = form.cleaned_data['strategy_result']
-            strategy_result = StrategyResult.objects.get(id=strategy_result_id)
-
-            position = Position.objects.get(id=position_id)
-            position.strategy_result = strategy_result
-            position.save()
-
-            return redirect(reverse(
-                'admin:position_report',
-                kwargs={'id': position.id, 'date': position.start.strftime('%Y-%m-%d')}
-            ))
-    else:
-        form = BlindPositionForm(initial={
-            'position': id
-        })
-
-    template = 'statement/position/blind.html'
-    parameters = dict(
-        site_title='Position blind strategy',
-        title='Blinding strategy',
-        position=position,
-        account_trades=account_trades,
-        form=form,
-        strategy_results=strategy_results,
-
     )
 
     return render(request, template, parameters)
@@ -284,9 +140,6 @@ def position_report(request, id, date=None):
                 .last().statement.date.strftime('%Y-%m-%d')
             date_query1 = {'start': position.start, 'stop': date}
             date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=date)
-
-    # opinion
-    holding_opinions = position.holdingopinion_set.all()
 
     try:
         stocks = Underlying.objects.get(symbol=position.symbol).get_stock(
@@ -329,7 +182,7 @@ def position_report(request, id, date=None):
     if position.name not in ('STOCK', ''):
         ex_month, ex_year = position.holdingoption_set.first().exp.split(' ')
         basic['expire_date'] = get_dte_date2(ex_month, int(ex_year))
-        basic['dte'] = (basic['expire_date'] - date0).days
+        basic['dte'] = (pd.to_datetime(basic['expire_date']) - pd.to_datetime(date0)).days
 
     basic['quantity'] = '/'.join(['%+d' % a['qty'] for a in open_trades.values('qty')])
     basic['enter_price'] = open_trades.first().net_price
@@ -367,7 +220,6 @@ def position_report(request, id, date=None):
             condition['remain'] = amount - float(basic['current_pl'])
 
     # stock
-    opinions = list()
     stat = {
         'up_count': 0, 'up_pct': 0, 'e_count': 0, 'e_pct': 0, 'dw_count': 0, 'dw_pct': 0,
         'p_count': 0, 'p_pct': 0, 'l_count': 0, 'l_pct': 0
@@ -426,26 +278,6 @@ def position_report(request, id, date=None):
                 conditions[key]['count'] += 1
                 conditions[key]['percent'] = round(conditions[key]['count'] / float(len(stocks)), 4)
 
-        # opinion
-        try:
-            opinion = holding_opinions.get(date=stock['date'])
-
-            result = False
-            if stock['pct_chg'] > 0.5 and opinion.opinion == 'BULL':
-                result = True
-            elif stock['pct_chg'] < -0.5 and opinion.opinion == 'BEAR':
-                result = True
-            elif -0.5 < stock['pct_chg'] < 0.5 and opinion.opinion == 'RANGE':
-                result = True
-
-            opinions.append({
-                'object': opinion,
-                'pct_chg': stock['pct_chg'],
-                'result': result
-            })
-        except ObjectDoesNotExist:
-            pass
-
     # basic
     basic['stat'] = stat
     basic['pct_chg'] = reports[-1]['stock']['pct_chg']
@@ -454,9 +286,6 @@ def position_report(request, id, date=None):
     basic['pct_move'] = round(basic['net_move'] / reports[0]['stock']['close'], 4)
     basic['mean_move'] = round(Series([r['stock']['pct_chg'] for r in reports]).mean(), 4)
     basic['pct_std'] = round(Series([r['stock']['pct_chg'] for r in reports]).std(), 4)
-    basic['market_opinion'] = position.market_opinion
-    basic['enter_opinion'] = position.enter_opinion
-    basic['exit_opinion'] = position.exitopinion_set.last()
     basic['max_profit'] = max([float(pl.pl_open) for pl in profit_losses]) / float(basic['margin'])
     basic['max_loss'] = min([float(pl.pl_open) for pl in profit_losses]) / float(basic['margin'])
     basic['max_bull'] = max([r['stock']['pct_chg'] for r in reports])
@@ -528,7 +357,6 @@ def position_report(request, id, date=None):
         stages=position.positionstage_set.all(),
         conditions=conditions,
         reports=reports,
-        opinions=opinions,
         result=strategy_result,
         quant=quant,
         historicals=historicals,

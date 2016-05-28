@@ -22,9 +22,9 @@ from data.tb.revalid.options import ValidCleanOption
 from data.tb.fillna.normal import FillNaNormal
 from data.tb.fillna.split_new import FillNaSplitNew
 from data.tb.fillna.split_old import FillNaSplitOld
-from data.tb.final.views import merge_final, change_right
+from data.tb.final.views import merge_final
 from rivers.settings import QUOTE, CLEAN
-from data.option.day_iv.cli import *
+from data.option.day_iv.cli import write_weekday_cli, import_weekday_cli
 
 
 @click.group()

@@ -1,7 +1,6 @@
 from decimal import Decimal
 from datetime import datetime
 from pprint import pprint
-from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from statement.models import *

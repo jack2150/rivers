@@ -125,7 +125,7 @@ def timesale_insert_view(request):
     else:
         form = OptionTimeSaleForm()
 
-    template = 'timesale/add.html'
+    template = 'option/timesale/add.html'
 
     parameters = dict(
         site_title='Input option time and sale',
@@ -165,7 +165,7 @@ def timesale_report_view(request, symbol, date):
         )
         timesales.append(data)
 
-    template = 'timesale/report.html'
+    template = 'option/timesale/report.html'
 
     parameters = dict(
         site_title='Option time and sale summary',
