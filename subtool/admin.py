@@ -6,7 +6,7 @@ from bootstrap3_datetime.widgets import DateTimePicker
 from django.core.urlresolvers import reverse
 
 from rivers.settings import QUOTE
-from subtool.live.excel_rtd.views import excel_rtd_view, excel_rtd_json, excel_rtd_create
+from subtool.live.excel_rtd.views import excel_rtd_create
 from subtool.models import OptionTimeSale
 from subtool.option.timesale.views import timesale_report_view, timesale_insert_view
 
@@ -95,15 +95,6 @@ admin.site.register_view(
     'subtool/optiontimesale/summary/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
     urlname='timesale_report_view', view=timesale_report_view
 )
-
-admin.site.register_view(
-    'subtool/live/excel_rtd/report', urlname='excel_rtd_view', view=excel_rtd_view
-)
-
-admin.site.register_view(
-    'subtool/live/excel_rtd/json', urlname='excel_rtd_json', view=excel_rtd_json
-)
-
 admin.site.register_view(
     'subtool/live/excel_rtd/create', urlname='excel_rtd_create', view=excel_rtd_create
 )

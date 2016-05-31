@@ -7,6 +7,11 @@
     <button id="statement_import" type="button" class="btn btn-primary">
       Statement Import
     </button>
+
+    <button id="excel_rtd_create" type="button" class="btn btn-primary"
+            title="Remember to add symbols before create">
+      Create Excel RTD
+    </button>
   </div>
 </div>
 
@@ -16,6 +21,9 @@
   });
   $("#statement_import").click(function () {
     $(location).attr("href", "{% url 'admin:statement_import' %}");
+  });
+  $("#excel_rtd_create").click(function () {
+    $(location).attr("href", "{% url 'admin:excel_rtd_create' %}");
   });
 </script>
 
