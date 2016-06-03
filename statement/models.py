@@ -389,9 +389,13 @@ class Position(models.Model):
         """
         conditions = list()
 
+        position_stages = self.positionstage_set.order_by('price').all()
+        if position_stages.count() == 0:
+            return []
+
         # make all stage into a list
         operators = list()
-        for s in self.positionstage_set.order_by('price').all():
+        for s in position_stages:
             operators += [(s.price, '<', s.lt_stage, s.lt_amount),
                           (s.price, '==', s.e_stage, s.e_amount),
                           (s.price, '>', s.gt_stage, s.gt_amount)]

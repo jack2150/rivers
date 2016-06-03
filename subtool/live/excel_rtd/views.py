@@ -1,14 +1,13 @@
 import logging
 import os
+import pandas as pd
 from string import ascii_uppercase
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
-
 from rivers.settings import BASE_DIR
 from statement.models import Statement, Position
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Style
-
 from subtool.live.excel_rtd.stat import ExcelRtdStatData
 
 logger = logging.getLogger('views')
@@ -24,8 +23,9 @@ OPTION_ORDER = (
     'volume', 'open_int', 'intrinsic', 'extrinsic',
 )
 HOLD_OPTION = (
-    'option_code', 'contract', 'strike', 'exp', 'trade_price',
-    'qty', 'close_price', 'close_value'
+    'option_code', 'contract', 'strike', 'exp', 'dte', 'qty',
+    'trade_price', 'trade_value', 'close_price', 'close_value',
+    'profit_loss_$', 'profit_loss_%'
 )
 CALL_NAMES = (
     'last', 'mark', 'delta', 'gamma', 'theta', 'vega', 'impl_vol', 'prob_itm', 'prob_otm',
@@ -73,6 +73,11 @@ def set_percent(sheet, key, value):
     sheet[key].number_format = '0.00%'
 
 
+def set_date(sheet, key, value):
+    sheet[key] = value
+    sheet[key].number_format = 'yy-mm-dd'
+
+
 def make_close0_open1_expr(qcut_range, close_open):
     temp = [float(n) for n in qcut_range[1:-1].split(', ')]
     return temp[0], temp[1], '=AND(%s<=%s,%s<=%s)' % (
@@ -101,10 +106,10 @@ def excel_rtd_create(request):
     3b. get data from other sheet
     3c. make calculation cell
     4. save and auto open file
-    :param request:
-    :return:
+    :param request: request
+    :return: render
     """
-    logger.info('Create excel rtd workbook with analysis sheet')
+    logger.info('create analysis sheet for excel rtd')
     wb = load_workbook(filename=EXCEL_FILE)
     sheets = wb.get_sheet_names()
 
@@ -124,9 +129,10 @@ def excel_rtd_create(request):
     excel_stat.get_data()
     stat_data = {}
     for symbol in symbols:
-        if symbol not in ('AIG', 'BP'):
-            print symbol
-            continue
+        logger.info('create sheet for symbol: %s' % symbol.upper())
+        # if symbol not in ('AIG', 'BP'):
+        #    print symbol
+        #    continue
 
         df = excel_stat.df_all[symbol]
         vol5, vol20 = excel_stat.mean_vol(df)
@@ -143,8 +149,8 @@ def excel_rtd_create(request):
 
     # set excel cell
     for symbol in symbols:
-        if symbol not in ('AIG', 'BP'):
-            continue
+        # if symbol not in ('AIG', 'BP'):
+        #     continue
 
         sheet_name = '_%s' % symbol.upper()
         if sheet_name in sheets:
@@ -248,11 +254,12 @@ def excel_rtd_create(request):
 
         row += 1
 
+        # hold options
         if options.count():
             for i, name in enumerate(HOLD_OPTION):
                 set_header(ws0, '%s%d' % (ascii_uppercase[i], row), name)
-            set_header(ws0, 'I%d' % row, 'to_strike_$')
-            set_header(ws0, 'J%d' % row, 'to_strike_%')
+            set_header(ws0, 'M%d' % row, 'to_strike_$')
+            set_header(ws0, 'N%d' % row, 'to_strike_%')
             row += 1
 
         for option in options:
@@ -261,65 +268,81 @@ def excel_rtd_create(request):
             for i, name in enumerate(HOLD_OPTION):
                 key = '%s%d' % (ascii_uppercase[i], row)
 
-                if name == 'close_price':
-                    set_float(ws0, key, records[option.option_code]['mark'])
-                elif name == 'close_value':
+                if name == 'trade_value':  # G
                     set_float(ws0, key, '=F%d*G%d' % (row, row))
+                elif name == 'close_price':  # H
+                    set_float(ws0, key, records[option.option_code]['mark'])
+                elif name == 'close_value':  # I
+                    set_float(ws0, key, '=F%d*I%d' % (row, row))
+                elif name == 'profit_loss_$':  # J
+                    set_float(ws0, key, '=J%d-H%d' % (row, row))
+                elif name == 'profit_loss_%':  # K
+                    set_percent(ws0, key, '=K%d/H%d' % (row, row))
                 elif name == 'qty':
                     set_int(ws0, key, getattr(option, name))
+                elif name == 'exp':
+                    ex_date = pd.to_datetime(getattr(option, name)).strftime('%Y-%m-%d')
+                    set_date(ws0, key, ex_date)
+                elif name == 'dte':
+                    set_value(ws0, key, '=D%d-TODAY()' % row)
                 else:
                     set_float(ws0, key, getattr(option, name))
 
-            set_float(ws0, 'I%d' % row, '=%s-C%d' % (stock_price, row))
-            set_percent(ws0, 'J%d' % row, '=1-%s/C%d' % (stock_price, row))
+            set_float(ws0, 'M%d' % row, '=%s-C%d' % (stock_price, row))
+            set_percent(ws0, 'N%d' % row, '=%s/C%d-1' % (stock_price, row))
 
             row += 1
 
-        set_float(ws0, 'E%d' % row, '=SUM(E%d:E%d)' % (row - options.count(), row - 1))
         set_float(ws0, 'F%d' % row, '=SUM(F%d:F%d)' % (row - options.count(), row - 1))
         set_float(ws0, 'G%d' % row, '=SUM(G%d:G%d)' % (row - options.count(), row - 1))
-        close_value = 'H%d' % row
-        set_float(ws0, close_value, '=SUM(H%d:H%d)' % (row - options.count(), row - 1))
+        set_float(ws0, 'H%d' % row, '=SUM(H%d:H%d)' % (row - options.count(), row - 1))
+        close_value = 'I%d' % row
+        set_float(ws0, close_value, '=SUM(I%d:I%d)' % (row - options.count(), row - 1))
+        set_float(ws0, 'J%d' % row, '=SUM(J%d:J%d)' % (row - options.count(), row - 1))
+        set_float(ws0, 'K%d' % row, '=SUM(K%d:K%d)' % (row - options.count(), row - 1))
+        set_percent(ws0, 'L%d' % row, '=K%d/H%d' % (row, row))
 
         row += 2
 
         # stage section
-
         pos = positions.get(symbol=symbol)
 
-        for i, name in enumerate(STAGE_NAMES):
-            set_header(ws0, '%s%d' % (ascii_uppercase[i], row), name)
-        set_header(ws0, 'H%d' % row, 'to_strike_$')
-        set_header(ws0, 'I%d' % row, 'to_strike_%')
-        row += 1
+        stages = pos.positionstage_set.all()
 
-        for stage in pos.positionstage_set.all():
+        if stages.count():
             for i, name in enumerate(STAGE_NAMES):
-                set_float(ws0, '%s%d' % (ascii_uppercase[i], row), getattr(stage, name))
-
-            set_float(ws0, 'H%d' % row, '=%s-A%d' % (stock_price, row))
-            set_percent(ws0, 'I%d' % row, '=1-%s/A%d' % (stock_price, row))
+                set_header(ws0, '%s%d' % (ascii_uppercase[i], row), name)
+            set_header(ws0, 'H%d' % row, 'to_strike_$')
+            set_header(ws0, 'I%d' % row, 'to_strike_%')
             row += 1
 
-        row += 2
+            for stage in pos.positionstage_set.all():
+                for i, name in enumerate(STAGE_NAMES):
+                    set_float(ws0, '%s%d' % (ascii_uppercase[i], row), getattr(stage, name))
 
-        # condition section
-        for i, name in zip([0, 1, 4], CONDITION_NAMES):
-            set_header(ws0, '%s%d' % (ascii_uppercase[i], row), name)
-        set_header(ws0, 'D%d' % row, 'bool')
-        set_header(ws0, 'G%d' % row, 'bool')
-        row += 1
+                set_float(ws0, 'H%d' % row, '=%s-A%d' % (stock_price, row))
+                set_percent(ws0, 'I%d' % row, '=1-%s/A%d' % (stock_price, row))
+                row += 1
 
-        for condition in pos.make_conditions():
-            for i, j in zip([0, 1, 4], range(3)):
-                set_float(ws0, '%s%d' % (ascii_uppercase[i], row), condition[j])
+            row += 2
 
-            set_float(ws0, 'D%d' % row, make_expr(condition[1], stock_price))
-            set_float(ws0, 'G%d' % row, make_expr(condition[2], close_value))
-
+            # condition section
+            for i, name in zip([0, 1, 4], CONDITION_NAMES):
+                set_header(ws0, '%s%d' % (ascii_uppercase[i], row), name)
+            set_header(ws0, 'D%d' % row, 'bool')
+            set_header(ws0, 'G%d' % row, 'bool')
             row += 1
 
-        row += 2
+            for condition in pos.make_conditions():
+                for i, j in zip([0, 1, 4], range(3)):
+                    set_float(ws0, '%s%d' % (ascii_uppercase[i], row), condition[j])
+
+                set_float(ws0, 'D%d' % row, make_expr(condition[1], stock_price))
+                set_float(ws0, 'G%d' % row, make_expr(condition[2], close_value))
+
+                row += 1
+
+            row += 2
 
         # set excel stat
         set_header(ws0, 'A%d' % row, 'days')
@@ -380,7 +403,7 @@ def excel_rtd_create(request):
             set_header(ws0, 'A%d' % (row + i), name)
 
             proc = set_int
-            if name in ('std_value', 'day_move60'):
+            if name in ('std_value', '60_day_move'):
                 proc = set_percent
 
             proc(

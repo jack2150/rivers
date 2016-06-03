@@ -156,9 +156,9 @@ def timesale_report_view(request, symbol, date):
     for index, timesale in df_timesale.iterrows():
         data = dict(timesale)
         data['date'] = data['date'].strftime('%Y-%m-%d')
-        data['order'] = '%s %d %s 100 %s @%.2f LMT' % (
+        data['order'] = '%s %+d %s 100 %s @%.2f LMT' % (
             data['trade'].upper(),
-            1 if data['trade'] == 'buy' else -1,
+            (1 if data['trade'] == 'BUY' else -1) * data['qty'],
             symbol.upper(),
             data['option'],
             data['price']

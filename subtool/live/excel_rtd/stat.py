@@ -72,7 +72,7 @@ class ExcelRtdStatData(object):
                 'open_close': sorted([
                     [float(n) for n in b[1:-1].split(', ')]
                     for b in pd.qcut(g[1]['oc_diff'], 5).unique()
-                ], key=lambda x: x[1], reverse=True)
+                ], key=lambda x: x[1])
             })
 
         return oc_stat
@@ -154,7 +154,7 @@ class ExcelRtdStatData(object):
                 'below_std': len(df_last[df_last['below_std']]),
                 'close_gain': len(df_last[df_last['pct_chg'] > 0]),
                 'close_loss': len(df_last[df_last['pct_chg'] < 0]),
-                '60_day_move': df_last.iloc[-1]['close'] / df_last.iloc[0]['close'] - 1
+                '60_day_move': (df_last.iloc[-1]['close'] / df_last.iloc[0]['close']) - 1
             },
             'consec': cs_table,
             'history': hp_table
