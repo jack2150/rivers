@@ -18,12 +18,15 @@ from data.views import *
 class UnderlyingForm(forms.ModelForm):
     start_date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False}),
-        initial=pd.datetime.strptime('2009-01-01', '%Y-%m-%d')
+        initial=pd.datetime.strptime('2010-01-01', '%Y-%m-%d')
     )
+    m = int(pd.datetime.today().month) - 1
     stop_date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False}),
         initial=pd.Timestamp('%s%02d%02d' % (
-            pd.datetime.today().year, pd.datetime.today().month, 1
+            pd.datetime.today().year,
+            (m - (m % 3) + 1),
+            1
         )) - BDay(1)
     )
 
@@ -40,18 +43,20 @@ class UnderlyingAdmin(admin.ModelAdmin):
     data_manage.allow_tags = True
 
     list_display = (
-        'symbol', 'start_date', 'stop_date', 'option', 'final', data_manage
+        'symbol', 'company', 'start_date', 'stop_date',
+        'optionable', 'shortable', 'final', data_manage
     )
 
     fieldsets = (
         ('Primary Fields', {
             'fields': (
-                'symbol', 'start_date', 'stop_date', 'option', 'final',
+                'symbol', 'start_date', 'stop_date', 'optionable', 'shortable', 'final'
             ),
         }),
         ('Primary Fields', {
             'fields': (
-                'sector', 'industry', 'market_cap', 'country', 'activity', 'classify',
+                'company', 'sector', 'industry', 'exchange',
+                'market_cap', 'country', 'activity', 'classify',
             ),
         }),
         ('Primary Fields', {
@@ -61,7 +66,11 @@ class UnderlyingAdmin(admin.ModelAdmin):
         }),
     )
 
-    search_fields = ('symbol', 'start', 'stop')
+    search_fields = ('symbol', 'company', 'start', 'stop', 'sector', 'industry')
+    list_filter = (
+        'optionable', 'shortable', 'exchange', 'country', 'activity', 'classify',
+        'final', 'enable'
+    )
     list_per_page = 20
 
 
@@ -141,6 +150,16 @@ admin.site.register_view(
 admin.site.register_view(
     'data/underlying/set/(?P<symbol>\w+)/(?P<action>\w+)/$',
     urlname='set_underlying', view=set_underlying
+)
+
+# update underlying
+admin.site.register_view(
+    'data/underlying/update/(?P<symbol>\w+)/$',
+    urlname='update_underlying', view=update_underlying
+)
+admin.site.register_view(
+    'data/splithistory/insert/(?P<symbol>\w+)/$',
+    urlname='add_split_history', view=add_split_history
 )
 
 # csv h5 stock and option

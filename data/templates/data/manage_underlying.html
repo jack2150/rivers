@@ -152,11 +152,14 @@
     <div class="col-md-3">
       <div class="list-group">
         <a href="#" class="list-group-item disabled">Preparation</a>
-        <a href="{% url 'admin:html_event_import' symbol %}" class="list-group-item">
-          1. Import Earnings/Dividends
+        <a href="{% url 'admin:update_underlying' symbol %}" class="list-group-item">
+          1. Update underlying
         </a>
-        <a href="{% url 'admin:data_splithistory_add' %}" class="list-group-item">
-          2. Add Split History
+        <a href="{% url 'admin:html_event_import' symbol %}" class="list-group-item">
+          2. Import Earnings/Dividends
+        </a>
+        <a href="{% url 'admin:add_split_history' symbol %}" class="list-group-item">
+          3. Add Split History
         </a>
       </div>
 

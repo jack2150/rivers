@@ -1,10 +1,17 @@
+import logging
+import pandas as pd
+import urllib2
+from bs4 import BeautifulSoup
 from django import forms
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django.shortcuts import render, redirect
 from data.models import Underlying, SplitHistory
 from data.tb.final.views import reshape_h5
 from rivers.settings import QUOTE
-import pandas as pd
+
+
+logger = logging.getLogger('views')
 
 
 def set_underlying(request, symbol, action):
@@ -18,6 +25,143 @@ def set_underlying(request, symbol, action):
     underlying = Underlying.objects.get(symbol=symbol.upper())
     setattr(underlying, action, not getattr(underlying, action))
     underlying.save()
+
+    return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
+
+
+def update_underlying(request, symbol):
+    """
+    Download from website then update underlying detail
+    :param request: request
+    :param symbol: int
+    :return: redirect
+    """
+    underlying = Underlying.objects.get(
+        Q(symbol=symbol.upper()) | Q(symbol=symbol.lower())
+    )
+    underlying.symbol = underlying.symbol.upper()
+    logger.info('Underlying: %s (%d)' % (underlying.symbol, underlying.id))
+
+    url = 'http://finviz.com/quote.ashx?t=%s' % underlying.symbol.lower()
+    logger.info('start download: %s' % url)
+
+    req = urllib2.Request(url=url)
+    f = urllib2.urlopen(req)
+    html = [unicode(l, 'utf-8') for l in f.readlines()]
+
+    logger.info('done download html, data length: %d' % len(html))
+
+    symbol_tag = u'>%s<' % underlying.symbol.upper()
+    for i, line in enumerate(html):
+        if 'Optionable' in line:
+            soup = BeautifulSoup(line, 'html.parser')
+            underlying.optionable = True if soup.b.string == 'Yes' else False
+            logger.info('optionable: %s' % soup.b.string)
+        elif 'Shortable' in line:
+            soup = BeautifulSoup(line, 'html.parser')
+            underlying.shortable = True if soup.b.string == 'Yes' else False
+            logger.info('shortable: %s' % soup.b.string)
+        elif 'Market Cap' in line:
+            soup = BeautifulSoup(line, 'html.parser')
+            market_cap = soup.b.string
+
+            if market_cap[-1] == 'B':
+                billion = float(market_cap[:-1])
+                if billion >= 200:
+                    underlying.market_cap = 'mega'
+                elif 10 <= billion < 200:
+                    underlying.market_cap = 'large'
+                elif 2 <= billion < 10:
+                    underlying.market_cap = 'mid'
+                else:
+                    underlying.market_cap = 'small'
+            elif market_cap[-1] == 'M':
+                million = float(market_cap[:-1])
+                if million >= 300:
+                    underlying.market_cap = 'small'
+                elif 50 <= million < 300:
+                    underlying.market_cap = 'micro'
+                else:
+                    underlying.market_cap = 'nano'
+
+            logger.info('market cap: %s, %s' % (market_cap, underlying.market_cap))
+
+        elif symbol_tag in line:
+            # symbol found
+            soup = BeautifulSoup(line, 'html.parser')
+            exchange = soup.span.string[1:-1]
+
+            soup = BeautifulSoup(html[i + 1], 'html.parser')
+            company = soup.b.string
+
+            soup = BeautifulSoup(html[i + 2], 'html.parser')
+            sector, industry, country = [l.string for l in soup.find_all('a')]
+
+            logger.info('company: %s' % company)
+            logger.info('exchange: %s' % exchange)
+            logger.info('sector: %s' % sector)
+            logger.info('industry: %s' % industry)
+            logger.info('country: %s' % country)
+
+            underlying.company = company
+            underlying.exchange = exchange
+            underlying.sector = sector
+            underlying.industry = industry
+            underlying.country = country
+
+    logger.info('Save underlying')
+    underlying.save()
+
+    return redirect(reverse('admin:data_underlying_change', args=(underlying.id,)))
+
+
+def add_split_history(request, symbol):
+    """
+    Download split history from website then add each of them into db
+    :param request: request
+    :param symbol: str
+    :return: render
+    """
+    symbol = symbol.upper()
+
+    url = 'http://getsplithistory.com/%s' % symbol
+    logger.info('start download: %s' % url)
+
+    req = urllib2.Request(url=url)
+    f = urllib2.urlopen(req)
+    html = [unicode(l, 'utf-8') for l in f.readlines()]
+    logger.info('done download html, data length: %d' % len(html))
+    try:
+        line = '%s' % [l for l in html if 'table-splits' in l].pop()
+    except IndexError:
+        line = ''
+    soup = BeautifulSoup(line, 'html.parser')
+
+    history = []
+    table_cell = soup.find_all('td')
+    for i, td in enumerate(table_cell):
+        value = td.string
+
+        if value is not None:
+            try:
+                date = pd.to_datetime(value).strftime('%Y-%m-%d')
+
+                fraction = ''.join([t.string for t in table_cell[i + 1].contents])
+                fraction = fraction.replace(' : ', '/')
+                logger.info('date: %s, fraction: %s' % (date, fraction))
+
+                split_history = SplitHistory(
+                    symbol=symbol.upper(),
+                    date=date,
+                    fraction=fraction
+                )
+                history.append(split_history)
+
+            except ValueError:
+                pass
+
+    if len(history):
+        SplitHistory.objects.bulk_create(history)
 
     return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
 
@@ -62,7 +206,7 @@ def truncate_symbol(request, symbol):
 
             # update underlying
             underlying = Underlying.objects.get(symbol=symbol)
-            underlying.option = False
+            underlying.optionable = False
             underlying.final = False
             underlying.enable = False
             underlying.missing = ''
@@ -140,7 +284,9 @@ def manage_underlying(request, symbol):
     :param symbol: str
     :return: render
     """
-    underlying = Underlying.objects.get(symbol=symbol.upper())
+    underlying = Underlying.objects.get(
+        Q(symbol=symbol.upper()) | Q(symbol=symbol.lower())
+    )
     split_history = SplitHistory.objects.filter(symbol=symbol.upper())
     split_history = '\n'.join('%s | %s | %s' % (s.symbol, s.date, s.fraction) for s in split_history)
 

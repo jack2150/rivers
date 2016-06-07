@@ -165,6 +165,16 @@ class AlgorithmAnalysisForm(forms.Form):
             if 'formula_' not in key and key not in ('symbol', 'start_date', 'stop_date')
         }
 
+        # save args
+        formula_arg = FormulaArgument(
+            formula=Formula.objects.get(id=self.cleaned_data['formula_id']),
+            arguments=fields,
+            level='low',
+            result='undefined',
+            description=''
+        )
+        formula_arg.save()
+
         logger.info('Start backtest algorithm')
 
         cmd = 'start cmd /k python %s algorithm --symbol=%s ' \

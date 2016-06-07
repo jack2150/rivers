@@ -578,6 +578,7 @@ class FormulaBacktest(object):
         df_signals = pd.concat(signals)
         """:type: pd.DataFrame"""
         df_signals = df_signals[[
+            'formula', 'hd', 'cs', 'date', 'start', 'stop',
             'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1',
             'holding', 'pct_chg'
         ]]

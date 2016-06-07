@@ -1,7 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
-from data.models import Underlying
+from data.models import Underlying, SplitHistory
 from rivers.settings import QUOTE
 import pandas as pd
 
@@ -51,6 +51,35 @@ class TestUnderlyingManage(TestSetUp):
             self.underlying.stop_date = '2015-04-30'
             self.underlying.save()
 
+    def test_update_underlying(self):
+        """
+        Test update underlying detail that download from finviz.com
+        """
+        self.client.get(reverse('admin:update_underlying', kwargs={
+            'symbol': self.underlying.symbol
+        }))
+
+        self.underlying = Underlying.objects.get(id=self.underlying.id)
+        self.assertTrue(self.underlying.company)
+        self.assertTrue(self.underlying.exchange)
+        self.assertTrue(self.underlying.sector)
+        self.assertTrue(self.underlying.industry)
+        self.assertTrue(self.underlying.market_cap)
+        self.assertTrue(self.underlying.optionable)
+        self.assertTrue(self.underlying.shortable)
+
+    def test_add_split_history(self):
+        """
+        Test add split history that download from getsplithistory.com
+        """
+        self.client.get(reverse('admin:add_split_history', kwargs={
+            'symbol': self.underlying.symbol
+        }))
+
+        split_history = SplitHistory.objects.filter(symbol=self.symbol)
+
+        self.assertTrue(len(split_history))
+
     def test_set_underlying(self):
         """
         Test set_underlying_updated view
@@ -90,7 +119,7 @@ class TestTruncateSymbol(TestSetUp):
         underlying.google = 321
         underlying.yahoo = 123
         underlying.contract = 17000
-        underlying.option = 440000
+        underlying.optionable = 440000
         underlying.dividend = 9
         underlying.earning = 40
         underlying.save()
@@ -113,6 +142,7 @@ class TestTruncateSymbol(TestSetUp):
         self.assertFalse(underlying.google)
         self.assertFalse(underlying.yahoo)
         self.assertFalse(underlying.contract)
-        self.assertFalse(underlying.option)
+        self.assertFalse(underlying.optionable)
         self.assertFalse(underlying.dividend)
         self.assertFalse(underlying.earning)
+

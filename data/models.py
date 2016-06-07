@@ -7,16 +7,17 @@ class Underlying(models.Model):
     symbol = models.CharField(max_length=20, unique=True)
 
     # basic detail
-    sector = models.CharField(max_length=20, default='none')
-    industry = models.CharField(max_length=100, default='none')
+    sector = models.CharField(max_length=20, default='', blank=True)
+    industry = models.CharField(max_length=100, default='', blank=True)
+    exchange = models.CharField(max_length=20, default='', blank=True)
     market_cap = models.CharField(
-        max_length=20, default='nano',
+        max_length=20, default='large',
         choices=(
-            ('mega', '200bln or more'), ('large', '10bln to 200bln'), ('mid', '2bln to 10bln'),
-            ('small', '300mln to 2bn'), ('micro', '50mln to 300mln'), ('nano', 'less than 50mln')
+            ('mega', '200B or more'), ('large', '10B to 200B'), ('mid', '2B to 10B'),
+            ('small', '300M to 2B'), ('micro', '50M to 300M'), ('nano', 'less than 50M')
         )
     )
-    country = models.CharField(max_length=50, default='USA')
+    country = models.CharField(max_length=50, default='', blank=True)
 
     # other detail
     activity = models.CharField(
@@ -29,7 +30,8 @@ class Underlying(models.Model):
     classify = models.CharField(
         max_length=20, default='normal',
         choices=(
-            ('growth', 'Growth Stock'), ('value', 'Value Stock'), ('normal', 'Normal Stock')
+            ('growth', 'Growth Stock'), ('value', 'Value Stock'),
+            ('dividend', 'Dividend Stock'), ('normal', 'Normal Stock')
         )
     )
 
@@ -37,7 +39,9 @@ class Underlying(models.Model):
     start_date = models.DateField(default='2009-01-01')
     stop_date = models.DateField(null=True, blank=True)
 
-    option = models.BooleanField(default=False)  # got option or not
+    company = models.CharField(max_length=200, default='', blank=True)  # company name
+    optionable = models.BooleanField(default=False)  # got option or not
+    shortable = models.BooleanField(default=False)  # can short or not
     final = models.BooleanField(default=False)  # ready to use or not
     enable = models.BooleanField(default=False)  # use or not use
 
