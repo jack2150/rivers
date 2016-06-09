@@ -1,10 +1,10 @@
-from fractions import Fraction
-
+import os
 import pandas as pd
+from fractions import Fraction
 from StringIO import StringIO
 from data.models import Underlying, SplitHistory
-from data.tb.fillna.calc import get_div_yield
-from rivers.settings import QUOTE, CLEAN
+from data.tb.clean import get_quote_data
+from rivers.settings import CLEAN_DIR
 
 
 class CleanSplitOld(object):
@@ -12,43 +12,24 @@ class CleanSplitOld(object):
         self.symbol = symbol.lower()
         self.df_all = pd.DataFrame()
 
+        self.path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol)
         self.output = '%-6s | %-30s | %-s'
 
     def get_merge_data(self):
         """
         Merge df_all data with stock close, risk free rate and div yield
         """
-        df_div, df_rate, df_stock = self.get_quote_data()
+        df_div, df_rate, df_stock = get_quote_data(self.symbol)
 
-        db = pd.HDFStore(CLEAN)
+        db = pd.HDFStore(self.path)
         try:
-            df_split0 = db.select('option/%s/valid/split/old' % self.symbol)
+            df_split0 = db.select('option/valid/split/old')
             df_split0 = df_split0.reset_index(drop=True)
         except KeyError:
             raise LookupError('No data for df_split/old')
         db.close()
 
         self.merge_option_data(df_split0, df_div, df_rate, df_stock)
-
-    def get_quote_data(self):
-        """
-
-        :return:
-        """
-        db = pd.HDFStore(QUOTE)
-        df_stock = db.select('stock/thinkback/%s' % self.symbol)
-        df_stock = df_stock[['close']]
-        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
-        try:
-            df_dividend = db.select('event/dividend/%s' % self.symbol.lower())
-            df_div = get_div_yield(df_stock, df_dividend)
-        except KeyError:
-            df_div = pd.DataFrame()
-            df_div['date'] = df_stock.index
-            df_div['amount'] = 0.0
-            df_div['div'] = 0.0
-        db.close()
-        return df_div, df_rate, df_stock
 
     def merge_option_data(self, df_split0, df_div, df_rate, df_stock):
         """
@@ -106,12 +87,12 @@ class CleanSplitOld(object):
         df_clean = self.convert_data(lines)
 
         # save data
-        db = pd.HDFStore(CLEAN)
+        db = pd.HDFStore(self.path)
         try:
-            db.remove('option/%s/clean/split/old' % self.symbol)
+            db.remove('option/clean/split/old')
         except KeyError:
             pass
-        db.append('option/%s/clean/split/old' % self.symbol, df_clean)
+        db.append('option/clean/split/old', df_clean)
         db.close()
 
     def convert_data(self, lines):

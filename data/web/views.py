@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 import urllib2
 from django import forms
@@ -7,7 +8,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from pandas_datareader.data import get_data_google, get_data_yahoo
 from data.models import Underlying, Treasury
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR, DB_DIR
 import numpy as np
 import pandas as pd
 
@@ -49,17 +50,20 @@ def web_stock_h5(request, source, symbol):
         del df_stock['adj close']
 
     df_stock.index.names = ['date']
+    df_stock = df_stock.round({'open': 2, 'high': 2, 'low': 2, 'close': 2})
 
-    logger.info('Save downloaded data')
     # skip or insert
-    db = pd.HDFStore(QUOTE)
+    # z:/quote/aig/data.h5
+    path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+    logger.info('Save downloaded data, path: %s' % path)
+    db = pd.HDFStore(path)
     if len(df_stock):
         try:
-            db.remove('stock/%s/%s' % (source, symbol.lower()))  # remove old
+            db.remove('stock/%s' % source)  # remove old
         except KeyError:
             pass
         db.append(
-            'stock/%s/%s' % (source, symbol.lower()), df_stock,
+            'stock/%s' % source, df_stock,
             format='table', data_columns=True, min_itemsize=100
         )  # insert new
     db.close()
@@ -125,15 +129,18 @@ def web_treasury_h5(request):
 
             df_rate = pd.DataFrame(rate).set_index('date').fillna(method='pad')
 
-            db = pd.HDFStore(QUOTE)
+            # save
+            path = os.path.join(DB_DIR, 'treasury.h5')
+            logger.info('save treasury data, path: %s' % path)
+            db = pd.HDFStore(path)
             # remove old treasury data
             try:
-                db.remove('treasury/%s' % treasury.to_key())
+                db.remove('%s' % treasury.to_key())
             except KeyError:
                 pass
             # append new treasury data
             db.append(
-                'treasury/%s' % treasury.to_key(), df_rate,
+                '%s' % treasury.to_key(), df_rate,
                 format='table', data_columns=True, min_itemsize=100
             )
             db.close()
@@ -145,7 +152,11 @@ def web_treasury_h5(request):
 
             return redirect('admin:data_treasury_changelist')
     else:
-        form = TreasuryForm()
+        form = TreasuryForm(initial={
+            'url': r'http://www.federalreserve.gov/datadownload/Output.aspx?'
+                   r'rel=H15&series=e30653a4b627e9d1f2490a0277d9f1ac&lastObs='
+                   r'&from=&to=&filetype=csv&label=include&layout=seriescolumn'
+        })
 
     template = 'data/web_treasury_import.html'
     parameters = dict(

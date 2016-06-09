@@ -117,7 +117,7 @@ class FormulaResultAdmin(admin.ModelAdmin):
             path = formula_result.formula.path
 
             db = pd.HDFStore(os.path.join(
-                RESEARCH, formula_result.symbol.lower(), 'algorithm.h5'
+                RESEARCH_DIR, formula_result.symbol.lower(), 'algorithm.h5'
             ))
 
             try:

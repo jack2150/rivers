@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
 from data.tb.raw.options import get_dte_date2
 from data.web.views import web_stock_h5
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR
 from statement.models import *
 from pandas import Series
 
@@ -386,7 +386,7 @@ def daily_import(request, date, ready_all=0):
             id__in=[p[0] for p in statement.profitloss_set.values_list('position')]
         ).order_by('symbol')
 
-    db = pd.HDFStore(QUOTE)
+    db = pd.HDFStore(QUOTE_DIR)
     for symbol in list(set([p.symbol for p in positions] + ['SPY'])):
         end = date
         try:

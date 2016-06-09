@@ -1,4 +1,6 @@
 import logging
+import os
+
 import pandas as pd
 import urllib2
 from bs4 import BeautifulSoup
@@ -8,7 +10,7 @@ from django.db.models import Q
 from django.shortcuts import render, redirect
 from data.models import Underlying, SplitHistory
 from data.tb.final.views import reshape_h5
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR
 
 
 logger = logging.getLogger('views')
@@ -40,7 +42,7 @@ def update_underlying(request, symbol):
         Q(symbol=symbol.upper()) | Q(symbol=symbol.lower())
     )
     underlying.symbol = underlying.symbol.upper()
-    logger.info('Underlying: %s (%d)' % (underlying.symbol, underlying.id))
+    logger.info('Underlying: %s, id: %d' % (underlying.symbol, underlying.id))
 
     url = 'http://finviz.com/quote.ashx?t=%s' % underlying.symbol.lower()
     logger.info('start download: %s' % url)
@@ -92,7 +94,10 @@ def update_underlying(request, symbol):
             exchange = soup.span.string[1:-1]
 
             soup = BeautifulSoup(html[i + 1], 'html.parser')
-            company = soup.b.string
+            try:
+                company = soup.b.string
+            except AttributeError:
+                company = soup.td.string
 
             soup = BeautifulSoup(html[i + 2], 'html.parser')
             sector, industry, country = [l.string for l in soup.find_all('a')]
@@ -127,8 +132,12 @@ def add_split_history(request, symbol):
     url = 'http://getsplithistory.com/%s' % symbol
     logger.info('start download: %s' % url)
 
-    req = urllib2.Request(url=url)
-    f = urllib2.urlopen(req)
+    try:
+        req = urllib2.Request(url=url)
+        f = urllib2.urlopen(req)
+    except urllib2.HTTPError:
+        return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
+
     html = [unicode(l, 'utf-8') for l in f.readlines()]
     logger.info('done download html, data length: %d' % len(html))
     try:
@@ -189,20 +198,10 @@ def truncate_symbol(request, symbol):
         form = TruncateSymbolForm(request.POST)
 
         if form.is_valid():
-            db = pd.HDFStore(QUOTE)
+            path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+            logger.info('Remove path: %s' % path)
 
-            keys = [
-                'stock/thinkback/%s', 'stock/google/%s', 'stock/yahoo/%s',
-                'event/earning/%s', 'event/dividend/%s',
-                'option/%s/final/contract', 'option/%s/final/data'
-            ]
-            for key in keys:
-                try:
-                    db.remove(key % symbol.lower())
-                except KeyError:
-                    pass
-
-            db.close()
+            os.remove(path)
 
             # update underlying
             underlying = Underlying.objects.get(symbol=symbol)
@@ -214,27 +213,28 @@ def truncate_symbol(request, symbol):
             underlying.save()
 
             # reshape db
-            reshape_h5('quote.h5')
+            # reshape_h5('quote.h5')
 
             return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
     else:
         form = TruncateSymbolForm(
-            initial={'symbol': symbol}
+            initial={
+                'symbol': symbol
+            }
         )
 
-        db = pd.HDFStore(QUOTE)
-
+        path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+        db = pd.HDFStore(path)
         names = ['thinkback', 'google', 'yahoo', 'earning', 'dividend', 'contract', 'option']
         keys = [
-            'stock/thinkback/%s', 'stock/google/%s', 'stock/yahoo/%s',
-            'event/earning/%s', 'event/dividend/%s',
-            'option/%s/final/contract', 'option/%s/final/data'
+            'stock/thinkback', 'stock/google', 'stock/yahoo', 'event/earning', 'event/dividend',
+            'option/final/contract', 'option/final/data'
         ]
 
         df = {}
         for name, key in zip(names, keys):
             try:
-                df[name] = db.select(key % symbol.lower())
+                df[name] = db.select(key)
             except KeyError:
                 df[name] = pd.DataFrame()
         db.close()

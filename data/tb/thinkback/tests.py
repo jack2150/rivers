@@ -1,38 +1,81 @@
 import os
+import pandas as pd
 from calendar import month_name
 from datetime import datetime
 from glob import glob
-
-from pandas import DataFrame
-
 from base.tests import TestSetUp
 from data.tb.thinkback import ThinkBack
-from rivers.settings import BASE_DIR
+from rivers.settings import BASE_DIR, THINKBACK_DIR
 
 
 class TestThinkBack(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = 'AIG'
-        self.year = '2009'
+        self.symbol = 'NFLX'
+        self.year = '2010'
 
         self.dir_name = os.path.join(
-            BASE_DIR, 'files', 'thinkback', self.symbol.lower(), self.year
+            THINKBACK_DIR, self.symbol.lower(), self.year
         )
 
         self.fpaths = list()
         for path in glob(os.path.join(self.dir_name, '*.csv')):
-            if '2009-07-01' in path:
-                self.fpaths.append(path)
+            # if '2009-07-01' in path:
+            #    self.fpaths.append(path)
+            self.fpaths.append(path)
 
         self.thinkback = None
+
+    def test_get_cycles2(self):
+        """
+        {'start': 11, 'line': 'JAN 10  (11)  100', 'stop': 69, 'dte': 11,
+        'data': ['JAN', 10, '100', 'Standard', '']}
+        :return:
+        """
+        sample = [
+            '16 JAN 10  (11)  100',
+            '20 FEB 10  (46)  100 (Weeklys)',
+            '20 MAR 10  (74)  100 (Mini)',
+            '19 JUN 10  (165)  100',
+            '22 JAN 11  (382)  100 (Quarterlys)',
+            '21 JAN 12  (746)  20/100 ',
+            '2 MAR 13  (4)  150 (Weeklys)',
+            '18 JUL 09  (142)  100 (US$ 25.23)',
+            '16 JAN 10  (324)  19/100 (US$ 3616.11)',
+            '18 JUL 09  (142)  100 (Weeklys) (US$ 25.23)',
+            '18 JUL 09  (142)  100 (CDL 25.23)',
+        ]
+        self.thinkback = ThinkBack(fpath=self.fpaths[0])
+        self.thinkback.lines = sample
+        cycles = self.thinkback.get_cycles2()
+
+        print pd.DataFrame(cycles)
+
+
+
+
+    def test_get_cycles_files(self):
+        """
+
+        :return:
+        """
+        test_date = '2010-01-04'
+        for fpath in self.fpaths:
+            if test_date in fpath:
+                print 'open path: %s' % fpath
+                self.thinkback = ThinkBack(fpath=fpath)
+
+                print 'run get_cycles...'
+                cycles = self.thinkback.get_cycles2()
+
+                print pd.DataFrame(cycles)
 
     def test_get_cycles(self):
         """
         Test get cycle on every top of option chain section
         """
-        test_date = '2009-07-01'
+        test_date = '2010-01-04'
         for fpath in self.fpaths:
             if test_date in fpath:
                 print fpath
@@ -42,7 +85,8 @@ class TestThinkBack(TestSetUp):
                 self.assertEqual(type(cycles), list)
 
                 for cycle in cycles:
-                    print cycle['data']
+                    print cycle
+                    #print cycle['data']
                     self.assertEqual(type(cycle), dict)
 
                     self.assertEqual(len(cycle['data']), 5)
@@ -70,8 +114,8 @@ class TestThinkBack(TestSetUp):
             'open_int', 'intrinsic', 'extrinsic'
         ]
 
-        df_contract = DataFrame()
-        df_options = DataFrame()
+        df_contract = pd.DataFrame()
+        df_options = pd.DataFrame()
         for fpath in self.fpaths[:1]:
             self.thinkback = ThinkBack(fpath=fpath)
 

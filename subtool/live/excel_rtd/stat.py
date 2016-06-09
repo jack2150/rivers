@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR
 
 
 class ExcelRtdStatData(object):
@@ -14,7 +14,7 @@ class ExcelRtdStatData(object):
         self.df_all = {}
 
     def get_data(self):
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(QUOTE_DIR)
         keys = db.keys()
         self.df_all = {}
         for symbol in self.symbols:

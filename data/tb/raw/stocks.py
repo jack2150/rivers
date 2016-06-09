@@ -6,8 +6,7 @@ from glob import glob
 from data.tb.thinkback import ThinkBack
 from data.models import Underlying
 from data.skip_days import holiday, offday
-from rivers.settings import QUOTE, BASE_DIR
-
+from rivers.settings import QUOTE_DIR, THINKBACK_DIR
 
 logger = logging.getLogger('views')
 
@@ -30,7 +29,8 @@ def extract_stock(symbol):
 
     # move files into year folder
     # noinspection PyUnresolvedReferences
-    path = os.path.join(BASE_DIR, 'files', 'thinkback', symbol)
+    path = os.path.join(THINKBACK_DIR, symbol)
+    logger.info('open thinkback path: %s' % path)
     no_year_files = glob(os.path.join(path, '*.csv'))
     years = sorted(list(set([os.path.basename(f)[:4] for f in no_year_files])))
 
@@ -81,7 +81,7 @@ def extract_stock(symbol):
         if trading_day:
             # output to console
             print '%-6s | %-30s' % (i, 'Read %s' % os.path.basename(f))
-            stock_data, option_data = ThinkBack(f).read()
+            stock_data = ThinkBack(f).get_stock()
 
             try:
                 if int(stock_data['volume']) == 0:
@@ -103,21 +103,24 @@ def extract_stock(symbol):
 
     # start save
     df_stock = pd.DataFrame(stocks)
-    df_stock['open'] = np.round(df_stock['open'], 2)
-    df_stock['high'] = np.round(df_stock['high'], 2)
-    df_stock['low'] = np.round(df_stock['low'], 2)
-    df_stock['close'] = np.round(df_stock['close'], 2)
+    df_stock = df_stock.round({
+        'open': 2,
+        'high': 2,
+        'low': 2,
+        'close': 2,
+    })
 
     if len(df_stock):
         df_stock = df_stock.set_index('date')
 
-        db = pd.HDFStore(QUOTE)
+        path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+        logger.info('Save thinkback stock, path: %s' % path)
+        db = pd.HDFStore(path)
         try:
-            db.remove('stock/thinkback/%s' % symbol.lower())
+            db.remove('stock/thinkback')
         except KeyError:
             pass
-        db.append('stock/thinkback/%s' % symbol, df_stock,
-                  format='table', data_columns=True)
+        db.append('stock/thinkback', df_stock, format='table', data_columns=True)
         db.close()
 
     missing = list()

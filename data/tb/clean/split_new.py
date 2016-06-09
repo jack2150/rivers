@@ -1,8 +1,9 @@
+import os
 import pandas as pd
 from StringIO import StringIO
 from data.models import Underlying
-from data.tb.fillna.calc import get_div_yield
-from rivers.settings import QUOTE, CLEAN
+from data.tb.clean import get_quote_data
+from rivers.settings import CLEAN_DIR
 
 
 class CleanSplitNew(object):
@@ -10,29 +11,18 @@ class CleanSplitNew(object):
         self.symbol = symbol.lower()
         self.df_all = pd.DataFrame()
 
+        self.path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol)
         self.output = '%-6s | %-30s | %-s'
 
     def get_merge_data(self):
         """
         Merge df_all data with stock close, risk free rate and div yield
         """
-        db = pd.HDFStore(QUOTE)
-        df_stock = db.select('stock/thinkback/%s' % self.symbol)
-        df_stock = df_stock[['close']]
-        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
-        try:
-            df_dividend = db.select('event/dividend/%s' % self.symbol.lower())
-            df_div = get_div_yield(df_stock, df_dividend)
-        except KeyError:
-            df_div = pd.DataFrame()
-            df_div['date'] = df_stock.index
-            df_div['amount'] = 0.0
-            df_div['div'] = 0.0
-        db.close()
+        df_div, df_rate, df_stock = get_quote_data(self.symbol)
 
-        db = pd.HDFStore(CLEAN)
+        db = pd.HDFStore(self.path)
         try:
-            df_split1 = db.select('option/%s/valid/split/new' % self.symbol)
+            df_split1 = db.select('option/valid/split/new')
             df_split1 = df_split1.reset_index(drop=True)
         except KeyError:
             raise LookupError('No data for df_split/new')
@@ -81,12 +71,12 @@ class CleanSplitNew(object):
         """:type: pd.DataFrame"""
 
         # save data
-        db = pd.HDFStore(CLEAN)
+        db = pd.HDFStore(self.path)
         try:
-            db.remove('option/%s/clean/split/new' % self.symbol)
+            db.remove('option/clean/split/new')
         except KeyError:
             pass
-        db.append('option/%s/clean/split/new' % self.symbol, df_clean)
+        db.append('option/%s/clean/split/new', df_clean)
         db.close()
 
     def update_underlying(self):

@@ -1,5 +1,7 @@
 import logging
 import os
+from time import sleep
+
 import pandas as pd
 from HTMLParser import HTMLParser
 from glob import glob
@@ -7,8 +9,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from shutil import rmtree
 from data.models import Underlying
-from rivers.settings import QUOTE, BASE_DIR
-
+from rivers.settings import QUOTE_DIR, EARNING_DIR, DIVIDEND_DIR, FILES_DIR
 
 logger = logging.getLogger('views')
 
@@ -79,24 +80,28 @@ def import_earning(lines, symbol):
 
         earnings.append(e)
     if len(earnings):
-        db = pd.HDFStore(QUOTE)
+        path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+        logger.info('Save earning data, path: %s' % path)
+        db = pd.HDFStore(path)
 
         try:
-            db.remove('event/earning/%s' % symbol.lower())
+            db.remove('event/earning')
         except KeyError:
             pass
 
         df_earning = pd.DataFrame(earnings, index=range(len(earnings)))
         # print df_earning
         db.append(
-            'event/earning/%s' % symbol.lower(), df_earning,
+            'event/earning', df_earning,
             format='table', data_columns=True, min_itemsize=100
         )
         db.close()
 
         # update earning
         underlying = Underlying.objects.get(symbol=symbol.upper())
-        underlying.log += 'Earnings event imported, length: %d\n' % len(df_earning)
+        underlying.log += 'Earnings imported, length: %d, latest: %s\n' % (
+            len(df_earning), df_earning.iloc[0]['actual_date'].strftime('%Y-%m-%d')
+        )
         underlying.save()
 
 
@@ -141,24 +146,28 @@ def import_dividend(lines, symbol):
 
         dividends.append(d)
     if len(dividends):
-        db = pd.HDFStore(QUOTE)
+        path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+        logger.info('Save earning data, path: %s' % path)
+        db = pd.HDFStore(path)
 
         try:
-            db.remove('event/dividend/%s' % symbol.lower())
+            db.remove('event/dividend')
         except KeyError:
             pass
 
         df_dividend = pd.DataFrame(dividends, index=range(len(dividends)))
         # print df_dividend
         db.append(
-            'event/dividend/%s' % symbol.lower(), df_dividend,
+            'event/dividend', df_dividend,
             format='table', data_columns=True, min_itemsize=100
         )
         db.close()
 
         # update dividend
         underlying = Underlying.objects.get(symbol=symbol.upper())
-        underlying.log += 'Dividends event imported, length: %d\n' % len(df_dividend)
+        underlying.log += 'Dividends imported, length: %d, latest: %s\n' % (
+            len(df_dividend), df_dividend.iloc[0]['expire_date'].strftime('%Y-%m-%d')
+        )
         underlying.save()
 
 
@@ -167,12 +176,9 @@ def group_event_files():
     Move files from fidelity __raw__ folder into earnings and dividends folder
     :return: None
     """
-    # noinspection PyUnresolvedReferences
-    files = glob(os.path.join(BASE_DIR, 'files', 'fidelity', '__raw__', '*.html'))
-    # noinspection PyUnresolvedReferences
-    earning_path = os.path.join(BASE_DIR, 'files', 'fidelity', 'earnings')
-    # noinspection PyUnresolvedReferences
-    dividend_path = os.path.join(BASE_DIR, 'files', 'fidelity', 'dividends')
+    files = glob(os.path.join(FILES_DIR, 'fidelity', '__raw__', '*.html'))
+    earning_path = os.path.join(FILES_DIR, 'fidelity', 'earning')
+    dividend_path = os.path.join(FILES_DIR, 'fidelity', 'dividend')
 
     for f0 in files:
         fname = os.path.basename(f0)
@@ -186,10 +192,9 @@ def group_event_files():
 
         os.rename(f0, f1)
     else:
-        # noinspection PyUnresolvedReferences
-        rmtree(os.path.join(BASE_DIR, 'files', 'fidelity', '__raw__'), ignore_errors=True)
-        # noinspection PyUnresolvedReferences
-        # os.mkdir(os.path.join(BASE_DIR, 'files', 'fidelity', '__raw__'))
+        rmtree(os.path.join(FILES_DIR, 'fidelity', '__raw__'), ignore_errors=True)
+        sleep(1)
+        os.mkdir(os.path.join(FILES_DIR, 'fidelity', '__raw__'))
 
 
 def html_event_import(request, symbol):
@@ -203,18 +208,22 @@ def html_event_import(request, symbol):
     group_event_files()
 
     symbol = symbol.upper()
+    earning_fname = '%s _ Earnings - Fidelity.html' % symbol
+    path = os.path.join(EARNING_DIR, earning_fname)
+    logger.info('open earning file path: %s' % path)
+
     # noinspection PyUnresolvedReferences
-    earning_lines = open(os.path.join(
-        BASE_DIR, 'files', 'fidelity', 'earnings', '%s _ Earnings - Fidelity.html' % symbol)
-    ).readlines()
+    earning_lines = open(path).readlines()
     import_earning(earning_lines, symbol)
     logger.info('Complete import earnings')
 
     try:
         # noinspection PyUnresolvedReferences
-        dividend_lines = open(os.path.join(
-            BASE_DIR, 'files', 'fidelity', 'dividends', '%s _ Dividends - Fidelity.html' % symbol)
-        ).readlines()
+        earning_fname = '%s _ Dividends - Fidelity.html' % symbol
+        path = os.path.join(DIVIDEND_DIR, earning_fname)
+        logger.info('open dividend file path: %s' % path)
+
+        dividend_lines = open(path).readlines()
         import_dividend(dividend_lines, symbol)
         logger.info('Complete import dividends')
     except IOError:

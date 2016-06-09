@@ -21,7 +21,7 @@ class TestUnitSetUp(UnitTestCase):
             self.skipTest('Only can run with unittest.')
 
         self.client = Client()
-        self.client.login(username='bvc100x', password='qwer1234')
+        self.client.login(username='jack', password='qwer1234')
 
         print '.' * 100
         print "<%s> currently run: %s" % (self.__class__.__name__, self._testMethodName)

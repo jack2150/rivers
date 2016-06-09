@@ -1,15 +1,13 @@
 import logging
 import os
 import re
-from fractions import Fraction
-
 import pandas as pd
+from fractions import Fraction
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from subprocess import Popen
-
 from data.models import Underlying
-from rivers.settings import QUOTE, CLEAN, BASE_DIR
+from rivers.settings import QUOTE_DIR, CLEAN_DIR, BASE_DIR
 
 logger = logging.getLogger('views')
 output = '%-6s | %-30s'
@@ -61,22 +59,23 @@ def merge_final(symbol):
     df_contract and df_option data
     :param symbol: str
     """
-    print output % ('FINAL', 'merge all data into df_contract, df_option')
-    print '=' * 70
+    logger.info('merge all data into df_contract, df_option')
     symbol = symbol.lower()
 
     # get data
     df_list = {}
-    db = pd.HDFStore(QUOTE)
-    df_stock = db.select('stock/thinkback/%s' % symbol)
+    path = os.path.join(QUOTE_DIR, '%s.h5' % symbol)
+    db = pd.HDFStore(path)
+    df_stock = db.select('stock/thinkback')
     db.close()
     last_date = df_stock.index[-1]
 
-    db = pd.HDFStore(CLEAN)
+    path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol)
+    db = pd.HDFStore(path)
     option_keys = ['normal', 'split/new', 'split/old']
     for key in option_keys:
         try:
-            df_list[key] = db.select('option/%s/fillna/%s' % (symbol, key))
+            df_list[key] = db.select('option/fillna/%s' % key)
             logger.info('Get df_%s data length: %d' % (key, len(df_list[key])))
         except KeyError:
             pass
@@ -112,9 +111,14 @@ def merge_final(symbol):
     df_contract['expire'] = df_contract['ex_date'].apply(lambda x: x < last_date)
     # format df_option
     option_keys = [
-        'ask', 'bid', 'date', 'delta', 'dte', 'extrinsic',
-        'gamma', 'impl_vol', 'intrinsic', 'last', 'mark', 'open_int', 'option_code',
-        'prob_itm', 'prob_otm', 'prob_touch', 'theo_price', 'theta', 'vega', 'volume'
+        'date', 'option_code', 'dte',
+        'last', 'mark',
+        'delta', 'gamma', 'theta', 'vega',
+        'impl_vol', 'theo_price',
+        'prob_itm', 'prob_otm', 'prob_touch',
+        'volume', 'open_int',
+        'extrinsic', 'intrinsic',
+        'ask', 'bid',
     ]
     df_option = df_all[option_keys].copy()
 
@@ -125,17 +129,29 @@ def merge_final(symbol):
         elif key in ('open_int', 'volume'):
             df_option[key] = df_option[key].astype('int')
 
+    df_option = df_option.round({
+        k: 2 for k in [
+            'last', 'mark',
+            'delta', 'gamma', 'theta', 'vega',
+            'impl_vol', 'theo_price',
+            'prob_itm', 'prob_otm', 'prob_touch',
+            'extrinsic', 'intrinsic',
+            'ask', 'bid'
+        ]
+    })
+
     logger.info('Save df_contract, df_option into h5 db')
-    db = pd.HDFStore(QUOTE)
+
+    db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % symbol))
     for key in ('contract', 'data'):
         try:
-            db.remove('option/%s/final/%s' % (symbol, key))
+            db.remove('option/%s' % key)
         except KeyError:
             pass
 
-    db.append('option/%s/final/contract' % symbol, df_contract,
+    db.append('option/contract', df_contract,
               format='table', data_columns=True, min_itemsize=100)
-    db.append('option/%s/final/data' % symbol, df_option,
+    db.append('option/data', df_option,
               format='table', data_columns=True, min_itemsize=100)
     db.close()
     # update log
@@ -172,16 +188,11 @@ def remove_clean_h5(request, symbol):
 
     symbol = symbol.lower()
 
-    db = pd.HDFStore(CLEAN)
-    keys = db.keys()
-    for key in keys:
-        if symbol in key:
-            logger.info('Remove data: %s' % key)
-            db.remove(key)
-    db.close()
+    path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol)
+    os.remove(path)
 
     # make clean.h5 smaller size
-    reshape_h5('clean.h5')
+    # reshape_h5('clean.h5')
 
     # update log
     underlying = Underlying.objects.get(symbol=symbol.upper())

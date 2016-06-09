@@ -1,7 +1,7 @@
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.models import Underlying, Treasury
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR
 import pandas as pd
 
 
@@ -35,7 +35,7 @@ class TestWebStockTreasury(TestSetUp):
                 'symbol': self.symbol, 'source': source
             }))
 
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(QUOTE_DIR)
             df_stock = db.select('stock/%s/%s' % (source, self.symbol.lower()))
             db.close()
 
@@ -56,7 +56,7 @@ class TestWebStockTreasury(TestSetUp):
         treasury = Treasury.objects.first()
         self.assertTrue(treasury.id)
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(QUOTE_DIR)
         df_rate = db.select('treasury/%s' % treasury.to_key())
         db.close()
 

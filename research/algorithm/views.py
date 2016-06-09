@@ -16,7 +16,7 @@ from pandas.tseries.offsets import BDay
 from data.models import Underlying
 from research.algorithm.backtest import dtype
 from research.algorithm.models import Formula, FormulaArgument, FormulaResult
-from rivers.settings import BASE_DIR, RESEARCH
+from rivers.settings import BASE_DIR, RESEARCH_DIR
 
 logger = logging.getLogger('views')
 
@@ -264,7 +264,7 @@ def algorithm_signal_view(request, symbol, formula_id, backtest_id):
     """
     formula = Formula.objects.get(id=formula_id)
 
-    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algorithm.h5'))
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, symbol.lower(), 'algorithm.h5'))
     df_report = db.select('report', where='index == %d' % int(backtest_id))
     report = df_report.iloc[0]
     """:type: pd.DataFrame"""
@@ -341,7 +341,7 @@ def algorithm_trade_view(request, symbol, formula_id, backtest_id):
     """
     formula = Formula.objects.get(id=formula_id)
 
-    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algorithm.h5'))
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, symbol.lower(), 'algorithm.h5'))
     df_report = db.select('report', where='index == %d' % int(backtest_id))
     report = df_report.iloc[0]
     """:type: pd.DataFrame"""
@@ -456,7 +456,7 @@ def algorithm_report_json(request, symbol, formula_id):
 
     formula = Formula.objects.get(id=formula_id)
 
-    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algorithm.h5'))
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, symbol.lower(), 'algorithm.h5'))
     df_report = db.select('report', where='formula == %r' % formula.path)
     """:type: pd.DataFrame"""
     db.close()

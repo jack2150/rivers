@@ -5,7 +5,7 @@ from bootstrap3_datetime.widgets import DateTimePicker
 from django import forms
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR
 from subtool.models import OptionTimeSale
 
 logger = logging.getLogger('views')
@@ -106,7 +106,7 @@ def timesale_insert_view(request):
         if form.is_valid():
             symbol, date, df_timesale = form.process()
 
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(QUOTE_DIR)
             path = 'option/%s/final/timesale' % symbol.lower()
             db.append(path, df_timesale, format='table', data_columns=True, min_itemsize=100)
             db.close()
@@ -144,7 +144,7 @@ def timesale_report_view(request, symbol, date):
     :param date: str
     :return: render
     """
-    db = pd.HDFStore(QUOTE)
+    db = pd.HDFStore(QUOTE_DIR)
     path = 'option/%s/final/timesale' % symbol.lower()
     df_timesale = db.select(path, where='date == %r' % date)
     db.close()

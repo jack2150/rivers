@@ -1,10 +1,13 @@
+import os
+
 import pandas as pd
 from base.tests import TestSetUp
 from data.tb.valid.options import ValidRawOption
-from rivers.settings import CLEAN, QUOTE
+from rivers.settings import CLEAN_DIR, QUOTE_DIR
 
 symbol = 'aig'
-db = pd.HDFStore(CLEAN)
+path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol.lower())
+db = pd.HDFStore(path)
 df_normal = db.select('option/%s/raw/normal' % symbol.lower())
 df_others = db.select('option/%s/raw/others' % symbol.lower())
 df_split0 = db.select('option/%s/raw/split/old' % symbol.lower())

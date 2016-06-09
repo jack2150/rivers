@@ -127,8 +127,8 @@ class TestDayImplVol(TestUnitSetUp):
             calc = DayIVCalc(symbol)
             calc.start()
 
-            db = pd.HDFStore(QUOTE)
-            df_iv = db.select('/option/%s/final/day_iv' % symbol.lower())
+            db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower()))
+            df_iv = db.select('/option/day_iv')
             db.close()
 
             self.assertTrue(len(df_iv))

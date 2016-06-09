@@ -1,32 +1,52 @@
-from calendar import month_name
 import codecs
 import os
+import re
+import pandas as pd
+from calendar import month_name
 from base.ufunc import *
 
 
+MONTHS = [month_name[m + 1][:3].upper() for m in range(12)]
+SPECIAL = ['Weeklys', 'Mini', 'Quarterlys']
+STOCK_COLUMN = 'Last,Net Chng,Volume,Open,High,Low'
+STOCK_NAMES = [
+    'last', 'net_change', 'volume', 'open', 'high', 'low'
+]
+OPTION_COLUMN = r',,Last,Mark,Delta,Gamma,Theta,Vega,Theo Price,Impl Vol,Prob.ITM,Prob.OTM,' \
+                r'Prob.Touch,Volume,Open.Int,Intrinsic,Extrinsic,Option Code,Bid,Ask,Exp,' \
+                r'Strike,Bid,Ask,Last,Mark,Delta,Gamma,Theta,Vega,Theo Price,Impl Vol,Prob.ITM,' \
+                r'Prob.OTM,Prob.Touch,Volume,Open.Int,Intrinsic,Extrinsic,Option Code,,'
+STRIKE_POS = 19
+CALL_START, CALL_STOP = 0, 19
+CALL_NAMES = [
+    'last', 'mark', 'delta', 'gamma', 'theta', 'vega',
+    'theo_price', 'impl_vol', 'prob_itm', 'prob_otm', 'prob_touch', 'volume',
+    'open_int', 'intrinsic', 'extrinsic', 'option_code',
+    'bid', 'ask'  # bid ask at back, with dte
+]
+PUT_START, PUT_STOP = 20, 40
+PUT_NAMES = [
+    'bid', 'ask',  # bid ask at front
+    'last', 'mark', 'delta', 'gamma', 'theta', 'vega',
+    'theo_price', 'impl_vol', 'prob_itm', 'prob_otm', 'prob_touch', 'volume',
+    'open_int', 'intrinsic', 'extrinsic', 'option_code'  # with dte
+]
+
+CONTRACT_NAMES = [
+    'option_code', 'name', 'strike', 'ex_date', 'right', 'special', 'others',
+]
+
+CONTRACT_KEYS = [
+    'ex_month', 'ex_year', 'right', 'special', 'others',
+    'strike', 'name', 'option_code'
+]
+
+
 class ThinkBack(object):
-    STOCK_KEYS = ['date', 'last', 'net_change', 'volume', 'open', 'high', 'low']
-    STOCK_HEAD = 'Last,Net Chng,Volume,Open,High,Low'
-
-    COLUMN_HEAD = r',,Last,Mark,Delta,Gamma,Theta,Vega,Theo Price,Impl Vol,Prob.ITM,Prob.OTM,' \
-                  r'Prob.Touch,Volume,Open.Int,Intrinsic,Extrinsic,Option Code,Bid,Ask,Exp,' \
-                  r'Strike,Bid,Ask,Last,Mark,Delta,Gamma,Theta,Vega,Theo Price,Impl Vol,Prob.ITM,' \
-                  r'Prob.OTM,Prob.Touch,Volume,Open.Int,Intrinsic,Extrinsic,Option Code,,'
-
-    CONTRACT_KEYS = ['ex_month', 'ex_year', 'right', 'special', 'others',
-                     'strike', 'name', 'option_code']
-
-    OPTION_KEYS = ['date', 'dte',
-                   'bid', 'ask', 'last', 'mark', 'delta', 'gamma', 'theta', 'vega',
-                   'theo_price', 'impl_vol', 'prob_itm', 'prob_otm', 'prob_touch', 'volume',
-                   'open_int', 'intrinsic', 'extrinsic']
-
     def __init__(self, fpath):
         self.fpath = fpath
-
         self.fname = os.path.basename(self.fpath)
-
-        self.date = self.fname[:10]
+        self.date = pd.to_datetime(self.fname[:10])
         self.symbol = self.fname.split('-StockAndOptionQuoteFor').pop()[:-4]
 
         self.lines = [
@@ -36,114 +56,153 @@ class ThinkBack(object):
 
     def get_stock(self):
         """
-        Get stock csv line in file
-        :return: str
+        Get stock data from csv line
+        :return: dict
         """
-        return make_dict(
-            self.STOCK_KEYS,
-            [self.date] + self.lines[self.lines.index(self.STOCK_HEAD) + 1].split(',')
-        )
+        data = self.lines[self.lines.index(STOCK_COLUMN) + 1].split(',')
+        stock = {k: float(v) for k, v in zip(STOCK_NAMES, data)}
+        stock['date'] = self.date
+        stock['volume'] = int(stock['volume'])
+
+        return stock
 
     def get_cycles(self):
         """
-        Get option cycle from data
-        :return: list
+        Get cycle in the top of each option chain
+        weekly not more JAN1 or FEB2, direct 16 JAN 09
+        :return: dict
         """
-        cycles = list()
-        months = [month_name[i + 1][:3].upper() for i in range(12)]
-
+        cycles = []
         for key, line in enumerate(self.lines):
-            if line[:3] in months:
-                # JAN 09  (14)  100 (CDL 7; US$ 4.06)
-                # JAN 09  (11)  19/100 (US$ 3601.92)
-                # JAN 15  (444)  150 (DDD 150)
+            items = line.split(' ')
+
+            if len(items) < 4:
+                continue
+
+            if items[1] in MONTHS:
+                items = [i for i in items if i]
+
+                date = pd.datetime.strptime('-'.join(items[0:3]), '%d-%b-%y')
+                dte = int(items[3][1:-1])
+                right = items[4]  # in str format
+
+                special = 'Standard'
+                others = ''
                 try:
-                    others = ''
-                    open_bracket = line.rindex('(')
-                    close_bracket = line.rindex(')')
+                    temp = ' '.join(items[5:])
+                    group = re.split(r'\(([^)]+)\)', temp)
+                    group = [g.strip() for g in group if g not in ('', ' ')]
 
-                    if close_bracket == len(line) - 1:
-                        if any([x for x in ['CDL', 'US$'] if x in line]):
-                            others = line[open_bracket + 1: close_bracket]
-                            line = line[:open_bracket]
-                        elif line.count('(') == 2:
-                            others = line[line.rindex('(') + 1:line.rindex(')')]
-                            if others in ('Weeklys', 'Mini', 'Quarterlys'):
-                                others = ''
-                            else:
-                                line = line[:open_bracket]
+                    if len(group) == 1:
+                        if group[0] in SPECIAL:
+                            special = group[0]
+                        elif 'US$' in group[0] or 'CDL' in group[0]:
+                            others = group[0]
+                        else:
+                            raise LookupError('special/others not found for string: %s' % group[0])
+                    elif len(group) == 2:
+                        special = group[0]
+                        others = group[1]
+                        # print 'special: %s, others: %s' % (special, others)
+                except IndexError:
+                    pass  # no special and others
 
-                except ValueError:
-                    others = ''
+                cycles.append({
+                    'start': key + 1,
+                    'stop': 0,
+                    'dte': dte,
+                    'line': line,
+                    'date': date,
+                    'right': right,
+                    'special': special,
+                    'others': others
+                })
 
-                # get cycle data from line
-                data = map(remove_bracket, [l for l in line.split(' ') if l])
-
-                if len(data) == 4:
-                    data.append('Standard')
-
-                data = [int(i) if 0 < k < 3 else i for k, i in enumerate(data)]
-                dte = data.pop(2)
-                data += [others]
-
-                # if not expire yet, add into cycle
-                if dte > -1:
-                    cycles.append(
-                        dict(line=line, data=data, dte=dte, start=key + 1, stop=0)
-                    )
-
-                # previous stop
-                if len(cycles) > 1:
-                    cycles[len(cycles) - 2]['stop'] = key - 1
+        # add stop
+        for c0, c1 in zip(cycles[:-1], cycles[1:]):
+            c0['stop'] = c1['start'] - 2
         else:
-            if len(self.lines[-1]):
-                cycles[len(cycles) - 1]['stop'] = len(self.lines)
-            else:
-                cycles[len(cycles) - 1]['stop'] = len(self.lines) - 1
+            cycles[-1]['stop'] = len(self.lines)
 
         return cycles
 
     def get_cycle_options(self, cycle):
         """
-        Get options from csv files
+        Test get cycle option from lines
         :param cycle: dict
-        :return: list of dict
+        :return: list
         """
-        if self.lines[cycle['start']] != self.COLUMN_HEAD:
-            raise IOError('File have a invalid column format.')
+        lines = self.lines[cycle['start']:cycle['stop']]
 
-        options = list()
-        for line in self.lines[cycle['start'] + 1:cycle['stop']]:
-            data = [(0 if v in ('', '--', '++', '<empty>') else v)
-                    for v in line[2:-2].replace('%', '').split(',')]
+        if lines[0] != OPTION_COLUMN:
+            raise IOError('Invalid column format: %s' % self.fpath)
 
-            """Bid,Ask,Exp,Strike,Bid,Ask"""
-            call_contract = make_dict(
-                self.CONTRACT_KEYS, cycle['data'] + [float(data[19]), 'CALL', data[15].strip()]
-            )
-            call_option = make_dict(
-                self.OPTION_KEYS, [self.date, cycle['dte']] + map(float, data[16:18] + data[:15])
-            )
+        options = []
+        for line in lines[1:]:
+            # line split to data
+            data = line[2:-2].replace('%', '').split(',')
 
-            put_contract = make_dict(
-                self.CONTRACT_KEYS, cycle['data'] + [float(data[19]), 'PUT', data[37].strip()]
-            )
-            put_option = make_dict(
-                self.OPTION_KEYS, [self.date, cycle['dte']] + map(float, data[20:37])
-            )
+            # format data
+            for i, d in enumerate(data):
+                if d in ('', '--', '++', '<empty>'):
+                    data[i] = '.0'
 
+            # get strike
+            strike = round(float(data[STRIKE_POS]), 2)
+
+            # call/put options
+            call_option = {k: v for k, v in zip(CALL_NAMES, data[CALL_START:CALL_STOP])}
+            put_option = {k: v for k, v in zip(PUT_NAMES, data[PUT_START:PUT_STOP])}
+
+            # set dte, date
+            call_option['dte'] = cycle['dte']
+            put_option['dte'] = cycle['dte']
+            call_option['date'] = self.date
+            put_option['date'] = self.date
+
+            # format options
+            for option in (call_option, put_option):
+                for key, value in option.items():
+                    if key == 'dte':
+                        option[key] = int(value)
+                    elif key not in ('date', 'option_code'):
+                        option[key] = float(value)
+
+            # call/put contracts
+            call_contract = {
+                'option_code': call_option['option_code'],
+                'name': 'CALL',
+                'strike': strike,
+                'ex_date': cycle['date'],
+                'right': cycle['right'],
+                'special': cycle['special'],
+                'others': cycle['others']
+            }
+            put_contract = {
+                'option_code': put_option['option_code'],
+                'name': 'PUT',
+                'strike': strike,
+                'ex_date': cycle['date'],
+                'right': cycle['right'],
+                'special': cycle['special'],
+                'others': cycle['others']
+            }
+
+            # add into options
             options.append((call_contract, call_option))
             options.append((put_contract, put_option))
 
         return options
 
-    def read(self):
+    def get_options(self):
         """
-        Format the data then output dict that ready for insert
-        :return: tuple (dict, list of dict)
+        Test get options for each cycles
+        :return: list
         """
-        options = list()
-        for c in self.get_cycles():
-            options += self.get_cycle_options(c)
+        cycles = self.get_cycles()
 
-        return self.get_stock(), options
+        options = []
+        for cycle in cycles:
+            options += self.get_cycle_options(cycle)
+
+        return options

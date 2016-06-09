@@ -1,6 +1,9 @@
+import os
+
 from data.models import Underlying
+from data.tb.clean import get_quote_data
 from data.tb.fillna.calc import *
-from rivers.settings import QUOTE, CLEAN
+from rivers.settings import CLEAN_DIR
 
 output = '%-6s | %-30s'
 
@@ -17,36 +20,24 @@ class FillNaNormal(object):
         self.df_missing = pd.DataFrame()
         self.df_fillna = pd.DataFrame()
 
+        self.path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol)
+
     def get_data(self):
         """
         Prepare data from fill missing row
         """
-        print '-' * 70
-        print output % ('PROC', 'Receive data from db')
-        print '-' * 70
-        db = pd.HDFStore(QUOTE)
-        df_stock = db.select('stock/thinkback/%s' % self.symbol)
-        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
-        try:
-            df_dividend = db.select('event/dividend/%s' % self.symbol.lower())
-            df_div = get_div_yield(df_stock, df_dividend)
-        except KeyError:
-            df_div = pd.DataFrame()
-            df_div['date'] = df_stock.index
-            df_div['amount'] = 0.0
-            df_div['div'] = 0.0
-        db.close()
+        df_div, df_rate, df_stock = get_quote_data(self.symbol)
 
-        db = pd.HDFStore(CLEAN)
-        df_normal = db.select('option/%s/clean/normal' % self.symbol)
+        db = pd.HDFStore(self.path)
+        df_normal = db.select('option/clean/normal')
         df_normal = df_normal.reset_index(drop=True)
         db.close()
 
         print output % ('PROC', 'Prepare and merge data')
-        self.df_stock = df_stock['close']
-        self.df_normal = df_normal
-        self.df_rate = df_rate['rate']
+        self.df_stock = df_stock.set_index('date')['close']
+        self.df_rate = df_rate.set_index('date')['rate']
         self.df_div = df_div
+        self.df_normal = df_normal
 
         # output stat
         print output % ('STAT', 'Length df_normal: %d' % len(df_normal))
@@ -282,12 +273,12 @@ class FillNaNormal(object):
         df_normal = pd.concat([self.df_normal, self.df_fillna])
         """:type: pd.DataFrame"""
 
-        db = pd.HDFStore(CLEAN)
+        db = pd.HDFStore(self.path)
         try:
-            db.remove('option/%s/fillna/normal' % self.symbol)
+            db.remove('option/fillna/normal')
         except KeyError:
             pass
-        db.append('option/%s/fillna/normal' % self.symbol, df_normal)
+        db.append('option/fillna/normal', df_normal)
         db.close()
 
     def update_underlying(self):

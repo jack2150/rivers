@@ -1,6 +1,8 @@
+import os
+
 import pandas as pd
 from django.db import models
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR, TREASURY_DIR
 
 
 class Underlying(models.Model):
@@ -40,8 +42,8 @@ class Underlying(models.Model):
     stop_date = models.DateField(null=True, blank=True)
 
     company = models.CharField(max_length=200, default='', blank=True)  # company name
-    optionable = models.BooleanField(default=False)  # got option or not
-    shortable = models.BooleanField(default=False)  # can short or not
+    optionable = models.BooleanField(default=True)  # got option or not
+    shortable = models.BooleanField(default=True)  # can short or not
     final = models.BooleanField(default=False)  # ready to use or not
     enable = models.BooleanField(default=False)  # use or not use
 
@@ -76,12 +78,11 @@ class Underlying(models.Model):
         else:
             query = ''
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower()))
         if len(query):
-            df_stock = db.select('stock/%s/%s' % (source, self.symbol.lower()), query)
+            df_stock = db.select('stock/%s' % source, query)
         else:
-            df_stock = db.select('stock/%s/%s' % (source, self.symbol.lower()))
-
+            df_stock = db.select('stock/%s' % source, query)
         db.close()
 
         df_stock['symbol'] = self.symbol.upper()
@@ -101,12 +102,11 @@ class Underlying(models.Model):
 
         data = None
         df_stock = pd.DataFrame()
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower()))
         for source in ('google', 'yahoo'):
             try:
                 df_stock = db.select(
-                    'stock/%s/%s' % (source, symbol.lower()),
-                    "index == Timestamp('%s')" % date.strftime('%Y%m%d')
+                    'stock/%s' % source, "index == Timestamp('%s')" % date.strftime('%Y%m%d')
                 )
             except KeyError:
                 pass
@@ -128,9 +128,9 @@ class Underlying(models.Model):
         Get underlying option
         :return: DataFrame, DataFrame
         """
-        db = pd.HDFStore(QUOTE)
-        df_contract = db.select('option/%s/final/contract' % self.symbol.lower())
-        df_option = db.select('option/%s/final/data' % self.symbol.lower())
+        db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower()))
+        df_contract = db.select('option/contract')
+        df_option = db.select('option/data')
         db.close()
 
         return df_contract, df_option
@@ -187,9 +187,9 @@ class Treasury(models.Model):
         Get risk free dataframe
         :return: DataFrame
         """
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(TREASURY_DIR)
         try:
-            df_rate = db.select('treasury/RIFLGFCY01_N_B')
+            df_rate = db.select('RIFLGFCY01_N_B')
         except KeyError:
             raise LookupError('Treasury not import yet')
 

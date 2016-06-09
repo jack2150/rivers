@@ -1,8 +1,39 @@
+import os
 import pandas as pd
 from StringIO import StringIO
 from data.models import Underlying
 from data.tb.fillna.calc import get_div_yield
-from rivers.settings import QUOTE, CLEAN
+from rivers.settings import QUOTE_DIR, CLEAN_DIR, TREASURY_DIR
+
+
+def get_quote_data(symbol):
+    """
+    Get ready to use quote data for cleaning
+    :param symbol: str
+    :return: tuple of pd.DataFrame
+    """
+    path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+    db = pd.HDFStore(path)
+    df_stock = db.select('stock/thinkback')
+    df_stock = df_stock[['close']]
+    treasury = pd.HDFStore(TREASURY_DIR)
+    df_rate = treasury.select('RIFLGFCY01_N_B')  # series
+    treasury.close()
+
+    try:
+        df_dividend = db.select('event/dividend')
+        df_div = get_div_yield(df_stock, df_dividend)
+    except KeyError:
+        df_div = pd.DataFrame()
+        df_div['date'] = df_stock.index
+        df_div['amount'] = 0.0
+        df_div['div'] = 0.0
+    db.close()
+
+    df_stock = df_stock.reset_index()
+    df_rate = df_rate.reset_index()
+
+    return df_div, df_rate, df_stock
 
 
 class CleanNormal(object):
@@ -10,44 +41,21 @@ class CleanNormal(object):
         self.symbol = symbol.lower()
         self.df_all = pd.DataFrame()
 
+        self.path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol)
         self.output = '%-6s | %-30s | %-s'
 
     def get_merge_data(self):
         """
         Merge df_all data with stock close, risk free rate and div yield
         """
-        df_div, df_rate, df_stock = self.get_quote_data()
+        df_div, df_rate, df_stock = get_quote_data(self.symbol)
 
-        db = pd.HDFStore(CLEAN)
-        df_normal = db.select('option/%s/valid/normal' % self.symbol)
+        db = pd.HDFStore(self.path)
+        df_normal = db.select('option/valid/normal')
         df_normal = df_normal.reset_index(drop=True)
         db.close()
 
         self.merge_option_data(df_normal, df_div, df_rate, df_stock)
-
-    def get_quote_data(self):
-        """
-        Get ready to use quote data for cleaning
-        :return: tuple of pd.DataFrame
-        """
-        db = pd.HDFStore(QUOTE)
-        df_stock = db.select('stock/thinkback/%s' % self.symbol)
-        df_stock = df_stock[['close']]
-        df_rate = db.select('treasury/RIFLGFCY01_N_B')  # series
-        try:
-            df_dividend = db.select('event/dividend/%s' % self.symbol.lower())
-            df_div = get_div_yield(df_stock, df_dividend)
-        except KeyError:
-            df_div = pd.DataFrame()
-            df_div['date'] = df_stock.index
-            df_div['amount'] = 0.0
-            df_div['div'] = 0.0
-        db.close()
-
-        df_stock = df_stock.reset_index()
-        df_rate = df_rate.reset_index()
-
-        return df_div, df_rate, df_stock
 
     def merge_option_data(self, df_normal, df_div, df_rate, df_stock):
         """
@@ -86,12 +94,12 @@ class CleanNormal(object):
         df_clean = self.convert_data(lines)
 
         # save data
-        db = pd.HDFStore(CLEAN)
+        db = pd.HDFStore(self.path)
         try:
-            db.remove('option/%s/clean/normal' % self.symbol)
+            db.remove('option/clean/normal')
         except KeyError:
             pass
-        db.append('option/%s/clean/normal' % self.symbol, df_clean)
+        db.append('option/clean/normal', df_clean)
         db.close()
 
     def convert_data(self, lines):

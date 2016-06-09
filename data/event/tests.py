@@ -6,7 +6,7 @@ from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.event.views import group_event_files
 from data.models import Underlying
-from rivers.settings import QUOTE, BASE_DIR
+from rivers.settings import QUOTE_DIR, BASE_DIR
 
 
 class TestEventImport(TestSetUp):
@@ -28,13 +28,13 @@ class TestEventImport(TestSetUp):
             print 'running symbol:', symbol
             self.client.get(reverse('admin:html_event_import', kwargs={'symbol': symbol}))
 
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(QUOTE_DIR)
             df_earning = db.select('event/earning/%s' % symbol.lower())
             print df_earning.to_string(line_width=600)
             self.assertTrue(len(df_earning))
             db.close()
 
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(QUOTE_DIR)
             df_dividend = db.select('event/dividend/%s' % symbol.lower())
             print df_dividend.to_string(line_width=600)
             self.assertTrue(len(df_dividend))

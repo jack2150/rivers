@@ -1,6 +1,8 @@
+import os
+
 import numpy as np
 import pandas as pd
-from rivers.settings import QUOTE, CLEAN
+from rivers.settings import QUOTE_DIR, CLEAN_DIR
 
 output = '%-6s | %-s'
 calc_days = [30, 60, 90, 150, 365]
@@ -266,16 +268,17 @@ class DayIVCalc(object):
         Get data from hdf5 db
         """
         print output % ('DATA', 'symbol: %s' % self.symbol.upper())
-        db = pd.HDFStore(QUOTE)
-        self.df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
+        db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower()))
+        self.df_stock = db.select('stock/thinkback')
         # df_contract = db.select('option/%s/final/contract' % self.symbol.lower())
         # df_option = db.select('option/%s/final/data' % self.symbol.lower())
         # self.df_all = pd.merge(df_option, df_contract, on='option_code')
         db.close()
 
-        db = pd.HDFStore(CLEAN)
-        df_normal = db.select('iv/%s/clean/normal' % self.symbol.lower())
-        path = '/iv/%s/clean/split/old' % self.symbol.lower()
+        path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        df_normal = db.select('iv/clean/normal')
+        path = '/iv/clean/split/old'
         df_split0 = pd.DataFrame()
         if path in db.keys():
             df_split0 = db.select(path)
@@ -495,9 +498,11 @@ class DayIVCalc(object):
         # format dataframe
         df_iv['symbol'] = str(self.symbol.upper())
         df_iv = df_iv[[
-            'symbol', 'date', 'dte', 'strike', 'dte_iv', 'strike_iv', 'impl_vol'
+            'date', 'dte', 'dte_iv', 'strike_iv', 'impl_vol'
         ]]
+        df_iv['dte'] = df_iv['dte'].astype('int')
         df_iv = df_iv.round({'dte_iv': 2, 'strike_iv': 2, 'impl_vol': 2})
+        df_iv = df_iv.reset_index(drop=True)
 
         return df_iv
 
@@ -507,8 +512,8 @@ class DayIVCalc(object):
         :param df_iv: pd.DataFrame
         """
         print output % ('DB', 'open quote db')
-        path = '/option/%s/final/day_iv' % self.symbol.lower()
-        db = pd.HDFStore(QUOTE)
+        path = '/option/iv/day'
+        db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower()))
         try:
             print output % ('DB', 'old table remove: %s' % path)
             db.remove(path)

@@ -6,7 +6,7 @@ from research.algorithm.models import Formula
 from research.strategy.backtest import TradeBacktest
 from research.strategy.models import Trade, Commission
 from research.strategy.views import StrategyAnalysisForm2
-from rivers.settings import RESEARCH
+from rivers.settings import RESEARCH_DIR
 
 
 class TestStrategyBacktest(TestUnitSetUp):
@@ -338,7 +338,7 @@ class TestStrategyBacktest(TestUnitSetUp):
             capital=self.capital
         )
 
-        db = pd.HDFStore(os.path.join(RESEARCH, self.symbol.lower(), 'strategy.h5'))
+        db = pd.HDFStore(os.path.join(RESEARCH_DIR, self.symbol.lower(), 'strategy.h5'))
 
         df_report = db.select('report')
         df_trades = db.select('trade')

@@ -1,11 +1,12 @@
-import numpy as np
+import os
 import pandas as pd
 from base.tests import TestSetUp
 from data.tb.revalid.options import ValidCleanOption, check_round, option_round
-from rivers.settings import CLEAN, QUOTE
+from rivers.settings import CLEAN_DIR
 
 symbol = 'aig'
-db = pd.HDFStore(CLEAN)
+path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol.lower())
+db = pd.HDFStore(path)
 df_normal = db.select('option/%s/clean/normal' % symbol.lower())
 df_split0 = db.select('option/%s/clean/split/old' % symbol.lower())
 db.close()

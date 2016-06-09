@@ -5,7 +5,7 @@ from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.models import Underlying
 from data.tb.final.views import update_old_strike
-from rivers.settings import QUOTE, CLEAN, BASE_DIR
+from rivers.settings import QUOTE_DIR, CLEAN_DIR, BASE_DIR
 
 
 class TestMergeFinal(TestSetUp):
@@ -27,9 +27,10 @@ class TestMergeFinal(TestSetUp):
         self.client.get(reverse('admin:merge_final_h5', kwargs={'symbol': self.symbol.lower()}))
 
         # get data from db
-        db = pd.HDFStore(CLEAN)
-        df_contract = db.select('option/%s/final/contract' % self.symbol.lower())
-        df_option = db.select('option/%s/final/option' % self.symbol.lower())
+        path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        df_contract = db.select('option/final/contract')
+        df_option = db.select('option/final/option')
         db.close()
 
         print 'df_contract length: %d' % len(df_contract)
@@ -50,9 +51,10 @@ class TestMergeFinal(TestSetUp):
         size0 = os.path.getsize(path)
         self.client.get(reverse('admin:remove_clean_h5', kwargs={'symbol': self.symbol.lower()}))
 
-        db = pd.HDFStore(CLEAN)
+        path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
         for key in ('raw', 'valid', 'clean', 'fillna'):
-            self.assertRaises(lambda: db.select('option/%s/%s/normal' % (self.symbol.lower(), key)))
+            self.assertRaises(lambda: db.select('option/%s/normal' % key))
         db.close()
 
         # check clean.h5 size
@@ -64,8 +66,9 @@ class TestMergeFinal(TestSetUp):
         """
         Test update strike for df_split/old
         """
-        db = pd.HDFStore(CLEAN)
-        df_split = db.select('option/aig/clean/split/old')
+        path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        df_split = db.select('option/clean/split/old')
         db.close()
 
         print 'run update_strike...'

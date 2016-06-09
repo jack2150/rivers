@@ -74,7 +74,6 @@ ROOT_URLCONF = 'rivers.urls'
 
 WSGI_APPLICATION = 'rivers.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 DATABASES = {
@@ -88,8 +87,7 @@ DATABASES = {
         'CONN_MAX_AGE': 60
     }
 }
-
-#DATABASE_ROUTERS = ['rivers.router.DataRouter']
+# DATABASE_ROUTERS = ['rivers.router.DataRouter']
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/
@@ -165,9 +163,16 @@ LOGGING = {
 }
 
 # HDF5 Store
-QUOTE = os.path.join(BASE_DIR, 'quote.h5')
-CLEAN = os.path.join(BASE_DIR, 'clean.h5')
-RESEARCH = os.path.join(BASE_DIR, 'store')
+DB_DIR = 'Z:/'
+FILES_DIR = os.path.join(DB_DIR, 'files')
+EARNING_DIR = os.path.join(FILES_DIR, 'fidelity', 'earning')
+DIVIDEND_DIR = os.path.join(FILES_DIR, 'fidelity', 'dividend')
+STATEMENT_DIR = os.path.join(FILES_DIR, 'statement', 'demo')
+THINKBACK_DIR = os.path.join(FILES_DIR, 'thinkback')
+QUOTE_DIR = os.path.join(DB_DIR, 'quote')
+RESEARCH_DIR = os.path.join(DB_DIR, 'research')
+CLEAN_DIR = os.path.join(DB_DIR, 'temp')
+TREASURY_DIR = os.path.join(DB_DIR, 'treasury.h5')
 
 # for test only
 if 'test' in sys.argv:

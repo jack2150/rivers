@@ -4,7 +4,7 @@ import time
 import os
 from data.models import SplitHistory
 from data.tb.valid.options import ValidRawOption
-from data.tb.clean import CleanNormal
+from data.tb.clean import CleanNormal, get_quote_data
 from datetime import timedelta
 from fractions import Fraction
 from subprocess import PIPE
@@ -12,16 +12,17 @@ from subprocess import Popen
 from data.tb.raw.options import ExtractOption
 from data.tb.clean.split_old import CleanSplitOld
 from data.tb.final.views import change_right
-from rivers.settings import QUOTE, CLEAN
+from rivers.settings import QUOTE_DIR, CLEAN_DIR
 
 
 def write_weekday_cli(symbol, name):
+    path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol.lower())
     if name == 'normal':
         clean_option = CleanNormal(symbol)
 
-        df_div, df_rate, df_stock = clean_option.get_quote_data()
-        db = pd.HDFStore(CLEAN)
-        df_normal = db.select('iv/%s/valid/normal' % symbol.lower())
+        df_div, df_rate, df_stock = get_quote_data(symbol)
+        db = pd.HDFStore(path)
+        df_normal = db.select('iv/valid/normal')
         df_normal = df_normal.reset_index(drop=True)
         db.close()
         clean_option.merge_option_data(df_normal, df_div, df_rate, df_stock)
@@ -29,10 +30,10 @@ def write_weekday_cli(symbol, name):
         lines = clean_option.to_csv().split()
     elif name == 'split/old':
         clean_option = CleanSplitOld(symbol)
-        df_div, df_rate, df_stock = clean_option.get_quote_data()
+        df_div, df_rate, df_stock = get_quote_data(symbol)
 
-        db = pd.HDFStore(CLEAN)
-        df_split0 = db.select('iv/%s/valid/split/old' % symbol.lower())
+        db = pd.HDFStore(path)
+        df_split0 = db.select('iv/valid/split/old')
         df_split0 = df_split0.reset_index(drop=True)
         db.close()
         clean_option.merge_option_data(df_split0, df_div, df_rate, df_stock)
@@ -51,8 +52,8 @@ def import_weekday_cli(symbol):
     :param symbol: str
     """
     click.echo('Create raw data for: %s' % symbol.upper())
-    db = pd.HDFStore(QUOTE)
-    df_stock = db.select('stock/thinkback/%s' % symbol.lower())
+    db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower()))
+    df_stock = db.select('stock/thinkback')
     db.close()
 
     # df_stock = df_stock.ix['2009-07-01':'2009-12-31']
@@ -88,14 +89,15 @@ def import_weekday_cli(symbol):
     df_result = valid_option.valid()
 
     # save into db
-    db = pd.HDFStore(CLEAN)
+    clean_path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol.lower())
+    db = pd.HDFStore(clean_path)
     try:
-        db.remove('iv/%s/valid' % symbol.lower())
+        db.remove('iv/valid')
     except KeyError:
         pass
-    db.append('iv/%s/valid/normal' % symbol.lower(), df_result['normal'])
+    db.append('iv/valid/normal', df_result['normal'])
     if len(df_result['split0']):
-        db.append('iv/%s/valid/split/old' % symbol.lower(), df_result['split0'])
+        db.append('iv/valid/split/old', df_result['split0'])
     db.close()
 
     for name in ('normal', 'split/old'):
@@ -145,17 +147,13 @@ def import_weekday_cli(symbol):
             df_clean['right'] = df_clean['right'].apply(change_right)
 
         # save data
-        db = pd.HDFStore(CLEAN)
+        db = pd.HDFStore(clean_path)
         try:
-            db.remove('iv/%s/valid/%s' % (symbol.lower(), name))
-            db.remove('iv/%s/clean/%s' % (symbol.lower(), name))
+            db.remove('iv/valid/%s' % name)
+            db.remove('iv/clean/%s' % name)
         except KeyError:
             pass
-        db.append('iv/%s/clean/%s' % (symbol.lower(), name), df_clean)
+        db.append('iv/clean/%s' % name, df_clean)
         db.close()
 
         print 'iv df_%s: %d' % (name, len(df_clean))
-
-    click.pause()
-
-

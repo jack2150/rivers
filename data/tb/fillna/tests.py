@@ -7,7 +7,7 @@ from data.models import SplitHistory
 from data.tb.fillna.normal import FillNaNormal
 from data.tb.fillna.split_new import FillNaSplitNew
 from data.tb.fillna.split_old import FillNaSplitOld
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR
 
 
 class TestFillNaNormal(TestSetUp):
@@ -76,7 +76,7 @@ class TestFillNaNormal(TestSetUp):
         """
         self.fillna_normal.save()
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(QUOTE_DIR)
         df_normal = db.select('option/%s/fillna/normal' % self.symbol.lower())
         db.close()
 
@@ -150,7 +150,7 @@ class TestFillNaSplitNew(TestSetUp):
         """
         self.fillna_split_new.save()
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(QUOTE_DIR)
         df_split1 = db.select('option/%s/fillna/split/new' % self.symbol.lower())
         db.close()
 
@@ -223,7 +223,7 @@ class TestFillNaSplitOld(TestSetUp):
         """
         self.fillna_split_old.save()
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(QUOTE_DIR)
         df_split0 = db.select('option/%s/fillna/split/old' % self.symbol.lower())
         db.close()
 

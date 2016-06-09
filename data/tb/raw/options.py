@@ -1,4 +1,5 @@
 import calendar
+import logging
 import os
 import re
 import pandas as pd
@@ -6,9 +7,10 @@ from fractions import Fraction
 from django.db.models import Q
 from data.tb.thinkback import ThinkBack
 from data.models import SplitHistory, Underlying
-from rivers.settings import BASE_DIR, CLEAN
+from rivers.settings import CLEAN_DIR, THINKBACK_DIR
 
 # constant for get_dte_date
+logger = logging.getLogger('views')
 output = '%-6s | %-30s %s'
 calendar.setfirstweekday(calendar.SUNDAY)
 month_abbr = [calendar.month_abbr[i].upper() for i in range(1, 13)]
@@ -127,7 +129,8 @@ def check_code(symbol, contract):
     :return: str
     """
     if len(contract['option_code']) < 9:  # old format or no symbol
-        ex_date = pd.Timestamp(get_dte_date2(contract['ex_month'], int(contract['ex_year'])))
+        # ex_date = pd.Timestamp(get_dte_date2(contract['ex_month'], int(contract['ex_year'])))
+        ex_date = contract['ex_date']
 
         new_code = make_code2(
             symbol, contract['others'], contract['right'], contract['special'],
@@ -207,8 +210,8 @@ class ExtractOption(object):
         symbol = self.symbol.lower()
 
         options = []
-        # noinspection PyUnresolvedReferences
-        path = os.path.join(BASE_DIR, 'files', 'thinkback', symbol)
+        path = os.path.join(THINKBACK_DIR, symbol)
+        logger.info('Get data from path: %s' % path)
         for no, (index, values) in enumerate(self.df_stock.iterrows()):
             # open path get option data
             year = index.date().strftime('%Y')
@@ -218,16 +221,23 @@ class ExtractOption(object):
                 )
             )
             print output % (no, 'Read %s' % os.path.basename(fpath), '')
-            _, data = ThinkBack(fpath).read()
+            # _, data = ThinkBack(fpath).read()
+            data = ThinkBack(fpath).get_options()
 
             for c, o in data:
-                c['ex_date'] = get_dte_date2(c['ex_month'], c['ex_year'])
+                # c['ex_date'] = get_dte_date2(c['ex_month'], c['ex_year'])
 
-                c['index'] = '%s%s%s%s' % (
-                    c['ex_month'], c['ex_year'], c['name'], c['strike']
-                )
-                c['index2'] = '%s%s%s%s_%s_%s' % (
-                    c['ex_month'], c['ex_year'], c['name'], c['strike'], c['right'], c['others']
+                c['index'] = float('%s%s%s' % (
+                    c['ex_date'].strftime('%y%m%d'),
+                    1 if c['name'] == 'CALL' else 0,
+                    c['strike']
+                ))
+                c['index2'] = '%s%s%s%s%s' % (
+                    c['ex_date'].strftime('%y%m%d'),
+                    1 if c['name'] == 'CALL' else 0,
+                    c['strike'],
+                    c['right'],
+                    c['others']
                 )
 
                 o.update(c)
@@ -235,8 +245,8 @@ class ExtractOption(object):
 
         # make all options df
         df_all = pd.DataFrame(options)
-        df_all['date'] = pd.to_datetime(df_all['date'])
-        df_all['ex_date'] = pd.to_datetime(df_all['ex_date'])
+        # df_all['date'] = pd.to_datetime(df_all['date'])
+        # df_all['ex_date'] = pd.to_datetime(df_all['ex_date'])
 
         self.df_all = df_all
 
@@ -683,15 +693,23 @@ class ExtractOption(object):
         Start extract all option from raw csv data
         """
         # main functions
+        logger.info('Get data from thinkback folder')
         self.get_data()
+        logger.info('Group data into df_normal, df_split, df_others')
         self.group_data()
+        logger.info('Get df_old_split data')
         self.get_old_split_data()
+        logger.info('Get df_others data')
         self.get_others_data()
+        logger.info('Continue df_old_split and df_others data')
         self.continue_split_others()
+        logger.info('Get and continue df_new_split data')
         self.merge_new_split_data()
+        logger.info('Format option code')
         self.format_normal_code()
 
         # re_index, drop column
+        logger.info('Format data columns')
         df_list = [self.df_normal, self.df_others1, self.df_split1, self.df_split2]
         for df in df_list:
             df.reset_index(drop=True, inplace=True)
@@ -708,24 +726,27 @@ class ExtractOption(object):
         print output % ('STAT', 'df_split1 length: %d' % len(self.df_split1), '')
         print output % ('STAT', 'df_split2 length: %d' % len(self.df_split2), '')
 
-        db = pd.HDFStore(CLEAN)
-
+        path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol)
+        logger.info('Save data into clean, path: %s' % path)
+        db = pd.HDFStore(path)
         try:
-            db.remove('option/%s/raw' % self.symbol.lower())
+            db.remove('option/raw')
         except KeyError:
             pass
-        db.append('option/%s/raw/normal' % self.symbol.lower(), self.df_normal)
-        db.append('option/%s/raw/others' % self.symbol.lower(), self.df_others1)
-        db.append('option/%s/raw/split/old' % self.symbol.lower(), self.df_split1)
-        db.append('option/%s/raw/split/new' % self.symbol.lower(), self.df_split2)
+        db.append('option/raw/normal', self.df_normal)
+        db.append('option/raw/others', self.df_others1)
+        db.append('option/raw/split/old', self.df_split1)
+        db.append('option/raw/split/new', self.df_split2)
         db.close()
 
         print output % ('SAVE', 'All data saved', '')
+        logger.info('Complete save raw options')
 
     def update_underlying(self):
         """
         Update underlying after completed
         """
+        logger.info('Update raw options import stat')
         underlying = Underlying.objects.get(symbol=self.symbol.upper())
         underlying.log += 'Raw option imported, symbol: %s\n' % self.symbol.upper()
         underlying.log += 'Raw df_normal length: %d\n' % len(self.df_normal)

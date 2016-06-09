@@ -6,7 +6,7 @@ from data.models import Underlying
 from itertools import product
 from inspect import getargspec
 from scipy.stats import norm
-from rivers.settings import QUOTE, RESEARCH
+from rivers.settings import QUOTE_DIR, RESEARCH_DIR
 
 logger = logging.getLogger('views')
 
@@ -182,7 +182,7 @@ class FormulaBacktest(object):
             stop = underlying.stop_date
             self.stop = stop
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(QUOTE_DIR)
         df_stock = pd.DataFrame()
         df_think = db.select('stock/thinkback/%s' % symbol)
         for source in ('google', 'yahoo'):
@@ -252,17 +252,17 @@ class FormulaBacktest(object):
 
         # check which data is require
         if 'df_earning' in args:
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(QUOTE_DIR)
             self.df_earning = db.select('event/earning/%s' % self.symbol)
             db.close()
 
         if 'df_dividend' in args:
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(QUOTE_DIR)
             self.df_dividend = db.select('event/dividend/%s' % self.symbol)
             db.close()
 
         if 'df_contract' in args or 'df_option' in args or 'df_all' in args:
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(QUOTE_DIR)
             self.df_contract = db.select('option/%s/final/contract' % self.symbol)
             self.df_option = db.select('option/%s/final/data' % self.symbol)
             db.close()
@@ -613,7 +613,7 @@ class FormulaBacktest(object):
         df_report, df_signals = self.generate()
 
         # save
-        path = os.path.join(RESEARCH, symbol.lower())
+        path = os.path.join(RESEARCH_DIR, symbol.lower())
         fpath = os.path.join(path, 'algorithm.h5')
         if not os.path.isdir(path):
             os.mkdir(path)

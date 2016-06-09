@@ -5,7 +5,7 @@ from base.tests import TestSetUp
 from research.algorithm.models import Formula
 from research.strategy.backtest import TradeBacktest
 from research.strategy.models import Trade
-from rivers.settings import RESEARCH, CLEAN
+from rivers.settings import RESEARCH_DIR, CLEAN_DIR
 
 
 class TestTrade(TestSetUp):

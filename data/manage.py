@@ -23,7 +23,7 @@ from data.tb.fillna.normal import FillNaNormal
 from data.tb.fillna.split_new import FillNaSplitNew
 from data.tb.fillna.split_old import FillNaSplitOld
 from data.tb.final.views import merge_final
-from rivers.settings import QUOTE, CLEAN
+from rivers.settings import QUOTE_DIR, CLEAN_DIR
 from data.option.day_iv.cli import write_weekday_cli, import_weekday_cli
 
 
@@ -53,8 +53,10 @@ def prepare_raw(symbol):
 
 def proc_raw(symbol):
     click.echo('Create raw data for: %s' % symbol.upper())
-    db = pd.HDFStore(QUOTE)
-    df_stock = db.select('stock/thinkback/%s' % symbol.lower())
+    path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+    print 'get df_stock from path: %s' % path
+    db = pd.HDFStore(path)
+    df_stock = db.select('stock/thinkback')
     db.close()
     # run import raw option
     extract_option = ExtractOption(symbol, df_stock)
@@ -105,7 +107,7 @@ def write_valid(symbol, name):
 @click.option('--symbol', prompt='Symbol', help='Symbol of stock data.')
 @click.option('--name', prompt='Name', help='(normal, others, split/old, split/new)')
 def read_clean(symbol, name):
-    proc_clean(name, symbol)
+    proc_clean(symbol, name)
     click.pause()
 
 
@@ -166,12 +168,13 @@ def proc_valid_clean(symbol):
 @click.option('--symbol', prompt='Symbol', help='Symbol of stock data.')
 @click.option('--name', prompt='Name', help='(normal, others, split/old, split/new)')
 def fillna_missing(symbol, name):
-    proc_fillna(name, symbol)
+    proc_fillna(symbol, name)
     click.pause()
 
 
 def proc_fillna(symbol, name):
-    click.echo('Fill missing clean for: %s %s' % (symbol.upper(), name))
+    name = name.lower()
+    click.echo('Fill missing clean symbol: %s, name: %s' % (symbol.upper(), name))
     # run valid raw option
     if name == 'normal':
         fillna_clean = FillNaNormal(symbol)
@@ -188,15 +191,17 @@ def proc_fillna(symbol, name):
 @manage.command()
 @click.option('--symbol', prompt='Symbol', help='Symbol of stock data.')
 def import_option(symbol):
+    symbol = symbol.lower()
     proc_stock(symbol)
     proc_raw(symbol)
     proc_valid_raw(symbol)
 
-    db = pd.HDFStore(CLEAN)
+    path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol.lower())
+    db = pd.HDFStore(path)
     keys = list(db.keys())
     names = []
     for name in ('normal', 'split/new', 'split/old'):
-        path = '/option/%s/valid/%s' % (symbol.lower(), name)
+        path = '/option/valid/%s' % name
         if path in keys:
             names.append(name)
     db.close()
@@ -226,13 +231,8 @@ def write_weekday(symbol, name):
 
 @manage.command()
 @click.option('--symbol', prompt='Symbol', help='Symbol of stock data.')
-def import_weekday(symbol):
-    import_weekday_cli(symbol)
-
-
-@manage.command()
-@click.option('--symbol', prompt='Symbol', help='Symbol of stock data.')
 def calc_iv(symbol):
+    import_weekday_cli(symbol)
     calc = DayIVCalc(symbol)
     calc.start()
 

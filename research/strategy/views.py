@@ -7,7 +7,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from research.algorithm.models import Formula
 from research.strategy.models import Trade, Commission
-from rivers.settings import RESEARCH, BASE_DIR
+from rivers.settings import RESEARCH_DIR, BASE_DIR
 
 
 class StrategyAnalysisForm1(forms.Form):
@@ -53,7 +53,7 @@ def strategy_analysis1(request, symbol, formula_id, report_id):
     """
     symbol = symbol.lower()
     formula = Formula.objects.get(id=formula_id)
-    db = pd.HDFStore(os.path.join(RESEARCH, symbol, 'algorithm.h5'))
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, symbol, 'algorithm.h5'))
     report = db.select('report', where='formula == %r & index == %r' % (
         formula.path, report_id
     )).iloc[0]

@@ -2,7 +2,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.models import Underlying, SplitHistory
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR
 import pandas as pd
 
 
@@ -30,7 +30,7 @@ class TestCsvToH5(TestSetUp):
         print 'run csv stock import view...'
         self.client.get(reverse('admin:csv_stock_h5', kwargs={'symbol': self.symbol}))
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(QUOTE_DIR)
         df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
         db.close()
         print df_stock.to_string(line_width=500)
@@ -42,7 +42,6 @@ class TestUnderlyingManage(TestSetUp):
         TestSetUp.setUp(self)
 
         self.symbol = 'AIG'
-
         try:
             self.underlying = Underlying.objects.get(symbol=self.symbol)
         except ObjectDoesNotExist:

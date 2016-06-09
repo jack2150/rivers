@@ -5,7 +5,7 @@ from django.contrib import admin
 from bootstrap3_datetime.widgets import DateTimePicker
 from django.core.urlresolvers import reverse
 
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR
 from subtool.live.excel_rtd.views import excel_rtd_create
 from subtool.models import OptionTimeSale
 from subtool.option.timesale.views import timesale_report_view, timesale_insert_view
@@ -63,7 +63,7 @@ class OptionTimeSaleAdmin(admin.ModelAdmin):
                 timesale.symbol, timesale.date.strftime('%Y-%m-%d')
             ))
 
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(QUOTE_DIR)
             path = '/option/%s/final/timesale' % timesale.symbol.lower()
             try:
                 df_timesale = db.select(path, 'date == %r' % pd.to_datetime(timesale.date))

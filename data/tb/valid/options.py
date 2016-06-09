@@ -1,7 +1,9 @@
+import os
+
 import pandas as pd
 
 from data.models import Underlying
-from rivers.settings import CLEAN
+from rivers.settings import CLEAN_DIR
 
 output = '%-6s | %-30s'
 
@@ -128,24 +130,25 @@ class ValidRawOption(object):
         """
         names = ['normal', 'others', 'split0', 'split1']
         keys = ['normal', 'others', 'split/old', 'split/new']
-        db = pd.HDFStore(CLEAN)
+        path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol)
+        db = pd.HDFStore(path)
         for name, key in zip(names, keys):
             try:
-                self.df_list[name] = db.select('option/%s/raw/%s' % (self.symbol, key))
+                self.df_list[name] = db.select('option/raw/%s' % key)
             except KeyError:
                 pass
         db.close()
 
         df_result = self.valid()
 
-        db = pd.HDFStore(CLEAN)
+        db = pd.HDFStore(path)
         try:
-            db.remove('option/%s/valid' % self.symbol)
+            db.remove('option/valid')
         except KeyError:
             pass
         for name, key in zip(names, keys):
             if len(df_result[name]):
-                db.append('option/%s/valid/%s' % (self.symbol, key), df_result[name])
+                db.append('option/valid/%s' % key, df_result[name])
         db.close()
 
         print 'All validation complete and save'

@@ -1,8 +1,10 @@
+import os
+
 import numpy as np
 import pandas as pd
 
 from data.models import Underlying
-from rivers.settings import CLEAN
+from rivers.settings import CLEAN_DIR
 
 output = '%-6s | %-30s'
 names = ['normal', 'others', 'split0', 'split1']
@@ -59,8 +61,10 @@ def option_round(value, name, method='01'):
 
 class ValidCleanOption(object):
     def __init__(self, symbol):
-        self.symbol = symbol
+        self.symbol = symbol.lower()
         self.df_list = {}
+
+        self.path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol)
 
     def get_data(self):
         """
@@ -68,10 +72,10 @@ class ValidCleanOption(object):
         """
         print '=' * 70
         print output % ('SEED', 'get data from db')
-        db = pd.HDFStore(CLEAN)
+        db = pd.HDFStore(self.path)
         for name, key in zip(names, keys):
             try:
-                self.df_list[name] = db.select('option/%s/clean/%s' % (self.symbol, key))
+                self.df_list[name] = db.select('option/clean/%s' % key)
                 print output % ('DATA', 'df_%s length: %d' % (key, len(self.df_list['name'])))
             except KeyError:
                 pass
@@ -82,15 +86,15 @@ class ValidCleanOption(object):
         """
         Save valid clean data back into db
         """
-        db = pd.HDFStore(CLEAN)
+        db = pd.HDFStore(self.path)
         try:
-            db.remove('option/%s/clean' % self.symbol)
+            db.remove('option/clean')
         except KeyError:
             pass
 
         for name, key in zip(names, keys):
             if name in self.df_list.keys():
-                db.append('option/%s/clean/%s' % (self.symbol, key), self.df_list[name])
+                db.append('option/clean/%s' % key, self.df_list[name])
                 print output % ('DATA', 'save into h5 df_%s: %d' % (key, len(self.df_list[name])))
         db.close()
         print '=' * 70

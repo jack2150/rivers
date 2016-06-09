@@ -1,7 +1,7 @@
 import pandas as pd
 from base.tests import TestSetUp
 from research.algorithm.formula.event.earning.merge import merge_stock_earning
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR
 
 
 class TestMergeStockEarning(TestSetUp):
@@ -10,7 +10,7 @@ class TestMergeStockEarning(TestSetUp):
 
         self.symbol = 'AIG'
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(QUOTE_DIR)
         self.df_stock = db.select('stock/google/%s' % self.symbol.lower())
         self.df_stock = self.df_stock.reset_index()
         self.df_earning = db.select('event/earning/%s' % self.symbol.lower())

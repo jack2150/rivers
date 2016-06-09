@@ -7,7 +7,7 @@ from django.db import IntegrityError
 from research.algorithm.backtest import FormulaBacktest
 from research.algorithm.models import Formula
 from research.algorithm.views import AlgorithmAnalysisForm
-from rivers.settings import RESEARCH
+from rivers.settings import RESEARCH_DIR
 
 
 class TestAlgorithm(TestUnitSetUp):
@@ -138,7 +138,7 @@ class TestAlgorithmAnalysisForm(TestUnitSetUp):
         # run analysis
         self.form.analysis()
 
-        db = pd.HDFStore(os.path.join(RESEARCH, self.symbol.lower(), 'algorithm.h5'))
+        db = pd.HDFStore(os.path.join(RESEARCH_DIR, self.symbol.lower(), 'algorithm.h5'))
         df_report = db.select('report')
         df_signal = db.select('signal')
         db.close()
@@ -451,7 +451,7 @@ class TestFormulaBacktest(TestUnitSetUp):
             stop='2014-12-31'
         )
 
-        db = pd.HDFStore(os.path.join(RESEARCH, self.symbol.lower(), 'algorithm.h5'))
+        db = pd.HDFStore(os.path.join(RESEARCH_DIR, self.symbol.lower(), 'algorithm.h5'))
 
         df_report = db.select('report')
         df_signal = db.select('signal')

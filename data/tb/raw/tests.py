@@ -5,10 +5,10 @@ import numpy as np
 import pandas as pd
 
 # aig for old others/split, ddd for new split, bxp for special dividend
-from rivers.settings import QUOTE
+from rivers.settings import QUOTE_DIR, DB_DIR
 
 symbols = [
-    'AIG', 'FSLR', 'SNDK', 'DDD', 'BP', 'C', 'CELG',
+    'AIG', 'FSLR', 'DDD', 'BP', 'C', 'CELG',
     'YUM', 'XOM', 'WMT', 'WFC', 'VZ', 'TWTR', 'TSLA', 'PG',
     'DAL', 'DIS', 'EA', 'EBAY', 'FB', 'BXP'
 ]
@@ -18,14 +18,14 @@ class TestExtractOption(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = symbols[5]
+        self.path = os.path.join(DB_DIR, 'temp', 'test.h5')
+        self.symbol = symbols[0]
 
     def create_test_h5(self, symbol):
-        # noinspection PyUnresolvedReferences
-        path = os.path.join(BASE_DIR, 'data', 'tb', 'raw', 'test.h5')
+
         # if False:
-        if os.path.isfile(path):
-            db = pd.HDFStore(path)
+        if os.path.isfile(self.path):
+            db = pd.HDFStore(self.path)
             self.df_stock = db.select('stock/thinkback/%s' % symbol.lower())
             self.df_all = db.select('option/%s/raw/all' % symbol.lower())
             self.df_normal0 = pd.DataFrame()
@@ -49,7 +49,7 @@ class TestExtractOption(TestSetUp):
             db.close()
         else:
             # get df_stock from quote if exists, if not create it
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(self.path)
             try:
                 self.df_stock = db.select('stock/thinkback/%s' % symbol.lower())
             except KeyError:
@@ -60,7 +60,7 @@ class TestExtractOption(TestSetUp):
             db.close()
 
             # save df_stock into test.h5
-            db = pd.HDFStore(path)
+            db = pd.HDFStore(self.path)
             db.append('stock/thinkback/%s' % symbol.lower(), self.df_stock)
 
             # create then save df_all
@@ -96,13 +96,18 @@ class TestExtractOption(TestSetUp):
         """
         Test get option data only from
         """
-        self.create_test_h5(self.symbol)
-        self.eo = ExtractOption(self.symbol, self.df_stock)
+        symbol = 'NFLX'
+        db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower()))
+        df_stock = db.select('stock/thinkback')
+        db.close()
+
+        self.eo = ExtractOption(symbol, df_stock)
 
         print 'run get_data...'
         self.eo.get_data()
 
         print 'df_all length: %d' % len(self.eo.df_all)
+        print self.eo.df_all[:20].to_string(line_width=1000)
         self.assertTrue(len(self.eo.df_all))
 
     def test_group_data(self):
@@ -226,7 +231,7 @@ class TestExtractOption(TestSetUp):
 
             # self.client.get(reverse('admin:raw_stock_h5', kwargs={'symbol': symbol}))
 
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(QUOTE_DIR)
             df_stock = db.select('stock/thinkback/%s' % symbol.lower())
             db.close()
 
@@ -235,8 +240,7 @@ class TestExtractOption(TestSetUp):
 
     def test_one_day(self):
         """
-
-        :return:
+        Test import 1 day of stock and options
         """
         underlying = Underlying(
             symbol=self.symbol,
@@ -245,7 +249,7 @@ class TestExtractOption(TestSetUp):
         )
         underlying.save()
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(QUOTE_DIR)
         df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
         db.close()
 
@@ -257,8 +261,9 @@ class TestExtractOption(TestSetUp):
 
         print extract_option.df_normal.query('option_code == %r' % 'AIG110122C40')
 
-        db = pd.HDFStore(CLEAN)
-        df_option = db.select('option/%s/raw/normal' % self.symbol.lower())
+        path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        df_option = db.select('option/raw/normal')
         db.close()
 
         df_temp = df_option.query('date == %r & name == "CALL"' % date)
@@ -270,7 +275,17 @@ class TestRawViews(TestSetUp):
         """
         Test raw stock import for cli
         """
-        self.client.get(reverse('admin:raw_stock_h5', kwargs={'symbol': 'aig'}))
+        symbol = 'NFLX'.lower()
+        self.client.get(reverse('admin:raw_stock_h5', kwargs={'symbol': symbol}))
+
+        raw_input("Press ENTER to show df_stock...")
+
+        path = os.path.join(QUOTE_DIR, '%s.h5' % symbol)
+        db = pd.HDFStore(path)
+        df_stock = db.select('stock/thinkback')
+        db.close()
+
+        print df_stock.to_string(line_width=1000)
 
     def test_raw_option_h5(self):
         """

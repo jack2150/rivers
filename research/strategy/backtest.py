@@ -8,7 +8,7 @@ from itertools import product
 
 from research.algorithm.models import Formula
 from research.strategy.models import Commission
-from rivers.settings import QUOTE, RESEARCH
+from rivers.settings import QUOTE_DIR, RESEARCH_DIR
 
 logger = logging.getLogger('views')
 
@@ -162,7 +162,7 @@ class TradeBacktest(object):
         start = self.df_signal['date0'].min()
         stop = self.df_signal['date1'].max()
 
-        db = pd.HDFStore(QUOTE)
+        db = pd.HDFStore(QUOTE_DIR)
         df_stock = pd.DataFrame()
         for source in ('google', 'yahoo'):
             try:
@@ -186,7 +186,7 @@ class TradeBacktest(object):
         args = self.arg_names
 
         if 'df_contract' in args or 'df_option' in args or 'df_all' in args:
-            db = pd.HDFStore(QUOTE)
+            db = pd.HDFStore(QUOTE_DIR)
             self.df_contract = db.select('option/%s/final/contract' % self.symbol)
             self.df_option = db.select('option/%s/final/data' % self.symbol)
             db.close()
@@ -579,7 +579,7 @@ class TradeBacktest(object):
         df_report, df_trades = self.generate()
 
         # save
-        path = os.path.join(RESEARCH, self.symbol.lower())
+        path = os.path.join(RESEARCH_DIR, self.symbol.lower())
         fpath = os.path.join(path, 'strategy.h5')
         if not os.path.isdir(path):
             os.mkdir(path)

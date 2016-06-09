@@ -6,7 +6,7 @@ import pandas as pd
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
 
-from rivers.settings import RESEARCH
+from rivers.settings import RESEARCH_DIR
 from research.algorithm.models import Formula, FormulaResult
 from research.strategy.backtest import TradeBacktest
 from research.strategy.models import Trade
@@ -63,7 +63,7 @@ def strategy(symbol, formula_id, report_id, trade_id, commission_id, capital, fi
     click.echo('Backtest strategy trade: %s symbol: %s' % (trade, symbol.upper()))
     click.echo('-' * 70)
 
-    db = pd.HDFStore(os.path.join(RESEARCH, symbol.lower(), 'algorithm.h5'))
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, symbol.lower(), 'algorithm.h5'))
     df_report = db.select('report', where='formula == %r' % formula.path)
     report = df_report.iloc[0]
     df_signal = db.select('signal', where='formula == %r & hd == %r & cs == %r' % (
