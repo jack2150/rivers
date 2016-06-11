@@ -184,8 +184,8 @@ class FillNaSplitOld(object):
                 )
 
                 contract = df_current.iloc[0][[
-                    'ex_date', 'ex_month', 'ex_year', 'name',
-                    'option_code', 'others', 'right', 'special', 'strike'
+                    # 'ex_month', 'ex_year',
+                    'ex_date', 'name','option_code', 'others', 'right', 'special', 'strike'
                 ]]
                 result = {
                     'date': date,
@@ -210,8 +210,8 @@ class FillNaSplitOld(object):
                     'open_int': np.nan,
                     'volume': np.nan,
                     'ex_date': contract['ex_date'],
-                    'ex_month': contract['ex_month'],
-                    'ex_year': contract['ex_year'],
+                    # 'ex_month': contract['ex_month'],
+                    # 'ex_year': contract['ex_year'],
                     'name': contract['name'],
                     'others': contract['others'],
                     'special': contract['special'],

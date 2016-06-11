@@ -107,7 +107,7 @@ class CleanSplitOld(object):
             df_result[key] = df_result[key].astype('float')
             df_result[key] += 0
         df_raw = self.df_all[[
-            'ask', 'bid', 'date', 'ex_date', 'ex_month', 'ex_year',
+            'ask', 'bid', 'date', 'ex_date', # 'ex_month', 'ex_year',
             'last', 'mark', 'name', 'open_int', 'option_code', 'others',
             'right', 'special', 'strike', 'volume'
         ]]

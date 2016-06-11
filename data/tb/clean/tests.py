@@ -137,7 +137,7 @@ class TestCppCleanSplitNew(TestSetUp):
 
         for new_code in df_split1['new_code'].unique():
             df_temp = df_split1.query('new_code == %r' % new_code)[[
-                'ask', 'bid', 'date', 'ex_date', 'ex_month', 'ex_year',
+                'ask', 'bid', 'date', 'ex_date', # 'ex_month', 'ex_year',
                 'last', 'mark', 'name', 'open_int', 'option_code', 'new_code', 'others',
                 'right', 'special', 'strike', 'volume',
                 'theo_price', 'impl_vol', 'delta', 'gamma', 'theta', 'vega',
@@ -196,7 +196,7 @@ class TestCppCleanSplitOld(TestSetUp):
 
         for option_code in df_split1['option_code'].unique()[0:1]:
             df_temp = df_split1.query('option_code == %r' % option_code)[[
-                'ask', 'bid', 'date', 'ex_date', 'ex_month', 'ex_year',
+                'ask', 'bid', 'date', 'ex_date', # 'ex_month', 'ex_year',
                 'last', 'mark', 'name', 'open_int', 'option_code', 'others',
                 'right', 'special', 'strike', 'volume',
                 'theo_price', 'impl_vol', 'delta', 'gamma', 'theta', 'vega',

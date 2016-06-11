@@ -24,9 +24,9 @@ class TestFillNaNormal(TestSetUp):
         self.fillna_normal.get_data()
 
         print self.fillna_normal.df_normal.head(20).to_string(line_width=1000)
-        self.assertTrue(len(self.fillna_normal.df_stock))
+        self.assertTrue(len(self.fillna_normal.close))
         self.assertTrue(len(self.fillna_normal.df_normal))
-        self.assertTrue(len(self.fillna_normal.df_rate))
+        self.assertTrue(len(self.fillna_normal.rate))
         self.assertTrue(len(self.fillna_normal.df_div))
 
     def test_count_missing(self):

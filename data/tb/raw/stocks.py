@@ -111,6 +111,14 @@ def extract_stock(symbol):
     })
 
     if len(df_stock):
+        # check duplicate date
+        dates = df_stock['date']
+        dup = dates[dates.duplicated()]
+        if len(dup):
+            print 'duplicate date:'
+            print dup
+            raise LookupError('Duplicate rate in df_stock index')
+
         df_stock = df_stock.set_index('date')
 
         path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
@@ -134,7 +142,9 @@ def extract_stock(symbol):
 
     # update underlying
     underlying.missing = '\n'.join(missing)
-    underlying.log += 'Thinkback stock imported, symbol: %s \n' % symbol.upper()
+    underlying.log += 'Thinkback stock imported, symbol: %s length: %d \n' % (
+        symbol.upper(), len(df_stock)
+    )
     underlying.log += 'df_stock length: %d missing dates: %d\n' % (len(df_stock), len(missing))
     underlying.save()
 

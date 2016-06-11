@@ -103,7 +103,7 @@ def merge_final(symbol):
     df_index = df_all.set_index(['option_code', 'date'])
     df_contract = df_index[df_index.index.isin(index)]
     contract_keys = [
-        'ex_date', 'ex_month', 'ex_year', 'name', 'others', 'right', 'special', 'strike'
+        'ex_date', 'name', 'others', 'right', 'special', 'strike'
     ]
     df_contract = df_contract[contract_keys]
     df_contract = df_contract.reset_index()

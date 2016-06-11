@@ -12,7 +12,7 @@ class TestThinkBack(TestSetUp):
         TestSetUp.setUp(self)
 
         self.symbol = 'NFLX'
-        self.year = '2010'
+        self.year = '2015'
 
         self.dir_name = os.path.join(
             THINKBACK_DIR, self.symbol.lower(), self.year
@@ -91,7 +91,7 @@ class TestThinkBack(TestSetUp):
         columns.append('dte')
         columns.append('date')
 
-        for fpath in self.fpaths[:1]:
+        for fpath in self.fpaths:
             self.thinkback = ThinkBack(fpath=fpath)
 
             cycles = self.thinkback.get_cycles()
@@ -135,8 +135,8 @@ class TestThinkBack(TestSetUp):
         """
         Testing for some bug only
         """
-        symbol = 'NFLX'
-        date = '2010-01-04'
+        symbol = 'GOOG'
+        date = '2014-04-02'
         fpath = os.path.join(
             THINKBACK_DIR, symbol.lower(), date[:4],
             '%s-StockAndOptionQuoteFor%s.csv' % (date, symbol)
@@ -146,15 +146,7 @@ class TestThinkBack(TestSetUp):
         stocks = tb.get_stock()
         options = tb.get_options()
 
-        data = []
-        for c, o in options:
-            d = c
-            d.update(o)
-            data.append(d)
-
         import pandas
-        df = pandas.DataFrame(data)
+        df = pandas.DataFrame(options)
         print df.to_string(line_width=1000)
         print df['dte'].unique()
-
-

@@ -13,7 +13,7 @@ class TestEventImport(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        for symbol in ('YUM', 'AIG', 'JPM'):
+        for symbol in ('GOOG', 'YUM', 'AIG', 'JPM'):
             underlying = Underlying()
             underlying.symbol = symbol
             underlying.start_date = pd.Timestamp('20010101').date()
@@ -24,18 +24,19 @@ class TestEventImport(TestSetUp):
         """
         Test verify event form and handle file upload then verify earning
         """
-        for symbol in ('YUM',):  # ('JPM', 'DDD'):
+        for symbol in ('GOOG',):  # ('JPM', 'DDD'):
             print 'running symbol:', symbol
             self.client.get(reverse('admin:html_event_import', kwargs={'symbol': symbol}))
 
-            db = pd.HDFStore(QUOTE_DIR)
-            df_earning = db.select('event/earning/%s' % symbol.lower())
+            path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+            db = pd.HDFStore(path)
+            df_earning = db.select('event/earning')
             print df_earning.to_string(line_width=600)
             self.assertTrue(len(df_earning))
             db.close()
 
-            db = pd.HDFStore(QUOTE_DIR)
-            df_dividend = db.select('event/dividend/%s' % symbol.lower())
+            db = pd.HDFStore(path)
+            df_dividend = db.select('event/dividend')
             print df_dividend.to_string(line_width=600)
             self.assertTrue(len(df_dividend))
             db.close()

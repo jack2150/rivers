@@ -9,7 +9,7 @@ from datetime import timedelta
 from fractions import Fraction
 from subprocess import PIPE
 from subprocess import Popen
-from data.tb.raw.options import ExtractOption
+from data.tb.raw.options import RawOption
 from data.tb.clean.split_old import CleanSplitOld
 from data.tb.final.views import change_right
 from rivers.settings import QUOTE_DIR, CLEAN_DIR
@@ -59,7 +59,7 @@ def import_weekday_cli(symbol):
     # df_stock = df_stock.ix['2009-07-01':'2009-12-31']
 
     # run import raw option
-    extract_option = ExtractOption(symbol, df_stock)
+    extract_option = RawOption(symbol, df_stock)
     extract_option.get_data()
     extract_option.group_data()
 

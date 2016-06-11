@@ -8,7 +8,7 @@ import pandas as pd
 from rivers.settings import QUOTE_DIR, DB_DIR
 
 symbols = [
-    'AIG', 'FSLR', 'DDD', 'BP', 'C', 'CELG',
+    'NFLX', 'GOOG', 'AIG', 'FSLR', 'DDD', 'BP', 'C', 'CELG',
     'YUM', 'XOM', 'WMT', 'WFC', 'VZ', 'TWTR', 'TSLA', 'PG',
     'DAL', 'DIS', 'EA', 'EBAY', 'FB', 'BXP'
 ]
@@ -19,89 +19,92 @@ class TestExtractOption(TestSetUp):
         TestSetUp.setUp(self)
 
         self.path = os.path.join(DB_DIR, 'temp', 'test.h5')
-        self.symbol = symbols[0]
+        self.symbol = symbols[1]
 
     def create_test_h5(self, symbol):
+        path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+        db = pd.HDFStore(path)
+        self.df_stock = db.select('stock/thinkback')
+        print 'df_stock: %d' % len(self.df_stock)
+        db.close()
 
-        # if False:
-        if os.path.isfile(self.path):
-            db = pd.HDFStore(self.path)
-            self.df_stock = db.select('stock/thinkback/%s' % symbol.lower())
-            self.df_all = db.select('option/%s/raw/all' % symbol.lower())
-            self.df_normal0 = pd.DataFrame()
-            self.df_normal1 = pd.DataFrame()
-            self.df_split0 = pd.DataFrame()
-            self.df_split1 = pd.DataFrame()
-            self.df_others0 = pd.DataFrame()
-            self.df_others1 = pd.DataFrame()
+        path = os.path.join(CLEAN_DIR, 'test_%s.h5' % symbol.lower())
 
-            keys = [('df_split0', 'raw/split'), ('df_others0', 'raw/others'),
-                    ('df_split1', 'merge/split'), ('df_others1', 'merge/others'),
-                    ('df_normal0', 'raw/split'), ('df_normal1', 'merge/normal')]
-            for var, key in keys:
+        if os.path.isfile(path):
+            db = pd.HDFStore(path)
+
+            self.data = {}
+
+            names = [
+                'df_all',
+                'df_normal0', 'df_split0', 'df_others0',
+                'df_split1', 'df_others1',
+                'df_normal1',
+            ]
+            keys = [
+                'option/raw/normal',
+                'state0/normal', 'state0/split0', 'state0/others0',
+                'state1/split1', 'state1/others1',
+                'state2/normal'
+            ]
+
+            for name, key in zip(names, keys):
                 try:
-                    setattr(
-                        self, var,
-                        db.select('option/%s/%s' % (symbol.lower(), key))
-                    )
+                    self.data[name] = db.select(key)
                 except KeyError:
                     pass
+
             db.close()
         else:
-            # get df_stock from quote if exists, if not create it
-            db = pd.HDFStore(self.path)
-            try:
-                self.df_stock = db.select('stock/thinkback/%s' % symbol.lower())
-            except KeyError:
-                print 'df_stock not found, inserting...'
-                self.client.get(reverse('admin:raw_stock_h5', kwargs={'symbol': symbol}))
-                self.df_stock = db.select('stock/thinkback/%s' % symbol.lower())
-                print 'done insert df_stock'
-            db.close()
+            db = pd.HDFStore(path)
+            raw_option = RawOption(symbol, self.df_stock)
 
-            # save df_stock into test.h5
-            db = pd.HDFStore(self.path)
-            db.append('stock/thinkback/%s' % symbol.lower(), self.df_stock)
+            # state 0
+            raw_option.get_data()
+            raw_option.group_data()
+            db.append('state0/normal', raw_option.df_normal)
+            db.append('state0/split0', raw_option.df_split0)
+            db.append('state0/others0', raw_option.df_others0)
 
-            # create then save df_all
-            extract_option = ExtractOption(symbol, self.df_stock)
-            extract_option.get_data()
-            self.df_all = extract_option.df_all
-            db.append('option/%s/raw/all' % symbol.lower(), self.df_all)
+            # state 1
+            raw_option.get_old_split_data()
+            raw_option.get_others_data()
+            db.append('state1/normal', raw_option.df_normal)
+            db.append('state1/split1', raw_option.df_split1)
+            db.append('state1/others1', raw_option.df_others1)
 
-            # create then save df_normal, df_split, df_others
-            extract_option.group_data()
-            self.df_normal0 = extract_option.df_normal
-            self.df_split0 = extract_option.df_split0
-            self.df_others0 = extract_option.df_others0
-            db.append('option/%s/raw/normal' % symbol.lower(), self.df_normal0)
-            db.append('option/%s/raw/split' % symbol.lower(), self.df_split0)
-            db.append('option/%s/raw/others' % symbol.lower(), self.df_others0)
+            # state 2
+            raw_option.continue_split_others()
+            db.append('state2/normal', raw_option.df_normal)
+            db.append('state2/split1', raw_option.df_split1)
+            db.append('state2/others1', raw_option.df_others1)
 
-            extract_option.get_old_split_data()
-            extract_option.get_others_data()
+            # state 3
+            raw_option.merge_new_split_data()
+            db.append('state3/normal', raw_option.df_normal)
+            db.append('state3/split2', raw_option.df_split2)
 
-            self.df_split1 = extract_option.df_split1
-            self.df_others1 = extract_option.df_others1
-            db.append('option/%s/merge/split' % symbol.lower(), self.df_split1)
-            db.append('option/%s/merge/others' % symbol.lower(), self.df_others1)
-
-            extract_option.continue_split_others()
-            self.df_normal1 = extract_option.df_normal
-            db.append('option/%s/merge/normal' % symbol.lower(), self.df_normal1)
+            # state 4
+            raw_option.format_normal_code()
+            db.append('option/raw/normal', raw_option.df_normal)
+            db.append('option/raw/split1', raw_option.df_split1)
+            db.append('option/raw/split2', raw_option.df_split2)
+            db.append('option/raw/others', raw_option.df_others1)
 
             db.close()
+
+    def test_create_test_h5_2(self):
+        """
+        Test ready for test
+        """
+        self.create_test_h5(self.symbol)
 
     def test_get_data(self):
         """
         Test get option data only from
         """
-        symbol = 'NFLX'
-        db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower()))
-        df_stock = db.select('stock/thinkback')
-        db.close()
-
-        self.eo = ExtractOption(symbol, df_stock)
+        self.create_test_h5(self.symbol)
+        self.eo = RawOption(self.symbol, self.df_stock[:20])
 
         print 'run get_data...'
         self.eo.get_data()
@@ -115,7 +118,7 @@ class TestExtractOption(TestSetUp):
         Test group data for df_all into normal, split, others
         """
         self.create_test_h5(self.symbol)
-        self.eo = ExtractOption(self.symbol, self.df_stock)
+        self.eo = RawOption(self.symbol, self.df_stock)
 
         self.eo.df_all = self.df_all
 
@@ -131,7 +134,7 @@ class TestExtractOption(TestSetUp):
         Test merge all split option data into df_split
         """
         self.create_test_h5(self.symbol)
-        self.eo = ExtractOption(self.symbol, self.df_stock)
+        self.eo = RawOption(self.symbol, self.df_stock)
 
         self.eo.df_split0 = self.df_split0
         print 'run merge_split_data...'
@@ -151,28 +154,35 @@ class TestExtractOption(TestSetUp):
         Test merge others option data int df_others
         """
         self.create_test_h5(self.symbol)
-        self.eo = ExtractOption(self.symbol, self.df_stock)
+        self.eo = RawOption(self.symbol, self.df_stock)
 
-        self.eo.df_others0 = self.df_others0
+        df_others0 = self.data['df_others0']
+        self.eo.df_others0 = df_others0
         print 'run merge_others_data...'
         self.eo.get_others_data()
 
-        print 'df_others0 length: %d' % (len(self.df_others0['option_code']))
-        print 'df_others0 option_code: %d' % (len(self.df_others0['option_code'].unique()))
+        print 'df_others0 length: %d' % (len(df_others0['option_code']))
+        print 'df_others0 option_code: %d' % (len(df_others0['option_code'].unique()))
         print 'df_others1 length: %d' % (len(self.eo.df_others1['option_code']))
         print 'df_others1 option_code: %d' % (len(self.eo.df_others1['option_code'].unique()))
-        self.assertEqual(len(self.df_others0), len(self.eo.df_others1))
+        self.assertEqual(len(df_others0), len(self.eo.df_others1))
 
     def test_continue_split_others(self):
         """
         Test continue split and other row using
         """
         self.create_test_h5(self.symbol)
-        self.eo = ExtractOption(self.symbol, self.df_stock)
+        self.eo = RawOption(self.symbol, self.df_stock)
 
-        self.eo.df_normal = self.df_normal0
-        self.eo.df_split1 = self.df_split1
-        self.eo.df_others1 = self.df_others1
+        self.eo.df_normal = self.data['df_normal0']
+
+        if 'df_split1' in self.data.keys():
+            self.eo.df_split1 = self.data['df_split1']
+
+        if 'df_others1' in self.data.keys():
+            print 'here'
+            self.eo.df_others1 = self.data['df_others1']
+
         self.eo.continue_split_others()
 
     def test_merge_new_split_data(self):
@@ -182,7 +192,7 @@ class TestExtractOption(TestSetUp):
         """
         self.symbol = 'DDD'
         self.create_test_h5(self.symbol)
-        self.eo = ExtractOption(self.symbol, self.df_stock)
+        self.eo = RawOption(self.symbol, self.df_stock)
         self.eo.df_normal = self.df_normal1
 
         self.split_history = SplitHistory(
@@ -201,7 +211,7 @@ class TestExtractOption(TestSetUp):
         """
 
         self.create_test_h5(self.symbol)
-        self.eo = ExtractOption(self.symbol, self.df_stock)
+        self.eo = RawOption(self.symbol, self.df_stock)
         self.eo.df_normal = self.df_normal1
 
         print 'run format_normal_code...'
@@ -235,7 +245,7 @@ class TestExtractOption(TestSetUp):
             df_stock = db.select('stock/thinkback/%s' % symbol.lower())
             db.close()
 
-            extract_option = ExtractOption(symbol, df_stock)
+            extract_option = RawOption(symbol, df_stock)
             extract_option.start()
 
     def test_one_day(self):
@@ -256,7 +266,7 @@ class TestExtractOption(TestSetUp):
         date = '2009-09-04'
         df_stock = df_stock['2009-09-01':'2011-02-01']
 
-        extract_option = ExtractOption(self.symbol, df_stock)
+        extract_option = RawOption(self.symbol, df_stock)
         extract_option.start()
 
         print extract_option.df_normal.query('option_code == %r' % 'AIG110122C40')

@@ -1,6 +1,9 @@
 import codecs
 import os
 import re
+
+import gc
+import numpy as np
 import pandas as pd
 from calendar import month_name
 from base.ufunc import *
@@ -37,9 +40,10 @@ CONTRACT_NAMES = [
 ]
 
 CONTRACT_KEYS = [
-    'ex_month', 'ex_year', 'right', 'special', 'others',
-    'strike', 'name', 'option_code'
+    'ex_date', 'right', 'special', 'others', 'strike', 'name', 'option_code'
 ]
+
+LENGTH = np.arange(38)
 
 
 class ThinkBack(object):
@@ -73,8 +77,10 @@ class ThinkBack(object):
         :return: dict
         """
         cycles = []
-        for key, line in enumerate(self.lines):
-            items = line.split(' ')
+
+        for key in np.arange(len(self.lines)):
+            skip = False
+            items = self.lines[key].split(' ')
 
             if len(items) < 4:
                 continue
@@ -85,6 +91,9 @@ class ThinkBack(object):
                 date = pd.datetime.strptime('-'.join(items[0:3]), '%d-%b-%y')
                 dte = int(items[3][1:-1])
                 right = items[4]  # in str format
+
+                if dte < 0:  # skip if already expire
+                    skip = True
 
                 special = 'Standard'
                 others = ''
@@ -99,7 +108,12 @@ class ThinkBack(object):
                         elif 'US$' in group[0] or 'CDL' in group[0]:
                             others = group[0]
                         else:
-                            raise LookupError('special/others not found for string: %s' % group[0])
+                            if group[0].lower() == 'non standard':
+                                skip = True
+                            else:
+                                raise LookupError(
+                                    'special/others not found for string: %s' % group[0]
+                                )
                     elif len(group) == 2:
                         special = group[0]
                         others = group[1]
@@ -108,10 +122,10 @@ class ThinkBack(object):
                     pass  # no special and others
 
                 cycles.append({
+                    'skip': skip,
                     'start': key + 1,
                     'stop': 0,
                     'dte': dte,
-                    'line': line,
                     'date': date,
                     'right': right,
                     'special': special,
@@ -134,18 +148,26 @@ class ThinkBack(object):
         """
         lines = self.lines[cycle['start']:cycle['stop']]
 
+        if len(lines) < 1:
+            return []  # fix empty mini cycle
+
         if lines[0] != OPTION_COLUMN:
             raise IOError('Invalid column format: %s' % self.fpath)
 
         options = []
-        for line in lines[1:]:
-            # line split to data
-            data = line[2:-2].replace('%', '').split(',')
 
-            # format data
-            for i, d in enumerate(data):
-                if d in ('', '--', '++', '<empty>'):
-                    data[i] = '.0'
+        for l in np.arange(1, len(lines)):
+            # line split to data
+            data = lines[l][2:-2].replace('%', '').split(',')
+
+            if len(data) != 38:
+                continue
+
+            # format data, speed up method
+            data = [
+                '.0' if data[i] in ('', '--', '++', '<empty>')
+                else data[i] for i in LENGTH
+            ]
 
             # get strike
             strike = round(float(data[STRIKE_POS]), 2)
@@ -160,15 +182,13 @@ class ThinkBack(object):
             call_option['date'] = self.date
             put_option['date'] = self.date
 
-            # format options
-            for option in (call_option, put_option):
-                for key, value in option.items():
-                    if key == 'dte':
-                        option[key] = int(value)
-                    elif key not in ('date', 'option_code'):
-                        option[key] = float(value)
+            # format options, speed up
+            for key in [n for n in CALL_NAMES if n not in ('date', 'option_code', 'dte')]:
+                call_option[key] = float(call_option[key])
+                put_option[key] = float(put_option[key])
 
             # call/put contracts
+            ex_date = cycle['date'].strftime('%y%m%d')
             call_contract = {
                 'option_code': call_option['option_code'],
                 'name': 'CALL',
@@ -176,7 +196,12 @@ class ThinkBack(object):
                 'ex_date': cycle['date'],
                 'right': cycle['right'],
                 'special': cycle['special'],
-                'others': cycle['others']
+                'others': cycle['others'],
+                # for grouping
+                'index': float('%s%s%s' % (ex_date, 1, strike)),
+                'index2': '%s%s%s%s%s' % (
+                    ex_date, 1, strike, cycle['right'], cycle['others']
+                )
             }
             put_contract = {
                 'option_code': put_option['option_code'],
@@ -185,12 +210,21 @@ class ThinkBack(object):
                 'ex_date': cycle['date'],
                 'right': cycle['right'],
                 'special': cycle['special'],
-                'others': cycle['others']
+                'others': cycle['others'],
+                # for grouping
+                'index': float('%s%s%s' % (ex_date, 0, strike)),
+                'index2': '%s%s%s%s%s' % (
+                    ex_date, 0, strike, cycle['right'], cycle['others']
+                )
             }
 
+            # make it single object
+            call_option.update(call_contract)
+            put_option.update(put_contract)
+
             # add into options
-            options.append((call_contract, call_option))
-            options.append((put_contract, put_option))
+            options.append(call_option)
+            options.append(put_option)
 
         return options
 
@@ -203,6 +237,11 @@ class ThinkBack(object):
 
         options = []
         for cycle in cycles:
-            options += self.get_cycle_options(cycle)
+            if not cycle['skip']:
+                options += self.get_cycle_options(cycle)
 
         return options
+
+
+# todo: mini problem, 2014-04-02-StockAndOptionQuoteForGOOG
+# todo: run until memory error

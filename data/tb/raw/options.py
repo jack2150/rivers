@@ -2,9 +2,12 @@ import calendar
 import logging
 import os
 import re
+import numpy as np
 import pandas as pd
 from fractions import Fraction
 from django.db.models import Q
+from numba import jit
+
 from data.tb.thinkback import ThinkBack
 from data.models import SplitHistory, Underlying
 from rivers.settings import CLEAN_DIR, THINKBACK_DIR
@@ -17,6 +20,12 @@ month_abbr = [calendar.month_abbr[i].upper() for i in range(1, 13)]
 months = {
     '%d-%d' % (y, m): calendar.monthcalendar(y, m) for m in range(1, 13) for y in range(8, 20)
 }
+COLUMNS = [
+    'ask', 'bid', 'date', 'delta', 'dte', 'ex_date', 'extrinsic', 'gamma', 'impl_vol',
+    'index', 'index2', 'intrinsic', 'last', 'mark', 'name', 'open_int', 'option_code',
+    'others', 'prob_itm', 'prob_otm', 'prob_touch', 'right', 'special', 'strike',
+    'theo_price', 'theta', 'vega', 'volume'
+]
 
 
 def get_dte_date2(ex_month, ex_year):
@@ -130,7 +139,11 @@ def check_code(symbol, contract):
     """
     if len(contract['option_code']) < 9:  # old format or no symbol
         # ex_date = pd.Timestamp(get_dte_date2(contract['ex_month'], int(contract['ex_year'])))
-        ex_date = contract['ex_date']
+        try:
+            ex_date = contract['ex_date']
+        except KeyError:
+            print contract
+            print symbol
 
         new_code = make_code2(
             symbol, contract['others'], contract['right'], contract['special'],
@@ -171,12 +184,11 @@ def get_contract(df_current):
     :return: Series
     """
     return df_current.iloc[0][[
-        'ex_month', 'ex_year', 'name', 'option_code',
-        'others', 'right', 'special', 'strike'
+        'ex_date', 'name', 'option_code', 'others', 'right', 'special', 'strike'
     ]]
 
 
-class ExtractOption(object):
+class RawOption(object):
     def __init__(self, symbol, df_stock):
         """
         :param symbol: str
@@ -207,41 +219,21 @@ class ExtractOption(object):
         print output % ('GET', 'Option data:', self.symbol.upper())
         print '=' * 70
 
-        symbol = self.symbol.lower()
+        symbol0 = self.symbol.lower()
+        symbol1 = self.symbol.upper()
 
         options = []
-        path = os.path.join(THINKBACK_DIR, symbol)
+        path = os.path.join(THINKBACK_DIR, symbol0)
         logger.info('Get data from path: %s' % path)
-        for no, (index, values) in enumerate(self.df_stock.iterrows()):
+        for key in np.arange(len(self.df_stock)):
             # open path get option data
-            year = index.date().strftime('%Y')
+            date = self.df_stock.index[key].date().strftime('%Y-%m-%d')
             fpath = os.path.join(
-                path, year, '%s-StockAndOptionQuoteFor%s.csv' % (
-                    index.date().strftime('%Y-%m-%d'), symbol.upper()
-                )
+                path, date[:4], '%s-StockAndOptionQuoteFor%s.csv' % (date, symbol1)
             )
-            print output % (no, 'Read %s' % os.path.basename(fpath), '')
+            print output % (key, 'Read %s' % os.path.basename(fpath), '')
             # _, data = ThinkBack(fpath).read()
-            data = ThinkBack(fpath).get_options()
-
-            for c, o in data:
-                # c['ex_date'] = get_dte_date2(c['ex_month'], c['ex_year'])
-
-                c['index'] = float('%s%s%s' % (
-                    c['ex_date'].strftime('%y%m%d'),
-                    1 if c['name'] == 'CALL' else 0,
-                    c['strike']
-                ))
-                c['index2'] = '%s%s%s%s%s' % (
-                    c['ex_date'].strftime('%y%m%d'),
-                    1 if c['name'] == 'CALL' else 0,
-                    c['strike'],
-                    c['right'],
-                    c['others']
-                )
-
-                o.update(c)
-                options.append(o)
+            options += ThinkBack(fpath).get_options()
 
         # make all options df
         df_all = pd.DataFrame(options)
@@ -282,7 +274,9 @@ class ExtractOption(object):
 
         if len(self.df_split0):
             data = []
-            for index in self.df_split0['index'].unique():
+            indexes = np.array(self.df_split0['index'].unique())
+            for j in np.arange(len(indexes)):
+                index = indexes[j]
                 print output % ('SPLIT', 'Get row data for split', 'index: %s' % index)
                 df_current = self.df_split0.query('index == %r' % index).copy()
                 """:type: pd.DataFrame"""
@@ -320,6 +314,7 @@ class ExtractOption(object):
         """
         print '=' * 70
         print output % ('MERGE', 'Old others data, length:', len(self.df_others0))
+        print '=' * 70
 
         # codes = df_others['option_code'].unique()
         # df_others = df_others[df_others['index'] == 'JAN11PUT2.5']
@@ -332,7 +327,9 @@ class ExtractOption(object):
             # print dates
 
             data = []
-            for index2, date in dates.iteritems():
+            for j in np.arange(len(dates)):
+                index2 = dates.index[j]
+                date = dates[index2]
                 print output % ('INDEX2', index2, '')
                 print output % ('DATE', date.strftime('%Y-%m-%d'), '')
                 df_current = self.df_others0.query('index2 == %r & date == %r' % (index2, date))
@@ -420,6 +417,7 @@ class ExtractOption(object):
     def continue_split_others(self):
         """
         Run both others and split continue normal using date descending
+        speed up version...
         """
         print '=' * 70
         print output % ('JOIN', 'Old format split/others data', '')
@@ -432,9 +430,10 @@ class ExtractOption(object):
 
         if len(self.df_split1) == 0 and len(self.df_others1) == 0:
             print output % ('INFO', 'No data for continue split/others', '')
-            return
+            return None
 
         df_date0 = pd.DataFrame()
+        group0 = None
         if len(self.df_split1):
             group0 = self.df_split1.groupby('option_code')
             dates0 = group0['date'].min()
@@ -442,6 +441,7 @@ class ExtractOption(object):
             df_date0['event'] = 'split'
 
         df_date1 = pd.DataFrame()
+        group1 = None
         if len(self.df_others1):
             group1 = self.df_others1.groupby('option_code')
             dates1 = group1['date'].min()
@@ -452,69 +452,113 @@ class ExtractOption(object):
         """:type: pd.DataFrame"""
         dates = df_date.sort_values('date')
 
-        split_data = []
+        # new normal group
+        group2 = self.df_normal.groupby('index')
+        used_index = []
+        remain_data = {}
+        append_id = []
+
+        # more in list
+        split_data = []  # todo: cause memory error
         others_data = []
-        for code, row in dates.iterrows():
+        split_panel = []
+        others_panel = []
+
+        for j in np.arange(len(dates)):
+            code = dates.index[j]
+            row = dates.ix[code]
+
             print output % ('FOR', 'code: %s date: %s' % (code, row['date'].strftime('%Y-%m-%d')),
                             'Event: %s' % row['event'])
 
+            # get df_current
             if row['event'] == 'split':
-                df_current = self.df_split1.query('option_code == %r' % code)
-                self.df_split1 = self.df_split1[~self.df_split1.index.isin(df_current.index)]
+                df_current = group0.get_group(code)
             elif row['event'] == 'others':
-                df_current = self.df_others1.query('option_code == %r' % code)
-                self.df_others1 = self.df_others1[~self.df_others1.index.isin(df_current.index)]
+                df_current = group1.get_group(code)
             else:
                 raise LookupError('Invalid event name: %s' % row['event'])
 
             print output % (row['event'].upper(), 'Total length:', len(df_current))
 
-            index = df_current.query('date == %r' % row['date'])['index'].iloc[0]
+            index = df_current.loc[df_current['date'] == row['date'], 'index'].iloc[0]
 
             print output % ('NORMAL', 'Get normal row using', 'index: %s' % index)
-            oldest = df_current['date'].iloc[-1]
-            df_continue = self.df_normal.query('index == %r & date < %r' % (index, oldest))
+            oldest = row['date']
+
+            # get df_continue
+            if index in remain_data.keys():
+                df_continue0 = remain_data[index]
+                df_continue = df_continue0[df_continue0['date'] < oldest]
+                remain_data[index] = df_continue0[df_continue0['date'] >= oldest]  # can empty
+            elif index in used_index:
+                df_continue = pd.DataFrame(columns=COLUMNS)  # no column result error
+            else:
+                df_continue0 = group2.get_group(index)
+                df_continue = df_continue0[df_continue0['date'] < oldest]
+
+                if len(df_continue) == len(df_continue0):
+                    used_index.append(index)
+                else:
+                    remain_data[index] = df_continue0[df_continue0['date'] >= oldest]
 
             if len(df_continue) == len(df_continue['date'].unique()):
-                print output % ('NORMAL', 'Merge normal continue option data', len(df_continue))
-                df_current = pd.concat([df_current, df_continue])
-
-                # remove data in df_normal
-                print output % ('REMOVE', 'old data in df_normal removed', '')
-
-                self.df_normal = self.df_normal[
-                    ~self.df_normal.index.isin(df_continue.index)
-                ]
+                append_id += list(df_continue.index)
             else:
                 print output % ('NORMAL', 'Found normal but duplicate date', len(df_continue))
 
             # update option_code
             df_current['option_code'] = df_current['option_code'].iloc[0]
-            # df_current['right'] = df_current['right'].iloc[0]
-            # df_current['others'] = df_current['others'].iloc[0]
+            df_continue['option_code'] = df_current['option_code'].iloc[0]  # remove concat
             print output % ('CODE', 'using option_code:', df_current['option_code'].iloc[0])
-            # print output % ('TOTAL', 'final df_current length:', len(df_current))
 
             # add into data
             if row['event'] == 'split':
-                split_data.append(df_current)
+                split_data += [df_current, df_continue]
+
+                if len(split_data) > 99:  # remove memory error
+                    print output % ('JOIN', 'concat 100 split_data', 'remove memory error')
+                    print '-' * 70
+                    df_split = pd.concat(split_data)
+                    split_panel.append(df_split)
+                    split_data = []
+
             else:
-                others_data.append(df_current)
+                others_data += [df_current, df_continue]
+
+                if len(others_data) > 99:  # remove memory error
+                    print output % ('JOIN', 'concat 100 others_data', 'remove memory error')
+                    print '-' * 70
+                    df_others = pd.concat(others_data)
+                    others_panel.append(df_others)
+                    others_data = []
+
             print '-' * 70
+        else:
+            # add remain split/others data
+            if len(split_data):
+                df_split = pd.concat(split_data)
+                split_panel.append(df_split)
+
+            if len(others_panel):
+                df_others = pd.concat(others_data)
+                others_panel.append(df_others)
 
         # save back into df
-
         if len(split_data):
-            df_split1 = pd.concat(split_data)
+            df_split1 = pd.concat(split_panel)
             """:type: pd.DataFrame"""
             df_split1 = df_split1.sort_values('date', ascending=False)
             self.df_split1 = df_split1
 
         if len(others_data):
-            df_others1 = pd.concat(others_data)
+            df_others1 = pd.concat(others_panel)
             """:type: pd.DataFrame"""
             df_others1 = df_others1.sort_values('date', ascending=False)
             self.df_others1 = df_others1
+
+        # remove id in normal
+        self.df_normal.drop(append_id)
 
         print 'df_split0 length: %d' % len(self.df_split0)
         print 'df_others0 length: %d' % len(self.df_others0)
@@ -688,9 +732,10 @@ class ExtractOption(object):
 
         print '=' * 70
 
-    def start(self):
+    def start(self, path=''):
         """
         Start extract all option from raw csv data
+        :param path: str
         """
         # main functions
         logger.info('Get data from thinkback folder')
@@ -726,7 +771,9 @@ class ExtractOption(object):
         print output % ('STAT', 'df_split1 length: %d' % len(self.df_split1), '')
         print output % ('STAT', 'df_split2 length: %d' % len(self.df_split2), '')
 
-        path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol)
+        if path == '':
+            path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+
         logger.info('Save data into clean, path: %s' % path)
         db = pd.HDFStore(path)
         try:

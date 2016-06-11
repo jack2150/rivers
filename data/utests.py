@@ -35,6 +35,7 @@ class TestUpdateUnderlying(TestUnitSetUp):
                 print 'add symbol: %s' % symbol
                 underlying = Underlying(
                     symbol=symbol,
+                    start_date='2010-01-01',
                     stop_date=stop_date
                 )
                 new_symbols.append(underlying)

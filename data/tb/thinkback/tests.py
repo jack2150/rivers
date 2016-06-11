@@ -103,8 +103,8 @@ class TestThinkBack(TestSetUp):
         months = [month_name[i + 1][:3].upper() for i in range(12)]
 
         contract_keys = [
-            'ex_month', 'ex_year', 'right', 'special', 'others',
-            'strike', 'name', 'option_code'
+            # 'ex_month', 'ex_year',
+            'right', 'special', 'others', 'strike', 'name', 'option_code'
         ]
 
         option_keys = [

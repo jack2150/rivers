@@ -12,9 +12,9 @@ class FillNaNormal(object):
     def __init__(self, symbol):
         self.symbol = symbol.lower()
 
-        self.df_stock = pd.DataFrame()
+        self.close = pd.Series()
+        self.rate = pd.Series()
         self.df_normal = pd.DataFrame()
-        self.df_rate = pd.DataFrame()
         self.df_div = pd.DataFrame()
 
         self.df_missing = pd.DataFrame()
@@ -34,8 +34,8 @@ class FillNaNormal(object):
         db.close()
 
         print output % ('PROC', 'Prepare and merge data')
-        self.df_stock = df_stock.set_index('date')['close']
-        self.df_rate = df_rate.set_index('date')['rate']
+        self.close = df_stock.set_index('date')['close']
+        self.rate = df_rate.set_index('date')['rate']
         self.df_div = df_div
         self.df_normal = df_normal
 
@@ -53,7 +53,7 @@ class FillNaNormal(object):
         df = self.df_normal.copy()
         """:type: pd.DataFrame"""
 
-        df_stock = self.df_stock.copy()
+        df_stock = self.close.copy()
         """:type: pd.DataFrame"""
 
         group = df.groupby('option_code')
@@ -109,7 +109,7 @@ class FillNaNormal(object):
             # print df.to_string(line_width=1000)
 
             # find nearby index
-            stock_dates = pd.Series(self.df_stock.ix[df['date'].min():df['date'].max()].index)
+            stock_dates = pd.Series(self.close.ix[df['date'].min():df['date'].max()].index)
             missing_dates = stock_dates[~stock_dates.isin(df['date'])]
 
             for date in missing_dates:
@@ -134,13 +134,14 @@ class FillNaNormal(object):
                     continue
 
                 ex_date, name, strike = extract_code(data['option_code'])
+
                 clean = OptionCalc(
                     ex_date,
                     name,
                     strike,
                     date.strftime('%y%m%d'),
-                    round(self.df_rate[date], 4),
-                    round(self.df_stock[date], 4),
+                    round(self.rate[date], 4),
+                    round(self.close[date], 4),
                     0.0,
                     0.0,
                     mean['impl_vol'],
@@ -170,8 +171,8 @@ class FillNaNormal(object):
                 )
 
                 contract = df_current.iloc[0][[
-                    'ex_date', 'ex_month', 'ex_year', 'name',
-                    'option_code', 'others', 'right', 'special', 'strike'
+                    # 'ex_month', 'ex_year',
+                    'ex_date', 'name', 'option_code', 'others', 'right', 'special', 'strike'
                 ]]
                 result = {
                     'date': date,
@@ -196,8 +197,8 @@ class FillNaNormal(object):
                     'open_int': np.nan,
                     'volume': np.nan,
                     'ex_date': contract['ex_date'],
-                    'ex_month': contract['ex_month'],
-                    'ex_year': contract['ex_year'],
+                    # 'ex_month': contract['ex_month'],
+                    # 'ex_year': contract['ex_year'],
                     'name': contract['name'],
                     'others': contract['others'],
                     'special': contract['special'],

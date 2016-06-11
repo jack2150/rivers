@@ -1,8 +1,6 @@
 import os
 import sys
 
-from data.option.day_iv.day_iv import DayIVCalc
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
 
@@ -14,7 +12,7 @@ from data.tb.clean import CleanNormal
 from datetime import timedelta
 from subprocess import PIPE
 from subprocess import Popen
-from data.tb.raw.options import ExtractOption
+from data.tb.raw.options import RawOption
 from data.tb.raw.stocks import extract_stock
 from data.tb.clean.split_new import CleanSplitNew
 from data.tb.clean.split_old import CleanSplitOld
@@ -25,6 +23,7 @@ from data.tb.fillna.split_old import FillNaSplitOld
 from data.tb.final.views import merge_final
 from rivers.settings import QUOTE_DIR, CLEAN_DIR
 from data.option.day_iv.cli import write_weekday_cli, import_weekday_cli
+from data.option.day_iv.day_iv import DayIVCalc
 
 
 @click.group()
@@ -59,7 +58,7 @@ def proc_raw(symbol):
     df_stock = db.select('stock/thinkback')
     db.close()
     # run import raw option
-    extract_option = ExtractOption(symbol, df_stock)
+    extract_option = RawOption(symbol, df_stock)
     extract_option.start()
     extract_option.update_underlying()
 

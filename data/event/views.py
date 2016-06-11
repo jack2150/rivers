@@ -41,17 +41,24 @@ def import_earning(lines, symbol):
                     self.start = True
 
                 if self.start:
-                    self.temp.append(data)
+                    self.temp.append(data.replace('--', '0'))
 
-                if len(self.temp) == 10:
-                    if self.temp[5] and self.temp[9]:
-                        self.temp[9] = self.temp[5]
+                if len(self.temp) == 9:  # append when no analysts data
+                    if self.temp[3] == '0' and '/' in self.temp[6]:
+                        self.temp.insert(4, '(0 Analysts)')
+                        self.data.append(self.temp)
+                        self.temp = list()
+                        self.start = False
 
-                    if '--' not in self.temp:
+                if len(self.temp) == 10:  # append with analysts data
+                    if self.temp[9] == '0':
+                        self.temp = []  # do not append
+                        self.start = False
+                    else:
                         self.data.append(self.temp)
 
-                    self.temp = list()
-                    self.start = False
+                        self.temp = []
+                        self.start = False
 
             if data == 'SmartEstimate':
                 self.after_smart_estimate = True
@@ -79,6 +86,7 @@ def import_earning(lines, symbol):
             e[key] = float(e[key])
 
         earnings.append(e)
+
     if len(earnings):
         path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
         logger.info('Save earning data, path: %s' % path)
