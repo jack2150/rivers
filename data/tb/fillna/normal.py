@@ -108,12 +108,19 @@ class FillNaNormal(object):
             df = df.sort_values('date', ascending=True)
             # print df.to_string(line_width=1000)
 
+            ex_date = df['ex_date'].iloc[0].strftime('%y%m%d')
+            name = 1 if df['name'].iloc[0] == 'CALL' else -1
+            strike = df['strike'].iloc[0]
+
             # find nearby index
             stock_dates = pd.Series(self.close.ix[df['date'].min():df['date'].max()].index)
             missing_dates = stock_dates[~stock_dates.isin(df['date'])]
 
             for date in missing_dates:
-                print output % ('DATE', 'Missing: %s' % date.strftime('%Y-%m-%d'))
+                date_str = date.strftime('%y%m%d')
+                print output % ('DATE', 'missing: %s, ex_date: %s, name: %s, strike: %s' % (
+                    date_str, ex_date, name, strike
+                ))
 
                 # get nearby rows
                 idx = (np.abs(stock_dates - date)).argmin()
@@ -133,13 +140,11 @@ class FillNaNormal(object):
                     print output % ('SKIP', 'No nearby date exist')
                     continue
 
-                ex_date, name, strike = extract_code(data['option_code'])
-
                 clean = OptionCalc(
                     ex_date,
                     name,
                     strike,
-                    date.strftime('%y%m%d'),
+                    date_str,
                     round(self.rate[date], 4),
                     round(self.close[date], 4),
                     0.0,

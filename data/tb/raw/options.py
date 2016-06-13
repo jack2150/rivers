@@ -473,9 +473,9 @@ class RawOption(object):
 
             # get df_current
             if row['event'] == 'split':
-                df_current = group0.get_group(code)
+                df_current = group0.get_group(code).copy()
             elif row['event'] == 'others':
-                df_current = group1.get_group(code)
+                df_current = group1.get_group(code).copy()
             else:
                 raise LookupError('Invalid event name: %s' % row['event'])
 
@@ -489,23 +489,28 @@ class RawOption(object):
             # get df_continue
             if index in remain_data.keys():
                 df_continue0 = remain_data[index]
-                df_continue = df_continue0[df_continue0['date'] < oldest]
+                df_continue = df_continue0[df_continue0['date'] < oldest].copy()
                 remain_data[index] = df_continue0[df_continue0['date'] >= oldest]  # can empty
             elif index in used_index:
                 df_continue = pd.DataFrame(columns=COLUMNS)  # no column result error
             else:
-                df_continue0 = group2.get_group(index)
-                df_continue = df_continue0[df_continue0['date'] < oldest]
+                try:
+                    df_continue0 = group2.get_group(index)
+                    df_continue = df_continue0[df_continue0['date'] < oldest].copy()
 
-                if len(df_continue) == len(df_continue0):
-                    used_index.append(index)
+                    if len(df_continue) == len(df_continue0):
+                        used_index.append(index)
+                    else:
+                        remain_data[index] = df_continue0[df_continue0['date'] >= oldest]
+                except KeyError:
+                    df_continue = pd.DataFrame(columns=COLUMNS)  # no column result error
+                    print output % ('EMPTY', 'No continue data found in df_normal', '')
+
+            if len(df_continue):
+                if len(df_continue) == len(df_continue['date'].unique()):
+                    append_id += list(df_continue.index)
                 else:
-                    remain_data[index] = df_continue0[df_continue0['date'] >= oldest]
-
-            if len(df_continue) == len(df_continue['date'].unique()):
-                append_id += list(df_continue.index)
-            else:
-                print output % ('NORMAL', 'Found normal but duplicate date', len(df_continue))
+                    print output % ('NORMAL', 'Found normal but duplicate date', len(df_continue))
 
             # update option_code
             df_current['option_code'] = df_current['option_code'].iloc[0]

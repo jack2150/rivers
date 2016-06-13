@@ -5,7 +5,7 @@ import pandas as pd
 from fractions import Fraction
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
-from subprocess import Popen
+from subprocess import Popen, PIPE, STDOUT
 from data.models import Underlying
 from rivers.settings import QUOTE_DIR, CLEAN_DIR, BASE_DIR
 
@@ -223,7 +223,9 @@ def import_option_h5(request, symbol):
     :return: render
     """
     logger.info('Start cli for prepare_raw: %s' % symbol)
-    os.system("start cmd /k python data/manage.py import_option --symbol=%s" % symbol)
+    # os.system("start cmd /k python data/manage.py import_option --symbol=%s" % symbol)
+    cmd = "start cmd /k python data/manage.py import_option --symbol=%s" % symbol
+    Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT)  # no wait
 
     return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
 

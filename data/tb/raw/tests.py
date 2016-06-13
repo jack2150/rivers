@@ -302,11 +302,3 @@ class TestRawViews(TestSetUp):
         Test raw option import for cli
         """
         self.client.get(reverse('admin:raw_option_h5', kwargs={'symbol': 'aig'}))
-
-
-
-
-
-
-
-
