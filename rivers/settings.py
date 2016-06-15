@@ -171,8 +171,10 @@ STATEMENT_DIR = os.path.join(FILES_DIR, 'statement', 'demo')
 THINKBACK_DIR = os.path.join(FILES_DIR, 'thinkback')
 QUOTE_DIR = os.path.join(DB_DIR, 'quote')
 RESEARCH_DIR = os.path.join(DB_DIR, 'research')
-CLEAN_DIR = os.path.join(DB_DIR, 'temp')
+CLEAN_DIR = TEMP_DIR = os.path.join(DB_DIR, 'temp')
 TREASURY_DIR = os.path.join(DB_DIR, 'treasury.h5')
+SPY_DIR = os.path.join(QUOTE_DIR, 'spy.h5')
+
 
 # for test only
 if 'test' in sys.argv:

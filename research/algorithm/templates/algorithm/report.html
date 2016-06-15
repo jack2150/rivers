@@ -20,8 +20,6 @@
         "ajax": {
           url: '{% url 'admin:algorithm_report_json' symbol formula_id %}'
         },
-
-
         "columnDefs": [{
           "targets": 33,
           "data": 33,
@@ -35,11 +33,13 @@
               return '<a href="' + data + '" target="_blank">Signal</a>';
             }
           }
-        ]
+        ],
+        "initComplete": function (settings, json) {
+          use_mini();
+        }
       });
 
-      $('#mini').on('click', function (e) {
-        e.preventDefault();
+      function use_mini() {
         var cars = [
           1, 2, 3, 4, 5, 7,
           14, 15, 17, 18, 19, 21, 22,
@@ -60,7 +60,15 @@
         }
         else {
           $(this).text('Mini');
-        }});
+        }
+      };
+
+      $('#mini').on('click', function (e) {
+        e.preventDefault();
+        use_mini();
+      });
+
+
     });
 
 

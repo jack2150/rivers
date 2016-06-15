@@ -4,8 +4,8 @@ import pandas as pd
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.models import Underlying
-from data.tb.final.views import update_old_strike
-from rivers.settings import QUOTE_DIR, CLEAN_DIR, BASE_DIR
+from data.tb.final.views import update_old_strike, reshape_h5
+from rivers.settings import QUOTE_DIR, CLEAN_DIR, BASE_DIR, RESEARCH_DIR
 
 
 class TestMergeFinal(TestSetUp):
@@ -76,3 +76,9 @@ class TestMergeFinal(TestSetUp):
         self.assertEqual(len(df_split), len(df_result))
 
         print df_result.tail(100).to_string(line_width=1000)
+
+    def test_reshape_h5(self):
+        """
+        Test reshape h5
+        """
+        reshape_h5('aig.h5', RESEARCH_DIR)

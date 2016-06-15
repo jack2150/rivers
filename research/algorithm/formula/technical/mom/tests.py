@@ -1,3 +1,6 @@
+import itertools
+import numpy as np
+import pandas as pd
 from base.utests import TestUnitSetUp
 from research.algorithm.models import Formula
 
@@ -14,11 +17,16 @@ class TestMomentum(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'AIG'
+        self.symbol = 'NFLX'
         self.hd_args = {
-            'span': 60
+            'period_span': 120,
+            'skip_days': 0,
+            'holding_period': 0
         }
-        self.cs_args = {}
+        self.cs_args = {
+            'direction': 'follow',
+            'side': 'follow',
+        }
 
         self.backtest = None
         self.algorithm_analysis('Momentum rule')
@@ -31,10 +39,6 @@ class TestMomentum(TestUnitSetUp):
 
         print df_stock.to_string(line_width=200)
 
-        new_columns = ('close0', 'net_chg', 'signal')
-        for column in new_columns:
-            self.assertIn(column, df_stock.columns)
-
     def test_create_signal(self):
         """
         Test create signal based on data frame that handle data generate
@@ -44,35 +48,44 @@ class TestMomentum(TestUnitSetUp):
 
         print df_signal.to_string(line_width=200)
 
+        print 'profit: %d' % len(df_signal[df_signal['pct_chg'] > 0])
+        print 'loss: %d' % len(df_signal[df_signal['pct_chg'] < 0])
+        print 'sum: %.2f%%' % (df_signal['pct_chg'].sum() * 100)
+
         columns = ('date0', 'date1', 'signal0', 'signal1',
                    'close0', 'close1', 'holding', 'pct_chg')
 
         for column in columns:
             self.assertIn(column, df_signal.columns)
 
+    def test_full(self):
+        """
+        Test handle data and create signal using all parameters
+        """
+        spans = (60, 120)
+        waits = (5, 10)
+        ways = ('follow', 'long', 'short')
+        sides = ('follow', 'reverse', 'buy', 'sell')
+        parameters = list(itertools.product(spans, waits, ways, sides))
 
-# noinspection PyArgumentList
-class TestMomentumHolding(TestMomentum):
-    def setUp(self):
-        TestMomentum.setUp(self)
+        report = []
+        for span, wait, way, side in parameters:
+            hd_args = {'period_span': span}
+            cs_args = {'skip_days': wait, 'direction': way, 'side': side}
 
-        self.cs_args = {'holding': 20}
-        self.algorithm_analysis('Momentum rule - H')
+            print 'hd_args: %s, cs_args: %s' % (hd_args, cs_args)
+            df_test = self.backtest.handle_data(self.backtest.df_stock, **hd_args)
+            df_signal = self.backtest.create_signal(df_test, **cs_args)
 
+            report.append({
+                'hd': ' '.join([str(s) for s in hd_args.values()]),
+                'cs': ' '.join([str(s) for s in cs_args.values()]),
+                'profit': len(df_signal[df_signal['pct_chg'] > 0]),
+                'loss': len(df_signal[df_signal['pct_chg'] < 0]),
+                'sum': df_signal['pct_chg'].sum() * 100
+            })
 
-# noinspection PyArgumentList
-class TestMomentumUpHolding(TestMomentum):
-    def setUp(self):
-        TestMomentum.setUp(self)
+        df_report = pd.DataFrame(report)
+        # .sort_values(['sum', 'profit'], ascending=False)
 
-        self.cs_args = {'holding': 20}
-        self.algorithm_analysis('Momentum rule - UP H')
-
-
-# noinspection PyArgumentList
-class TestMomentumDownHolding(TestMomentum):
-    def setUp(self):
-        TestMomentum.setUp(self)
-
-        self.cs_args = {'holding': 20}
-        self.algorithm_analysis('Momentum rule - DW H')
+        print df_report

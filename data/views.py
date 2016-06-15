@@ -205,7 +205,6 @@ def truncate_symbol(request, symbol):
 
             # update underlying
             underlying = Underlying.objects.get(symbol=symbol)
-            underlying.optionable = False
             underlying.final = False
             underlying.enable = False
             underlying.missing = ''

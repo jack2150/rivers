@@ -545,7 +545,7 @@ class RawOption(object):
                 df_split = pd.concat(split_data)
                 split_panel.append(df_split)
 
-            if len(others_panel):
+            if len(others_data):
                 df_others = pd.concat(others_data)
                 others_panel.append(df_others)
 

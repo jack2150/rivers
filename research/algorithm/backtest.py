@@ -6,7 +6,7 @@ from data.models import Underlying
 from itertools import product
 from inspect import getargspec
 from scipy.stats import norm
-from rivers.settings import QUOTE_DIR, RESEARCH_DIR
+from rivers.settings import QUOTE_DIR, RESEARCH_DIR, SPY_DIR, TREASURY_DIR
 
 logger = logging.getLogger('views')
 
@@ -182,12 +182,13 @@ class FormulaBacktest(object):
             stop = underlying.stop_date
             self.stop = stop
 
-        db = pd.HDFStore(QUOTE_DIR)
+        path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
         df_stock = pd.DataFrame()
-        df_think = db.select('stock/thinkback/%s' % symbol)
+        df_think = db.select('stock/thinkback')
         for source in ('google', 'yahoo'):
             try:
-                df_stock = db.select('stock/%s/%s' % (source, symbol))
+                df_stock = db.select('stock/%s' % source)
                 break
             except KeyError:
                 pass
@@ -195,11 +196,21 @@ class FormulaBacktest(object):
         if len(df_stock) == 0:
             raise LookupError('Symbol < %s > stock not found (Google/Yahoo)' % symbol.upper())
 
+
         df_stock = df_stock[start:stop]  # slice date range
         df_stock = df_stock[df_stock.index.isin(df_think.index)]  # make sure in thinkback
-        df_spy = db.select('stock/google/spy')
+        db.close()
+
+        # open spy db
+        db = pd.HDFStore(SPY_DIR)
+        df_spy = db.select('stock/google')
         df_spy = df_spy[start:stop]
-        df_rate = db.select('treasury/RIFLGFCY01_N_B')
+        db.close()
+
+        # open treausry db
+        treasury_path = os.path.join(TREASURY_DIR)
+        db = pd.HDFStore(treasury_path)
+        df_rate = db.select('RIFLGFCY01_N_B')
         df_rate = df_rate[start:stop]
         db.close()
 
@@ -613,25 +624,24 @@ class FormulaBacktest(object):
         df_report, df_signals = self.generate()
 
         # save
-        path = os.path.join(RESEARCH_DIR, symbol.lower())
-        fpath = os.path.join(path, 'algorithm.h5')
-        if not os.path.isdir(path):
-            os.mkdir(path)
-        db = pd.HDFStore(fpath)
+        path = os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower())
+        db = pd.HDFStore(path)
 
         # remove old same item
         try:
-            db.remove('report', where='formula == %r' % self.formula.path)
-            db.remove('signal', where='formula == %r' % self.formula.path)
+            db.remove('algorithm/report', where='formula == %r' % self.formula.path)
+            db.remove('algorithm/signal', where='formula == %r' % self.formula.path)
         except NotImplementedError:
-            db.remove('report')
-            db.remove('signal')
+            db.remove('algorithm/report')
+            db.remove('algorithm/signal')
         except KeyError:
             pass
 
-        db.append('report', df_report, format='table', data_columns=True, min_itemsize=100)
-        db.append('signal', df_signals, format='table', data_columns=True, min_itemsize=100)
+        db.append('algorithm/report', df_report,
+                  format='table', data_columns=True, min_itemsize=100)
+        db.append('algorithm/signal', df_signals,
+                  format='table', data_columns=True, min_itemsize=100)
         db.close()
-        logger.info('Backtest save: %s' % fpath)
+        logger.info('Backtest save: %s' % path)
 
         return len(df_report)

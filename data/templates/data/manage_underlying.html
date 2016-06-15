@@ -67,7 +67,7 @@
             <tr>
               <td>Option:</td>
               <td>
-                {% if underlying.option %}
+                {% if underlying.optionable %}
                   <span class="glyphicon glyphicon-ok green"></span>
                 {% else %}
                   <span class="glyphicon glyphicon-remove red"></span>
@@ -198,13 +198,6 @@
             Unset Underlying Final
           {% else %}
             Set Underlying Final
-          {% endif %}
-        </a>
-        <a href="{% url 'admin:set_underlying' symbol 'option' %}" class="list-group-item">
-          {% if underlying.final %}
-            Unset Underlying Optionable
-          {% else %}
-            Set Underlying Optionable
           {% endif %}
         </a>
         <a href="{% url 'admin:set_underlying' symbol 'enable' %}" class="list-group-item">

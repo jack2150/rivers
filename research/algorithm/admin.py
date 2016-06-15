@@ -114,15 +114,15 @@ class FormulaResultAdmin(admin.ModelAdmin):
         for q in queryset.all():
             formula_result = FormulaResult.objects.get(id=q.id)
             logger.info('Formula result: %s' % formula_result)
+            symbol = formula_result.symbol.lower()
             path = formula_result.formula.path
 
-            db = pd.HDFStore(os.path.join(
-                RESEARCH_DIR, formula_result.symbol.lower(), 'algorithm.h5'
-            ))
+            fpath = os.path.join(RESEARCH_DIR, '%s.h5' % symbol)
+            db = pd.HDFStore(fpath)
 
             try:
-                df_report = db.select('report', 'formula == %r' % path)
-                df_signal = db.select('signal', 'formula == %r' % path)
+                df_report = db.select('algorithm/report', 'formula == %r' % path)
+                df_signal = db.select('algorithm/signal', 'formula == %r' % path)
                 logger.info('df_report remove: %d df_signal remove: %d' % (
                     len(df_report), len(df_signal)
                 ))
@@ -130,20 +130,18 @@ class FormulaResultAdmin(admin.ModelAdmin):
                 pass
 
             try:
-                db.remove('report', where='formula == %r' % path)
-                db.remove('signal', where='formula == %r' % path)
+                db.remove('algorithm/report', where='formula == %r' % path)
+                db.remove('algorithm/signal', where='formula == %r' % path)
             except NotImplementedError:
-                db.remove('signal')
-                db.remove('report')
+                db.remove('algorithm/signal')
+                db.remove('algorithm/report')
             except KeyError:
                 pass
 
             db.close()
 
-            reshape_h5(
-                'algorithm.h5',
-                os.path.join(BASE_DIR, 'store', formula_result.symbol.lower())
-            )
+            # reshape db
+            reshape_h5('%s.h5' % symbol, RESEARCH_DIR)
 
         queryset.delete()
 

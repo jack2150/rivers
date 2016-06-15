@@ -44,7 +44,7 @@ class UnderlyingAdmin(admin.ModelAdmin):
 
     list_display = (
         'symbol', 'company', 'start_date', 'stop_date',
-        'optionable', 'shortable', 'final', data_manage
+        'final', 'enable', 'optionable', 'shortable', data_manage
     )
 
     fieldsets = (
@@ -68,8 +68,8 @@ class UnderlyingAdmin(admin.ModelAdmin):
 
     search_fields = ('symbol', 'company', 'start', 'stop', 'sector', 'industry')
     list_filter = (
-        'optionable', 'shortable', 'exchange', 'country', 'activity', 'classify',
-        'final', 'enable'
+        'enable', 'final', 'optionable', 'shortable',
+        'exchange', 'country', 'activity', 'classify',
     )
     list_per_page = 20
 

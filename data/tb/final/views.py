@@ -7,7 +7,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from subprocess import Popen, PIPE, STDOUT
 from data.models import Underlying
-from rivers.settings import QUOTE_DIR, CLEAN_DIR, BASE_DIR
+from rivers.settings import QUOTE_DIR, CLEAN_DIR, BASE_DIR, TEMP_DIR
 
 logger = logging.getLogger('views')
 output = '%-6s | %-30s'
@@ -209,10 +209,11 @@ def reshape_h5(fname, dir_name=None):
     :param fname: str
     """
     os.chdir(dir_name if dir_name else BASE_DIR)
-    p = Popen(r'ptrepack --chunkshape=auto %s temp.h5' % fname)
+    temp = 'temp.h5'
+    p = Popen(r'ptrepack --chunkshape=auto %s %s' % (fname, temp))
     p.communicate()  # wait complete
     os.remove(fname)
-    os.rename('temp.h5', fname)
+    os.rename(temp, fname)
 
 
 def import_option_h5(request, symbol):

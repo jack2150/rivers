@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags algotags %}
 
 {% block extrastyle %}
   {{ block.super }}
@@ -68,9 +68,9 @@
                   {% else %}
                     <div class="control-label col-md-3">
                       {% if 'Handle_data' in field.label %}
-                        <b>{{ field.label|field_name_last }}:</b>
+                        <b>{{ field.label|algo_para_name }}:</b>
                       {% elif 'Create_signal' in field.label %}
-                        <b>{{ field.label|field_name_last }}:</b>
+                        <b>{{ field.label|algo_para_name }}:</b>
                       {% else %}
                         <b>{{ field.label|field_name }}:</b>
                       {% endif %}
@@ -82,9 +82,7 @@
                           title="" name="position" data-original-title="">
                           {% for underlying in underlyings %}
                             <option value="{{ underlying.symbol }}">
-                              {{ underlying.symbol }} {{ underlying.stop }}
-                              tb: {{ underlying.thinkback }},
-                              google: {{ underlying.google }}
+                              {{ underlying.symbol }} - {{ underlying.company }}
                             </option>
                           {% endfor %}
                         </select>

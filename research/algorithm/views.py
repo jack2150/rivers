@@ -1,5 +1,4 @@
 import datetime
-import json
 import logging
 import pandas as pd
 import os
@@ -11,10 +10,8 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
 from pandas.tseries.offsets import BDay
 from data.models import Underlying
-from research.algorithm.backtest import dtype
 from research.algorithm.models import Formula, FormulaArgument, FormulaResult
 from rivers.settings import BASE_DIR, RESEARCH_DIR
 
@@ -44,15 +41,12 @@ class AlgorithmAnalysisForm(forms.Form):
         attrs={'class': 'form-control vTextField', 'readonly': 'readonly'}
     ))
 
-    formula_equation = forms.CharField(widget=forms.TextInput(
-        attrs={'class': 'form-control vTextField', 'readonly': 'readonly'}
-    ))
-
     def __init__(self, *args, **kwargs):
         arguments = kwargs.pop('arguments')
         super(AlgorithmAnalysisForm, self).__init__(*args, **kwargs)
 
         for arg, default in arguments:
+            print arg, default
             if type(default) == tuple:
                 # choice field
                 self.fields[arg] = forms.ChoiceField(
@@ -71,7 +65,7 @@ class AlgorithmAnalysisForm(forms.Form):
                         'class': 'form-control vTextField',
                         'required': 'required'
                     }),
-                    help_text='Sample: 20:100:10',
+                    help_text='(20:100:10, 20:30, 20)',
                 )
 
     def clean(self):
@@ -118,6 +112,7 @@ class AlgorithmAnalysisForm(forms.Form):
         try:
             algorithm = Formula.objects.get(id=formula_id)
             arguments = algorithm.get_args()
+
         except ObjectDoesNotExist:
             self._errors['formula_id'] = self.error_class(
                 ['Formula id {formula_id} is not found.'.format(
@@ -221,7 +216,7 @@ def algorithm_analysis(request, formula_id, argument_id=0):
             'formula_id': formula.id,
             'formula_rule': formula.rule,
             'formula_equation': formula.equation,
-            'start_date': datetime.date(year=2009, month=1, day=1),
+            'start_date': datetime.date(year=2010, month=1, day=1),
             'stop_date': datetime.date(
                 year=datetime.datetime.today().year,
                 month=datetime.datetime.today().month,
@@ -264,12 +259,12 @@ def algorithm_signal_view(request, symbol, formula_id, backtest_id):
     """
     formula = Formula.objects.get(id=formula_id)
 
-    db = pd.HDFStore(os.path.join(RESEARCH_DIR, symbol.lower(), 'algorithm.h5'))
-    df_report = db.select('report', where='index == %d' % int(backtest_id))
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
+    df_report = db.select('algorithm/report', where='index == %d' % int(backtest_id))
     report = df_report.iloc[0]
     """:type: pd.DataFrame"""
     df_signal = db.select(
-        'signal', where='formula == %r & hd == %r & cs == %r' % (
+        'algorithm/signal', where='formula == %r & hd == %r & cs == %r' % (
             report['formula'], report['hd'], report['cs']
         )
     ).reset_index(drop=True)
@@ -341,12 +336,12 @@ def algorithm_trade_view(request, symbol, formula_id, backtest_id):
     """
     formula = Formula.objects.get(id=formula_id)
 
-    db = pd.HDFStore(os.path.join(RESEARCH_DIR, symbol.lower(), 'algorithm.h5'))
-    df_report = db.select('report', where='index == %d' % int(backtest_id))
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
+    df_report = db.select('algorithm/report', where='index == %d' % int(backtest_id))
     report = df_report.iloc[0]
     """:type: pd.DataFrame"""
     df_signal = db.select(
-        'signal', where='formula == %r & hd == %r & cs == %r' % (
+        'algorithm/signal', where='formula == %r & hd == %r & cs == %r' % (
             report['formula'], report['hd'], report['cs']
         )
     ).reset_index(drop=True)
@@ -456,8 +451,8 @@ def algorithm_report_json(request, symbol, formula_id):
 
     formula = Formula.objects.get(id=formula_id)
 
-    db = pd.HDFStore(os.path.join(RESEARCH_DIR, symbol.lower(), 'algorithm.h5'))
-    df_report = db.select('report', where='formula == %r' % formula.path)
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
+    df_report = db.select('algorithm/report', where='formula == %r' % formula.path)
     """:type: pd.DataFrame"""
     db.close()
 
