@@ -122,6 +122,9 @@ class CleanNormal(object):
         df_clean = pd.concat([df_raw, df_result], axis=1)
         """:type: pd.DataFrame"""
 
+        # reduce day
+        df_clean['dte'] -= 1
+
         return df_clean
 
     def update_underlying(self):

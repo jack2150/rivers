@@ -135,8 +135,8 @@ class TestThinkBack(TestSetUp):
         """
         Testing for some bug only
         """
-        symbol = 'GOOG'
-        date = '2014-04-02'
+        symbol = 'AIG'
+        date = '2011-11-01'
         fpath = os.path.join(
             THINKBACK_DIR, symbol.lower(), date[:4],
             '%s-StockAndOptionQuoteFor%s.csv' % (date, symbol)
@@ -150,3 +150,5 @@ class TestThinkBack(TestSetUp):
         df = pandas.DataFrame(options)
         print df.to_string(line_width=1000)
         print df['dte'].unique()
+
+

@@ -20,6 +20,54 @@
 {% block bodyclass %}change-form{% endblock %}
 
 {% block content %}
+  <div class="row">
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading">Commission</div>
+      <table class="table">
+        <tr>
+          <th class="col-md-6">Stock Order Fee</th>
+          <td>{{ commission.stock_order_fee }}</td>
+        </tr>
+        <tr>
+          <th class="col-md-6">Option Order Fee</th>
+          <td>{{ commission.option_order_fee }}</td>
+        </tr>
+        <tr>
+          <th class="col-md-6">Option Contract Fee</th>
+          <td>{{ commission.option_contract_fee }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="panel panel-default">
+      <div class="panel-heading">Strategy</div>
+      <table class="table">
+        <tr>
+          <th>Capital</th>
+          <td class="col-md-4">{{ capital|floatformat:2 }}</td>
+          <th></th>
+          <td></td>
+
+        </tr>
+        <tr>
+          <th>Name</th>
+          <td class="col-md-4">{{ trade.name }}</td>
+          <th>Instrument</th>
+          <td class="col-md-4">{{ trade.instrument }}</td>
+        </tr>
+        <tr>
+          <th>Category</th>
+          <td class="col-md-4">{{ trade.category }}</td>
+          <th>Path</th>
+          <td class="col-md-4">{{ trade.path }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  </div>
+
   <form class="form-horizontal" action='#' method='post'>
     <div class="panel panel-default">
       <div class="panel-heading">Argument form</div>

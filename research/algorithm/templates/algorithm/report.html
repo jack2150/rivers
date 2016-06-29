@@ -20,17 +20,26 @@
         "ajax": {
           url: '{% url 'admin:algorithm_report_json' symbol formula_id %}'
         },
-        "columnDefs": [{
-          "targets": 33,
-          "data": 33,
-          "render": function (data, type, full, meta) {
-            return '<a href="' + data + '" target="_blank">Trade</a>';
-          }},
+        "columnDefs": [
           {
             "targets": 32,
             "data": 32,
             "render": function (data, type, full, meta) {
               return '<a href="' + data + '" target="_blank">Signal</a>';
+            }
+          },
+          {
+            "targets": 33,
+            "data": 33,
+            "render": function (data, type, full, meta) {
+              return '<a href="' + data + '" target="_blank">Trade</a>';
+            }
+          },
+          {
+            "targets": 34,
+            "data": 34,
+            "render": function (data, type, full, meta) {
+              return '<a href="' + data + '" target="_blank">Analysis</a>';
             }
           }
         ],
@@ -61,7 +70,7 @@
         else {
           $(this).text('Mini');
         }
-      };
+      }
 
       $('#mini').on('click', function (e) {
         e.preventDefault();
@@ -144,6 +153,7 @@
       <th>DL Mean</th>
       <th>Signal</th>
       <th>Trade</th>
+      <th>Analysis</th>
     </tr>
     </thead>
   </table>

@@ -25,11 +25,10 @@ class TradeBacktest(object):
         logger.info('Trade: %s' % self.trade)
         self.create_order = self.trade.get_method('create_order')
         self.join_data = self.trade.get_method('join_data')
-        self.expected_return = self.trade.get_method('expected_return')
 
         # formula, previous report, df_signal
         self.formula = Formula()
-        self.report_id = 0
+        self.backtest_id = 0
         self.df_signal = pd.DataFrame()
 
         # research data
@@ -37,6 +36,7 @@ class TradeBacktest(object):
         self.df_contract = pd.DataFrame()
         self.df_option = pd.DataFrame()
         self.df_all = pd.DataFrame()
+        self.df_iv = pd.DataFrame()
 
         # trade data
         self.commission = Commission()
@@ -54,21 +54,21 @@ class TradeBacktest(object):
         # backtest result
         self.df_trade = pd.DataFrame()
 
-    def set_algorithm(self, formula_id, report_id, df_signal):
+    def set_algorithm(self, formula_id, backtest_id, df_signal):
         """
         Set df_signal into class
         :param formula_id: int
-        :param report_id: int
+        :param backtest_id: int
         :param df_signal: pd.DataFrame
         """
         self.formula = Formula.objects.get(id=formula_id)
-        self.report_id = report_id
+        self.backtest_id = backtest_id
 
         self.df_signal = df_signal[[
             'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding', 'pct_chg'
         ]]
         logger.info('Formula: %s' % self.formula)
-        logger.info('report_id: %d' % int(self.report_id))
+        logger.info('backtest_id: %d' % int(self.backtest_id))
         logger.info('df_signal: %d' % len(self.df_signal))
 
     def set_commission(self, commission_id):
@@ -157,25 +157,24 @@ class TradeBacktest(object):
         Make data frame from objects data
         :return: DataFrame
         """
-        symbol = self.symbol
-
         start = self.df_signal['date0'].min()
         stop = self.df_signal['date1'].max()
 
-        db = pd.HDFStore(QUOTE_DIR)
+        path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
         df_stock = pd.DataFrame()
         for source in ('google', 'yahoo'):
             try:
-                df_stock = db.select('stock/%s/%s' % (source, symbol))
+                df_stock = db.select('stock/%s' % source)
                 break
             except KeyError:
                 pass
         db.close()
 
         if len(df_stock) == 0:
-            raise LookupError('Symbol < %s > stock not found' % symbol.upper())
+            raise LookupError('Symbol < %s > stock not found' % self.symbol.upper())
 
-        self.df_stock = df_stock[start:stop]  # slice date range
+        self.df_stock = df_stock[start:stop].reset_index()  # slice date range
 
         logger.info('Seed data, df_stock: %d' % len(self.df_stock))
 
@@ -186,16 +185,39 @@ class TradeBacktest(object):
         args = self.arg_names
 
         if 'df_contract' in args or 'df_option' in args or 'df_all' in args:
-            db = pd.HDFStore(QUOTE_DIR)
-            self.df_contract = db.select('option/%s/final/contract' % self.symbol)
-            self.df_option = db.select('option/%s/final/data' % self.symbol)
+            path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
+            db = pd.HDFStore(path)
+            self.df_contract = db.select('option/contract')
+            self.df_option = db.select('option/data')
+            self.df_iv = db.select('option/iv/day')
             db.close()
 
             self.df_all = pd.merge(self.df_option, self.df_contract, on='option_code')
 
+            self.set_option_price(50)
+
             logger.info('Seed df_contract: %d, df_option: %d' % (
                 len(self.df_contract), len(self.df_option)
             ))
+
+    def set_option_price(self, percent=50):
+        """
+        :param percent: int
+        :return:
+        """
+        self.df_all['buy'] = (
+            self.df_all['mark'] + (
+                (self.df_all['ask'] - self.df_all['mark']) * (percent / 100.0)
+            )
+        )
+        self.df_all['sell'] = (
+            self.df_all['mark'] - (
+                (self.df_all['mark'] - self.df_all['bid']) * (percent / 100.0)
+            )
+        )
+        self.df_all = self.df_all.round({
+            'buy': 2, 'sell': 2
+        })
 
     def create_order(self, df, *args, **kwargs):
         """
@@ -318,7 +340,7 @@ class TradeBacktest(object):
         """
         Generate trade using df_order that ready to report
         :param kwargs: dict
-        :return: pd.DataFrame
+        :return: pd.DataFrame, pd.DataFrame
         """
         if 'df_stock' in self.arg_names:
             kwargs['df_stock'] = self.df_stock
@@ -329,11 +351,11 @@ class TradeBacktest(object):
         if 'df_option' in self.arg_names:
             kwargs['df_option'] = self.df_option
 
-        df_order = self.create_order(self.df_signal, **kwargs)
-        df_order = df_order.reset_index(drop=True)
+        df_order0 = self.create_order(self.df_signal, **kwargs)
+        df_order1 = df_order0.reset_index(drop=True)
 
         trades = []
-        for index, data in df_order.iterrows():
+        for index, data in df_order1.iterrows():
             sqty0, oqty0 = self.calc_quantity(
                 data['close0'], data['sqm0'], data['oqm0'], self.capital
             )
@@ -357,7 +379,7 @@ class TradeBacktest(object):
             }
             trades.append(trade)
 
-        df_order = df_order[[
+        df_order1 = df_order1[[
             'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding'
         ]]
         df_extra = pd.DataFrame(trades)
@@ -366,7 +388,7 @@ class TradeBacktest(object):
             'amount0', 'fee0', 'remain0',
             'amount1', 'fee1'
         ]]
-        df_trade = pd.concat([df_order, df_extra], axis=1)
+        df_trade = pd.concat([df_order1, df_extra], axis=1)
         """:type: pd.DataFrame"""
 
         df_trade['net_chg'] = np.round((df_trade['amount1'] + df_trade['amount0']) * -1, 2)
@@ -376,7 +398,7 @@ class TradeBacktest(object):
         )
         df_trade['pct_chg'] = (df_trade['remain1'] / self.capital) - 1
 
-        return df_trade
+        return df_order0, df_trade
 
     @staticmethod
     def profit_loss(df_trade):
@@ -430,18 +452,18 @@ class TradeBacktest(object):
             loss_max, loss_min,
         )
 
-    def holding_period(self, df_trade):
+    def holding_period(self, df_order):
         """
         Calculate the holding period daily stats
-        :param df_trade: pd.DataFrame
+        :param df_order: pd.DataFrame
         :return: list of float
         """
         args = [
             a for a in getargspec(self.join_data)[0]
         ]
 
-        kwargs = {'df_trade': df_trade}
-        for key in ('df_stock', 'df_all', 'df_contract', 'df_option'):
+        kwargs = {'df_order': df_order}
+        for key in ('df_stock', 'df_all', 'df_contract', 'df_option', 'df_iv'):
             if key in args:
                 kwargs[key] = getattr(self, key)
 
@@ -462,9 +484,10 @@ class TradeBacktest(object):
 
         return dp_count, dp_chance, dp_mean, dl_count, dl_chance, dl_mean
 
-    def report(self, df_trade):
+    def report(self, df_order, df_trade):
         """
         Generate a dict report for current formula
+        :param df_order: pd.DataFrame
         :param df_trade: pd.DataFrame
         :return: dict
         profit_loss = self.profit_loss()
@@ -472,7 +495,7 @@ class TradeBacktest(object):
         """
         profit_loss = self.profit_loss(df_trade)
         trade_summary = self.trade_summary(df_trade)
-        holding_period = self.holding_period(df_trade)
+        holding_period = self.holding_period(df_order)
 
         return {
             'pl_sum': profit_loss[0],
@@ -504,32 +527,34 @@ class TradeBacktest(object):
         logger.info('Trade: %s' % self.trade)
         logger.info('Start generate df_report')
 
-        reports = []
+        orders = []
         trades = []
+        reports = []
         for key, arg in enumerate(self.args):
             print output % ('BT', key, '%s - %s' % (self.trade.name.upper(), self.trade.path))
             print output % ('BT', 'Args', str(arg))
-            df_trade = self.make_trade(**arg)
+            df_order, df_trade = self.make_trade(**arg)
             # print df_trade.to_string(line_width=1000)
 
             # make report
-            report = self.report(df_trade)
+            report = self.report(df_order, df_trade)
             report['date'] = pd.datetime.today().date()
             report['trade'] = str(self.trade.path)
             report['formula'] = str(self.formula.path)
-            report['report_id'] = self.report_id
+            report['report_id'] = self.backtest_id
             report['args'] = str(arg)
 
             # df_trade set extra column
             df_trade['date'] = pd.datetime.today().date()
             df_trade['trade'] = str(self.trade.path)
             df_trade['formula'] = str(self.formula)
-            df_trade['report_id'] = self.report_id
+            df_trade['report_id'] = self.backtest_id
             df_trade['args'] = str(arg)
 
             # print pd.DataFrame([report]).to_string(line_width=1000)
-            reports.append(report)
+            orders.append(df_order)
             trades.append(df_trade)
+            reports.append(report)
 
         df_report = pd.DataFrame(reports)
         df_report['date'] = pd.to_datetime(df_report['date'])
@@ -552,14 +577,14 @@ class TradeBacktest(object):
             'fee1', 'net_chg', 'remain1', 'pct_chg'
         ]]
 
-        return df_report, df_trades
+        return orders, df_trades, df_report
 
-    def save(self, fields, formula_id, report_id, commission_id, capital, df_signal):
+    def save(self, fields, formula_id, backtest_id, commission_id, capital, df_signal):
         """
         Setup all, generate test, then save into db
         :param fields: dict
         :param formula_id: int
-        :param report_id: int
+        :param backtest_id: int
         :param commission_id: int
         :param capital: int
         :param df_signal: pd.DataFrame
@@ -570,34 +595,33 @@ class TradeBacktest(object):
         # set symbol and args
         self.set_commission(commission_id)
         self.set_capital(capital)
-        self.set_algorithm(formula_id, report_id, df_signal)
+        self.set_algorithm(formula_id, backtest_id, df_signal)
         self.set_args(fields)
         self.get_data()
         self.get_extra()
 
         # generate reports
-        df_report, df_trades = self.generate()
+        orders, df_trades, df_report = self.generate()
 
         # save
-        path = os.path.join(RESEARCH_DIR, self.symbol.lower())
-        fpath = os.path.join(path, 'strategy.h5')
-        if not os.path.isdir(path):
-            os.mkdir(path)
-        db = pd.HDFStore(fpath)
-
+        path = os.path.join(RESEARCH_DIR, '%s.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
         # remove old same item
         try:
-            db.remove('report', where='trade == %r' % self.trade.path)
-            db.remove('trade', where='trade == %r' % self.trade.path)
+            db.remove('strategy/report', where='trade == %r' % self.trade.path)
+            db.remove('strategy/trade', where='trade == %r' % self.trade.path)
         except NotImplementedError:
-            db.remove('report')
-            db.remove('trade')
+            db.remove('strategy/report')
+            db.remove('strategy/trade')
         except (KeyError, TypeError):
             pass
 
-        db.append('report', df_report, format='table', data_columns=True, min_itemsize=100)
-        db.append('trade', df_trades, format='table', data_columns=True, min_itemsize=100)
+        db.append('strategy/report', df_report, format='table', data_columns=True, min_itemsize=100)
+        db.append('strategy/trade', df_trades, format='table', data_columns=True, min_itemsize=100)
         db.close()
-        logger.info('Backtest save: %s' % fpath)
+        logger.info('Backtest save: %s' % path)
 
         return len(df_report)
+
+
+# todo: rework save, both df_order, df_trade, no df_list

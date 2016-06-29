@@ -93,12 +93,13 @@ class DayImplVolStatic(object):
 
         return result
 
-    def range_expr(self, x, y, base):
+    def range_expr(self, x, y, base, info=True):
         """
         Triple linear range estimate using median
         :param x: list
         :param y: list
         :param base: float/int
+        :param info: bool
         :return: float
         """
         if not len(x) == len(y) >= 3:
@@ -109,8 +110,9 @@ class DayImplVolStatic(object):
             else:
                 raise ValueError('Range expr x, y list is empty')
 
-        for a, b in zip(x, y):
-            print output % ('DATA', 'calc range, dte/strike: %.2f, impl_vol: %.2f' % (a, b))
+        if info:
+            for a, b in zip(x, y):
+                print output % ('DATA', 'calc range, dte/strike: %.2f, impl_vol: %.2f' % (a, b))
 
         if len(x) == len(y) == 3:
             d0, d1 = self.two_nearby(x, base)
@@ -143,8 +145,9 @@ class DayImplVolStatic(object):
             if np.isnan(result):
                 result = self.linear_expr(x[i0], x[i1], y[i0], y[i1], base)
 
-        print output % ('NEAR', 'index0: %d, index1: %d' % (i0, i1))
-        print output % ('CALC', 'range_ivs: %s' % [round(r, 2) for r in results])
+        if info:
+            print output % ('NEAR', 'index0: %d, index1: %d' % (i0, i1))
+            print output % ('CALC', 'range_ivs: %s' % [round(r, 2) for r in results])
 
         return round(result, 2)
 

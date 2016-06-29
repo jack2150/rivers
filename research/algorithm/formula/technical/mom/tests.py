@@ -29,7 +29,7 @@ class TestMomentum(TestUnitSetUp):
         }
 
         self.backtest = None
-        self.algorithm_analysis('Momentum rule')
+        self.algorithm_analysis('Momentum')
 
     def test_handle_data(self):
         """

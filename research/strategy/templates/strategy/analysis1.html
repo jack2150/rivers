@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags strategy_tags %}
 
 {% block extrastyle %}
   {{ block.super }}
@@ -26,16 +26,16 @@
       <div class="panel-heading">Formula</div>
       <table class="table">
         <tr>
-          <th>Rule:</th>
+          <th class="col-md-5">Rule:</th>
           <td>{{ formula.rule }}</td>
         </tr>
         <tr>
-          <th>Equation:</th>
-          <td>{{ formula.equation }}</td>
+          <th>Category:</th>
+          <td>{{ formula.category }}</td>
         </tr>
         <tr>
-          <th>Category:</th>
-          <td>{{ formula.category }} - {{ formula.method|upper }}</td>
+          <th>Method:</th>
+          <td>{{ formula.method }}</td>
         </tr>
         <tr>
           <th>Optionable:</th>
@@ -50,9 +50,9 @@
       <table class="table">
         <tr>
           <th>HD Args:</th>
-          <td class="col-md-4">{{ report.hd }}</td>
+          <td class="col-md-4">{{ report.hd|algo_para|safe }}</td>
           <th>CS Args:</th>
-          <td class="col-md-4">{{ report.cs }}</td>
+          <td class="col-md-4">{{ report.cs|algo_para|safe }}</td>
         </tr>
         <tr>
           <th>PL Count:</th>

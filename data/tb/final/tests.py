@@ -82,3 +82,31 @@ class TestMergeFinal(TestSetUp):
         Test reshape h5
         """
         reshape_h5('aig.h5', RESEARCH_DIR)
+
+    def test_open_clean(self):
+        """
+        Test open clean h5 for view
+        :return:
+        """
+        symbol = 'AIG'
+        path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol.lower())
+        db = pd.HDFStore(path)
+        df_normal = db.select('option/clean/normal')
+        db.close()
+
+        df_date = df_normal[df_normal['date'] == '2011-11-01'].sort_values('dte')
+        print df_date.to_string(line_width=1000)
+
+        path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+        db = pd.HDFStore(path)
+        df_option = db.select('option/data')
+        df_contract = db.select('option/contract')
+        df_all = pd.merge(df_option, df_contract, on='option_code')
+        db.close()
+
+        df_date = df_all[df_all['date'] == '2011-11-01'].sort_values('dte')
+        print df_date.to_string(line_width=1000)
+
+
+
+

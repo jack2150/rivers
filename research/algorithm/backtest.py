@@ -54,6 +54,11 @@ class FormulaBacktest(object):
         self.df_option = pd.DataFrame()
         self.df_all = pd.DataFrame()
 
+        self._handle_data = None
+        self._create_signal = None
+        self.hd_args = []
+        self.cs_args = []
+
     @staticmethod
     def make_dict(args, func):
         """
@@ -95,8 +100,11 @@ class FormulaBacktest(object):
 
         for arg, default in arguments:
             if type(default) == tuple:
+
                 if fields[arg] in default:
                     args[arg] = ['"%s"' % fields[arg]]
+                elif fields[arg] == 'all':
+                    args[arg] = ['"%s"' % a for a in default]
                 else:
                     raise ValueError('')
             elif ':' in fields[arg]:
@@ -109,19 +117,16 @@ class FormulaBacktest(object):
 
                 args[arg] = np.arange(start, stop + 1, step)
             else:
-                if arg in ('order', 'side'):
-                    args[arg] = ['"%s"' % fields[arg]]
+                if '.' in fields[arg]:
+                    try:
+                        args[arg] = [float(fields[arg])]
+                    except ValueError:
+                        raise ValueError('Unable convert {arg} into float'.format(arg=arg))
                 else:
-                    if '.' in fields[arg]:
-                        try:
-                            args[arg] = [float(fields[arg])]
-                        except ValueError:
-                            raise ValueError('Unable convert {arg} into float'.format(arg=arg))
-                    else:
-                        try:
-                            args[arg] = [int(fields[arg])]
-                        except ValueError:
-                            raise ValueError('Unable convert {arg} into int'.format(arg=arg))
+                    try:
+                        args[arg] = [int(fields[arg])]
+                    except ValueError:
+                        raise ValueError('Unable convert {arg} into int'.format(arg=arg))
 
         # make it a list
         keys = sorted(args.keys())
@@ -145,6 +150,18 @@ class FormulaBacktest(object):
 
         logger.info('Set arguments, length: %d' % len(args1))
 
+    def set_hd_cs(self, handle_data, create_signal):
+        """
+
+        :param handle_data: method
+        :param create_signal: method
+        """
+        self._handle_data = handle_data
+        self._create_signal = create_signal
+
+        self.hd_args = getargspec(handle_data)[0]
+        self.cs_args = getargspec(create_signal)[0]
+
     def handle_data(self, df, *args, **kwargs):
         """
         Handle data that apply algorithm and add new column into stock data
@@ -153,17 +170,27 @@ class FormulaBacktest(object):
         :param kwargs: *
         :return: DataFrame
         """
-        raise NotImplementedError('Import handle data from algorithm.')
+        if self._handle_data:
+            df = self._handle_data(df, *args, **kwargs)
+        else:
+            raise NotImplementedError('Import handle data from algorithm.')
 
-    def create_signal(self, df_stock, *args, **kwargs):
+        return df
+
+    def create_signal(self, df, *args, **kwargs):
         """
         Create signal data frame using algorithm stock data
-        :param df_stock: DataFrame
+        :param df: DataFrame
         :param args: *
         :param kwargs: *
         :return: DataFrame
         """
-        raise NotImplementedError('Import handle data from algorithm.')
+        if self._handle_data:
+            df = self._create_signal(df, *args, **kwargs)
+        else:
+            raise NotImplementedError('Import create_signal from algorithm.')
+
+        return df
 
     def get_data(self):
         """
@@ -195,7 +222,6 @@ class FormulaBacktest(object):
 
         if len(df_stock) == 0:
             raise LookupError('Symbol < %s > stock not found (Google/Yahoo)' % symbol.upper())
-
 
         df_stock = df_stock[start:stop]  # slice date range
         df_stock = df_stock[df_stock.index.isin(df_think.index)]  # make sure in thinkback
@@ -256,26 +282,24 @@ class FormulaBacktest(object):
         df_dividend: dividend
         df_contract, df_option, df_all: option data
         """
-        hd_args = getargspec(self.handle_data)[0]
-        cs_args = getargspec(self.create_signal)[0]
-
-        args = set(hd_args + cs_args)
+        args = set(self.hd_args + self.cs_args)
 
         # check which data is require
+        path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
         if 'df_earning' in args:
-            db = pd.HDFStore(QUOTE_DIR)
-            self.df_earning = db.select('event/earning/%s' % self.symbol)
+            db = pd.HDFStore(path)
+            self.df_earning = db.select('event/earning')
             db.close()
 
         if 'df_dividend' in args:
-            db = pd.HDFStore(QUOTE_DIR)
-            self.df_dividend = db.select('event/dividend/%s' % self.symbol)
+            db = pd.HDFStore(path)
+            self.df_dividend = db.select('event/dividend')
             db.close()
 
         if 'df_contract' in args or 'df_option' in args or 'df_all' in args:
-            db = pd.HDFStore(QUOTE_DIR)
-            self.df_contract = db.select('option/%s/final/contract' % self.symbol)
-            self.df_option = db.select('option/%s/final/data' % self.symbol)
+            db = pd.HDFStore(path)
+            self.df_contract = db.select('option/contract')
+            self.df_option = db.select('option/data')
             db.close()
 
             self.df_all = pd.merge(self.df_option, self.df_contract, on='option_code')
@@ -526,6 +550,38 @@ class FormulaBacktest(object):
             'dl_mean': holding_period[5]
         }
 
+    def ready_hd_args(self, args, df_stock):
+        """
+        Ready handle_data arguments
+        :param args: list
+        :param df_stock: pd.DataFrame
+        :return: list
+        """
+        temp = {k: v for k, v in args.items()}
+        needed = [k for k in self.hd_args if k not in temp.keys()]
+
+        temp.update(
+            {k: df_stock if k == 'df' else getattr(self, k) for k in needed}
+        )
+
+        return temp
+
+    def ready_cs_args(self, args, df_hd):
+        """
+        Ready create_signal arguments
+        :param args: list
+        :param df_hd: pd.DataFrame
+        :return: list
+        """
+        temp = {k: v for k, v in args.items()}
+        needed = [k for k in self.cs_args if k not in temp.keys()]
+
+        temp.update(
+            {k: df_hd if k == 'df' else getattr(self, k) for k in needed}
+        )
+
+        return temp
+
     def generate(self):
         """
         Run all formula args then generate report
@@ -541,8 +597,15 @@ class FormulaBacktest(object):
                 'BT', 'Args', str(arg).replace('handle_data', 'hd').replace('create_signal', 'cs')
             )
             df_stock = self.df_stock.copy()
-            df_test = self.handle_data(df_stock, **arg['handle_data'])
-            df_signal = self.create_signal(df_test, **arg['create_signal'])
+
+            # analysis
+            hd_args = self.ready_hd_args(arg['handle_data'], df_stock)
+            df_hd = self.handle_data(**hd_args)
+            cs_args = self.ready_cs_args(arg['create_signal'], df_hd)
+            df_signal = self.create_signal(**cs_args)
+
+            if len(df_signal) == 0:
+                continue
 
             # make report
             report = self.report(df_signal)
@@ -585,6 +648,7 @@ class FormulaBacktest(object):
             'loss_count', 'loss_chance', 'loss_max', 'loss_min',
             'var_95', 'var_99', 'max_dd'
         ]]
+        df_report = df_report.fillna(0)
 
         df_signals = pd.concat(signals)
         """:type: pd.DataFrame"""

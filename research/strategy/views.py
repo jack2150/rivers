@@ -12,7 +12,7 @@ from rivers.settings import RESEARCH_DIR, BASE_DIR
 
 class StrategyAnalysisForm1(forms.Form):
     formula_id = forms.IntegerField(widget=forms.HiddenInput())
-    report_id = forms.IntegerField(widget=forms.HiddenInput())
+    backtest_id = forms.IntegerField(widget=forms.HiddenInput())
     symbol = forms.CharField(widget=forms.TextInput(
         attrs={'class': 'form-control vTextField', 'readonly': 'readonly'}
     ))
@@ -42,20 +42,21 @@ class StrategyAnalysisForm1(forms.Form):
         self.fields['commission'].choices = commissions
 
 
-def strategy_analysis1(request, symbol, formula_id, report_id):
+def strategy_analysis1(request, symbol, formula_id, backtest_id):
     """
     Strategy analysis for select trade, commission and capital
     :param request: request
     :param symbol: str
     :param formula_id: int
-    :param report_id: int
+    :param backtest_id: int
     :return: render
     """
     symbol = symbol.lower()
     formula = Formula.objects.get(id=formula_id)
-    db = pd.HDFStore(os.path.join(RESEARCH_DIR, symbol, 'algorithm.h5'))
-    report = db.select('report', where='formula == %r & index == %r' % (
-        formula.path, report_id
+    path = os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower())
+    db = pd.HDFStore(path)
+    report = db.select('algorithm/report', where='formula == %r & index == %r' % (
+        formula.path, backtest_id
     )).iloc[0]
     db.close()
 
@@ -66,7 +67,7 @@ def strategy_analysis1(request, symbol, formula_id, report_id):
             return redirect(reverse('admin:strategy_analysis2', kwargs={
                 'symbol': symbol,
                 'formula_id': formula_id,
-                'report_id': report_id,
+                'backtest_id': backtest_id,
                 'trade_id': form.cleaned_data['trade'],
                 'commission_id': form.cleaned_data['commission'],
                 'capital': int(form.cleaned_data['capital'])
@@ -74,7 +75,7 @@ def strategy_analysis1(request, symbol, formula_id, report_id):
     else:
         form = StrategyAnalysisForm1(initial={
             'formula_id': formula.id,
-            'report_id': report_id,
+            'backtest_id': backtest_id,
             'symbol': symbol.upper(),
             'capital': 5000
         })
@@ -102,7 +103,7 @@ class StrategyAnalysisForm2(forms.Form):
             if type(default) == tuple:
                 if all([type(d) == bool for d in default]):
                     choices = [(
-                        ','.join([key for key in default]), 'BOTH'
+                        ','.join([str(key) for key in default]), 'BOTH'
                     )]
                     choices += [(int(key), str(value).upper()) for key, value in zip(default, default)]
                 else:
@@ -138,12 +139,12 @@ class StrategyAnalysisForm2(forms.Form):
         :param kwargs: dict
         """
         cmd = 'start cmd /k python %s strategy --symbol=%s ' \
-              '--formula_id=%d --report_id=%d --trade_id=%d ' \
+              '--formula_id=%d --backtest_id=%d --trade_id=%d ' \
               '--commission_id=%d --capital=%d --fields="%s"' % (
                   os.path.join(BASE_DIR, 'research', 'backtest.py'),
                   kwargs['symbol'],
                   int(kwargs['formula_id']),
-                  int(kwargs['report_id']),
+                  int(kwargs['backtest_id']),
                   int(kwargs['trade_id']),
                   int(kwargs['commission_id']),
                   int(kwargs['capital']),
@@ -157,14 +158,14 @@ class StrategyAnalysisForm2(forms.Form):
         ))
 
 
-def strategy_analysis2(request, symbol, formula_id, report_id,
+def strategy_analysis2(request, symbol, formula_id, backtest_id,
                        trade_id, commission_id, capital):
     """
     Strategy analysis for input arguments
     :param request: request
     :param symbol: str
     :param formula_id: int
-    :param report_id: int
+    :param backtest_id: int
     :param trade_id: int
     :param commission_id: int
     :param capital: int
@@ -181,7 +182,7 @@ def strategy_analysis2(request, symbol, formula_id, report_id,
             form.analysis(**{
                 'symbol': symbol,
                 'formula_id': formula_id,
-                'report_id': report_id,
+                'backtest_id': backtest_id,
                 'trade_id': trade_id,
                 'commission_id': commission_id,
                 'capital': capital

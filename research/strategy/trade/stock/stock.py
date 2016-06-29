@@ -38,15 +38,15 @@ def create_order(df_signal, side=('follow', 'reverse', 'buy', 'sell')):
     return df
 
 
-def join_data(df_trade, df_stock):
+def join_data(df_order, df_stock):
     """
     Join df_trade data into daily trade data
-    :param df_trade: pd.DataFrame
+    :param df_order: pd.DataFrame
     :param df_stock: pd.DataFrame
     :return: list
     """
     df_list = []
-    for index, data in df_trade.iterrows():
+    for index, data in df_order.iterrows():
         df_date = df_stock[data['date0']:data['date1']].copy()
         df_date['pct_chg'] = df_date['close'].pct_change()
         df_date['pct_chg'] = df_date['pct_chg'].fillna(value=0)
@@ -64,3 +64,4 @@ def join_data(df_trade, df_stock):
         df_list.append(df_date)
 
     return df_list
+

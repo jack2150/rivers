@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from base.utests import TestUnitSetUp
+from data.option.day_iv.calc import today_iv
 from data.option.day_iv.day_iv import *
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
@@ -232,3 +233,19 @@ class TestDayNotInStrikes2dCalc(TestUnitSetUp):
             self.assertTrue(strike_iv)
 
             print '=' * 70
+
+
+class TestSymbolDateImplVol(TestUnitSetUp):
+    def test123(self):
+        symbol = 'AIG'
+        date = '2016-02-10'
+        dtes = [10, 45, 75, 120, 258, 400]
+
+        path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+        db = pd.HDFStore(path)
+        df_iv = db.select('option/iv/day')
+        db.close()
+
+        for dte in dtes:
+            dte_iv = today_iv(df_iv, date, dte)
+            print 'dte: %d, iv: %.2f' % (dte, dte_iv)

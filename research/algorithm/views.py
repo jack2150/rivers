@@ -46,7 +46,6 @@ class AlgorithmAnalysisForm(forms.Form):
         super(AlgorithmAnalysisForm, self).__init__(*args, **kwargs)
 
         for arg, default in arguments:
-            print arg, default
             if type(default) == tuple:
                 # choice field
                 self.fields[arg] = forms.ChoiceField(
@@ -55,7 +54,8 @@ class AlgorithmAnalysisForm(forms.Form):
                         'class': 'form-control vTextField',
                         'required': 'required'
                     }),
-                    choices=[(key, value.upper()) for key, value in zip(default, default)]
+                    choices=[('all', 'ALL')] +
+                            [(key, value.upper()) for key, value in zip(default, default)]
                 )
             else:
                 # text input
@@ -126,7 +126,7 @@ class AlgorithmAnalysisForm(forms.Form):
                 data = cleaned_data[arg]
 
                 if type(default) == tuple:
-                    if data not in default:
+                    if data not in default and data != 'all':
                         self._errors[arg] = self.error_class(
                             ['{arg} invalid choices.'.format(arg=arg.capitalize())]
                         )
@@ -468,6 +468,7 @@ def algorithm_report_json(request, symbol, formula_id):
 
     # server side
     df_page = df_report[keys]
+
     df_page = df_page.sort_values(
         keys[order_column], ascending=True if order_dir == 'asc' else False
     )
@@ -498,6 +499,11 @@ def algorithm_report_json(request, symbol, formula_id):
             'backtest_id': index,
         }))
         temp.append('"%s"' % reverse('admin:algorithm_trade_view', kwargs={
+            'symbol': symbol.lower(),
+            'formula_id': formula.id,
+            'backtest_id': index,
+        }))
+        temp.append('"%s"' % reverse('admin:strategy_analysis1', kwargs={
             'symbol': symbol.lower(),
             'formula_id': formula.id,
             'backtest_id': index,

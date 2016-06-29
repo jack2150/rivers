@@ -332,7 +332,7 @@ class TestStrategyBacktest(TestUnitSetUp):
                 'percent': '0:10:5'
             },
             formula_id=self.formula,
-            report_id=self.report_id,
+            backtest_id=self.report_id,
             df_signal=self.df_signal,
             commission_id=self.commission,
             capital=self.capital

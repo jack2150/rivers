@@ -157,25 +157,33 @@ class TestFormulaBacktest(TestUnitSetUp):
         TestUnitSetUp.setUp(self)
 
         self.symbol = 'AIG'  # can be a single symbol or list of symbols
-        self.formula = Formula.objects.get(rule='Ewma Chg D')
+        self.formula = Formula.objects.get(rule='Momentum')
         self.formula.start_backtest()
         self.backtest = self.formula.backtest
 
-        self.arguments = ('span', 'previous', 'holding')
+        self.arguments = (
+            'period_span', 'skip_days', 'holding_period', 'direction', 'side'
+        )
         self.hd_args = {
-            'span': 20,
-            'previous': 20
+            'period_span': 120,
+            'skip_days': 0,
+            'holding_period': 0
         }
-        self.cs_args = {}
+        self.cs_args = {
+            'direction': 'follow',
+            'side': 'follow',
+        }
 
     def test_set_args(self):
         """
         Test generate a list of valid argument values
         """
         self.backtest.set_args(fields={
-            'handle_data_span': '120:240:20',
-            'handle_data_previous': '20:40:20',
-            'create_signal_holding': '30:60:30',
+            'handle_data_period_span': '20:40:10',
+            'handle_data_skip_days': '0:5:5',
+            'handle_data_holding_period': '20:40:10',
+            'create_signal_direction': 'follow',
+            'create_signal_side': 'all',  # new for all
         })
 
         args = self.backtest.args
@@ -184,16 +192,6 @@ class TestFormulaBacktest(TestUnitSetUp):
             print arg
             self.assertEqual(type(arg), dict)
             self.assertListEqual(arg.keys(), ['create_signal', 'handle_data'])
-
-            handle_data = arg['handle_data']
-            for key in handle_data.keys():
-                self.assertNotIn(key, ('create_signal', 'handle_data'))
-                self.assertIn(key, ('span', 'previous'))
-
-            create_signal = arg['create_signal']
-            for key in create_signal.keys():
-                self.assertNotIn(key, ('create_signal', 'handle_data'))
-                self.assertIn(key, ('holding',))
 
     def test_get_data(self):
         """
@@ -236,6 +234,32 @@ class TestFormulaBacktest(TestUnitSetUp):
         print 'df_option: %d' % len(self.backtest.df_option)
         self.assertTrue(len(self.backtest.df_option))
         self.assertEqual(len(self.backtest.df_option), len(self.backtest.df_all))
+
+    def test_ready_args(self):
+        """
+
+        :return:
+        """
+        # set symbol and args
+        self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
+        self.backtest.set_args(fields={
+            'handle_data_period_span': '20',
+            'handle_data_skip_days': '0',
+            'handle_data_holding_period': '20',
+            'create_signal_direction': 'follow',
+            'create_signal_side': 'follow',
+        })
+        self.backtest.get_data()
+        self.backtest.extra_data()
+
+        self.backtest.hd_args.append('df_all')
+        args = self.backtest.args[0]
+
+        hd_args = self.backtest.ready_hd_args(args['handle_data'], self.backtest.df_stock)
+        print hd_args
+
+        cs_args = self.backtest.ready_cs_args(args['create_signal'], self.backtest.df_stock)
+        print cs_args
 
     def test_prepare_join(self):
         """

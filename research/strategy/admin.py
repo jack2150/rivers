@@ -58,11 +58,11 @@ class TradeAdmin(admin.ModelAdmin):
 admin.site.register(Commission, CommissionAdmin)
 admin.site.register(Trade, TradeAdmin)
 admin.site.register_view(
-    'strategy/analysis/trade/(?P<symbol>\w+)/(?P<formula_id>\d+)/(?P<report_id>\d+)/$',
+    'strategy/analysis/trade/(?P<symbol>\w+)/(?P<formula_id>\d+)/(?P<backtest_id>\d+)/$',
     urlname='strategy_analysis1', view=strategy_analysis1
 )
 admin.site.register_view(
-    'strategy/analysis/arguments/(?P<symbol>\w+)/(?P<formula_id>\d+)/(?P<report_id>\d+)/'
+    'strategy/analysis/arguments/(?P<symbol>\w+)/(?P<formula_id>\d+)/(?P<backtest_id>\d+)/'
     '(?P<trade_id>\d+)/(?P<commission_id>\d+)/(?P<capital>\d+)/$',
     urlname='strategy_analysis2', view=strategy_analysis2
 )

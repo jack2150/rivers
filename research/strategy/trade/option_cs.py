@@ -33,6 +33,11 @@ def get_cycle_strike(df_all, date0, date1, name, close, cycle, strike):
 
     strikes = np.sort(df_cycle['strike'])
     atm = np.argmin(np.abs(strikes - close))
+    # 0 id is always refer to first OTM strike
+    if name == 'CALL' and close > strikes[atm]:
+        atm += 1
+    elif name == 'PUT' and close < strikes[atm]:
+        atm -= 1
 
     option0 = df_cycle.query('strike == %r' % strikes[atm + strike]).iloc[0]
     option1 = df_all.query('date == %r & option_code == %r' % (

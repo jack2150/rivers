@@ -2,7 +2,9 @@ import logging
 
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
 
+from data.option.day_iv.calc import today_iv, correct_prob
 from research.strategy.trade.option_cs import get_cycle_strike
 
 logger = logging.getLogger('views')
@@ -50,12 +52,15 @@ def create_order(df_signal, df_all, side=('follow', 'reverse', 'long', 'short'),
                 data['close0'] = option0['bid']
                 data['close1'] = option1['ask']
 
+            # check no zero bid/ask
+            if data['close0'] < 0.01:
+                continue
+
             signals.append(data)
         except (KeyError, ValueError, IndexError):
             logger.info('Option not found, date: %s cycle: %s strike: %s' % (
                 data['date0'].strftime('%Y-%m-%d'), cycle, strike
             ))
-            # print 'not found'
 
     df = pd.DataFrame(signals)
     df['pct_chg'] = (df['close1'] - df['close0']) / df['close0']
@@ -73,58 +78,92 @@ def create_order(df_signal, df_all, side=('follow', 'reverse', 'long', 'short'),
     return df
 
 
-def join_data(df_trade, df_all, raw=False):
+def join_data(df_trade, df_stock, df_all, df_iv):
     """
-    Join df_trade data into daily trade data
+    Use for trade report view to check each trade
     :param df_trade: pd.DataFrame
+    :param df_stock: pd.DataFrame
     :param df_all: pd.DataFrame
-    :param raw: bool
+    :param df_iv: pd.DataFrame
     :return: list
     """
+    df_stock0 = df_stock.set_index('date')
     df_list = []
     for index, data in df_trade.iterrows():
-        df_code = df_all.query('option_code == %r' % data['option_code']).copy()
-        df_date = df_code.query('%r <= date & date <= %r' % (data['date0'], data['date1']))
+        df0 = df_all.query(
+            'option_code == %r & date >= %r  & date <= %r' % (
+                data['option_code'], data['date0'], data['date1']
+            )
+        )[['date', 'option_code', 'dte', 'bid', 'ask', 'strike']]
 
+        df0.insert(6, 'signal', data['signal0'])
         if data['signal0'] == 'BUY':
             column = 'ask'
+            exit_price = df0['bid'].iloc[-1]
+            multiply = 1
         else:  # sell
             column = 'bid'
+            exit_price = df0['ask'].iloc[-1]
+            multiply = -1
 
-        df_date = df_date[['date', 'option_code', column]]
-        df_date['pct_chg'] = df_date[column].pct_change()
-        df_date['pct_chg'] = df_date['pct_chg'].fillna(value=0)
-        df_date['pct_chg'] = df_date['pct_chg'].apply(
-            lambda x: 0 if x == np.inf else x
+        df0['option'] = df0[column]
+        df0['option'].iloc[-1] = exit_price
+        df0['signal'].iloc[-1] = data['signal1']
+        df0['pos_net'] = df0['option'] - df0['option'].iloc[0]
+        df0['pos_chg'] = df0['pos_net'] / df0['option'].iloc[0] * multiply + 0
+
+        df0 = df0.drop(['bid', 'ask'], axis=1)
+        strike = df0.iloc[0]['strike']
+        df1 = df_stock0[data['date0']:data['date1']]
+        df1 = df1[['close']].reset_index()
+        df = pd.merge(df0, df1, on='date')
+        df.rename(index=str, columns={'close': 'stock'}, inplace=True)
+
+        # today iv
+        df['dte_iv'] = df.apply(
+            lambda x: today_iv(df_iv, x['date'], x['dte']),
+            axis=1
         )
+        # df['std1-'] = df['stock'] * (1 - df['dte_iv'] / 100.0)
+        # df['std1+'] = df['stock'] * (1 + df['dte_iv'] / 100.0)
 
-        if data['signal0'] == 'SELL':
-            df_date['pct_chg'] = -df_date['pct_chg'] + 0
+        # create stage
+        if data['signal0'] == 'BUY':
+            stage0 = 'ml'
+            stage1 = 'even'
+            stage2 = 'p100'
+        else:
+            stage0 = 'mp'
+            stage1 = 'even'
+            stage2 = 'ml100'
 
-        df_date.reset_index(drop=True, inplace=True)
-        if not raw:
-            df_date = df_date[['date', column, 'pct_chg']]
-            df_date.columns = ['date', 'price', 'pct_chg']
+        # calc stage probability
+        df[stage0] = strike
+        df['%s%%' % stage0] = norm.cdf(df[stage0], df['stock'], df['dte_iv'])
+        df['%s%%' % stage0] = df.apply(correct_prob, args=(stage0, ), axis=1)
+        df[stage1] = strike + data['close0']
+        df['%s%%' % stage1] = norm.cdf(df[stage1], df['stock'], df['dte_iv'])
+        df['%s%%' % stage1] = df.apply(correct_prob, args=(stage1,), axis=1)
+        df[stage2] = strike + (data['close0'] * 2)
+        df['%s%%' % stage2] = norm.cdf(df[stage1], df['stock'], df['dte_iv'])
+        df['%s%%' % stage2] = df.apply(correct_prob, args=(stage2,), axis=1)
 
-        df_list.append(df_date)
+        df = df.round({
+            'pos_chg': 2,
+            '%s%%' % stage0: 2,
+            '%s%%' % stage1: 2,
+            '%s%%' % stage2: 2,
+            'dte_iv': 2,
+            # 'std1-': 2,
+            # 'std1+': 2,
+        })
+
+        # print df.to_string(line_width=1000)
+        assert data['close1'] == df['option'].iloc[-1]
+
+        df_list.append(df)
 
     return df_list
-
-
-def expected_return(df_trade, df_all):
-    """
-
-    :return:
-    """
-    for index, data in df_trade[-1:].iterrows():
-        df_code = df_all.query('option_code == %r' % data['option_code']).copy()
-        df_date = df_code.query('%r <= date & date <= %r' % (data['date0'], data['date1']))
-
-        #print df_date.to_string(line_width=1000)
-        break
-
-    return df_date
-
 
 
 

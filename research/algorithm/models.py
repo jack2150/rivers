@@ -45,8 +45,9 @@ class Formula(models.Model):
             create_signal = getattr(module, 'create_signal')
 
             backtest = FormulaBacktest(self)
-            backtest.handle_data = handle_data
-            backtest.create_signal = create_signal
+            # backtest.handle_data = handle_data
+            # backtest.create_signal = create_signal
+            backtest.set_hd_cs(handle_data, create_signal)
         except (ImportError, KeyError):
             self.path = ''
             self.save()
@@ -67,13 +68,13 @@ class Formula(models.Model):
         hd_specs = getargspec(handle_data)
         cs_specs = getargspec(create_signal)
 
-        hd_names = [a for a in hd_specs.args if a not in ('df', 'df_stock', 'df_signal')]
+        hd_names = [a for a in hd_specs.args if 'df' not in a]
         try:
             hd_args = [(k, v) for k, v in zip(hd_names, hd_specs.defaults)]
         except TypeError:
             hd_args = [(k, v) for k, v in zip(hd_names, range(len(cs_specs.args[1:])))]
 
-        cs_names = [a for a in cs_specs.args if a not in ('df', 'df_stock', 'df_signal')]
+        cs_names = [a for a in cs_specs.args if 'df' not in a]
         try:
             cs_args = [(k, v) for k, v in zip(cs_names, cs_specs.defaults)]
         except TypeError:
