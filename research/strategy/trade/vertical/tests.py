@@ -1,78 +1,82 @@
-import numpy as np
+import os
+from base.utests import TestUnitSetUp  # require
+from research.strategy.models import Trade
+from research.strategy.trade.tests import TestStrategy2
+import pandas as pd
+from rivers.settings import TEMP_DIR
 
-from base.utests import TestUnitSetUp
-from research.algorithm.models import Formula
-from simulation.models import Strategy
 
-
-class TestStrategyLongCallVertical(TestUnitSetUp):
+class TestVerticalCS(TestStrategy2):
     def setUp(self):
-        TestUnitSetUp.setUp(self)
+        TestStrategy2.setUp(self)
 
-        self.symbol = 'TWTR'
-        self.algorithm = Formula.objects.get(rule='Options DTE - No Dup')
-        # self.algorithm = Algorithm.objects.get(rule='EWMA change direction - H')
+        self.symbol = 'AIG'
+        self.ready_signal0()
+        self.trade = Trade.objects.get(name='Vertical -CS')
 
-        self.quant = self.algorithm.start_backtest()
-        self.quant.seed_data(self.symbol)
-        self.hd_args = {'dte': 20}
-        self.cs_args = {'side': 'buy'}
-        #self.hd_args = {'span': 60, 'previous': 20}
-        #self.cs_args = {'holding': 20}
+    def get_trade(self):
+        """
+        Get df_trade from db or create new one
+        """
+        path = os.path.join(TEMP_DIR, 'test_strategy.h5')
+        db = pd.HDFStore(path)
+        key = '%s/%d/trade' % (self.symbol, self.trade.id)
+        self.ready_backtest()
+        self.ready_signal1()
+        try:
+            df_trade = db.select(key)
+        except KeyError:
+            df_trade = self.backtest.create_order(
+                self.df_signal,
+                self.backtest.df_all,
+                **{'name': 'call', 'side': 'follow', 'cycle': 0, 'strike': 0, 'wide': 1}
+            )
+            db.append(key, df_trade)
+        db.close()
 
-        self.strategy = Strategy.objects.get(name='Long Call Vertical CS')
+        return df_trade
 
     def test_make_order(self):
         """
         Test trade using stop loss order
-        import profile
-        # profile.runctx('self.strategy.make_order(
-        df_stock, df_signal, expire=expire, **self.args)', globals(), locals())
         """
-        args = ({'moneyness': 'OTM', 'cycle': 0, 'strike': 0, 'wide': 1},
-                {'moneyness': 'ITM', 'cycle': 0, 'strike': 0, 'wide': 1},
-                {'moneyness': 'ATM', 'cycle': 0, 'strike': 0, 'wide': 1},)
+        self.ready_backtest()
+        # self.ready_signal1()
+        # print self.df_signal.to_string(line_width=1000)
+        report = []
+        for side in ('follow', 'reverse', 'buy', 'sell')[2:]:
+            for name in ('call', 'put'):
+                kwargs = {'name': name, 'side': side, 'cycle': 1, 'strike': -1, 'wide': 3}
+                print kwargs
+                df_trade = self.backtest.create_order(
+                    self.df_signal,
+                    self.backtest.df_all,
+                    **kwargs
+                )
+                print df_trade.to_string(line_width=500)
+                print 'sum:', df_trade['pct_chg'].sum(),
+                print 'profit:', len(df_trade[df_trade['pct_chg'] > 0]),
+                print 'loss:', len(df_trade[df_trade['pct_chg'] < 0])
+                report.append([
+                    df_trade['pct_chg'].sum(),
+                    len(df_trade[df_trade['pct_chg'] > 0]),
+                    len(df_trade[df_trade['pct_chg'] < 0])
+                ])
+                print ''
 
-        df_stock = self.quant.handle_data(self.quant.data[self.symbol], **self.hd_args)
-        df_signal = self.quant.create_signal(df_stock, **self.cs_args)
+        print pd.DataFrame(report, columns=['sum', 'profit', 'loss'])
 
-        for expire in (False, True)[:1]:
-            for arg in args[:1]:
-                print 'expire set:', expire, 'arg:', arg
+    def test_join_data(self):
+        """
+        Test join df_trade data into daily data
+        """
+        df_trade = self.get_trade()
 
-                df_order = self.strategy.make_order(df_stock, df_signal, expire=expire, **arg)
+        print self.df_signal.to_string(line_width=1000)
 
-                print df_order.to_string(line_width=300)
+        df_list = self.backtest.join_data(
+            df_trade, self.backtest.df_stock, self.backtest.df_all, self.backtest.df_iv
+        )
 
-                pct_chg = df_order['pct_chg']
-                pct_chg = pct_chg[pct_chg < 10]
-                print pct_chg.sum(), np.round(pct_chg.mean(), 2),
-                print np.round(float(pct_chg[pct_chg > 0].count() / float(pct_chg.count())), 2),
-                print np.round(float(pct_chg[pct_chg < 0].count() / float(pct_chg.count())), 2)
-
-                print len(df_signal), len(df_order), len(df_signal) == len(df_order)
-
-                self.assertTrue(len(df_order))
-
-                print '-' * 100 + '\n'
-
-
-class TestStrategyLongPutVertical(TestStrategyLongCallVertical):
-    def setUp(self):
-        TestStrategyLongCallVertical.setUp(self)
-
-        self.strategy = Strategy.objects.get(name='Long Put Vertical CS')
-
-
-class TestStrategyShortCallVertical(TestStrategyLongCallVertical):
-    def setUp(self):
-        TestStrategyLongCallVertical.setUp(self)
-
-        self.strategy = Strategy.objects.get(name='Short Call Vertical CS')
-
-
-class TestStrategyShortPutVertical(TestStrategyLongCallVertical):
-    def setUp(self):
-        TestStrategyLongCallVertical.setUp(self)
-
-        self.strategy = Strategy.objects.get(name='Short Put Vertical CS')
+        for df_daily in df_list:
+            print df_daily.to_string(line_width=1000)

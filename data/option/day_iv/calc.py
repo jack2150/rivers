@@ -13,6 +13,8 @@ def today_iv(df_iv, date, dte):
     :param dte: int
     """
     df = df_iv.query('date == %r' % date)
+    if len(df) == 0:
+        return 0
 
     iv_class = DayImplVolStatic()
     x = np.array(df['dte'])

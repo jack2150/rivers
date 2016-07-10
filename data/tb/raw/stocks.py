@@ -120,7 +120,6 @@ def extract_stock(symbol):
             raise LookupError('Duplicate rate in df_stock index')
 
         df_stock = df_stock.set_index('date')
-
         path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
         logger.info('Save thinkback stock, path: %s' % path)
         db = pd.HDFStore(path)

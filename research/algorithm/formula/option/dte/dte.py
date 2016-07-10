@@ -12,11 +12,12 @@ def handle_data(df):
     return df
 
 
-def create_signal(df, df_all, dte=0, side=('buy', 'sell'), special=('Standard', 'Weekly')):
+def create_signal(df, df_all,
+                  dte=0, side=('buy', 'sell'), special=('Standard', 'Weekly')):
     if special == 'Standard':
-        df_standard = df_all.query('special == "Standard"')
+        df_option = df_all.query('special == "Standard"')
     else:
-        df_standard = df_all
+        df_option = df_all
 
     if side == 'buy':
         signal0 = 'BUY'
@@ -25,7 +26,7 @@ def create_signal(df, df_all, dte=0, side=('buy', 'sell'), special=('Standard', 
         signal0 = 'SELL'
         signal1 = 'BUY'
 
-    df_dte = df_standard.query('dte == %r' % dte)
+    df_dte = df_option.query('dte == %r' % dte)
     if len(df_dte) == 0:
         return pd.DataFrame(columns=[
             'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding', 'pct_chg'
@@ -57,7 +58,7 @@ def create_signal(df, df_all, dte=0, side=('buy', 'sell'), special=('Standard', 
 
     # find exit date
     dates = list(df['date'])
-    closes = df[['date', 'close']].set_index('date')['close']
+    closes = df.set_index('date')['close']
 
     signals = []
     for i in np.arange(len(dte_dates)):
@@ -73,8 +74,10 @@ def create_signal(df, df_all, dte=0, side=('buy', 'sell'), special=('Standard', 
             if prev > 5:
                 break
 
+        if date1 not in dates:
+            continue
+
         if prev < 4:  # found
-            # print date0, date1, closes[date0], closes[date1]
             signals.append((
                 date0, date1, signal0, signal1, closes[date0], closes[date1]
             ))

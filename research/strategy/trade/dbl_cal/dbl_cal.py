@@ -9,14 +9,13 @@ logger = logging.getLogger('views')
 
 
 def create_order(df_signal, df_stock, df_all,
-                 name0=('CALL', 'PUT'), name1=('CALL', 'PUT'),
-                 side=('BUY', 'SELL'),
+                 name0=('call', 'put'), name1=('call', 'put'),
+                 side=('buy', 'sell'),
                  dte0=0, dte1=0,
-                 percent0=0, percent1=1):
+                 percent0=0, percent1=0):
     if dte0 >= dte1:
         raise ValueError('Dte0 cannot greater or equal dte1')
 
-    closes = df_stock[['date', 'close']].set_index('date')['close']
     df_standard = df_all.query('special == "Standard"')
 
     trades = []
@@ -54,10 +53,10 @@ def create_order(df_signal, df_stock, df_all,
         # print strike0, '---', strike1
         # enter option
         query = 'strike == %r & name == %r & dte == %r'
-        enter0f = df_dte0.query(query % (strike0, name0, cycle0)).iloc[0]
-        enter0b = df_dte0.query(query % (strike0, name0, cycle1)).iloc[0]
-        enter1f = df_dte0.query(query % (strike1, name1, cycle0)).iloc[0]
-        enter1b = df_dte0.query(query % (strike1, name1, cycle1)).iloc[0]
+        enter0f = df_dte0.query(query % (strike0, name0.upper(), cycle0)).iloc[0]
+        enter0b = df_dte0.query(query % (strike0, name0.upper(), cycle1)).iloc[0]
+        enter1f = df_dte0.query(query % (strike1, name1.upper(), cycle0)).iloc[0]
+        enter1b = df_dte0.query(query % (strike1, name1.upper(), cycle1)).iloc[0]
 
         # exit option
         exit_date = data['date1']
@@ -70,13 +69,13 @@ def create_order(df_signal, df_stock, df_all,
         except IndexError:
             continue
 
-        if side == 'BUY':
+        if side == 'buy':
             signal0 = 'BUY'
             signal1 = 'SELL'
 
             trades.append((
                 enter_date, exit_date, signal0, signal1,
-                cycle0, cycle1, name0, name1,
+                cycle0, cycle1, name0.upper(), name1.upper(),
                 enter0f['option_code'], enter1f['option_code'],
                 enter0b['option_code'], enter1b['option_code'],
                 strike0, strike1,
@@ -90,7 +89,7 @@ def create_order(df_signal, df_stock, df_all,
 
             trades.append((
                 enter_date, exit_date, signal0, signal1,
-                cycle0, cycle1, name0, name1,
+                cycle0, cycle1, name0.upper(), name1.upper(),
                 enter0f['option_code'], enter1f['option_code'],
                 enter0b['option_code'], enter1b['option_code'],
                 strike0, strike1,
@@ -112,6 +111,10 @@ def create_order(df_signal, df_stock, df_all,
 
     df_trade['close0'] = (
         df_trade['enter0f'] + df_trade['enter1f'] + df_trade['enter0b'] + df_trade['enter1b']
+    )
+    df_trade['bp_effect'] = df_trade.apply(
+        lambda x: (x['enter0b'] + x['enter1b']) * 100 if x['signal0'] == 'BUY' else x['stock0'] / 5.0 * 100,
+        axis=1
     )
     df_trade['close1'] = (
         df_trade['exit0f'] + df_trade['exit1f'] + df_trade['exit0b'] + df_trade['exit1b']
@@ -229,7 +232,7 @@ def join_data(df_order, df_stock, df_all, df_iv):
             'close': 2,
             'pos_net': 2,
             'pos_chg': 2,
-            'pct_chg': 4,
+            'pct_chg': 3,
             'dte_iv': 2,
             'strike0%': 2,
             'strike1%': 2
@@ -243,3 +246,5 @@ def join_data(df_order, df_stock, df_all, df_iv):
         # print df.to_string(line_width=1000)
 
     return df_list
+
+# todo: backtest not work with dbl_cal, check

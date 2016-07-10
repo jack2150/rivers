@@ -9,7 +9,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
 from rivers.settings import RESEARCH_DIR
 from research.algorithm.models import Formula, FormulaResult
 from research.strategy.backtest import TradeBacktest
-from research.strategy.models import Trade
+from research.strategy.models import Trade, TradeResult
 
 
 @click.group()
@@ -72,7 +72,7 @@ def strategy(symbol, formula_id, backtest_id, trade_id, commission_id, capital, 
     db.close()
 
     trade_bt = TradeBacktest(symbol, trade)
-    trade_bt.save(
+    length = trade_bt.save(
         fields=fields,
         formula_id=int(formula_id),
         backtest_id=int(backtest_id),
@@ -80,6 +80,16 @@ def strategy(symbol, formula_id, backtest_id, trade_id, commission_id, capital, 
         capital=int(capital),
         df_signal=df_signal
     )
+
+    # save formula result
+    formula_result = TradeResult(
+        symbol=symbol.upper(),
+        trade=trade,
+        date=pd.datetime.today().date(),
+        arguments=fields,
+        length=length
+    )
+    formula_result.save()
 
 if __name__ == '__main__':
     # sleep(10)

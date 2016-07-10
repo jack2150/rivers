@@ -161,14 +161,17 @@ class AlgorithmAnalysisForm(forms.Form):
         }
 
         # save args
-        formula_arg = FormulaArgument(
-            formula=Formula.objects.get(id=self.cleaned_data['formula_id']),
-            arguments=fields,
-            level='low',
-            result='undefined',
-            description=''
-        )
-        formula_arg.save()
+        formula = Formula.objects.get(id=self.cleaned_data['formula_id'])
+        formula_args = FormulaArgument.objects.filter(Q(formula=formula) & Q(arguments=fields))
+        if formula_args.exists() == 0:
+            formula_arg = FormulaArgument(
+                formula=formula,
+                arguments=fields,
+                level='low',
+                result='undefined',
+                description=''
+            )
+            formula_arg.save()
 
         logger.info('Start backtest algorithm')
 
@@ -423,7 +426,7 @@ def algorithm_report_view(request, symbol, formula_id):
 
     parameters = dict(
         site_title='Algorithm Report',
-        title='Algorithm Report: %s Symbol: %s' % (formula, symbol.upper),
+        title='Algorithm Report: %s Symbol: %s' % (formula, symbol.upper()),
         symbol=symbol,
         formula_id=formula_id
     )

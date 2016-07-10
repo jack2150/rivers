@@ -1,13 +1,17 @@
 # noinspection PyUnusedLocal
 import os
-
+import logging
 import pandas as pd
 from django import forms
 from django.core.urlresolvers import reverse
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
 from research.algorithm.models import Formula
 from research.strategy.models import Trade, Commission
 from rivers.settings import RESEARCH_DIR, BASE_DIR
+
+logger = logging.getLogger('views')
 
 
 class StrategyAnalysisForm1(forms.Form):
@@ -35,7 +39,7 @@ class StrategyAnalysisForm1(forms.Form):
     def __init__(self, *args, **kwargs):
         super(StrategyAnalysisForm1, self).__init__(*args, **kwargs)
 
-        trades = Trade.objects.order_by('id').values_list('id', 'name')
+        trades = Trade.objects.order_by('name').values_list('id', 'name')
         self.fields['trade'].choices = trades
 
         commissions = [(c.id, c.__unicode__()) for c in Commission.objects.order_by('id')]
@@ -204,3 +208,123 @@ def strategy_analysis2(request, symbol, formula_id, backtest_id,
     )
 
     return render(request, template, parameters)
+
+
+def strategy_report_view(request, symbol, trade_id):
+    """
+    Algorithm research report view
+    :param request: request
+    :param symbol: str
+    :param trade_id: int
+    :return: render
+    """
+    trade = Trade.objects.get(id=trade_id)
+
+    template = 'strategy/report.html'
+
+    parameters = dict(
+        site_title='Strategy Report',
+        title='Strategy Report: %s Symbol: %s' % (trade, symbol.upper()),
+        symbol=symbol,
+        trade_id=trade_id
+    )
+
+    return render(request, template, parameters)
+
+
+@csrf_exempt
+def strategy_report_json(request, symbol, trade_id):
+    """
+    output report data into json format using datatable query
+    :param request: request
+    :param symbol: str
+    :param trade_id: int
+    :return: HttpResponse
+    """
+    draw = int(request.GET.get('draw'))
+    order_column = int(request.GET.get('order[0][column]'))
+    order_dir = request.GET.get('order[0][dir]')
+    logger.info('order column: %s, dir: %s' % (order_column, order_dir))
+
+    start = int(request.GET.get('start'))
+    length = int(request.GET.get('length'))
+    logger.info('start: %d length: %d' % (start, length))
+
+    trade = Trade.objects.get(id=trade_id)
+
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
+    df_report = db.select('strategy/report', where='trade == %r' % trade.path)
+    """:type: pd.DataFrame"""
+    db.close()
+
+    keys = [
+        'date', 'formula', 'report_id', 'args',
+        'pl_count', 'pl_sum',  'pl_cumprod', 'pl_mean', 'pl_std',
+        'profit_count', 'profit_chance', 'profit_max', 'profit_min',
+        'loss_count', 'loss_chance', 'loss_max', 'loss_min',
+        'dp_count', 'dp_chance', 'dp_mean', 'dl_count', 'dl_chance', 'dl_mean'
+    ]
+
+    # server side
+    df_page = df_report[keys]
+    df_page = df_page.sort_values(
+        keys[order_column], ascending=True if order_dir == 'asc' else False
+    )
+    df_page = df_page[start:start + length]
+
+    df_page['args'] = df_page['args'].apply(
+        lambda x: x.replace('\'', '').replace('{', '').replace('}', '')
+    )
+
+    reports = []
+    for index, data in df_page.iterrows():
+        temp = []
+
+        for key in keys:
+            if key in ('args', 'formula', 'trade'):
+                temp.append('"%s"' % data[key])
+            elif key in ('date', 'start', 'stop'):
+                temp.append('"%s"' % str(data[key].date()))
+            else:
+                temp.append(round(data[key], 4))
+
+        """
+        temp.append('"%s"' % reverse('admin:algorithm_signal_view', kwargs={
+            'symbol': symbol.lower(),
+            'formula_id': trade.id,
+            'backtest_id': index,
+        }))
+        temp.append('"%s"' % reverse('admin:algorithm_trade_view', kwargs={
+            'symbol': symbol.lower(),
+            'formula_id': trade.id,
+            'backtest_id': index,
+        }))
+        temp.append('"%s"' % reverse('admin:strategy_analysis1', kwargs={
+            'symbol': symbol.lower(),
+            'formula_id': trade.id,
+            'backtest_id': index,
+        }))
+        """
+
+        reports.append(
+            '[%s]' % ','.join(str(t) for t in temp)
+        )
+
+    data = """
+    {
+        "draw": %d,
+        "recordsTotal": %d,
+        "recordsFiltered": %d,
+        "data": [
+            %s
+        ]
+    }
+    """ % (
+        # draw,
+        0,
+        len(df_report),
+        len(df_report),
+        ',\n\t\t\t'.join(reports)
+    )
+
+    return HttpResponse(data, content_type="application/json")

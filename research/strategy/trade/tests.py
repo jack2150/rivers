@@ -54,7 +54,7 @@ class TestStrategy(TestUnitSetUp):
 
 
 class TestStrategy2(TestUnitSetUp):
-    def ready_signal(self):
+    def ready_signal0(self):
         """
         Ready df_signal for trade backtest (option)
         """
@@ -62,7 +62,9 @@ class TestStrategy2(TestUnitSetUp):
         path = os.path.join(TEMP_DIR, 'test_strategy.h5')
         db = pd.HDFStore(path)
         try:
-            self.df_signal = db.select('%s/signal' % self.symbol).reset_index(drop=True)
+            self.df_signal = db.select(
+                '%s/%s/signal' % (self.symbol, self.formula.id)
+            ).reset_index(drop=True)
         except KeyError:
             backtest = self.formula.start_backtest()
             backtest.set_symbol_date(self.symbol, '2010-01-01', '2015-12-31')
@@ -78,6 +80,36 @@ class TestStrategy2(TestUnitSetUp):
             df_signal = backtest.create_signal(df_hd, backtest.df_all, **cs_args)
             self.df_signal = df_signal.reset_index(drop=True)
             db.append('%s/signal' % self.symbol, self.df_signal)
+        db.close()
+
+    def ready_signal1(self):
+        """
+        Ready df_signal for trade backtest (option)
+        """
+        self.formula = Formula.objects.get(rule='Momentum')
+        path = os.path.join(TEMP_DIR, 'test_strategy.h5')
+        db = pd.HDFStore(path)
+        try:
+            self.df_signal = db.select(
+                '%s/%s/signal' % (self.symbol, self.formula.id)
+            ).reset_index(drop=True)
+        except KeyError:
+            backtest = self.formula.start_backtest()
+            backtest.set_symbol_date(self.symbol, '2010-01-01', '2015-12-31')
+            backtest.get_data()
+            hd_args = {
+                'period_span': 60,
+                'skip_days': 5,
+                'holding_period': 0
+            }
+            cs_args = {
+                'direction': 'follow',
+                'side': 'follow',
+            }
+
+            df_stock = backtest.handle_data(backtest.df_stock, **hd_args)
+            df_signal = backtest.create_signal(df_stock, **cs_args)
+            self.df_signal = df_signal.reset_index(drop=True)
         db.close()
 
     def ready_backtest(self):
@@ -104,7 +136,7 @@ class TestGetCycleStrike(TestStrategy2):
         TestStrategy2.setUp(self)
 
         self.symbol = 'AIG'
-        self.ready_signal()
+        self.ready_signal0()
         self.trade = Trade.objects.get(name='Single CALL *CS')
         self.ready_backtest()
 
@@ -160,7 +192,7 @@ class TestGetProbITM(TestStrategy2):
         TestStrategy2.setUp(self)
 
         self.symbol = 'AIG'
-        self.ready_signal()
+        self.ready_signal0()
         self.trade = Trade.objects.get(name='Single CALL *CS')
         self.ready_backtest()
 
@@ -187,7 +219,7 @@ class TestGetPriceAsk(TestStrategy2):
         TestStrategy2.setUp(self)
 
         self.symbol = 'AIG'
-        self.ready_signal()
+        self.ready_signal0()
         self.trade = Trade.objects.get(name='Single CALL *CS')
         self.ready_backtest()
 

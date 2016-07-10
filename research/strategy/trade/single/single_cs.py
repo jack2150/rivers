@@ -10,50 +10,59 @@ from research.strategy.trade.option_cs import get_cycle_strike
 logger = logging.getLogger('views')
 
 
-def create_order(df_signal, df_all, side=('follow', 'reverse', 'long', 'short'), cycle=0, strike=0):
+def create_order(df_signal, df_all,
+                 name=('call', 'put'),
+                 side=('follow', 'reverse', 'buy', 'sell'),
+                 cycle=0, strike=0):
     """
     Single CALL option strategy, support follow, long, short
     :param df_signal: pd.DataFrame
     :param df_all: pd.DataFrame
+    :param name: str ('call', 'put')
     :param side: str ('follow', 'long', 'short')
     :param cycle: int (can only be positive)
     :param strike: int (negative ITM or positive OTM or zero closest ATM)
-    :return:
+    :return: pd.DataFrame
     """
-    df_signal2 = df_signal.copy()
+    df_signal0 = df_signal.copy()
 
-    if side == 'long':
-        df_signal2['signal0'] = 'BUY'
-        df_signal2['signal1'] = 'SELL'
-    elif side == 'short':
-        df_signal2['signal0'] = 'SELL'
-        df_signal2['signal1'] = 'BUY'
+    if side == 'buy':
+        df_signal0['signal0'] = 'BUY'
+        df_signal0['signal1'] = 'SELL'
+    elif side == 'sell':
+        df_signal0['signal0'] = 'SELL'
+        df_signal0['signal1'] = 'BUY'
     elif side == 'reverse':
-        temp = df_signal2['signal0'].copy()
-        df_signal2['signal0'] = df_signal2['signal1']
-        df_signal2['signal1'] = temp
+        temp = df_signal0['signal0'].copy()
+        df_signal0['signal0'] = df_signal0['signal1']
+        df_signal0['signal1'] = temp
 
     signals = []
-    for index, data in df_signal2.iterrows():
+    for index, data in df_signal0.iterrows():
         try:
             option0, option1 = get_cycle_strike(
                 df_all, data['date0'], data['date1'],
-                'CALL', data['close0'], cycle, strike
+                name.upper(), data['close0'], cycle, strike
             )
 
             # df = pd.DataFrame([option0, option1])
             # print df.to_string(line_width=1000)
 
+            data['stock0'] = data['close0']
+            data['stock1'] = data['close1']
+
             data['option_code'] = option0['option_code']
             if data['signal0'] == 'BUY':
+                data['bp_effect'] = option0['ask'] * 100
                 data['close0'] = option0['ask']
-                data['close1'] = option1['bid']
+                data['close1'] = -option1['bid']
             else:  # SELL
-                data['close0'] = option0['bid']
+                data['bp_effect'] = (data['close0'] / 5.0) * 100
+                data['close0'] = -option0['bid']
                 data['close1'] = option1['ask']
 
             # check no zero bid/ask
-            if data['close0'] < 0.01:
+            if data['close0'] == 0:
                 continue
 
             signals.append(data)
@@ -63,25 +72,25 @@ def create_order(df_signal, df_all, side=('follow', 'reverse', 'long', 'short'),
             ))
 
     df = pd.DataFrame(signals)
-    df['pct_chg'] = (df['close1'] - df['close0']) / df['close0']
-    df['pct_chg'] = np.round(df.apply(
-        lambda x: x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg']
-        , axis=1),
-        4
-    )
+    df['pct_chg'] = (-df['close1'] - df['close0']) / np.abs(df['close0'])
 
     df['sqm0'] = 0
     df['sqm1'] = 0
     df['oqm0'] = df.apply(lambda x: -1 if x['signal0'] == 'SELL' else 1, axis=1)
     df['oqm1'] = -df['oqm0']
 
+    df = df.round({
+        'bp-effect': 2,
+        'pct_chg': 2
+    })
+
     return df
 
 
-def join_data(df_trade, df_stock, df_all, df_iv):
+def join_data(df_order, df_stock, df_all, df_iv):
     """
     Use for trade report view to check each trade
-    :param df_trade: pd.DataFrame
+    :param df_order: pd.DataFrame
     :param df_stock: pd.DataFrame
     :param df_all: pd.DataFrame
     :param df_iv: pd.DataFrame
@@ -89,28 +98,27 @@ def join_data(df_trade, df_stock, df_all, df_iv):
     """
     df_stock0 = df_stock.set_index('date')
     df_list = []
-    for index, data in df_trade.iterrows():
+    for index, data in df_order.iterrows():
         df0 = df_all.query(
             'option_code == %r & date >= %r  & date <= %r' % (
                 data['option_code'], data['date0'], data['date1']
             )
         )[['date', 'option_code', 'dte', 'bid', 'ask', 'strike']]
 
-        df0.insert(6, 'signal', data['signal0'])
         if data['signal0'] == 'BUY':
-            column = 'ask'
-            exit_price = df0['bid'].iloc[-1]
+            column = 'bid'
+            enter_price = df0['ask'].iloc[0]
             multiply = 1
         else:  # sell
-            column = 'bid'
-            exit_price = df0['ask'].iloc[-1]
+            column = 'ask'
+            enter_price = df0['bid'].iloc[0]
             multiply = -1
 
-        df0['option'] = df0[column]
-        df0['option'].iloc[-1] = exit_price
-        df0['signal'].iloc[-1] = data['signal1']
+        df0['option'] = [enter_price] + list(df0[column][1:])
+        df0['signal'] = [data['signal0']] + [data['signal1']] * (len(df0) - 1)
         df0['pos_net'] = df0['option'] - df0['option'].iloc[0]
         df0['pos_chg'] = df0['pos_net'] / df0['option'].iloc[0] * multiply + 0
+        df0['pct_chg'] = df0['pos_chg'] / df0['pos_chg'].shift(1)
 
         df0 = df0.drop(['bid', 'ask'], axis=1)
         strike = df0.iloc[0]['strike']
@@ -150,6 +158,7 @@ def join_data(df_trade, df_stock, df_all, df_iv):
 
         df = df.round({
             'pos_chg': 2,
+            'pct_chg': 4,
             '%s%%' % stage0: 2,
             '%s%%' % stage1: 2,
             '%s%%' % stage2: 2,
@@ -159,7 +168,10 @@ def join_data(df_trade, df_stock, df_all, df_iv):
         })
 
         # print df.to_string(line_width=1000)
+        assert data['close0'] == df['option'].iloc[0]
         assert data['close1'] == df['option'].iloc[-1]
+        df = df.replace([np.inf, -np.inf], np.nan)
+        df = df.fillna(0)
 
         df_list.append(df)
 

@@ -76,10 +76,14 @@ def create_order(df_signal, df_stock, df_all,
         if len(df_exit) != 4:
             # not enough data, some data are others
             continue
-        exit0f = df_exit.query('option_code == %r' % enter0f['option_code']).iloc[0]
-        exit1f = df_exit.query('option_code == %r' % enter1f['option_code']).iloc[0]
-        exit0b = df_exit.query('option_code == %r' % enter0b['option_code']).iloc[0]
-        exit1b = df_exit.query('option_code == %r' % enter1b['option_code']).iloc[0]
+
+        try:
+            exit0f = df_exit.query('option_code == %r' % enter0f['option_code']).iloc[0]
+            exit1f = df_exit.query('option_code == %r' % enter1f['option_code']).iloc[0]
+            exit0b = df_exit.query('option_code == %r' % enter0b['option_code']).iloc[0]
+            exit1b = df_exit.query('option_code == %r' % enter1b['option_code']).iloc[0]
+        except IndexError:
+            continue
 
         if side == 'BUY':
             signal0 = 'BUY'
@@ -126,6 +130,10 @@ def create_order(df_signal, df_stock, df_all,
     )
     df_trade['close1'] = (
         df_trade['exit0f'] + df_trade['exit1f'] + df_trade['exit0b'] + df_trade['exit1b']
+    )
+    df_trade['bp_effect'] = df_trade.apply(
+        lambda x: (x['enter1f'] + x['enter0b']) * 100 if x['signal0'] == 'BUY' else x['stock0'] / 5.0 * 100,
+        axis=1
     )
 
     # buy and sell exact same

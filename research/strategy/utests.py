@@ -6,7 +6,7 @@ from research.algorithm.models import Formula
 from research.strategy.backtest import TradeBacktest
 from research.strategy.models import Trade, Commission
 from research.strategy.views import StrategyAnalysisForm2
-from rivers.settings import RESEARCH_DIR
+from rivers.settings import RESEARCH_DIR, QUOTE_DIR
 
 
 class TestStrategyBacktest(TestUnitSetUp):
@@ -14,36 +14,30 @@ class TestStrategyBacktest(TestUnitSetUp):
         TestUnitSetUp.setUp(self)
 
         self.symbol = 'AIG'
-        self.formula = Formula.objects.get(rule='Ewma Chg D')
+        self.formula = Formula.objects.get(rule='Momentum')
         self.formula.start_backtest()
         self.backtest0 = self.formula.backtest
 
-        self.backtest0.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
+        self.backtest0.set_symbol_date(self.symbol, '2009-01-01', '2016-06-30')
         self.backtest0.get_data()
-        self.backtest0.handle_data(
-            self.backtest0.df_stock,
-            **{
-                'span': 20,
-                'previous': 20
-            }
-        )
-        self.df_signal = self.backtest0.create_signal(self.backtest0.df_stock)
+        self.hd_args = {
+            'period_span': 120,
+            'skip_days': 0,
+            'holding_period': 0
+        }
+        self.cs_args = {
+            'direction': 'follow',
+            'side': 'follow',
+        }
+
+        self.backtest0.handle_data(self.backtest0.df_stock, **self.hd_args)
+        self.df_signal = self.backtest0.create_signal(self.backtest0.df_stock, **self.cs_args)
         self.report_id = 1
 
-        """
-        db = pd.HDFStore(os.path.join(RESEARCH, self.symbol.lower(), 'algorithm.h5'))
-        df_report = db.select('report', where='formula == %r' % self.formula.path)
-        self.report = df_report.iloc[0]
-        self.df_signal = db.select('signal', where='formula == %r & hd == %r & cs == %r' % (
-            self.report['formula'], self.report['hd'], self.report['cs']
-        ))
-        db.close()
-        """
-
-        self.commission = Commission.objects.get(id=1)
+        self.commission = Commission.objects.first()
         self.capital = 10000
 
-        self.trade = Trade.objects.get(name='Stop Loss')
+        self.trade = Trade.objects.get(name='Stock')
         self.backtest = TradeBacktest(self.symbol, self.trade)
         self.backtest.set_algorithm(self.formula.id, self.report_id, self.df_signal)
         self.backtest.set_commission(self.commission.id)
@@ -57,17 +51,14 @@ class TestStrategyBacktest(TestUnitSetUp):
         print 'formula: %s' % self.formula
         print 'arguments: %s' % self.trade.get_args()
         self.backtest.set_args({
-            'side': 'follow,reverse,buy,sell',
-            'percent': '0:10:5'
-            # 'percent': '0.0:2.5:0.5'
+            'side': 'buy,sell'
         })
-        # self.assertEqual(len(self.backtest.args), 12)
+        self.assertEqual(len(self.backtest.args), 2)
 
         for arg in self.backtest.args:
             print arg
             self.assertEqual(type(arg), dict)
-            self.assertEqual(len(arg), 2)
-            self.assertIn(arg['side'], ('follow', 'reverse', 'buy', 'sell'))
+            self.assertEqual(len(arg), 1)
 
     def test_get_data(self):
         """
@@ -84,18 +75,49 @@ class TestStrategyBacktest(TestUnitSetUp):
         """
         Test get extra data using create_order date
         """
-        self.backtest.create_order = lambda df_stock, df_signal, df_contract, df_option: False
+        self.backtest.arg_names = ['df_stock', 'df_signal', 'df_contract', 'df_option', 'df_all']
+        print self.backtest.arg_names
 
         self.backtest.get_extra()
-        self.assertEqual(type(self.backtest.df_contract), pd.DataFrame)
-        self.assertGreater(len(self.backtest.df_option), 0)
+        self.assertEqual(type(self.backtest.df_all), pd.DataFrame)
+        self.assertGreater(len(self.backtest.df_all), 0)
+
+    def test_set_option_price(self):
+        """
+        Test set option price for buy/sell
+        """
+        path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        self.backtest.df_contract = db.select('option/contract')
+        self.backtest.df_option = db.select('option/data')
+        self.backtest.df_iv = db.select('option/iv/day')
+        db.close()
+
+        self.backtest.df_all = pd.merge(
+            self.backtest.df_option, self.backtest.df_contract, on='option_code'
+        )
+
+        self.backtest.set_option_price(percent=75)
+        self.assertIn('buy', list(self.backtest.df_all.columns))
+        self.assertIn('sell', list(self.backtest.df_all.columns))
+
+        # noinspection PyTypeChecker
+        self.assertFalse(
+            np.any(self.backtest.df_all['buy'] > self.backtest.df_all['ask'])
+        )
+        # noinspection PyTypeChecker
+        self.assertFalse(
+            np.any(self.backtest.df_all['bid'] > self.backtest.df_all['sell'])
+        )
+
+        print self.backtest.df_all.head(20)[['bid', 'sell', 'mark', 'buy', 'ask']]
 
     def test_set_commission(self):
         """
         Test set commission for backtest trade
         """
         print 'run set_commission...'
-        self.backtest.set_commission(self.commission)
+        self.backtest.set_commission(self.commission.id)
 
         print 'commission: %s' % self.backtest.commission
         self.assertEqual(type(self.backtest.commission), Commission)
@@ -129,9 +151,10 @@ class TestStrategyBacktest(TestUnitSetUp):
         """
         Test calculate option quantity
         """
-        prices = [3.23, 12.71, 1.35, 4.50, 0.69]
+        # prices = [3.23, 12.71, 1.35, 4.50, 0.69]
+        prices = [-1.2, -6.77, -0.49, -36.84, -2]
         quantities = [1, 2, -7, -3, 9]
-        capitals = [1000, 4000, 1500, 7600, 3200]
+        capitals = [1000, 4000, 1500, 76000, 3200]
 
         print 'run calc_option_qty...'
         for price, option_qty, capital in zip(prices, quantities, capitals):
@@ -140,22 +163,21 @@ class TestStrategyBacktest(TestUnitSetUp):
             ),
             qty = self.backtest.calc_option_qty(price, option_qty, capital)
             amount = qty * price * 100
-            if option_qty > 0:
-                extra = capital - amount
-            else:
-                extra = capital + amount
+            extra = capital - abs(amount)
+
             print 'result: %d, amount: %.2f, extra: %.2f' % (
                 qty, qty * price * 100, extra
             )
 
             self.assertFalse(qty % option_qty)
-            self.assertGreater(extra, 0)
+            # self.assertGreater(extra, 0)
 
     def test_calc_covered_qty(self):
         """
         Test calculate covered quantity
         """
-        prices = [3.23, 12.71, 1.35, 4.50]
+        # prices = [3.23, 12.71, 1.35, 4.50]
+        prices = [-3.23, -12.71, -1.35, -4.5]
         quantities = [(100, 1), (-100, -1), (100, -1), (-100, 1)]
         capitals = [1000, 40000, 15000, 960]
 
@@ -182,11 +204,11 @@ class TestStrategyBacktest(TestUnitSetUp):
         """
         Test calculate trade quantity
         """
-        prices = [3.23, 12.71, 1.35, 4.50, 0.69]
+        prices = [3.23, 1.71, 1.35, -4.50, -0.69]
         quantities = [(0, 1), (2, 0), (100, -1), (100, 1), (0, 3)]
         capitals = [1000, 4000, 1500, 7600, 3200]
 
-        print 'run calc_covered_qty...'
+        print 'run calc_quantity...'
         for price, (sqm, oqm), capital in zip(prices, quantities, capitals):
             print 'price: %.2f, sqm: %.2f, oqm: %.2f, capital: %.2f' % (
                 price, sqm, oqm, capital
@@ -195,11 +217,28 @@ class TestStrategyBacktest(TestUnitSetUp):
 
             print 'stock qty: %.2f, option qty: %.2f' % (sqty, oqty)
 
+    def test_calc_quantity2(self):
+        """
+        Test calculate quantity using bp_effect
+        """
+        bp_effects = [30, 54.9, 183, 229.4, 81, 96]
+        quantities = [(0, 1), (2, 0), (100, -1), (100, 1), (0, 3)]
+        capitals = [1000, 4000, 1500, 7600, 3200]
+
+        print 'run calc_quantity...'
+        for bp_effect, (sqm, oqm), capital in zip(bp_effects, quantities, capitals):
+            print 'bp_effect: %.2f, sqm: %.2f, oqm: %.2f, capital: %.2f' % (
+                bp_effect, sqm, oqm, capital
+            ),
+            sqty, oqty = self.backtest.calc_quantity2(bp_effect, sqm, oqm, capital)
+
+            print 'stock qty: %.2f, option qty: %.2f' % (sqty, oqty)
+
     def test_calc_amount(self):
         """
         Test calculate amount capital use for trade
         """
-        prices = [3.23, 12.71, 1.35, 4.50, 0.69]
+        prices = [3.23, 12.71, 1.35, -4.50, -0.69]
         quantities = [(0, 3), (312, 0), (-1000, 10), (1600, 16), (0, 45)]
         capitals = [1000, 4000, 1500, 7600, 3200]
 
@@ -215,7 +254,7 @@ class TestStrategyBacktest(TestUnitSetUp):
             self.assertTrue(extra)
             self.assertLess(amount, capital)
             self.assertLess(extra, capital)
-            self.assertEqual(amount + extra, capital)
+            self.assertEqual(abs(amount) + extra, capital)
 
     def test_calc_fee(self):
         """
@@ -235,48 +274,45 @@ class TestStrategyBacktest(TestUnitSetUp):
         """
         Test make df_trade using create_order
         """
-        args = {'side': 'follow'}
         self.backtest.get_data()
         self.backtest.get_extra()
-        df_trade = self.backtest.make_trade(**args)
 
-        print df_trade.to_string(line_width=1000)
-        print df_trade.dtypes
-        columns = [
-            'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding',
-            'sqty0', 'sqty1', 'oqty0', 'oqty1', 'amount0', 'fee0', 'remain0',
-            'amount1', 'fee1', 'net_chg', 'remain1', 'pct_chg'
-        ]
-        for column in df_trade.columns:
-            self.assertIn(column, columns)
+        for side in ('buy', 'sell'):
+            args = {'side': side}
+            df_order, df_trade = self.backtest.make_trade(**args)
+            # print df_order.to_string(line_width=1000)
+            print df_trade.to_string(line_width=1000)
+            # print df_trade.dtypes
 
-        self.assertEqual(type(df_trade), pd.DataFrame)
-        self.assertGreater(len(df_trade), 0)
+            self.assertEqual(type(df_trade), pd.DataFrame)
+            self.assertGreater(len(df_trade), 0)
 
     def test_holding_period(self):
         """
         Test holding period in
         """
-        args = {'side': 'follow', 'percent': 10}
+        args = {'side': 'follow'}
         self.backtest.get_data()
         self.backtest.get_extra()
-        df_trade = self.backtest.make_trade(**args)
+        df_order, df_trade = self.backtest.make_trade(**args)
 
-        result = self.backtest.holding_period(df_trade)
-        print pd.DataFrame([result])
+        result = self.backtest.holding_period(df_order)
+        df_result = pd.DataFrame([result])
+        print df_result
 
     def test_report(self):
         """
         Test make report using df_trade
         """
-        args = {'side': 'follow', 'percent': 5}
+        args = {'side': 'follow'}
         self.backtest.get_data()
         self.backtest.get_extra()
-        df_trade = self.backtest.make_trade(**args)
+        df_order, df_trade = self.backtest.make_trade(**args)
 
-        report = self.backtest.report(df_trade)
+        report = self.backtest.report(df_order, df_trade)
 
-        print pd.DataFrame([report]).to_string(line_width=1000)
+        df_report = pd.DataFrame([report])
+        print df_report.to_string(line_width=1000)
 
     def test_generate(self):
         """
@@ -285,53 +321,29 @@ class TestStrategyBacktest(TestUnitSetUp):
         self.backtest.get_data()
         self.backtest.get_extra()
         self.backtest.set_args(fields={
-            'side': 'follow,reverse,buy,sell',
-            'percent': '5'
+            'side': 'follow,reverse,buy,sell'
         })
-        df_report, df_trades = self.backtest.generate()
+        df_orders, df_trades, df_report = self.backtest.generate()
 
-        print df_report.to_string(line_width=1000)
+        print df_orders.head(10).to_string(line_width=1000)
         print df_trades.head(10).to_string(line_width=1000)
+        print df_report.to_string(line_width=1000)
 
         self.assertEqual(type(df_report), pd.DataFrame)
         self.assertEqual(type(df_trades), pd.DataFrame)
         self.assertTrue(len(df_report))
         self.assertTrue(len(df_trades))
 
-    def test_generate2(self):
-        """
-
-        :return:
-        """
-        self.trade = Trade.objects.get(name='Single PUT *CS')
-        self.backtest = TradeBacktest(self.symbol, self.trade)
-        self.backtest.set_algorithm(self.formula.id, self.report_id, self.df_signal)
-        self.backtest.set_commission(self.commission.id)
-        self.backtest.set_capital(self.capital)
-
-        self.backtest.get_data()
-        self.backtest.get_extra()
-        self.backtest.set_args(fields={
-            'side': 'follow',
-            'cycle': '0',
-            'strike': '0'
-        })
-
-        df_report, df_trades = self.backtest.generate()
-
-        print df_report.to_string(line_width=1000)
-        print df_trades.to_string(line_width=1000)
-
     def test_save(self):
         """
         Test save df_reports and df_signals
         """
+        # todo: here
         self.backtest.save(
             fields={
                 'side': 'follow,reverse,buy,sell',
-                'percent': '0:10:5'
             },
-            formula_id=self.formula,
+            formula_id=self.formula.id,
             backtest_id=self.report_id,
             df_signal=self.df_signal,
             commission_id=self.commission,
@@ -340,17 +352,98 @@ class TestStrategyBacktest(TestUnitSetUp):
 
         db = pd.HDFStore(os.path.join(RESEARCH_DIR, self.symbol.lower(), 'strategy.h5'))
 
-        df_report = db.select('report')
-        df_trades = db.select('trade')
+        path = self.backtest.trade.path
+        df_report = db.select('strategy/report', where='strategy == %r' % path)
+        df_trades = db.select('strategy/trade', where='strategy == %r' % path)
+        df_orders = db.select('strategy/order', where='strategy == %r' % path)
         db.close()
 
-        print df_report.head().to_string(line_width=1000)
-        print df_trades.head().to_string(line_width=1000)
+        print df_orders.head(20).to_string(line_width=1000)
+        print df_trades.head(20).to_string(line_width=1000)
+        print df_report.head(20).to_string(line_width=1000)
 
         self.assertEqual(type(df_report), pd.DataFrame)
         self.assertEqual(type(df_trades), pd.DataFrame)
         self.assertTrue(len(df_report))
         self.assertTrue(len(df_report))
+
+
+class TestStrategyBacktestOption(TestUnitSetUp):
+    def setUp(self):
+        TestUnitSetUp.setUp(self)
+
+        self.symbol = 'AIG'
+        self.formula = Formula.objects.get(rule='Momentum')
+        self.formula.start_backtest()
+        self.backtest0 = self.formula.backtest
+
+        self.backtest0.set_symbol_date(self.symbol, '2009-01-01', '2016-06-30')
+        self.backtest0.get_data()
+        self.hd_args = {
+            'period_span': 120,
+            'skip_days': 0,
+            'holding_period': 0
+        }
+        self.cs_args = {
+            'direction': 'follow',
+            'side': 'follow',
+        }
+
+        self.backtest0.handle_data(self.backtest0.df_stock, **self.hd_args)
+        self.df_signal = self.backtest0.create_signal(self.backtest0.df_stock, **self.cs_args)
+        self.report_id = 1
+
+        self.commission = Commission.objects.first()
+        self.capital = 10000
+
+    def ready_option(self, name):
+        self.trade = Trade.objects.get(name=name)
+        self.backtest = TradeBacktest(self.symbol, self.trade)
+        self.backtest.set_algorithm(self.formula.id, self.report_id, self.df_signal)
+        self.backtest.set_commission(self.commission.id)
+        self.backtest.set_capital(self.capital)
+        self.backtest.get_data()
+        self.backtest.get_extra()
+
+    def test_make_trade_option(self):
+        """
+        Test make trade for option only
+        """
+        self.ready_option(name='Single -CS')
+
+        for name in ('call', 'put'):
+            args = {'name': name, 'side': 'follow', 'cycle': 0, 'strike': 0}
+            df_order, df_trade = self.backtest.make_trade(**args)
+            # print df_order.to_string(line_width=1000)
+            print df_trade.to_string(line_width=1000)
+
+    def test_make_trade_option_vertical(self):
+        self.ready_option(name='Vertical -CS')
+        for name in ('call', 'put'):
+            for side in ('buy', 'sell'):
+                kwargs = {'name': name, 'side': side, 'cycle': 0, 'strike': 0, 'wide': 2}
+                df_order, df_trade = self.backtest.make_trade(**kwargs)
+                # print df_order.to_string(line_width=1000)
+                print df_trade.to_string(line_width=1000)
+
+    def test_generate(self):
+        """
+        Test generate report for option strategy
+        """
+        self.backtest.get_data()
+        self.backtest.get_extra()
+        self.backtest.set_args(fields={
+            'name': 'put,call',
+            'side': 'buy,sell',
+            'cycle': '0',
+            'strike': '0',
+        })
+
+        df_orders, df_trades, df_report = self.backtest.generate()
+
+        print df_orders.head(10).to_string(line_width=1000)
+        print df_trades.head(10).to_string(line_width=1000)
+        print df_report.to_string(line_width=1000)
 
 
 class TestStrategyAnalysisView(TestUnitSetUp):

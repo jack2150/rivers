@@ -23,8 +23,9 @@ class TestDTE(TestUnitSetUp):
 
         }
         self.cs_args = {
-            'dte': 45,
-            'side': 'buy'
+            'dte': 15,
+            'side': 'buy',
+            'special': 'Standard'
         }
 
         self.backtest = None
@@ -43,9 +44,12 @@ class TestDTE(TestUnitSetUp):
         Test create signal based on data frame that handle data generate
         """
         df_hd = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
-        df_signal = self.backtest.create_signal(
-            df_hd, self.backtest.df_all, **self.cs_args
-        )
+        self.cs_args.update({
+            'df': self.backtest.df_stock,
+            'df_all': self.backtest.df_all
+        })
+
+        df_signal = self.backtest.create_signal(**self.cs_args)
 
         print df_signal.to_string(line_width=200)
 
@@ -61,3 +65,4 @@ class TestDTE(TestUnitSetUp):
 
         for column in columns:
             self.assertIn(column, df_signal.columns)
+

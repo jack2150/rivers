@@ -123,8 +123,10 @@ class FormulaResult(models.Model):
     formula = models.ForeignKey(Formula)
 
     date = models.DateField()
-    arguments = models.TextField()
+    arguments = models.TextField(max_length=500)
     length = models.IntegerField()
+
+    unique_together = (('formula', 'arguments'),)
 
     def __unicode__(self):
         return '{date} < {symbol} > {formula}'.format(

@@ -1,5 +1,6 @@
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
+from data.tb.raw.stocks import extract_stock
 from options import *
 import numpy as np
 import pandas as pd
@@ -12,6 +13,24 @@ symbols = [
     'YUM', 'XOM', 'WMT', 'WFC', 'VZ', 'TWTR', 'TSLA', 'PG',
     'DAL', 'DIS', 'EA', 'EBAY', 'FB', 'BXP'
 ]
+
+
+class TestExtractStock(TestSetUp):
+    def setUp(self):
+        TestSetUp.setUp(self)
+        self.symbol = 'AIG'
+
+    def test_extract_stock(self):
+        """
+        Test extract stock for specific file
+        """
+        underlying = Underlying(
+            symbol=self.symbol,
+            start_date='2010-01-01',
+            stop_date='2016-06-30'
+        )
+        underlying.save()
+        extract_stock(self.symbol)
 
 
 class TestExtractOption(TestSetUp):

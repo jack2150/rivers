@@ -42,6 +42,7 @@ class FormulaBacktest(object):
         self.stop = None
 
         self.df_stock = pd.DataFrame()
+        self.df_thinkback = pd.DataFrame()
         self.df_change = pd.DataFrame()
 
         self.df_signal = pd.DataFrame()
@@ -162,31 +163,29 @@ class FormulaBacktest(object):
         self.hd_args = getargspec(handle_data)[0]
         self.cs_args = getargspec(create_signal)[0]
 
-    def handle_data(self, df, *args, **kwargs):
+    def handle_data(self, *args, **kwargs):
         """
         Handle data that apply algorithm and add new column into stock data
-        :param df: DataFrame
         :param args: *
         :param kwargs: *
         :return: DataFrame
         """
         if self._handle_data:
-            df = self._handle_data(df, *args, **kwargs)
+            df = self._handle_data(*args, **kwargs)
         else:
             raise NotImplementedError('Import handle data from algorithm.')
 
         return df
 
-    def create_signal(self, df, *args, **kwargs):
+    def create_signal(self, *args, **kwargs):
         """
         Create signal data frame using algorithm stock data
-        :param df: DataFrame
         :param args: *
         :param kwargs: *
         :return: DataFrame
         """
         if self._handle_data:
-            df = self._create_signal(df, *args, **kwargs)
+            df = self._create_signal(*args, **kwargs)
         else:
             raise NotImplementedError('Import create_signal from algorithm.')
 
@@ -233,7 +232,7 @@ class FormulaBacktest(object):
         df_spy = df_spy[start:stop]
         db.close()
 
-        # open treausry db
+        # open treasury db
         treasury_path = os.path.join(TREASURY_DIR)
         db = pd.HDFStore(treasury_path)
         df_rate = db.select('RIFLGFCY01_N_B')
@@ -286,23 +285,29 @@ class FormulaBacktest(object):
 
         # check which data is require
         path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
         if 'df_earning' in args:
-            db = pd.HDFStore(path)
             self.df_earning = db.select('event/earning')
-            db.close()
 
         if 'df_dividend' in args:
-            db = pd.HDFStore(path)
             self.df_dividend = db.select('event/dividend')
-            db.close()
+
+        if 'df_thinkback' in args:
+            self.df_thinkback = db.select('stock/thinkback')
+            self.df_thinkback = self.df_thinkback.reset_index()
 
         if 'df_contract' in args or 'df_option' in args or 'df_all' in args:
-            db = pd.HDFStore(path)
             self.df_contract = db.select('option/contract')
-            self.df_option = db.select('option/data')
-            db.close()
-
+            self.df_option = db.select('option/data', where='date >= %r & date <= %r' % (
+                self.start, self.stop
+            ))
             self.df_all = pd.merge(self.df_option, self.df_contract, on='option_code')
+
+            self.df_all = self.df_all[~self.df_all['date'].isin(
+                np.setdiff1d(self.df_all['date'].unique(), self.df_stock['date'])
+            )]
+
+        db.close()
 
     def set_signal(self, df_signal):
         """
@@ -582,6 +587,18 @@ class FormulaBacktest(object):
 
         return temp
 
+    @staticmethod
+    def min_args(arg):
+        """
+        Minimize arguments that only show values
+        :param arg: dict
+        :return: str
+        """
+        arg_str = []
+        for name in sorted(arg.keys()):
+            arg_str.append(str(arg[name]))
+        return ','.join(arg_str)
+
     def generate(self):
         """
         Run all formula args then generate report
@@ -603,6 +620,7 @@ class FormulaBacktest(object):
             df_hd = self.handle_data(**hd_args)
             cs_args = self.ready_cs_args(arg['create_signal'], df_hd)
             df_signal = self.create_signal(**cs_args)
+            # todo: problem
 
             if len(df_signal) == 0:
                 continue
@@ -614,12 +632,11 @@ class FormulaBacktest(object):
             report['stop'] = self.stop
             report['formula'] = str(self.formula.path)
 
-            report['hd'] = str({k: dtype(v) for k, v in arg['handle_data'].items()})
-            report['cs'] = str({k: dtype(v) for k, v in arg['create_signal'].items()})
+            report['hd'] = self.min_args(arg['handle_data'])
+            report['cs'] = self.min_args(arg['create_signal'])
             print output % ('BT', 'Report', 'pl_count: %d, pl_mean: %.2f, profit_chance: %.2f' % (
                 report['pl_count'], report['pl_mean'], report['profit_chance']
             ))
-
             reports.append(report)
 
             # update signal
@@ -627,8 +644,8 @@ class FormulaBacktest(object):
             df_signal['start'] = self.start
             df_signal['stop'] = self.stop
             df_signal['formula'] = str(self.formula.path)
-            df_signal['hd'] = str(arg['handle_data'])
-            df_signal['cs'] = str(arg['create_signal'])
+            df_signal['hd'] = self.min_args(arg['handle_data'])
+            df_signal['cs'] = self.min_args(arg['create_signal'])
 
             signals.append(df_signal)
 

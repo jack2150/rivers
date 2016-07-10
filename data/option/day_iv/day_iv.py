@@ -119,35 +119,37 @@ class DayImplVolStatic(object):
             if d0 == 1 and d1 == 2:
                 iv0 = y[1] + (y[1] - y[0]) / (x[1] - x[0]) * (base - x[1])
                 iv1 = self.linear_expr(x[1], x[2], y[1], y[2], base)
-                results = [iv0, iv1]
+                ivs = [iv0, iv1]
                 i0, i1 = 1, 2
             else:
                 iv1 = self.linear_expr(x[0], x[1], y[0], y[1], base)
                 iv2 = y[1] - (y[2] - y[1]) / (x[2] - x[1]) * (x[1] - base)
-                results = [iv1, iv2]
+                ivs = [iv1, iv2]
                 i0, i1 = 0, 1
         else:
             iv0 = y[1] + (y[1] - y[0]) / (x[1] - x[0]) * (base - x[1])
             iv1 = self.linear_expr(x[1], x[2], y[1], y[2], base)
             iv2 = y[2] - (y[3] - y[2]) / (x[3] - x[2]) * (x[2] - base)
-            results = [iv0, iv1, iv2]
+            ivs = [iv0, iv1, iv2]
             i0, i1 = 1, 2
 
-        if len(results) == 1:
-            result = results[0]
+        if len(ivs) == 1:
+            result = ivs[0]
         else:
-            result = np.mean(results)
+            result = np.mean(ivs)
             if not (y[i0] <= result <= y[i1] or y[i0] >= result >= y[i1]):
-                result = np.mean(
-                    [r for r in results if y[i0] < r < y[i1] or y[i0] > r > y[i1]]
-                )
+                ivs = [r for r in ivs if y[i0] < r < y[i1] or y[i0] > r > y[i1]]
+                if len(ivs):
+                    result = np.mean(ivs)
+                else:
+                    result = self.linear_expr(x[i0], x[i1], y[i0], y[i1], base)
 
             if np.isnan(result):
                 result = self.linear_expr(x[i0], x[i1], y[i0], y[i1], base)
 
         if info:
             print output % ('NEAR', 'index0: %d, index1: %d' % (i0, i1))
-            print output % ('CALC', 'range_ivs: %s' % [round(r, 2) for r in results])
+            print output % ('CALC', 'range_ivs: %s' % [round(r, 2) for r in ivs])
 
         return round(result, 2)
 

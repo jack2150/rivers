@@ -65,9 +65,7 @@ class Trade(models.Model):
 
         specs = getargspec(create_order)
 
-        arg_names = [a for a in specs.args if a not in (
-            'df_stock', 'df_signal', 'df_contract', 'df_option', 'df_all'
-        )]
+        arg_names = [a for a in specs.args if 'df' not in a]
 
         return [(k, v) for k, v in zip(arg_names, specs.defaults)]
 
@@ -76,4 +74,17 @@ class Trade(models.Model):
 
 
 class TradeResult(models.Model):
-    symbol = models.CharField(max_length=50)
+    """
+    Trade result that list for report view
+    """
+    symbol = models.CharField(max_length=20)
+    trade = models.ForeignKey(Trade)
+
+    date = models.DateField()
+    arguments = models.TextField()
+    length = models.IntegerField()
+
+    def __unicode__(self):
+        return '{date} < {symbol} > {trade}'.format(
+            date=self.date, symbol=self.symbol, trade=self.trade.path
+        )

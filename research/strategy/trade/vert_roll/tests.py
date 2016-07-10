@@ -1,9 +1,7 @@
 import os
 from itertools import product
-
 from base.utests import TestUnitSetUp  # require
 from research.strategy.models import Trade
-from research.strategy.trade.single.call_cs import get_cycle_strike
 from research.strategy.trade.tests import TestStrategy2
 import pandas as pd
 import numpy as np
@@ -15,7 +13,7 @@ class TestVerticalRoll(TestStrategy2):
         TestStrategy2.setUp(self)
 
         self.symbol = 'AIG'
-        self.ready_signal()
+        self.ready_signal0()
         self.trade = Trade.objects.get(name='Vertical Roll')
 
         self.args = {

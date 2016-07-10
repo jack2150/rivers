@@ -1,11 +1,8 @@
 import os
-from itertools import product
 from base.utests import TestUnitSetUp  # require
 from research.strategy.models import Trade
-from research.strategy.trade.single.call_cs import get_cycle_strike
 from research.strategy.trade.tests import TestStrategy2
 import pandas as pd
-import numpy as np
 from rivers.settings import TEMP_DIR
 
 
@@ -14,17 +11,17 @@ class TestDoubleCalendar(TestStrategy2):
         TestStrategy2.setUp(self)
 
         self.symbol = 'AIG'
-        self.ready_signal()
+        self.ready_signal0()
         self.trade = Trade.objects.get(name='Double Calendar')
 
         self.args = {
-            'name0': 'CALL',
-            'name1': 'PUT',
-            'side': 'SELL',
-            'dte0': 45,
-            'dte1': 45 * 3,
-            'percent0': 0,
-            'percent1': 0
+            'name0': 'call',
+            'name1': 'put',
+            'side': 'sell',
+            'dte0': 60,
+            'dte1': 120,
+            'percent0': 2,
+            'percent1': 2
         }
 
     def get_trade(self):
@@ -79,7 +76,7 @@ class TestDoubleCalendar(TestStrategy2):
         df_trade = self.get_trade()
 
         df_list = self.backtest.join_data(
-            df_trade[:2], self.backtest.df_stock, self.backtest.df_all, self.backtest.df_iv
+            df_trade, self.backtest.df_stock, self.backtest.df_all, self.backtest.df_iv
         )
 
         for df_daily in df_list:
