@@ -26,6 +26,7 @@ COLUMNS = [
     'others', 'prob_itm', 'prob_otm', 'prob_touch', 'right', 'special', 'strike',
     'theo_price', 'theta', 'vega', 'volume'
 ]
+BONUS_SHARE = re.compile('^([A-Za-z])\w+ \d+')
 
 
 def get_dte_date2(ex_month, ex_year):
@@ -80,6 +81,8 @@ def make_code2(symbol, others, right, special, ex_date, name, strike, extra=''):
             extra = 2
         elif 'US$' in others:
             extra = 1
+        elif BONUS_SHARE.search(others) is not None:
+            extra = 1
         elif '/' in right:
             extra = 1
 
@@ -117,6 +120,8 @@ def change_code(symbol, code, others, right, special):
         extra = 2
     elif 'US$' in others:
         extra = 1
+    elif BONUS_SHARE.search(others) is not None:
+        extra = 1
     elif '/' in right:
         extra = 1
 
@@ -144,6 +149,7 @@ def check_code(symbol, contract):
         except KeyError:
             print contract
             print symbol
+            raise KeyError('Invalid ex_date: %s, %s' % (symbol, contract))
 
         new_code = make_code2(
             symbol, contract['others'], contract['right'], contract['special'],
@@ -798,11 +804,9 @@ class RawOption(object):
         """
         Update underlying after completed
         """
-        logger.info('Update raw options import stat')
-        underlying = Underlying.objects.get(symbol=self.symbol.upper())
-        underlying.log += 'Raw option imported, symbol: %s\n' % self.symbol.upper()
-        underlying.log += 'Raw df_normal length: %d\n' % len(self.df_normal)
-        underlying.log += 'Raw df_others length: %d\n' % len(self.df_others1)
-        underlying.log += 'Raw df_split/old length: %d\n' % len(self.df_split1)
-        underlying.log += 'Raw df_split/new length: %d\n' % len(self.df_split2)
-        underlying.save()
+        Underlying.write_log(self.symbol, [
+            'Raw df_normal length: %d' % len(self.df_normal),
+            'Raw df_others length: %d' % len(self.df_others1),
+            'Raw df_split/old length: %d' % len(self.df_split1),
+            'Raw df_split/new length: %d' % len(self.df_split2)
+        ])

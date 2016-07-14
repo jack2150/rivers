@@ -327,8 +327,7 @@ class FillNaSplitNew(object):
         df_split1 = pd.concat([self.df_split1, self.df_fillna])
         """:type: pd.DataFrame"""
 
-        underlying = Underlying.objects.get(symbol=self.symbol.upper())
-        underlying.log += 'Fillna clean split/new option: %s\n' % self.symbol.upper()
-        underlying.log += 'Total new rows fill: %d\n' % len(self.df_fillna)
-        underlying.log += 'Fillna df_split/new length: %d\n' % len(df_split1)
-        underlying.save()
+        Underlying.write_log(self.symbol, [
+            'Fillna new rows: %d' % len(self.df_fillna),
+            'Fillna df_split/new: %d' % len(df_split1)
+        ])

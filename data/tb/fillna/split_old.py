@@ -309,8 +309,7 @@ class FillNaSplitOld(object):
         df_split0 = pd.concat([self.df_split0, self.df_fillna])
         """:type: pd.DataFrame"""
 
-        underlying = Underlying.objects.get(symbol=self.symbol.upper())
-        underlying.log += 'Fillna clean normal option: %s\n' % self.symbol.upper()
-        underlying.log += 'Total new rows fill: %d\n' % len(self.df_fillna)
-        underlying.log += 'Fillna df_split/old length: %d\n' % len(df_split0)
-        underlying.save()
+        Underlying.write_log(self.symbol, [
+            'Fillna new rows: %d' % len(self.df_fillna),
+            'Fillna df_split/old: %d' % len(df_split0)
+        ])

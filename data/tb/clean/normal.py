@@ -52,7 +52,6 @@ class CleanNormal(object):
 
         db = pd.HDFStore(self.path)
         df_normal = db.select('option/valid/normal')
-        df_normal = df_normal.reset_index(drop=True)
         db.close()
 
         self.merge_option_data(df_normal, df_div, df_rate, df_stock)
@@ -131,8 +130,4 @@ class CleanNormal(object):
         """
         Update underlying after completed
         """
-        underlying = Underlying.objects.get(symbol=self.symbol.upper())
-        underlying.log += 'Clean df_normal, symbol: %s length: %d\n' % (
-            self.symbol.upper(), len(self.df_all)
-        )
-        underlying.save()
+        Underlying.write_log(self.symbol, ['Clean df_normal: %d' % len(self.df_all)])

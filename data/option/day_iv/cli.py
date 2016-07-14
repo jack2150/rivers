@@ -23,7 +23,6 @@ def write_weekday_cli(symbol, name):
         df_div, df_rate, df_stock = get_quote_data(symbol)
         db = pd.HDFStore(path)
         df_normal = db.select('iv/valid/normal')
-        df_normal = df_normal.reset_index(drop=True)
         db.close()
         clean_option.merge_option_data(df_normal, df_div, df_rate, df_stock)
 
@@ -34,7 +33,6 @@ def write_weekday_cli(symbol, name):
 
         db = pd.HDFStore(path)
         df_split0 = db.select('iv/valid/split/old')
-        df_split0 = df_split0.reset_index(drop=True)
         db.close()
         clean_option.merge_option_data(df_split0, df_div, df_rate, df_stock)
 
@@ -88,7 +86,11 @@ def import_weekday_cli(symbol):
     valid_option.df_list['split1'] = df_split0
     df_result = valid_option.valid()
 
-    # save into db
+    # only one time reset
+    df_result['normal'] = df_result['normal'].reset_index(drop=True)
+    df_result['split0'] = df_result['split0'].reset_index(drop=True)
+
+    # save iv table
     clean_path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol.lower())
     db = pd.HDFStore(clean_path)
     try:
@@ -126,14 +128,18 @@ def import_weekday_cli(symbol):
                     print 'Time', str(p_time).split('.')[0], 'Records:', len(lines)
             else:
                 break
+        p_time = timedelta(seconds=(time.time() - start_time))
+        print 'Time', str(p_time).split('.')[0], 'Records:', len(lines)
 
         # save data
         if name == 'normal':
             clean_option = CleanNormal(symbol)
-            clean_option.df_all = df_result['normal']
+            df_div, df_rate, df_stock = get_quote_data(symbol)
+            clean_option.merge_option_data(df_result['normal'], df_div, df_rate, df_stock)
         elif name == 'split/old':
             clean_option = CleanSplitOld(symbol)
-            clean_option.df_all = df_result['split0']
+            df_div, df_rate, df_stock = get_quote_data(symbol)
+            clean_option.merge_option_data(df_result['split0'], df_div, df_rate, df_stock)
         else:
             raise KeyError('No DataFrame for "%s"' % name)
 
@@ -149,7 +155,7 @@ def import_weekday_cli(symbol):
         # save data
         db = pd.HDFStore(clean_path)
         try:
-            db.remove('iv/valid/%s' % name)
+            # db.remove('iv/valid/%s' % name)
             db.remove('iv/clean/%s' % name)
         except KeyError:
             pass

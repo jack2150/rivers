@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+from datetime import datetime
 from django.db import models
 from rivers.settings import QUOTE_DIR, TREASURY_DIR
 
@@ -52,6 +53,30 @@ class Underlying(models.Model):
 
     class Meta:
         ordering = ['symbol']
+
+    @staticmethod
+    def write_log(symbol, lines, missing=[]):
+        """
+        Write log into underlying
+        :param symbol: str
+        :param lines: list
+        :param missing: list
+        :return:
+        """
+        underlying = Underlying.objects.get(symbol=symbol.upper())
+
+        data = []
+        for line in lines:
+            log = '%s: %s' % (datetime.today().strftime('%Y-%m-%d %H:%M:%S'), line)
+            data.append(log)
+
+        data.append('-' * 60 + '\n')
+        underlying.log += '\n'.join(data)
+
+        if len(missing):
+            underlying.missing = '\n'.join(missing)
+
+        underlying.save()
 
     def get_stock(self, source, start, stop):
         """

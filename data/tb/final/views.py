@@ -154,14 +154,13 @@ def merge_final(symbol):
     db.append('option/data', df_option,
               format='table', data_columns=True, min_itemsize=100)
     db.close()
+
     # update log
-    underlying = Underlying.objects.get(symbol=symbol.upper())
-    underlying.log += 'Merge final data: %s\n' % symbol.upper()
-    underlying.log += 'df_contract length: %d\n' % len(df_contract)
-    underlying.log += 'df_option length: %d\n' % len(df_option)
-    underlying.log += 'All data saved\n'
-    underlying.enable = True
-    underlying.save()
+    Underlying.write_log(symbol, [
+        'Final df_contract: %d' % len(df_contract),
+        'Final df_option: %d' % len(df_option),
+        '%s stock & option quote created' % symbol.upper()
+    ])
 
 
 def merge_final_h5(request, symbol):
@@ -195,9 +194,7 @@ def remove_clean_h5(request, symbol):
     # reshape_h5('clean.h5')
 
     # update log
-    underlying = Underlying.objects.get(symbol=symbol.upper())
-    underlying.log += 'All clean process data removed: %s' % symbol.upper()
-    underlying.save()
+    Underlying.write_log(symbol, ['All clean process data removed: %s' % symbol.upper()])
 
     return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
 

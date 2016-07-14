@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from django.core.urlresolvers import reverse
+
 from base.utests import TestUnitSetUp
 from data.option.day_iv.calc import today_iv
 from data.option.day_iv.day_iv import *
@@ -233,6 +235,33 @@ class TestDayNotInStrikes2dCalc(TestUnitSetUp):
             self.assertTrue(strike_iv)
 
             print '=' * 70
+
+
+class TestCalcDayIvView(TestUnitSetUp):
+    def test_view(self):
+        """
+        Test calc day iv view
+        """
+        symbol = 'GG'
+        table = 'iv'
+        path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol.lower())
+        db = pd.HDFStore(path)
+        df_valid = db.select('%s/valid/normal' % table)
+        df_clean = db.select('%s/clean/normal' % table)
+        db.close()
+
+        df_date = df_valid[df_valid['date'] == '2010-03-23']
+        df_date = df_date[df_date['name'] == 'CALL'].sort_values('ex_date')
+        print df_date.to_string(line_width=1000)
+
+        df_date = df_clean[df_clean['date'] == '2010-03-23']
+        df_date = df_date[df_date['name'] == 'CALL'].sort_values('ex_date')
+        print df_date.to_string(line_width=1000)
+
+        # todo: dte is wrong????
+        # wrong clean
+
+        # self.client.get(reverse('admin:calc_day_iv', kwargs={'symbol': 'GG', 'insert': 1}))
 
 
 class TestSymbolDateImplVol(TestUnitSetUp):

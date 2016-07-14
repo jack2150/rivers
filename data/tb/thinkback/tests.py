@@ -45,15 +45,13 @@ class TestThinkBack(TestSetUp):
             '16 JAN 10  (324)  19/100 (US$ 3616.11)',
             '18 JUL 09  (142)  100 (Weeklys) (US$ 25.23)',
             '18 JUL 09  (142)  100 (CDL 25.23)',
+            '21 JAN 17  (295)  100 (PYPL 100)'
         ]
         self.thinkback = ThinkBack(fpath=self.fpaths[0])
         self.thinkback.lines = sample
-        cycles = self.thinkback.get_cycles2()
+        cycles = self.thinkback.get_cycles()
 
         print pd.DataFrame(cycles)
-
-
-
 
     def test_get_cycles_files(self):
         """

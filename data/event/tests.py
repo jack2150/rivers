@@ -13,7 +13,7 @@ class TestEventImport(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        for symbol in ('GOOG', 'YUM', 'AIG', 'JPM'):
+        for symbol in ('GOOG', 'YUM', 'AIG', 'JPM', 'DIS'):
             underlying = Underlying()
             underlying.symbol = symbol
             underlying.start_date = pd.Timestamp('20010101').date()
@@ -24,7 +24,7 @@ class TestEventImport(TestSetUp):
         """
         Test verify event form and handle file upload then verify earning
         """
-        for symbol in ('GOOG',):  # ('JPM', 'DDD'):
+        for symbol in ('DIS',):  # ('JPM', 'DDD'):
             print 'running symbol:', symbol
             self.client.get(reverse('admin:html_event_import', kwargs={'symbol': symbol}))
 

@@ -120,6 +120,7 @@ def extract_stock(symbol):
             raise LookupError('Duplicate rate in df_stock index')
 
         df_stock = df_stock.set_index('date')
+        df_stock = df_stock.sort_index()
         path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
         logger.info('Save thinkback stock, path: %s' % path)
         db = pd.HDFStore(path)
@@ -130,24 +131,21 @@ def extract_stock(symbol):
         db.append('stock/thinkback', df_stock, format='table', data_columns=True)
         db.close()
 
-    missing = list()
-    bdays = pd.bdate_range(start=start, end=end, freq='B')
-    for bday in bdays:
-        if holiday(bday.date()) or offday(bday.date()):
-            continue
+        missing = list()
+        bdays = pd.bdate_range(start=df_stock.index[0], end=end, freq='B')
+        print len(bdays)
+        for bday in bdays:
+            if holiday(bday.date()) or offday(bday.date()):
+                continue
 
-        if bday not in df_stock.index:
-            missing.append(bday.strftime('%m/%d/%Y'))
+            if bday not in df_stock.index:
+                missing.append(bday.strftime('%m/%d/%Y'))
 
-    # update underlying
-    underlying.missing = '\n'.join(missing)
-    underlying.log += 'Thinkback stock imported, symbol: %s length: %d \n' % (
-        symbol.upper(), len(df_stock)
-    )
-    underlying.log += 'df_stock length: %d missing dates: %d\n' % (len(df_stock), len(missing))
-    underlying.save()
+        # update underlying
+        Underlying.write_log(symbol, [
+            'Thinkback df_stock: %d missing: %d' % (len(df_stock), len(missing))
+        ], missing)
 
     print '=' * 60
     print '%-6s | %-30s %s' % ('IMPORT', 'Complete import df_stock:', symbol.upper())
     print '=' * 60
-

@@ -54,7 +54,7 @@ class TestCppCleanNormal(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = 'AIG'
+        self.symbol = 'GG'
         self.clean_option = CleanNormal(self.symbol)
 
     def test_get_merge_data(self):

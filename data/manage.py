@@ -133,19 +133,27 @@ def proc_clean(symbol, name):
                 print 'Time', str(p_time).split('.')[0], 'Records:', len(lines)
         else:
             break
+    p_time = timedelta(seconds=(time.time() - start_time))
+    print 'Time', str(p_time).split('.')[0], 'Records:', len(lines)
 
     # save data
     if name == 'normal':
         clean_option = CleanNormal(symbol)
+        clean_option.get_merge_data()
+        clean_option.save_clean(lines)
+        clean_option.update_underlying()
     elif name == 'split/new':
         clean_option = CleanSplitNew(symbol)
+        clean_option.get_merge_data()
+        clean_option.save_clean(lines)
+        clean_option.update_underlying()
     elif name == 'split/old':
         clean_option = CleanSplitOld(symbol)
+        clean_option.get_merge_data()
+        clean_option.save_clean(lines)
+        clean_option.update_underlying()
     else:
         raise KeyError('No DataFrame for "%s"' % name)
-    clean_option.get_merge_data()
-    clean_option.save_clean(lines)
-    clean_option.update_underlying()
 
 
 @manage.command()
@@ -208,12 +216,10 @@ def import_option(symbol):
     # run clean data
     for name in ('normal', 'split/new', 'split/old'):
         # skip if not split/new or split/old
-        if name not in names:
-            continue
-
-        proc_clean(symbol, name)
-        proc_valid_clean(symbol)
-        proc_fillna(symbol, name)
+        if name in names:
+            proc_clean(symbol, name)
+            proc_valid_clean(symbol)
+            proc_fillna(symbol, name)
 
     # merge final
     merge_final(symbol)
@@ -230,8 +236,10 @@ def write_weekday(symbol, name):
 
 @manage.command()
 @click.option('--symbol', prompt='Symbol', help='Symbol of stock data.')
-def calc_iv(symbol):
-    import_weekday_cli(symbol)
+@click.option('--insert', prompt='Insert', help='Import weekday data')
+def calc_iv(symbol, insert):
+    if int(insert):
+        import_weekday_cli(symbol)
     calc = DayIVCalc(symbol)
     calc.start()
 

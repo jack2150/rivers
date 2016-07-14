@@ -2,6 +2,8 @@ import os
 
 import numpy as np
 import pandas as pd
+
+from data.models import Underlying
 from rivers.settings import QUOTE_DIR, CLEAN_DIR
 
 output = '%-6s | %-s'
@@ -108,6 +110,8 @@ class DayImplVolStatic(object):
             elif len(x) == len(y) == 2:
                 return self.linear_expr(x[0], x[1], y[0], y[1], base)
             else:
+                print x
+                print y
                 raise ValueError('Range expr x, y list is empty')
 
         if info:
@@ -152,6 +156,8 @@ class DayImplVolStatic(object):
             print output % ('CALC', 'range_ivs: %s' % [round(r, 2) for r in ivs])
 
         return round(result, 2)
+
+    # todo: gg, empty list???
 
     @staticmethod
     def make_expr(a, b):
@@ -399,12 +405,16 @@ class DayIVCalc(object):
                     if strike not in dte_strikes:
                         calc = StrikeNotInDtes2dCalc(strike, dte, df_dte)
                         dte_iv = calc.approx()
-                        dte_filled.append({
-                            'date': date,
-                            'dte': dte,
-                            'strike': strike,
-                            'impl_vol': dte_iv
-                        })
+
+                        if dte_iv > 0:
+                            dte_filled.append({
+                                'date': date,
+                                'dte': dte,
+                                'strike': strike,
+                                'impl_vol': dte_iv
+                            })
+                        else:
+                            continue
 
                 print '-' * 70
 
@@ -470,6 +480,7 @@ class DayIVCalc(object):
                     df_strike = df_fill[df_fill['strike'] == close]
                     calc = DayNotInStrikes2dCalc(day, close, df_strike)
                     strike_iv = calc.approx()
+                    impl_vol = np.mean([iv for iv in (dte_iv, strike_iv) if iv > 0])
 
                     days_iv.append({
                         'date': date,
@@ -477,7 +488,7 @@ class DayIVCalc(object):
                         'strike': close,
                         'dte_iv': dte_iv,
                         'strike_iv': strike_iv,
-                        'impl_vol': round(np.mean([dte_iv, strike_iv]), 2)
+                        'impl_vol': impl_vol
                     })
 
             # result iv
@@ -539,6 +550,8 @@ class DayIVCalc(object):
         print '+' * 70
         self.save_iv(df_iv)
 
+        Underlying.write_log(self.symbol, ['DayIV calc, df_iv: %d' % len(df_iv)])
+
 
 class StrikeNotInDtes2dCalc(DayImplVolStatic):
     def __init__(self, strike, dte, df_dte):
@@ -592,8 +605,10 @@ class StrikeNotInDtes2dCalc(DayImplVolStatic):
             dte_iv = self.linear_expr(
                 strikes[s0], strikes[s1], impl_vols[s0], impl_vols[s1], self.strike
             )
-        else:
+        elif len(strikes) > 2:
             dte_iv = self.range_expr(strikes, impl_vols, self.strike)
+        else:
+            dte_iv = 0
 
         print output % ('CALC', 'dte_iv for $%.2f: %.2f' % (self.strike, dte_iv))
 

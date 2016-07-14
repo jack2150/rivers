@@ -23,7 +23,6 @@ class CleanSplitNew(object):
         db = pd.HDFStore(self.path)
         try:
             df_split1 = db.select('option/valid/split/new')
-            df_split1 = df_split1.reset_index(drop=True)
         except KeyError:
             raise LookupError('No data for df_split/new')
         db.close()
@@ -44,7 +43,8 @@ class CleanSplitNew(object):
         df_temp['ex_date2'] = df_temp['ex_date'].apply(lambda d: d.date().strftime('%Y-%m-%d'))
         df_temp['impl_vol2'] = df_temp['impl_vol'].apply(lambda iv: round(iv / 100.0, 2))
         df_temp = df_temp[[
-            'ex_date2', 'date2', 'name', 'strike', 'rate', 'close', 'bid', 'ask', 'impl_vol2', 'div'
+            'ex_date2', 'date2', 'name', 'strike', 'rate', 'close', 'bid', 'ask', 'impl_vol2', 'div',
+            'option_code'
         ]]
 
         return df_temp.to_csv(header=False)
@@ -86,8 +86,4 @@ class CleanSplitNew(object):
         """
         Update underlying after completed
         """
-        underlying = Underlying.objects.get(symbol=self.symbol.upper())
-        underlying.log += 'Clean df_split/new, symbol: %s length: %d\n' % (
-            self.symbol.upper(), len(self.df_all)
-        )
-        underlying.save()
+        Underlying.write_log(self.symbol, ['Clean df_split/new: %d' % len(self.df_all)])

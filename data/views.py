@@ -129,6 +129,9 @@ def add_split_history(request, symbol):
     """
     symbol = symbol.upper()
 
+    split_history = SplitHistory.objects.filter(symbol=symbol)
+    dates = [s['date'].strftime('%Y-%m-%d') for s in split_history.values('date')]
+
     url = 'http://getsplithistory.com/%s' % symbol
     logger.info('start download: %s' % url)
 
@@ -164,7 +167,9 @@ def add_split_history(request, symbol):
                     date=date,
                     fraction=fraction
                 )
-                history.append(split_history)
+
+                if date not in dates:
+                    history.append(split_history)
 
             except ValueError:
                 pass

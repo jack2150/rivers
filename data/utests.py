@@ -63,6 +63,7 @@ class TestUpdateUnderlying(TestUnitSetUp):
             else:
                 print 'skip symbol: %s' % underlying.symbol
 
+
     def test_output_watchlist(self):
         """
         Output all symbols for copy-past into watchlist

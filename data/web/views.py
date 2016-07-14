@@ -70,10 +70,7 @@ def web_stock_h5(request, source, symbol):
 
     logger.info('Update underlying status')
     # update symbol stat
-    underlying.log += 'Web stock imported, source: %s symbol: %s length: %d\n' % (
-        source.upper(), symbol.upper(), len(df_stock)
-    )
-    underlying.save()
+    Underlying.write_log(symbol, ['Web %s df_stock: %d' % (source, len(df_stock))])
 
     return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
 

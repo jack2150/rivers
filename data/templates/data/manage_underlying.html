@@ -151,30 +151,33 @@
     </div>
     <div class="col-md-3">
       <div class="list-group">
-        <a href="#" class="list-group-item disabled">Preparation</a>
-        <a href="{% url 'admin:update_underlying' symbol %}" class="list-group-item">
-          1. Update underlying
-        </a>
-        <a href="{% url 'admin:html_event_import' symbol %}" class="list-group-item">
-          2. Import Earnings/Dividends
-        </a>
-        <a href="{% url 'admin:add_split_history' symbol %}" class="list-group-item">
-          3. Add Split History
-        </a>
+          <a href="#" class="list-group-item disabled">Preparation</a>
+          <a href="{% url 'admin:opinion_link' symbol %}" class="list-group-item">
+              1. Opinion links
+          </a>
+          <a href="{% url 'admin:update_underlying' symbol %}" class="list-group-item">
+              2. Update underlying
+          </a>
+          <a href="{% url 'admin:add_split_history' symbol %}" class="list-group-item">
+              3. Add Split History
+          </a>
       </div>
 
       <div class="list-group">
         <a href="#" class="list-group-item disabled">Clean Process</a>
+        <a href="{% url 'admin:html_event_import' symbol %}" class="list-group-item">
+          1. Import Earnings/Dividends
+        </a>
         <a href="{% url 'admin:import_option_h5' symbol %}" class="list-group-item"
           title="Data for backtest/analysis">
-          1. Import stocks/options
+          2. Import stocks/options
         </a>
-        <a href="{% url 'admin:calc_day_iv' symbol %}" class="list-group-item"
+        <a href="{% url 'admin:calc_day_iv' symbol 1 %}" class="list-group-item"
            title="Calculate IV">
-          2. Calc day Implied Volatility
+          3. Calc day Implied Volatility
         </a>
         <a href="{% url 'admin:remove_clean_h5' symbol %}" class="list-group-item">
-          3. Remove clean data
+          4. Remove clean data
         </a>
       </div>
 
@@ -191,20 +194,23 @@
       <div class="list-group">
         <a href="#" class="list-group-item disabled">Underlying Control</a>
         <a href="{% url 'admin:truncate_symbol' symbol %}" class="list-group-item">
-          Truncate Symbol
+          Truncate symbol
+        </a>
+        <a href="{% url 'admin:data_underlying_change' underlying.id %}" class="list-group-item">
+          Edit underlying
         </a>
         <a href="{% url 'admin:set_underlying' symbol 'final' %}" class="list-group-item">
           {% if underlying.final %}
-            Unset Underlying Final
+            Unset underlying final
           {% else %}
-            Set Underlying Final
+            Set underlying final
           {% endif %}
         </a>
         <a href="{% url 'admin:set_underlying' symbol 'enable' %}" class="list-group-item">
           {% if underlying.enable %}
-            Disable Symbol
+            Disable symbol
           {% else %}
-            Enable Symbol
+            Enable symbol
           {% endif %}
         </a>
       </div>

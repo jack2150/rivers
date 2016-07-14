@@ -271,6 +271,7 @@ class TestExtractOption(TestSetUp):
         """
         Test import 1 day of stock and options
         """
+        self.symbol = 'EBAY'
         underlying = Underlying(
             symbol=self.symbol,
             start_date='2009-01-01',
@@ -278,16 +279,18 @@ class TestExtractOption(TestSetUp):
         )
         underlying.save()
 
-        db = pd.HDFStore(QUOTE_DIR)
-        df_stock = db.select('stock/thinkback/%s' % self.symbol.lower())
+        path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        df_stock = db.select('stock/thinkback')
         db.close()
 
-        date = '2009-09-04'
-        df_stock = df_stock['2009-09-01':'2011-02-01']
+        date = '2016-03-31'
+        df_stock = df_stock[date:]
 
         extract_option = RawOption(self.symbol, df_stock)
         extract_option.start()
 
+        """
         print extract_option.df_normal.query('option_code == %r' % 'AIG110122C40')
 
         path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
@@ -297,6 +300,7 @@ class TestExtractOption(TestSetUp):
 
         df_temp = df_option.query('date == %r & name == "CALL"' % date)
         print df_temp.to_string(line_width=1000)
+        """
 
 
 class TestRawViews(TestSetUp):

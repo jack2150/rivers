@@ -294,8 +294,7 @@ class FillNaNormal(object):
         df_normal = pd.concat([self.df_normal, self.df_fillna])
         """:type: pd.DataFrame"""
 
-        underlying = Underlying.objects.get(symbol=self.symbol.upper())
-        underlying.log += 'Fillna clean normal option: %s\n' % self.symbol.upper()
-        underlying.log += 'Total new rows fill: %d\n' % len(self.df_fillna)
-        underlying.log += 'Fillna df_normal length: %d\n' % len(df_normal)
-        underlying.save()
+        Underlying.write_log(self.symbol, [
+            'Fillna new rows: %d' % len(self.df_fillna),
+            'Fillna df_normal: %d' % len(df_normal)
+        ])

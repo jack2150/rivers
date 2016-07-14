@@ -193,10 +193,9 @@ class ValidCleanOption(object):
         """
         Update underlying after completed
         """
-        underlying = Underlying.objects.get(symbol=self.symbol.upper())
-        underlying.log += 'Valid Clean, symbol: %s\n' % self.symbol.upper()
+        lines = []
         for name, key in zip(names, keys):
             if name in self.df_list.keys():
-                underlying.log += 'Clean df_%s length: %d\n' % (key, len(self.df_list[name]))
+                lines.append('Re-valid df_%s: %d' % (key, len(self.df_list[name])))
 
-        underlying.save()
+        Underlying.write_log(self.symbol, lines)

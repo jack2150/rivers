@@ -42,6 +42,15 @@ class UnderlyingAdmin(admin.ModelAdmin):
     data_manage.short_description = ''
     data_manage.allow_tags = True
 
+    # noinspection PyMethodMayBeStatic
+    def toggle_final(self, request, queryset):
+        for q in queryset.all():
+            q.final = not q.final
+            q.save()
+
+    toggle_final.short_description = "Toggle underlying final"
+    actions = [toggle_final]
+
     list_display = (
         'symbol', 'company', 'start_date', 'stop_date',
         'final', 'enable', 'optionable', 'shortable', data_manage
@@ -66,7 +75,7 @@ class UnderlyingAdmin(admin.ModelAdmin):
         }),
     )
 
-    search_fields = ('symbol', 'company', 'start', 'stop', 'sector', 'industry')
+    search_fields = ('symbol', 'company', 'sector', 'industry')
     list_filter = (
         'enable', 'final', 'optionable', 'shortable',
         'exchange', 'country', 'activity', 'classify',
@@ -222,6 +231,6 @@ admin.site.register_view(
 
 # calc iv
 admin.site.register_view(
-    'data/h5/calc/iv/(?P<symbol>\w+)/$',
+    'data/h5/calc/iv/(?P<symbol>\w+)/(?P<insert>\d)$',
     urlname='calc_day_iv', view=calc_day_iv
 )

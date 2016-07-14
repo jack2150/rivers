@@ -21,7 +21,7 @@ def import_earning(lines, symbol):
     :param symbol: str
     :return: None
     """
-    l = [l for l in lines if 'Estimates by Fiscal Quarter' in l][0]
+    l = [l for l in lines if 'Est. EPS ($)' in l][0]
     l = l[l.find('<tbody>') + 7:l.find('</tbody>')]
 
     # noinspection PyAbstractClass
@@ -68,7 +68,6 @@ def import_earning(lines, symbol):
     # update and add new
     earnings = list()
     for l in p.data:
-        # print l
         e = {k: str(v) for k, v in zip(
             ['report_date', 'actual_date', 'release', 'estimate_eps', 'analysts',
              'adjusted_eps', 'diff', 'hl', 'gaap', 'actual_eps'], l
@@ -106,11 +105,11 @@ def import_earning(lines, symbol):
         db.close()
 
         # update earning
-        underlying = Underlying.objects.get(symbol=symbol.upper())
-        underlying.log += 'Earnings imported, length: %d, latest: %s\n' % (
-            len(df_earning), df_earning.iloc[0]['actual_date'].strftime('%Y-%m-%d')
-        )
-        underlying.save()
+        Underlying.write_log(symbol, [
+            'df_earning: %d, latest: %s' % (
+                len(df_earning), df_earning.iloc[0]['actual_date'].strftime('%Y-%m-%d')
+            )
+        ])
 
 
 def import_dividend(lines, symbol):
@@ -172,11 +171,11 @@ def import_dividend(lines, symbol):
         db.close()
 
         # update dividend
-        underlying = Underlying.objects.get(symbol=symbol.upper())
-        underlying.log += 'Dividends imported, length: %d, latest: %s\n' % (
-            len(df_dividend), df_dividend.iloc[0]['expire_date'].strftime('%Y-%m-%d')
-        )
-        underlying.save()
+        Underlying.write_log(symbol, [
+            'df_dividend: %d, latest: %s' % (
+                len(df_dividend), df_dividend.iloc[0]['expire_date'].strftime('%Y-%m-%d')
+            )
+        ])
 
 
 def group_event_files():
@@ -184,6 +183,10 @@ def group_event_files():
     Move files from fidelity __raw__ folder into earnings and dividends folder
     :return: None
     """
+    files = glob(os.path.join(FILES_DIR, 'fidelity', '__raw__', '*.htm'))
+    for f in files:
+        os.rename(f, f + 'l')
+
     files = glob(os.path.join(FILES_DIR, 'fidelity', '__raw__', '*.html'))
     earning_path = os.path.join(FILES_DIR, 'fidelity', 'earning')
     dividend_path = os.path.join(FILES_DIR, 'fidelity', 'dividend')

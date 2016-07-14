@@ -44,6 +44,7 @@ CONTRACT_KEYS = [
 ]
 
 LENGTH = np.arange(38)
+BONUS_SHARE = re.compile('^([A-Za-z])\w+ \d+')
 
 
 class ThinkBack(object):
@@ -103,9 +104,12 @@ class ThinkBack(object):
                     group = [g.strip() for g in group if g not in ('', ' ')]
 
                     if len(group) == 1:
+                        # print [g for g in group]
                         if group[0] in SPECIAL:
                             special = group[0]
                         elif 'US$' in group[0] or 'CDL' in group[0]:
+                            others = group[0]
+                        elif BONUS_SHARE.search(group[0]) is not None:
                             others = group[0]
                         else:
                             if group[0].lower() == 'non standard':
@@ -241,7 +245,3 @@ class ThinkBack(object):
                 options += self.get_cycle_options(cycle)
 
         return options
-
-
-# todo: mini problem, 2014-04-02-StockAndOptionQuoteForGOOG
-# todo: run until memory error

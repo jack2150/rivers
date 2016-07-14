@@ -24,7 +24,6 @@ class CleanSplitOld(object):
         db = pd.HDFStore(self.path)
         try:
             df_split0 = db.select('option/valid/split/old')
-            df_split0 = df_split0.reset_index(drop=True)
         except KeyError:
             raise LookupError('No data for df_split/old')
         db.close()
@@ -74,7 +73,8 @@ class CleanSplitOld(object):
         df_temp['impl_vol2'] = df_temp['impl_vol'].apply(lambda iv: round(iv / 100.0, 2))
         # using close1 (price before split) instead of close
         df_temp = df_temp[[
-            'ex_date2', 'date2', 'name', 'strike', 'rate', 'close1', 'bid', 'ask', 'impl_vol2', 'div'
+            'ex_date2', 'date2', 'name', 'strike', 'rate', 'close1', 'bid', 'ask', 'impl_vol2', 'div',
+            'option_code'
         ]]
 
         return df_temp.to_csv(header=False)
@@ -107,7 +107,7 @@ class CleanSplitOld(object):
             df_result[key] = df_result[key].astype('float')
             df_result[key] += 0
         df_raw = self.df_all[[
-            'ask', 'bid', 'date', 'ex_date', # 'ex_month', 'ex_year',
+            'ask', 'bid', 'date', 'ex_date',  # 'ex_month', 'ex_year',
             'last', 'mark', 'name', 'open_int', 'option_code', 'others',
             'right', 'special', 'strike', 'volume'
         ]]
@@ -123,8 +123,4 @@ class CleanSplitOld(object):
         """
         Update underlying after completed
         """
-        underlying = Underlying.objects.get(symbol=self.symbol.upper())
-        underlying.log += 'Clean df_split/old, symbol: %s length: %d\n' % (
-            self.symbol.upper(), len(self.df_all)
-        )
-        underlying.save()
+        Underlying.write_log(self.symbol, ['Clean df_split/old: %d' % len(self.df_all)])

@@ -148,6 +148,7 @@ class ValidRawOption(object):
             pass
         for name, key in zip(names, keys):
             if len(df_result[name]):
+                df_result[name] = df_result[name].reset_index(drop=True)
                 db.append('option/valid/%s' % key, df_result[name])
         db.close()
 
@@ -181,12 +182,11 @@ class ValidRawOption(object):
         """
         Update underlying after completed
         """
-        underlying = Underlying.objects.get(symbol=self.symbol.upper())
         names = ['normal', 'others', 'split0', 'split1']
         keys = ['normal', 'others', 'split/old', 'split/new']
-        underlying.log += 'Valid Raw, symbol: %s\n' % self.symbol.upper()
+        lines = []
         for name, key in zip(names, keys):
             if name in self.df_list.keys():
-                underlying.log += 'Raw df_%s length: %d\n' % (key, len(self.df_list[name]))
+                lines.append('Valid raw df_%s: %d' % (key, len(self.df_list[name])))
 
-        underlying.save()
+        Underlying.write_log(self.symbol, lines)
