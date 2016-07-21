@@ -31,3 +31,11 @@ def make_dict(key, values):
     :return: dict
     """
     return {k: v for k, v in zip(key, values)}
+
+
+def ts(df):
+    """
+    Output dataframe
+    :param df: pd.DataFrame
+    """
+    print df.to_string(line_width=1000)

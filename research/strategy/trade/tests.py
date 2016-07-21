@@ -74,6 +74,7 @@ class TestStrategy2(TestUnitSetUp):
             cs_args = {
                 'dte': 45,
                 'side': 'buy',
+                'special': 'standard'
             }
 
             df_hd = backtest.handle_data(backtest.df_stock, **hd_args)

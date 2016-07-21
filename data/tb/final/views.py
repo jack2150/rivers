@@ -155,6 +155,10 @@ def merge_final(symbol):
               format='table', data_columns=True, min_itemsize=100)
     db.close()
 
+    underlying = Underlying.objects.get(symbol=symbol.upper())
+    underlying.enable = True
+    underlying.save()
+
     # update log
     Underlying.write_log(symbol, [
         'Final df_contract: %d' % len(df_contract),

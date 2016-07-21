@@ -242,26 +242,25 @@ class TestCalcDayIvView(TestUnitSetUp):
         """
         Test calc day iv view
         """
-        symbol = 'GG'
-        table = 'iv'
+        symbol = 'NFLX'
+        table = 'option'
         path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol.lower())
         db = pd.HDFStore(path)
         df_valid = db.select('%s/valid/normal' % table)
         df_clean = db.select('%s/clean/normal' % table)
         db.close()
 
-        df_date = df_valid[df_valid['date'] == '2010-03-23']
+        df_date = df_valid[df_valid['date'] == '2015-08-27']
         df_date = df_date[df_date['name'] == 'CALL'].sort_values('ex_date')
         print df_date.to_string(line_width=1000)
 
-        df_date = df_clean[df_clean['date'] == '2010-03-23']
+        df_date = df_clean[df_clean['date'] == '2015-08-27']
         df_date = df_date[df_date['name'] == 'CALL'].sort_values('ex_date')
         print df_date.to_string(line_width=1000)
-
         # todo: dte is wrong????
         # wrong clean
 
-        # self.client.get(reverse('admin:calc_day_iv', kwargs={'symbol': 'GG', 'insert': 1}))
+        # self.client.get(reverse('admin:calc_day_iv', kwargs={'symbol': 'GG', 'insert': 0}))
 
 
 class TestSymbolDateImplVol(TestUnitSetUp):

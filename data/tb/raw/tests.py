@@ -18,7 +18,7 @@ symbols = [
 class TestExtractStock(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
-        self.symbol = 'AIG'
+        self.symbol = 'YUM'
 
     def test_extract_stock(self):
         """

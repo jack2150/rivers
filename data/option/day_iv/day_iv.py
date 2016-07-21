@@ -552,6 +552,10 @@ class DayIVCalc(object):
 
         Underlying.write_log(self.symbol, ['DayIV calc, df_iv: %d' % len(df_iv)])
 
+        underlying = Underlying.objects.get(symbol=self.symbol.upper())
+        underlying.final = True
+        underlying.save()
+
 
 class StrikeNotInDtes2dCalc(DayImplVolStatic):
     def __init__(self, strike, dte, df_dte):

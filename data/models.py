@@ -75,6 +75,8 @@ class Underlying(models.Model):
 
         if len(missing):
             underlying.missing = '\n'.join(missing)
+        else:
+            underlying.missing = ''
 
         underlying.save()
 

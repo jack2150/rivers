@@ -55,6 +55,7 @@ class TradeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'instrument', 'category', 'description')
     list_filter = ('instrument', 'category')
     list_per_page = 20
+    ordering = ('name', )
 
 
 class TradeForm(forms.ModelForm):

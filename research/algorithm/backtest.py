@@ -620,7 +620,6 @@ class FormulaBacktest(object):
             df_hd = self.handle_data(**hd_args)
             cs_args = self.ready_cs_args(arg['create_signal'], df_hd)
             df_signal = self.create_signal(**cs_args)
-            # todo: problem
 
             if len(df_signal) == 0:
                 continue
@@ -652,35 +651,40 @@ class FormulaBacktest(object):
             # print pd.DataFrame([report]).to_string(line_width=1000)
             # break
 
-        df_report = pd.DataFrame(reports)
-        df_report['date'] = pd.to_datetime(df_report['date'])
-        df_report['start'] = pd.to_datetime(df_report['start'])
-        df_report['stop'] = pd.to_datetime(df_report['stop'])
-        df_report = df_report[[
-            'date', 'formula', 'hd', 'cs', 'start', 'stop',
-            'sharpe_rf', 'sharpe_spy', 'sortino_rf', 'sortino_spy',
-            'buy_hold', 'pl_count', 'pl_sum', 'pl_cumprod', 'pl_mean', 'pl_std',
-            'dp_count', 'dp_chance', 'dp_mean', 'dl_count', 'dl_chance', 'dl_mean',
-            'profit_count', 'profit_chance', 'profit_max', 'profit_min',
-            'loss_count', 'loss_chance', 'loss_max', 'loss_min',
-            'var_95', 'var_99', 'max_dd'
-        ]]
-        df_report = df_report.fillna(0)
+        if len(reports):
+            df_report = pd.DataFrame(reports)
+            df_report['date'] = pd.to_datetime(df_report['date'])
 
-        df_signals = pd.concat(signals)
-        """:type: pd.DataFrame"""
-        df_signals = df_signals[[
-            'formula', 'hd', 'cs', 'date', 'start', 'stop',
-            'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1',
-            'holding', 'pct_chg'
-        ]]
+            df_report['start'] = pd.to_datetime(df_report['start'])
+            df_report['stop'] = pd.to_datetime(df_report['stop'])
+            df_report = df_report[[
+                'date', 'formula', 'hd', 'cs', 'start', 'stop',
+                'sharpe_rf', 'sharpe_spy', 'sortino_rf', 'sortino_spy',
+                'buy_hold', 'pl_count', 'pl_sum', 'pl_cumprod', 'pl_mean', 'pl_std',
+                'dp_count', 'dp_chance', 'dp_mean', 'dl_count', 'dl_chance', 'dl_mean',
+                'profit_count', 'profit_chance', 'profit_max', 'profit_min',
+                'loss_count', 'loss_chance', 'loss_max', 'loss_min',
+                'var_95', 'var_99', 'max_dd'
+            ]]
+            df_report = df_report.fillna(0)
 
-        df_signals['date'] = pd.to_datetime(df_signals['date'])
-        df_signals['start'] = pd.to_datetime(df_signals['start'])
-        df_signals['stop'] = pd.to_datetime(df_signals['stop'])
-        df_signals.reset_index(drop=True, inplace=True)
+            df_signals = pd.concat(signals)
+            """:type: pd.DataFrame"""
+            df_signals = df_signals[[
+                'formula', 'hd', 'cs', 'date', 'start', 'stop',
+                'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1',
+                'holding', 'pct_chg'
+            ]]
 
-        logger.info('Complete generate df_report')
+            df_signals['date'] = pd.to_datetime(df_signals['date'])
+            df_signals['start'] = pd.to_datetime(df_signals['start'])
+            df_signals['stop'] = pd.to_datetime(df_signals['stop'])
+            df_signals.reset_index(drop=True, inplace=True)
+
+            logger.info('Complete generate df_report')
+        else:
+            df_report = pd.DataFrame()
+            df_signals = pd.DataFrame()
 
         return df_report, df_signals
 
@@ -705,24 +709,27 @@ class FormulaBacktest(object):
         df_report, df_signals = self.generate()
 
         # save
-        path = os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower())
-        db = pd.HDFStore(path)
+        if len(df_report):
+            path = os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower())
+            db = pd.HDFStore(path)
 
-        # remove old same item
-        try:
-            db.remove('algorithm/report', where='formula == %r' % self.formula.path)
-            db.remove('algorithm/signal', where='formula == %r' % self.formula.path)
-        except NotImplementedError:
-            db.remove('algorithm/report')
-            db.remove('algorithm/signal')
-        except KeyError:
-            pass
+            # remove old same item
+            try:
+                db.remove('algorithm/report', where='formula == %r' % self.formula.path)
+                db.remove('algorithm/signal', where='formula == %r' % self.formula.path)
+            except NotImplementedError:
+                db.remove('algorithm/report')
+                db.remove('algorithm/signal')
+            except KeyError:
+                pass
 
-        db.append('algorithm/report', df_report,
-                  format='table', data_columns=True, min_itemsize=100)
-        db.append('algorithm/signal', df_signals,
-                  format='table', data_columns=True, min_itemsize=100)
-        db.close()
-        logger.info('Backtest save: %s' % path)
+            db.append('algorithm/report', df_report,
+                      format='table', data_columns=True, min_itemsize=100)
+            db.append('algorithm/signal', df_signals,
+                      format='table', data_columns=True, min_itemsize=100)
+            db.close()
+            logger.info('Backtest save: %s' % path)
+        else:
+            logger.info('Empty df_report to save')
 
         return len(df_report)

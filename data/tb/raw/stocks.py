@@ -9,6 +9,7 @@ from data.skip_days import holiday, offday
 from rivers.settings import QUOTE_DIR, THINKBACK_DIR
 
 logger = logging.getLogger('views')
+MIN_SIZE = 1000
 
 
 def extract_stock(symbol):
@@ -64,6 +65,20 @@ def extract_stock(symbol):
     files = []
     for year in glob(os.path.join(path, '*')):
         for csv in glob(os.path.join(year, '*.csv')):
+            # remove empty file
+            if os.path.getsize(csv) < MIN_SIZE:
+                print '%-6s | %-30s' % ('EMPTY', csv)
+                os.remove(csv)
+                continue
+
+            f = open(csv, mode='r+')
+            lines = f.readlines()
+            if 'This document was exported' in lines[0]:
+                print '%-6s | %-30s' % ('R-LINE', csv)
+                f.seek(0)
+                f.write(''.join(lines[2:]))
+            f.close()
+
             # skip date if not within underlying dates
             if os.path.basename(csv)[:10] in trading_dates:
                 files.append(csv)
@@ -133,7 +148,6 @@ def extract_stock(symbol):
 
         missing = list()
         bdays = pd.bdate_range(start=df_stock.index[0], end=end, freq='B')
-        print len(bdays)
         for bday in bdays:
             if holiday(bday.date()) or offday(bday.date()):
                 continue

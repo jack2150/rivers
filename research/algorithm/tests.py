@@ -490,6 +490,58 @@ class TestFormulaBacktest(TestUnitSetUp):
         self.assertTrue(len(df_report))
 
 
+class TestFormulaBacktest2(TestUnitSetUp):
+    def setUp(self):
+        TestUnitSetUp.setUp(self)
+
+        self.symbol = 'BABA'  # can be a single symbol or list of symbols
+        self.formula = Formula.objects.get(rule='Day to Expire')
+        self.formula.start_backtest()
+        self.backtest = self.formula.backtest
+
+        self.hd_args = {
+        }
+        self.cs_args = {
+            'dte': 20,
+            'side': 'buy',
+            'special': 'standard'
+        }
+
+    def test_report(self):
+        """
+        Test make report using df_signal
+        """
+        self.backtest.set_symbol_date(self.symbol, '2010-01-01', '2016-06-30')
+        self.backtest.get_data()
+        self.backtest.extra_data()
+        df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
+        df_signal = self.backtest.create_signal(
+            df_test, self.backtest.df_all, **self.cs_args
+        )
+        print df_signal
+        report = self.backtest.report(df_signal)
+        df_report = pd.DataFrame([report])
+
+        print df_report.to_string(line_width=1000)
+
+    def test_generate(self):
+        """
+        Test generate for option formula
+        """
+        self.backtest.set_symbol_date(self.symbol, '2010-01-01', '2016-06-30')
+        self.backtest.get_data()
+        self.backtest.extra_data()
+        self.backtest.set_args(fields={
+            'create_signal_dte': '19',
+            'create_signal_side': 'buy',
+            'create_signal_special': 'standard'
+        })
+        df_reports, df_signals = self.backtest.generate()
+
+        # print df_signals
+        print df_reports.to_string(line_width=1000)
+
+
 class TestBacktestTradeView(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)

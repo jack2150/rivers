@@ -18,14 +18,14 @@ class TestDTE(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'AIG'
+        self.symbol = 'BABA'
         self.hd_args = {
 
         }
         self.cs_args = {
-            'dte': 15,
+            'dte': 20,
             'side': 'buy',
-            'special': 'Standard'
+            'special': 'standard'
         }
 
         self.backtest = None

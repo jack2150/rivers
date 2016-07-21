@@ -13,9 +13,9 @@ def handle_data(df):
 
 
 def create_signal(df, df_all,
-                  dte=0, side=('buy', 'sell'), special=('Standard', 'Weekly')):
-    if special == 'Standard':
-        df_option = df_all.query('special == "Standard"')
+                  dte=0, side=('buy', 'sell'), special=('standard', 'weekly')):
+    if special == 'standard':
+        df_option = df_all.query('special == %r' % special.capitalize())
     else:
         df_option = df_all
 

@@ -69,7 +69,7 @@ class OptionCalc(object):
         # ex_date = datetime.strptime(str(ex_date), '%Y%m%d')
         # today = datetime.strptime(str(today), '%Y%m%d')
         if today >= ex_date:
-            raise IndexError('Last trading day')
+            raise IndexError('Last trading day: %s, %s' % (today, ex_date))
 
         # extract detail from option code
         self.name = name

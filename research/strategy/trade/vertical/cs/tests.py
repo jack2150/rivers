@@ -46,7 +46,7 @@ class TestVerticalCS(TestStrategy2):
         report = []
         for side in ('follow', 'reverse', 'buy', 'sell')[2:]:
             for name in ('call', 'put'):
-                kwargs = {'name': name, 'side': side, 'cycle': 1, 'strike': -1, 'wide': 3}
+                kwargs = {'name': name, 'side': side, 'cycle': 0, 'strike': 0, 'wide': 2}
                 print kwargs
                 df_trade = self.backtest.create_order(
                     self.df_signal,
