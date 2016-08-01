@@ -65,6 +65,7 @@ class ThinkBack(object):
         :return: dict
         """
         data = self.lines[self.lines.index(STOCK_COLUMN) + 1].split(',')
+        data = [0 if d == '<empty>' else d for d in data]
         stock = {k: float(v) for k, v in zip(STOCK_NAMES, data)}
         stock['date'] = self.date
         stock['volume'] = int(stock['volume'])
@@ -77,8 +78,11 @@ class ThinkBack(object):
         weekly not more JAN1 or FEB2, direct 16 JAN 09
         :return: dict
         """
-        cycles = []
+        blank = [k for k, v in enumerate(self.lines) if len(v) == 0]
+        blank.append(len(self.lines))
+        blank = np.array(blank)
 
+        cycles = []
         for key in np.arange(len(self.lines)):
             skip = False
             items = self.lines[key].split(' ')
@@ -125,22 +129,27 @@ class ThinkBack(object):
                 except IndexError:
                     pass  # no special and others
 
-                cycles.append({
+                start = key + 1
+                cycle = {
                     'skip': skip,
-                    'start': key + 1,
-                    'stop': 0,
+                    'start': start,
+                    'stop': blank[blank >= start][0],
                     'dte': dte,
                     'date': date,
                     'right': right,
                     'special': special,
                     'others': others
-                })
+                }
 
-        # add stop
-        for c0, c1 in zip(cycles[:-1], cycles[1:]):
-            c0['stop'] = c1['start'] - 2
-        else:
-            cycles[-1]['stop'] = len(self.lines)
+                # check blank cycle, not click
+                if cycle['start'] >= cycle['stop'] and cycle['special'] != 'Mini':
+                    raise IOError('Cycle "%s (%s)" have no options, range: %d %d' % (
+                        cycle['date'].strftime('%y %b %d').upper(), cycle['dte'],
+                        cycle['stop'], cycle['start']
+                    ))
+
+                if cycle['special'] != 'Mini':
+                    cycles.append(cycle)
 
         return cycles
 

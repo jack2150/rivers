@@ -46,7 +46,7 @@ class TestVerticalCS(TestStrategy2):
         report = []
         for side in ('follow', 'reverse', 'buy', 'sell')[2:]:
             for name in ('call', 'put'):
-                kwargs = {'name': name, 'side': side, 'cycle': 0, 'strike': 0, 'wide': 2}
+                kwargs = {'name': name, 'side': side, 'cycle': 0, 'strike': -2, 'wide': 2}
                 print kwargs
                 df_trade = self.backtest.create_order(
                     self.df_signal,
@@ -73,6 +73,9 @@ class TestVerticalCS(TestStrategy2):
         df_trade = self.get_trade()
 
         print self.df_signal.to_string(line_width=1000)
+
+        print len(self.backtest.df_all)
+        print len(self.backtest.df_iv)
 
         df_list = self.backtest.join_data(
             df_trade, self.backtest.df_stock, self.backtest.df_all, self.backtest.df_iv

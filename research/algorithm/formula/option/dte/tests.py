@@ -18,7 +18,7 @@ class TestDTE(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'BABA'
+        self.symbol = 'VIX'
         self.hd_args = {
 
         }

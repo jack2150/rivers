@@ -8,6 +8,8 @@ from rivers.settings import QUOTE_DIR, TREASURY_DIR
 
 class Underlying(models.Model):
     symbol = models.CharField(max_length=20, unique=True)
+    google_symbol = models.CharField(max_length=100, blank=True, default='')
+    yahoo_symbol = models.CharField(max_length=100, blank=True, default='')
 
     # basic detail
     sector = models.CharField(max_length=20, default='', blank=True)

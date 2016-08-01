@@ -1,10 +1,10 @@
+from base.utests import TestUnitSetUp
+
 import glob
 import os
 import pandas as pd
-from django.core.urlresolvers import reverse
 from pandas.tseries.offsets import BDay
-
-from base.utests import TestUnitSetUp
+from django.core.urlresolvers import reverse
 from data.models import Underlying
 from rivers.settings import THINKBACK_DIR
 
@@ -63,7 +63,6 @@ class TestUpdateUnderlying(TestUnitSetUp):
             else:
                 print 'skip symbol: %s' % underlying.symbol
 
-
     def test_output_watchlist(self):
         """
         Output all symbols for copy-past into watchlist
@@ -84,7 +83,21 @@ class TestUpdateUnderlying(TestUnitSetUp):
 
         # todo: after thinkback complete
 
+    def test_change_underlying(self):
+        """
 
+        :return:
+        """
+        underlyings = Underlying.objects.all()
+        underlyings.update(google_symbol='')
+        underlyings.update(yahoo_symbol='')
+
+    def test123(self):
+        """
+
+        :return:
+        """
+        print 123
 
 
 

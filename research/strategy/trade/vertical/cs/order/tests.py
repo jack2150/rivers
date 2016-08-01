@@ -28,6 +28,7 @@ class TestVerticalCSLimit(TestStrategy2):
         except KeyError:
             df_trade = self.backtest.create_order(
                 self.df_signal,
+                self.backtest.df_stock,
                 self.backtest.df_all,
                 **{'name': 'call', 'side': 'follow', 'cycle': 0, 'strike': 0, 'wide': 1}
             )
@@ -81,7 +82,7 @@ class TestVerticalCSLimit(TestStrategy2):
         """
         df_trade = self.get_trade()
 
-        print self.df_signal.to_string(line_width=1000)
+        print df_trade.to_string(line_width=1000)
 
         df_list = self.backtest.join_data(
             df_trade, self.backtest.df_stock, self.backtest.df_all, self.backtest.df_iv
@@ -113,6 +114,7 @@ class TestVerticalCSStop(TestStrategy2):
         except KeyError:
             df_trade = self.backtest.create_order(
                 self.df_signal,
+                self.backtest.df_stock,
                 self.backtest.df_all,
                 **{'name': 'call', 'side': 'follow', 'cycle': 0, 'strike': 0, 'wide': 1}
             )
@@ -198,6 +200,7 @@ class TestVerticalCSOCO(TestStrategy2):
         except KeyError:
             df_trade = self.backtest.create_order(
                 self.df_signal,
+                self.backtest.df_stock,
                 self.backtest.df_all,
                 **{'name': 'call', 'side': 'follow', 'cycle': 0, 'strike': 0, 'wide': 1}
             )

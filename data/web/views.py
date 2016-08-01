@@ -33,8 +33,15 @@ def web_stock_h5(request, source, symbol):
     end = underlying.stop_date
 
     # get data function and get data
-    f = get_data_google if source == 'google' else get_data_yahoo
-    df_stock = f(symbols=symbol, start=start, end=end)
+    if source == 'google':
+        f = get_data_google
+        use_symbol = underlying.google_symbol if underlying.google_symbol != '' else symbol
+
+    else:
+        f = get_data_yahoo
+        use_symbol = underlying.yahoo_symbol if underlying.yahoo_symbol != '' else symbol
+
+    df_stock = f(symbols=use_symbol, start=start, end=end)
 
     # drop if ohlc is empty
     for field in ['Open', 'High', 'Low', 'Close']:

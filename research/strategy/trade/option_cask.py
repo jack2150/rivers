@@ -16,7 +16,7 @@ def get_price_ask(df_all, date0, date1, name, cycle, ask):
     :return:
     """
     df_date = df_all.query('date == %r & name == %r & dte >= %r' % (
-        date0, name, (date1 - date0).days
+        date0.strftime('%Y-%m-%d'), name, (date1 - date0).days
     ))
     # print df_date.to_string(line_width=1000)
 
@@ -38,5 +38,3 @@ def get_price_ask(df_all, date0, date1, name, cycle, ask):
     )).iloc[0]
 
     return option0, option1
-
-    # todo: need update

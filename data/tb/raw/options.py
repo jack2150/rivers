@@ -289,6 +289,9 @@ class RawOption(object):
                 # print df_current.to_string(line_width=1000)
 
                 if len(df_current) != len(df_current['date'].unique()):
+                    # todo: too many split in uvxy, vxx
+                    print len(df_current)
+                    print df_current[df_current['date'].duplicated()]
                     print df_current.to_string(line_width=1000)
                     raise LookupError('Split data got duplicate date')
 

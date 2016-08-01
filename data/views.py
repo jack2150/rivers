@@ -8,6 +8,8 @@ from django import forms
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.shortcuts import render, redirect
+from pandas.tseries.offsets import BDay
+
 from data.models import Underlying, SplitHistory
 from data.tb.final.views import reshape_h5
 from rivers.settings import QUOTE_DIR
@@ -29,6 +31,25 @@ def set_underlying(request, symbol, action):
     underlying.save()
 
     return redirect(reverse('admin:manage_underlying', kwargs={'symbol': symbol}))
+
+
+def renew_season(request):
+    """
+    Renew season date for all symbols
+    :param request:
+    :return:
+    """
+    underlyings = Underlying.objects.all()
+    m = int(pd.datetime.today().month) - 1
+    date = pd.Timestamp('%s%02d%02d' % (
+        pd.datetime.today().year,
+        (m - (m % 3) + 1),
+        1
+    )) - BDay(1)
+
+    underlyings.update(stop_date=date)
+
+    return redirect(reverse('admin:data_underlying_changelist'))
 
 
 def update_underlying(request, symbol):
@@ -304,3 +325,5 @@ def manage_underlying(request, symbol):
     )
 
     return render(request, template, parameters)
+
+

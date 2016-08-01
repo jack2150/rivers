@@ -62,15 +62,15 @@ class UnderlyingAdmin(admin.ModelAdmin):
                 'symbol', 'start_date', 'stop_date', 'optionable', 'shortable', 'final'
             ),
         }),
-        ('Primary Fields', {
+        ('Underlying Fields', {
             'fields': (
                 'company', 'sector', 'industry', 'exchange',
                 'market_cap', 'country', 'activity', 'classify',
             ),
         }),
-        ('Primary Fields', {
+        ('Data Fields', {
             'fields': (
-                'missing', 'log'
+                'missing', 'log', 'google_symbol', 'yahoo_symbol'
             ),
         }),
     )
@@ -159,6 +159,9 @@ admin.site.register_view(
 admin.site.register_view(
     'data/underlying/set/(?P<symbol>\w+)/(?P<action>\w+)/$',
     urlname='set_underlying', view=set_underlying
+)
+admin.site.register_view(
+    'data/underlying/renew_season/$', urlname='renew_season', view=renew_season
 )
 
 # update underlying

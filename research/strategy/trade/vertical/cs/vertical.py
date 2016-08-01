@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 from data.option.day_iv.calc import today_iv, correct_prob
-from research.strategy.trade.option_cs import get_cycle_strike
+from research.strategy.trade.option_cs import get_cycle_strike, get_cycle_strike2
 
 logger = logging.getLogger('views')
 
@@ -54,6 +54,7 @@ def create_order(df_signal, df_all,
     signals = []
     for index, data in df_signal0.iterrows():
         try:
+            """
             option0a, option0b = get_cycle_strike(
                 df_all, data['date0'], data['date1'],
                 name.upper(), data['close0'], cycle, strike
@@ -62,6 +63,12 @@ def create_order(df_signal, df_all,
             option1a, option1b = get_cycle_strike(
                 df_all, data['date0'], data['date1'],
                 name.upper(), data['close0'], cycle, strike + wide
+            )
+            """
+            option0a, option0b, option1a, option1b = get_cycle_strike2(
+                df_all, data['date0'], data['date1'],
+                name.upper(), data['close0'], cycle, strike,
+                name.upper(), data['close0'], cycle, strike + wide,
             )
 
             # df = pd.DataFrame([option0, option1])

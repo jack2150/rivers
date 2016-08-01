@@ -10,7 +10,7 @@ logger = logging.getLogger('views')
 
 def create_order(df_signal, df_stock, df_all,
                  name=('CALL', 'PUT'), side=('BUY', 'SELL'), safe=(False, True),
-                 dte0=0, dte1=0, percent=0):
+                 dte0=0, dte1=0, distance=0, wide=0):
 
     """
     :param df_signal: pd.DataFrame
@@ -21,7 +21,7 @@ def create_order(df_signal, df_stock, df_all,
     :param safe: bool
     :param dte0: int
     :param dte1: int
-    :param percent: int
+    :param distance: int
     :return: pd.DataFrame
     """
     if dte0 >= dte1:
@@ -47,10 +47,11 @@ def create_order(df_signal, df_stock, df_all,
         strikes = np.sort(df_dte0[df_dte0['strike'].duplicated()]['strike'])
 
         # set target close
-        target = data['close0'] * (1 + (percent / 100.0))
+        target0 = data['close0'] * (1 + (distance / 100.0))
+        target1 = data['close0'] * (1 + ((distance + wide) / 100.0))
         try:
-            strike0 = strikes[strikes <= target][-1]
-            strike1 = strikes[strikes > target][0]
+            strike0 = strikes[strikes <= target0][-1]
+            strike1 = strikes[strikes >= target1][0]
             # print strike0, strike1
         except IndexError:
             # front cycle don't have strike or back

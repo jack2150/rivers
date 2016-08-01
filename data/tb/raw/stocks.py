@@ -9,6 +9,7 @@ from data.skip_days import holiday, offday
 from rivers.settings import QUOTE_DIR, THINKBACK_DIR
 
 logger = logging.getLogger('views')
+NO_VOLUME = ['vix']
 MIN_SIZE = 1000
 
 
@@ -99,7 +100,7 @@ def extract_stock(symbol):
             stock_data = ThinkBack(f).get_stock()
 
             try:
-                if int(stock_data['volume']) == 0:
+                if int(stock_data['volume']) == 0 and symbol not in NO_VOLUME:
                     error_dates.append(fdate)
                     continue  # skip this part
 

@@ -5,7 +5,7 @@ from scipy.stats import norm
 
 from base.ufunc import ts
 from data.option.day_iv.calc import today_iv, correct_prob
-from research.strategy.trade.option_cs import get_cycle_strike
+from research.strategy.trade.option_cs import get_cycle_strike, get_cycle_strike2
 
 logger = logging.getLogger('views')
 
@@ -59,14 +59,10 @@ def create_order(df_signal, df_stock, df_all,
     signals = []
     for index, data in df_signal0.iterrows():
         try:
-            option0a, option0b = get_cycle_strike(
+            option0a, option0b, option1a, option1b = get_cycle_strike2(
                 df_all, data['date0'], data['date1'],
-                name.upper(), data['close0'], cycle, strike
-            )
-
-            option1a, option1b = get_cycle_strike(
-                df_all, data['date0'], data['date1'],
-                name.upper(), data['close0'], cycle, strike + wide
+                name.upper(), data['close0'], cycle, strike,
+                name.upper(), data['close0'], cycle, strike + wide,
             )
 
             # df = pd.DataFrame([option0, option1])
@@ -214,13 +210,16 @@ def join_data(df_order, df_stock, df_all, df_iv):
         df_join['pos_net'] = df_join['option'] - df_join['option'].iloc[0]
         df_join['pct_chg'] = df_join['pos_net'] / np.abs(df_join['option'].iloc[0]) + 0
 
-        df_join = df_join.drop(['sell0', 'buy0', 'sell1', 'buy1', 'strike0', 'strike1', 'dte1'], axis=1)
+        df_join = df_join.drop([
+            'sell0', 'buy0', 'sell1', 'buy1', 'strike0', 'strike1', 'dte1'
+        ], axis=1)
         df_close = df_stock0[data['date0']:data['date1']]
         df_close = df_close[['close']].reset_index()
         df_both = pd.merge(df_join, df_close, on='date')
         df_both.rename(index=str, columns={'close': 'stock', 'dte0': 'dte'}, inplace=True)
 
         # today iv
+        # ts(df_both)
         df_both['dte_iv'] = df_both.apply(
             lambda x: today_iv(df_iv, x['date'], x['dte']), axis=1
         )

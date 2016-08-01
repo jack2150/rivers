@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 
 # Application definition
 # install django-bootstrap3
-# install pandas data reader
+# install pandas-datareader
 INSTALLED_APPS = (
     'adminplus',
     'django_admin_bootstrapped',  # django-admin-bootstrapped version 2.3.5 for django 1.6

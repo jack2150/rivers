@@ -7,9 +7,8 @@ from research.strategy.models import Trade
 from research.strategy.trade.option_cask import get_price_ask
 from research.strategy.trade.option_cs import get_cycle_strike, get_cycle_strike2
 from research.strategy.trade.option_citm import get_prob_itm
-import pandas as pd
-
 from rivers.settings import TEMP_DIR
+import pandas as pd
 
 
 class TestStrategy(TestUnitSetUp):
@@ -67,12 +66,12 @@ class TestStrategy2(TestUnitSetUp):
             ).reset_index(drop=True)
         except KeyError:
             backtest = self.formula.start_backtest()
-            backtest.set_symbol_date(self.symbol, '2010-01-01', '2015-12-31')
+            backtest.set_symbol_date(self.symbol, '2010-01-01', '2016-06-30')
             backtest.get_data()
             backtest.extra_data()
             hd_args = {}
             cs_args = {
-                'dte': 45,
+                'dte': 25,
                 'side': 'buy',
                 'special': 'standard'
             }
@@ -138,7 +137,7 @@ class TestGetCycleStrike(TestStrategy2):
 
         self.symbol = 'AIG'
         self.ready_signal0()
-        self.trade = Trade.objects.get(name='Single CALL *CS')
+        self.trade = Trade.objects.get(name='Single -CS')
         self.ready_backtest()
 
     def test_get_cycle_strike(self):
@@ -147,8 +146,8 @@ class TestGetCycleStrike(TestStrategy2):
         :return:
         """
         index = 49
-        for name in ('CALL', 'PUT'):
-            for price in (0, -0.4):
+        for name in ('CALL', 'PUT')[:1]:
+            for price in (0, -0.4)[:1]:
                 close = self.df_signal['close0'][index] + price
                 date0 = self.df_signal['date0'][index]
                 date1 = self.df_signal['date1'][index]
@@ -173,19 +172,41 @@ class TestGetCycleStrike(TestStrategy2):
 
         :return:
         """
-        options = get_cycle_strike2(
-            df_all=self.backtest.df_all,
-            date0=self.df_signal['date0'][0],
-            date1=self.df_signal['date1'][0],
-            name='CALL',
-            close=26.71,
-            cycle=0,
-            strike=0,
-            wide=2
-        )
+        for i in range(-2, 3):
+            print i
+            options0 = get_cycle_strike2(
+                df_all=self.backtest.df_all,
+                date0=self.df_signal['date0'][0],
+                date1=self.df_signal['date1'][0],
 
-        df_code = pd.DataFrame(list(options))
-        print df_code.to_string(line_width=1000)
+                name0='CALL',
+                close0=26.71,
+                cycle0=0,
+                strike0=i,
+
+                name1='PUT',
+                close1=26.71,
+                cycle1=0,
+                strike1=i,
+            )
+            options1 = get_cycle_strike2(
+                df_all=self.backtest.df_all,
+                date0=self.df_signal['date0'][0],
+                date1=self.df_signal['date1'][0],
+
+                name0='PUT',
+                close0=26.71,
+                cycle0=0,
+                strike0=i,
+
+                name1='CALL',
+                close1=26.71,
+                cycle1=0,
+                strike1=i,
+            )
+
+            df_code = pd.DataFrame(list(options0) + list(options1))
+            print df_code.to_string(line_width=1000)
 
 
 class TestGetProbITM(TestStrategy2):
@@ -221,7 +242,7 @@ class TestGetPriceAsk(TestStrategy2):
 
         self.symbol = 'AIG'
         self.ready_signal0()
-        self.trade = Trade.objects.get(name='Single CALL *CS')
+        self.trade = Trade.objects.get(name='Single -CS')
         self.ready_backtest()
 
     def test_get_price_ask(self):
@@ -229,15 +250,17 @@ class TestGetPriceAsk(TestStrategy2):
 
         :return:
         """
-        option0, option1 = get_price_ask(
-            df_all=self.backtest.df_all,
-            date0=self.df_signal['date0'][0],
-            date1=self.df_signal['date1'][0],
-            name='PUT',
-            cycle=0,
-            ask=1.3
-        )
+        for name in ('CALL', 'PUT'):
+            option0, option1 = get_price_ask(
+                df_all=self.backtest.df_all,
+                date0=self.df_signal['date0'][0],
+                date1=self.df_signal['date1'][0],
+                name=name,
+                cycle=0,
+                ask=1.3
+            )
 
-        df_code = pd.DataFrame([option0, option1])
-        print df_code.to_string(line_width=1000)
+            df_code = pd.DataFrame([option0, option1])
+            print df_code.to_string(line_width=1000)
 
+# todo: something wrong
