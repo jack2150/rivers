@@ -72,7 +72,7 @@ class OptionTimeSaleForm(forms.Form):
         df['trade'] = df.apply(lambda x: self.buy_or_sell(x['mark'], x['price']), axis=1)
         df = df.round({'price': 2, 'mark': 2})
 
-        group = df.groupby(['option', 'trade'])
+        group = df.group_data(['option', 'trade'])
         df_sum = group.sum()
         df_mean = group.mean()
 

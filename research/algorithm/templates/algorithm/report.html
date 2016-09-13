@@ -18,14 +18,16 @@
         "processing": true,
         "serverSide": true,
         "ajax": {
-          url: '{% url 'admin:algorithm_report_json' symbol formula_id %}'
+          url: '{% url 'admin:algorithm_report_json' symbol date formula_id %}'
         },
         "columnDefs": [
           {
             "targets": 32,
             "data": 32,
             "render": function (data, type, full, meta) {
-              return '<a href="' + data + '" target="_blank">Signal</a>';
+              var data_path = data.split(',');
+              return '<a href="' + data_path[0] + '" target="_blank">Signal</a> '
+                  + '<a href="' + data_path[1] + '" target="_blank">(R)</a>';
             }
           },
           {
@@ -77,9 +79,18 @@
         use_mini();
       });
 
+      $('#report tbody').on('click', 'tr', function () {
+        if ($(this).hasClass('selected')) {
+          $(this).removeClass('selected');
+        }
+        else {
+          table.$('tr.selected').removeClass('selected');
+          $(this).addClass('selected');
+        }
+      });
+
 
     });
-
 
   </script>
   <style>

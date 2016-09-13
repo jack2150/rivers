@@ -1,9 +1,13 @@
+import os
 from decimal import Decimal
 from datetime import datetime
+from glob import glob
 from pprint import pprint
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
+from rivers.settings import STATEMENT_DIR
 from statement.models import *
+import pandas as pd
 
 
 class TestStatementModels(TestSetUp):
@@ -593,6 +597,31 @@ class TestStatementController(TestSetUp):
         print 'total open position:', Position.objects.filter(status='OPEN').count()
         print 'total close position:', Position.objects.filter(status='CLOSE').count()
         print 'total expire position:', Position.objects.filter(status='EXPIRE').count()
+
+
+class TestRealMoneyStatement(TestSetUp):
+    def test_check_statement_files(self):
+        """
+        Check all statement date files is exists
+        """
+        files = glob(os.path.join(STATEMENT_DIR, 'real0', '*.csv'))
+
+        dates0 = []
+        for f in files:
+            fname = os.path.basename(f)
+            date = datetime.strptime(fname[:10], '%Y-%m-%d')
+            # print date, , date.strftime('%a')
+
+            if date.weekday() not in (5, 6):
+                dates0.append(date)
+
+        dates1 = list(pd.bdate_range(start=dates0[0], end=dates0[-1]))
+        print len(dates0), len(dates1)
+
+        for f in dates1:
+            if f not in dates0:
+                print f.strftime('%m/%d/%Y'), 'not found'
+
 
 
 

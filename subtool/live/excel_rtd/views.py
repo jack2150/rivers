@@ -114,6 +114,7 @@ def excel_rtd_create(request):
     sheets = wb.get_sheet_names()
 
     # get statement/holding data from db
+    """
     statement = Statement.objects.latest('date')
     positions = Position.objects.filter(status='OPEN').order_by('symbol')
 
@@ -123,6 +124,8 @@ def excel_rtd_create(request):
     symbols = [
         s[0] for s in holding_options.distinct('symbol').values_list('symbol')
     ]
+    """
+    symbols = ['BA', 'HRB']
 
     # calc stat data
     excel_stat = ExcelRtdStatData(symbols)
@@ -205,6 +208,7 @@ def excel_rtd_create(request):
 
         row += 3
 
+        """
         # create options
         options = holding_options.filter(symbol=symbol)
         records = {}
@@ -343,6 +347,7 @@ def excel_rtd_create(request):
                 row += 1
 
             row += 2
+        """
 
         # set excel stat
         set_header(ws0, 'A%d' % row, 'days')
@@ -480,6 +485,3 @@ def excel_rtd_create(request):
     os.startfile(EXCEL_FILE)
 
     return redirect(reverse('admin:app_list', args=('statement', )))
-
-
-# todo: need move symbol with diff strategy test

@@ -23,11 +23,7 @@ class UnderlyingForm(forms.ModelForm):
     m = int(pd.datetime.today().month) - 1
     stop_date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False}),
-        initial=pd.Timestamp('%s%02d%02d' % (
-            pd.datetime.today().year,
-            (m - (m % 3) + 1),
-            1
-        )) - BDay(1)
+        initial=latest_season()
     )
 
 

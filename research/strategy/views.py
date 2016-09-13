@@ -7,6 +7,8 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
+
+from base.ufunc import ts
 from research.algorithm.models import Formula
 from research.strategy.models import Trade, Commission
 from rivers.settings import RESEARCH_DIR, BASE_DIR
@@ -16,7 +18,7 @@ logger = logging.getLogger('views')
 
 class StrategyAnalysisForm1(forms.Form):
     formula_id = forms.IntegerField(widget=forms.HiddenInput())
-    backtest_id = forms.IntegerField(widget=forms.HiddenInput())
+    report_id = forms.IntegerField(widget=forms.HiddenInput())
     symbol = forms.CharField(widget=forms.TextInput(
         attrs={'class': 'form-control vTextField', 'readonly': 'readonly'}
     ))
@@ -46,13 +48,14 @@ class StrategyAnalysisForm1(forms.Form):
         self.fields['commission'].choices = commissions
 
 
-def strategy_analysis1(request, symbol, formula_id, backtest_id):
+def strategy_analysis1(request, symbol, date, formula_id, report_id):
     """
     Strategy analysis for select trade, commission and capital
     :param request: request
     :param symbol: str
+    :param date: str
     :param formula_id: int
-    :param backtest_id: int
+    :param report_id: int
     :return: render
     """
     symbol = symbol.lower()
@@ -60,7 +63,7 @@ def strategy_analysis1(request, symbol, formula_id, backtest_id):
     path = os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower())
     db = pd.HDFStore(path)
     report = db.select('algorithm/report', where='formula == %r & index == %r' % (
-        formula.path, backtest_id
+        formula.path, report_id
     )).iloc[0]
     db.close()
 
@@ -70,8 +73,9 @@ def strategy_analysis1(request, symbol, formula_id, backtest_id):
         if form.is_valid():
             return redirect(reverse('admin:strategy_analysis2', kwargs={
                 'symbol': symbol,
+                'date': date,
                 'formula_id': formula_id,
-                'backtest_id': backtest_id,
+                'report_id': report_id,
                 'trade_id': form.cleaned_data['trade'],
                 'commission_id': form.cleaned_data['commission'],
                 'capital': int(form.cleaned_data['capital'])
@@ -79,9 +83,9 @@ def strategy_analysis1(request, symbol, formula_id, backtest_id):
     else:
         form = StrategyAnalysisForm1(initial={
             'formula_id': formula.id,
-            'backtest_id': backtest_id,
+            'report_id': report_id,
             'symbol': symbol.upper(),
-            'capital': 5000
+            'capital': 10000
         })
 
     template = 'strategy/analysis1.html'
@@ -142,13 +146,14 @@ class StrategyAnalysisForm2(forms.Form):
         Backtest trade with arguments
         :param kwargs: dict
         """
-        cmd = 'start cmd /k python %s strategy --symbol=%s ' \
-              '--formula_id=%d --backtest_id=%d --trade_id=%d ' \
+        cmd = 'start cmd /k python %s strategy --symbol=%s --date="%s" ' \
+              '--formula_id=%d --report_id=%d --trade_id=%d ' \
               '--commission_id=%d --capital=%d --fields="%s"' % (
                   os.path.join(BASE_DIR, 'research', 'backtest.py'),
                   kwargs['symbol'],
+                  kwargs['date'],
                   int(kwargs['formula_id']),
-                  int(kwargs['backtest_id']),
+                  int(kwargs['report_id']),
                   int(kwargs['trade_id']),
                   int(kwargs['commission_id']),
                   int(kwargs['capital']),
@@ -162,14 +167,15 @@ class StrategyAnalysisForm2(forms.Form):
         ))
 
 
-def strategy_analysis2(request, symbol, formula_id, backtest_id,
+def strategy_analysis2(request, symbol, date, formula_id, report_id,
                        trade_id, commission_id, capital):
     """
     Strategy analysis for input arguments
     :param request: request
     :param symbol: str
+    :param date: str
     :param formula_id: int
-    :param backtest_id: int
+    :param report_id: int
     :param trade_id: int
     :param commission_id: int
     :param capital: int
@@ -185,8 +191,9 @@ def strategy_analysis2(request, symbol, formula_id, backtest_id,
         if form.is_valid():
             form.analysis(**{
                 'symbol': symbol,
+                'date': date,
                 'formula_id': formula_id,
-                'backtest_id': backtest_id,
+                'report_id': report_id,
                 'trade_id': trade_id,
                 'commission_id': commission_id,
                 'capital': capital
@@ -210,12 +217,13 @@ def strategy_analysis2(request, symbol, formula_id, backtest_id,
     return render(request, template, parameters)
 
 
-def strategy_report_view(request, symbol, trade_id):
+def strategy_report_view(request, symbol, trade_id, date):
     """
     Algorithm research report view
     :param request: request
     :param symbol: str
     :param trade_id: int
+    :param date: str
     :return: render
     """
     trade = Trade.objects.get(id=trade_id)
@@ -224,21 +232,23 @@ def strategy_report_view(request, symbol, trade_id):
 
     parameters = dict(
         site_title='Strategy Report',
-        title='Strategy Report: %s Symbol: %s' % (trade, symbol.upper()),
+        title='Symbol: < %s > Strategy: %s' % (symbol.upper(), trade),
         symbol=symbol,
-        trade_id=trade_id
+        trade_id=trade_id,
+        date=date
     )
 
     return render(request, template, parameters)
 
 
 @csrf_exempt
-def strategy_report_json(request, symbol, trade_id):
+def strategy_report_json(request, symbol, trade_id, date):
     """
     output report data into json format using datatable query
     :param request: request
     :param symbol: str
     :param trade_id: int
+    :param date: str
     :return: HttpResponse
     """
     draw = int(request.GET.get('draw'))
@@ -253,13 +263,16 @@ def strategy_report_json(request, symbol, trade_id):
     trade = Trade.objects.get(id=trade_id)
 
     db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
-    df_report = db.select('strategy/report', where='trade == %r' % trade.path)
+    df_report = db.select(
+        'strategy/report',
+        where='trade == %r & date == %r' % (trade.path, date)
+    )
     """:type: pd.DataFrame"""
     db.close()
 
     keys = [
         'date', 'formula', 'report_id', 'args',
-        'pl_count', 'pl_sum',  'pl_cumprod', 'pl_mean', 'pl_std',
+        'pl_count', 'pl_sum', 'pl_cumprod', 'pl_mean', 'pl_std',
         'profit_count', 'profit_chance', 'profit_max', 'profit_min',
         'loss_count', 'loss_chance', 'loss_max', 'loss_min',
         'dp_count', 'dp_chance', 'dp_mean', 'dl_count', 'dl_chance', 'dl_mean'
@@ -288,21 +301,21 @@ def strategy_report_json(request, symbol, trade_id):
             else:
                 temp.append(round(data[key], 4))
 
+        temp.append('"%s"' % reverse('admin:strategy_order_raw', kwargs={
+            'symbol': symbol.lower(),
+            'trade_id': trade.id,
+            'report_id': index,
+        }))
+        temp.append('"%s"' % reverse('admin:strategy_trade_raw', kwargs={
+            'symbol': symbol.lower(),
+            'trade_id': trade.id,
+            'report_id': index,
+        }))
         """
-        temp.append('"%s"' % reverse('admin:algorithm_signal_view', kwargs={
-            'symbol': symbol.lower(),
-            'formula_id': trade.id,
-            'backtest_id': index,
-        }))
-        temp.append('"%s"' % reverse('admin:algorithm_trade_view', kwargs={
-            'symbol': symbol.lower(),
-            'formula_id': trade.id,
-            'backtest_id': index,
-        }))
         temp.append('"%s"' % reverse('admin:strategy_analysis1', kwargs={
             'symbol': symbol.lower(),
             'formula_id': trade.id,
-            'backtest_id': index,
+            'report_id': index,
         }))
         """
 
@@ -328,3 +341,90 @@ def strategy_report_json(request, symbol, trade_id):
     )
 
     return HttpResponse(data, content_type="application/json")
+
+
+def strategy_order_raw(request, symbol, trade_id, report_id):
+    """
+    Raw strategy order view with different columns
+    :param request: request
+    :param symbol: str
+    :param trade_id: int
+    :param report_id: int
+    :return: render
+    """
+    trade = Trade.objects.get(id=trade_id)
+
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
+    df_report = db.select('strategy/report', where='trade == %r' % trade.path)
+    """:type: pd.DataFrame"""
+    report = df_report.ix[int(report_id)]
+    df_order = db.select(
+        'strategy/order/%s' % trade.path.replace('.', '/'),
+        where='trade == %r & args == %r' % (trade.path, report['args'])
+    )
+    db.close()
+
+    template = 'base/raw_df.html'
+    parameters = dict(
+        site_title='Strategy Order',
+        title='Order: < %s > %s' % (symbol.upper(), trade),
+        symbol=symbol,
+        data=df_order.to_string(line_width=1000),
+        trade=trade,
+        args=report['args']
+    )
+
+    return render(request, template, parameters)
+
+
+def strategy_trade_raw(request, symbol, trade_id, report_id):
+    """
+    Raw strategy trade view with fix columns
+    :param request: request
+    :param symbol: str
+    :param trade_id: int
+    :param report_id: int
+    :return: render
+    """
+    trade = Trade.objects.get(id=trade_id)
+
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
+    df_report = db.select('strategy/report', where='trade == %r' % trade.path)
+    """:type: pd.DataFrame"""
+    report = df_report.ix[int(report_id)]
+    df_trade = db.select(
+        'strategy/trade',
+        where='trade == %r & args == %r' % (trade.path, report['args'])
+    )
+    db.close()
+
+    template = 'base/raw_df.html'
+    parameters = dict(
+        site_title='Strategy Trade',
+        title='Trade: < %s > %s' % (symbol.upper(), trade),
+        symbol=symbol,
+        data=df_trade.to_string(line_width=1000),
+        trade=trade,
+        args=report['args']
+    )
+
+    return render(request, template, parameters)
+
+
+# todo: real view, mini
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

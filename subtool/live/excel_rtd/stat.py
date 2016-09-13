@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 
@@ -14,19 +16,16 @@ class ExcelRtdStatData(object):
         self.df_all = {}
 
     def get_data(self):
-        db = pd.HDFStore(QUOTE_DIR)
-        keys = db.keys()
         self.df_all = {}
         for symbol in self.symbols:
-            google_path = '/stock/google/%s' % symbol.lower()
-            yahoo_path = '/stock/yahoo/%s' % symbol.lower()
+            path = os.path.join(QUOTE_DIR, '%s.h5' % symbol)
+            db = pd.HDFStore(path)
+            try:
+                self.df_all[symbol] = db.select('/stock/google')
+            except KeyError:
+                self.df_all[symbol] = db.select('/stock/yahoo')
 
-            if google_path in keys:
-                self.df_all[symbol] = db.select(google_path)
-            elif yahoo_path in keys:
-                self.df_all[symbol] = db.select(yahoo_path)
-
-        db.close()
+            db.close()
 
     @staticmethod
     def latest_close(df):

@@ -1,3 +1,7 @@
+import pandas as pd
+from pandas.tseries.offsets import BDay
+
+
 def remove_comma(line):
     """
     Replace comma inside str line
@@ -39,3 +43,26 @@ def ts(df):
     :param df: pd.DataFrame
     """
     print df.to_string(line_width=1000)
+
+
+def latest_season():
+    """
+    Return the latest season
+    :return: pd.datetime
+    """
+    m = int(pd.datetime.today().month) - 1
+    date = pd.Timestamp('%s%02d%02d' % (
+        pd.datetime.today().year,
+        (m - (m % 3) + 1),
+        1
+    )) - BDay(1)
+    return date
+
+
+def ds(d):
+    """
+    return datetime in date format
+    :param d: datetime
+    :return: str
+    """
+    return d.strftime('%Y-%m-%d')

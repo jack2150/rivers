@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+</head>
+<body>
+<div>Symbol: {{ symbol|upper }}</div>
+<div>{% if formula %}Formula {{ formula }}{% else %}Trade: {{ trade }}{% endif %}</div>
+<div>Arguments: {{ args }}</div>
+<pre>{{ data }}</pre>
+</body>
+</html>

@@ -36,7 +36,7 @@ def create_order(df_signal, df_stock, df_all,
         df_dte0 = df_date0.query('dte == %r | dte == %r' % (cycle0, cycle1))
 
         # duplicate need both call and put
-        group = df_dte0.groupby('strike')['strike'].count()
+        group = df_dte0.group_data('strike')['strike'].count()
         strikes = np.sort(group[group == 4].index)
 
         # get left and right strike

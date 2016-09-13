@@ -7,6 +7,7 @@ from django.db.models import QuerySet
 from data.tb.final.views import reshape_h5
 from research.algorithm.models import *
 from research.algorithm.views import *
+from research.strategy.models import TradeResult
 
 
 class FormulaForm(forms.ModelForm):
@@ -103,7 +104,7 @@ class FormulaResultAdmin(admin.ModelAdmin):
     def report_button(self):
         return '<a href="{link}">Report</a>'.format(
             link=reverse('admin:algorithm_report_view', kwargs={
-                'symbol': self.symbol.lower(), 'formula_id': self.formula.id
+                'symbol': self.symbol.lower(), 'formula_id': self.formula.id, 'date': self.date
             })
         )
 
@@ -115,37 +116,109 @@ class FormulaResultAdmin(admin.ModelAdmin):
             formula_result = FormulaResult.objects.get(id=q.id)
             logger.info('Formula result: %s' % formula_result)
             symbol = formula_result.symbol.lower()
+            date = formula_result.date
             path = formula_result.formula.path
 
             fpath = os.path.join(RESEARCH_DIR, '%s.h5' % symbol)
             db = pd.HDFStore(fpath)
 
-            try:
-                df_report = db.select('algorithm/report', 'formula == %r' % path)
-                df_signal = db.select('algorithm/signal', 'formula == %r' % path)
-                logger.info('df_report remove: %d df_signal remove: %d' % (
-                    len(df_report), len(df_signal)
-                ))
-            except KeyError:
-                pass
+            def get_table(table, where):
+                try:
+                    df = db.select(table, where)
+                except KeyError:
+                    df = pd.DataFrame()
+                return df
+
+            def delete_table(table, where):
+                try:
+                    db.remove(table, where=where)
+                except NotImplementedError:
+                    db.remove(table)
+                logger.info('table: %s, where: %s removed' % (table, where))
+
+            # get algorithm
+            df_report0 = get_table('algorithm/report', 'formula == %r & date == %r' % (
+                path, date
+            ))
+
+            df_signal = get_table('algorithm/signal', 'formula == %r & date == %r' % (
+                path, date
+            ))
+            logger.info('algorithm remove df_report: %d, df_signal: %d' % (
+                len(df_report0), len(df_signal)
+            ))
+
+            # get strategy
+            df_report1 = get_table('strategy/report', 'formula == %r & date == %r' % (
+                path, date
+            ))
+            df_trade = get_table('strategy/trade', 'formula == %r & date == %r' % (
+                path, date
+            ))
+
+            trades = df_report1['trade'].unique()
+            orders = []
+            for trade in trades:
+                df_temp = get_table(
+                    'strategy/order/%s' % trade.replace('.', '/'),
+                    'formula == %r & date == %r & trade == %r' % (
+                        path, date, trade
+                    )
+                )
+                orders.append(df_temp)
+            df_order = pd.concat(orders)
+            """ :type: pd.DataFrame """
+            logger.info('strategy remove, df_report: %d, df_trade: %d, df_order: %d' % (
+                len(df_report1), len(df_trade), len(df_order)
+            ))
 
             try:
-                db.remove('algorithm/report', where='formula == %r' % path)
-                db.remove('algorithm/signal', where='formula == %r' % path)
-            except NotImplementedError:
-                db.remove('algorithm/signal')
-                db.remove('algorithm/report')
+                # delete algorithm
+                if len(df_report0):
+                    delete_table('algorithm/report', 'formula == %r & date == %r' % (
+                        path, date
+                    ))
+                if len(df_signal):
+                    delete_table('algorithm/signal', 'formula == %r & date == %r' % (
+                        path, date
+                    ))
+
+                # delete strategy
+                if len(df_report1):
+                    delete_table('strategy/report', 'formula == %r & date == %r' % (
+                        path, date
+                    ))
+
+                if len(df_report1):
+                    delete_table('strategy/trade', 'formula == %r & date == %r' % (
+                        path, date
+                    ))
+
+                if len(df_order):
+                    trades = df_report1['trade'].unique()
+                    for trade in trades:
+                        delete_table(
+                            'strategy/order/%s' % trade.replace('.', '/'),
+                            'formula == %r & date == %r & trade == %r' % (path, date, trade)
+                        )
             except KeyError:
                 pass
 
             db.close()
+
+            # remove strategy result
+            trade_results = TradeResult.objects.filter(
+                Q(symbol=symbol.upper()) & Q(date=date) &
+                Q(formula_id=formula_result.formula.id)
+            )
+            trade_results.delete()
 
             # reshape db
             reshape_h5('%s.h5' % symbol, RESEARCH_DIR)
 
         queryset.delete()
 
-    delete_report.short_description = "Delete formula results and report"
+    delete_report.short_description = "Delete formula results"
     actions = [delete_report]
 
     def get_actions(self, request):
@@ -172,10 +245,10 @@ class FormulaResultAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Foreign Key', {
-            'fields': ('symbol', 'formula')
+            'fields': ('symbol', 'date')
         }),
         ('Primary Fields', {
-            'fields': ('date', 'arguments', 'length')
+            'fields': ('formula', 'arguments', 'length')
         }),
     )
 
@@ -199,21 +272,26 @@ admin.site.register_view(
 
 # algorithm views
 admin.site.register_view(
-    'algorithm/report/list/(?P<symbol>\w+)/(?P<formula_id>\d+)/$',
+    'algorithm/report/list/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/(?P<formula_id>\d+)/$',
     urlname='algorithm_report_view', view=algorithm_report_view
 )
 
 admin.site.register_view(
-    'algorithm/report/json/(?P<symbol>\w+)/(?P<formula_id>\d+)/$',
+    'algorithm/report/json/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/(?P<formula_id>\d+)/$',
     urlname='algorithm_report_json', view=algorithm_report_json
 )
 
 admin.site.register_view(
-    'algorithm/report/signal/(?P<symbol>\w+)/(?P<formula_id>\d+)/(?P<backtest_id>\d+)/$',
+    'algorithm/report/signal/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/(?P<formula_id>\d+)/(?P<report_id>\d+)/$',
     urlname='algorithm_signal_view', view=algorithm_signal_view
 )
 
 admin.site.register_view(
-    'algorithm/report/trade/(?P<symbol>\w+)/(?P<formula_id>\d+)/(?P<backtest_id>\d+)/$',
+    'algorithm/report/trade/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/(?P<formula_id>\d+)/(?P<report_id>\d+)/$',
     urlname='algorithm_trade_view', view=algorithm_trade_view
+)
+
+admin.site.register_view(
+    'strategy/report/formula/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/(?P<formula_id>\d+)/(?P<report_id>\d+)/$',
+    urlname='algorithm_signal_raw', view=algorithm_signal_raw
 )

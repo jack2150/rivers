@@ -28,7 +28,7 @@ class TradeBacktest(object):
 
         # formula, previous report, df_signal
         self.formula = Formula()
-        self.backtest_id = 0
+        self.report_id = 0
         self.df_signal = pd.DataFrame()
 
         # research data
@@ -54,21 +54,21 @@ class TradeBacktest(object):
         # backtest result
         self.df_trade = pd.DataFrame()
 
-    def set_algorithm(self, formula_id, backtest_id, df_signal):
+    def set_algorithm(self, formula_id, report_id, df_signal):
         """
         Set df_signal into class
         :param formula_id: int
-        :param backtest_id: int
+        :param report_id: int
         :param df_signal: pd.DataFrame
         """
         self.formula = Formula.objects.get(id=formula_id)
-        self.backtest_id = backtest_id
+        self.report_id = int(report_id)
 
         self.df_signal = df_signal[[
             'date0', 'date1', 'signal0', 'signal1', 'close0', 'close1', 'holding', 'pct_chg'
         ]]
         logger.info('Formula: %s' % self.formula)
-        logger.info('backtest_id: %d' % int(self.backtest_id))
+        logger.info('report_id: %d' % int(self.report_id))
         logger.info('df_signal: %d' % len(self.df_signal))
 
     def set_commission(self, arg):
@@ -460,7 +460,7 @@ class TradeBacktest(object):
 
         df_trade = df_trade.round({
             'net_chg': 2,
-            'pct_chg': 2,
+            'pct_chg': 4,
             'remain0': 2,
             'remain1': 2,
 
@@ -615,7 +615,7 @@ class TradeBacktest(object):
             print output % ('BT', 'Args', str(arg))
             df_order, df_trade = self.make_trade(**arg)
             # print df_trade.to_string(line_width=1000)
-            date = pd.datetime.today()
+            date = pd.to_datetime(pd.datetime.today().strftime('%Y-%m-%d'))
 
             # make args values only, follow sort order
             arg_str = []
@@ -628,21 +628,21 @@ class TradeBacktest(object):
             report['date'] = date
             report['trade'] = str(self.trade.path)
             report['formula'] = str(self.formula.path)
-            report['report_id'] = self.backtest_id
+            report['report_id'] = self.report_id
             report['args'] = arg_str
 
             # df_trade set extra column
             df_trade['date'] = date
             df_trade['trade'] = str(self.trade.path)
             df_trade['formula'] = str(self.formula.path)
-            df_trade['report_id'] = self.backtest_id
+            df_trade['report_id'] = self.report_id
             df_trade['args'] = arg_str
 
             # df_order set extra column
             df_order['date'] = date
             df_order['trade'] = str(self.trade.path)
             df_order['formula'] = str(self.formula.path)
-            df_order['report_id'] = self.backtest_id
+            df_order['report_id'] = self.report_id
             df_order['args'] = arg_str
 
             # print pd.DataFrame([report]).to_string(line_width=1000)
@@ -678,15 +678,19 @@ class TradeBacktest(object):
         # join df_order
         df_orders = pd.concat(orders)
         """:type: pd.DataFrame"""
+        id_set = ['date', 'formula', 'report_id', 'trade', 'args']
+        columns = [c for c in df_orders.columns if c not in id_set]
+        df_orders = df_orders[id_set + columns]
+        df_orders.reset_index(drop=True, inplace=True)
 
         return df_orders, df_trades, df_report
 
-    def save(self, fields, formula_id, backtest_id, commission_id, capital, df_signal):
+    def save(self, fields, formula_id, report_id, commission_id, capital, df_signal):
         """
         Setup all, generate test, then save into db
         :param fields: dict
         :param formula_id: int
-        :param backtest_id: int
+        :param report_id: int
         :param commission_id: int
         :param capital: int
         :param df_signal: pd.DataFrame
@@ -697,7 +701,7 @@ class TradeBacktest(object):
         # set symbol and args
         self.set_commission(commission_id)
         self.set_capital(capital)
-        self.set_algorithm(formula_id, backtest_id, df_signal)
+        self.set_algorithm(formula_id, report_id, df_signal)
         self.set_args(fields)
         self.get_data()
         self.get_extra()
@@ -710,11 +714,11 @@ class TradeBacktest(object):
         order_path = 'strategy/order/%s' % self.trade.path.replace('.', '/')
         db = pd.HDFStore(path)
         db.append('strategy/report', df_report, format='table', data_columns=True,
-                  min_itemsize={'formula': 100, 'args': 100})
+                  min_itemsize=100)
         db.append('strategy/trade', df_trades, format='table', data_columns=True,
-                  min_itemsize={'formula': 100, 'args': 100})
+                  min_itemsize=100)
         db.append(order_path, df_orders, format='table', data_columns=True,
-                  min_itemsize={'formula': 100, 'args': 100})
+                  min_itemsize=100)
         db.close()
         logger.info('Backtest save: %s' % path)
 

@@ -11,6 +11,8 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from pandas.tseries.offsets import BDay
+
+from base.ufunc import latest_season
 from data.models import Underlying
 from research.algorithm.models import Formula, FormulaArgument, FormulaResult
 from rivers.settings import BASE_DIR, RESEARCH_DIR
@@ -215,15 +217,17 @@ def algorithm_analysis(request, formula_id, argument_id=0):
                 }
             ))
     else:
+        season = latest_season()
         initial = {
             'formula_id': formula.id,
             'formula_rule': formula.rule,
             'formula_equation': formula.equation,
             'start_date': datetime.date(year=2010, month=1, day=1),
             'stop_date': datetime.date(
-                year=datetime.datetime.today().year,
-                month=datetime.datetime.today().month,
-                day=1) - BDay(1),
+                year=season.year,
+                month=season.month,
+                day=season.day
+            )
         }
 
         if int(argument_id):
@@ -251,24 +255,25 @@ def algorithm_analysis(request, formula_id, argument_id=0):
     return render(request, template, parameters)
 
 
-def algorithm_signal_view(request, symbol, formula_id, backtest_id):
+def algorithm_signal_view(request, symbol, date, formula_id, report_id):
     """
     Algorithm df_signal view
     :param request: request
     :param symbol: str
+    :param date: str
     :param formula_id: int
-    :param backtest_id: int
+    :param report_id: int
     :return: render
     """
     formula = Formula.objects.get(id=formula_id)
 
     db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
-    df_report = db.select('algorithm/report', where='index == %d' % int(backtest_id))
+    df_report = db.select('algorithm/report', where='index == %d' % int(report_id))
     report = df_report.iloc[0]
     """:type: pd.DataFrame"""
     df_signal = db.select(
-        'algorithm/signal', where='formula == %r & hd == %r & cs == %r' % (
-            report['formula'], report['hd'], report['cs']
+        'algorithm/signal', where='formula == %r & date == %r & hd == %r & cs == %r' % (
+            report['formula'], date, report['hd'], report['cs']
         )
     ).reset_index(drop=True)
     db.close()
@@ -328,24 +333,25 @@ def algorithm_signal_view(request, symbol, formula_id, backtest_id):
     return render(request, template, parameters)
 
 
-def algorithm_trade_view(request, symbol, formula_id, backtest_id):
+def algorithm_trade_view(request, symbol, date, formula_id, report_id):
     """
     Algorithm df_list view for each trade in df_signal
     :param request: request
     :param symbol: str
+    :param date: str
     :param formula_id: int
-    :param backtest_id: int
+    :param report_id: int
     :return: render
     """
     formula = Formula.objects.get(id=formula_id)
 
     db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
-    df_report = db.select('algorithm/report', where='index == %d' % int(backtest_id))
+    df_report = db.select('algorithm/report', where='index == %d' % int(report_id))
     report = df_report.iloc[0]
     """:type: pd.DataFrame"""
     df_signal = db.select(
-        'algorithm/signal', where='formula == %r & hd == %r & cs == %r' % (
-            report['formula'], report['hd'], report['cs']
+        'algorithm/signal', where='formula == %r & date == %r & hd == %r & cs == %r' % (
+            report['formula'], date, report['hd'], report['cs']
         )
     ).reset_index(drop=True)
     db.close()
@@ -412,11 +418,12 @@ def algorithm_trade_view(request, symbol, formula_id, backtest_id):
     return render(request, template, parameters)
 
 
-def algorithm_report_view(request, symbol, formula_id):
+def algorithm_report_view(request, symbol, date, formula_id):
     """
     Algorithm research report view
     :param request: request
     :param symbol: str
+    :param date: str
     :param formula_id: int
     :return: render
     """
@@ -425,21 +432,23 @@ def algorithm_report_view(request, symbol, formula_id):
     template = 'algorithm/report.html'
 
     parameters = dict(
-        site_title='Algorithm Report',
-        title='Algorithm Report: %s Symbol: %s' % (formula, symbol.upper()),
+        site_title='Formula Report',
+        title='Symbol: < %s > Formula: %s' % (symbol.upper(), formula),
         symbol=symbol,
-        formula_id=formula_id
+        formula_id=formula_id,
+        date=date
     )
 
     return render(request, template, parameters)
 
 
 @csrf_exempt
-def algorithm_report_json(request, symbol, formula_id):
+def algorithm_report_json(request, symbol, date, formula_id):
     """
     output report data into json format using datatable query
     :param request: request
     :param symbol: str
+    :param date: str
     :param formula_id: int
     :return: HttpResponse
     """
@@ -455,7 +464,9 @@ def algorithm_report_json(request, symbol, formula_id):
     formula = Formula.objects.get(id=formula_id)
 
     db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
-    df_report = db.select('algorithm/report', where='formula == %r' % formula.path)
+    df_report = db.select('algorithm/report', where='date == %r & formula == %r' % (
+        date, formula.path
+    ))
     """:type: pd.DataFrame"""
     db.close()
 
@@ -496,20 +507,29 @@ def algorithm_report_json(request, symbol, formula_id):
             else:
                 temp.append(round(data[key], 4))
 
-        temp.append('"%s"' % reverse('admin:algorithm_signal_view', kwargs={
+        temp.append('"%s,%s"' % (reverse('admin:algorithm_signal_view', kwargs={
             'symbol': symbol.lower(),
+            'date': date,
             'formula_id': formula.id,
-            'backtest_id': index,
-        }))
+            'report_id': index,
+        }), reverse('admin:algorithm_signal_raw', kwargs={
+            'symbol': symbol.lower(),
+            'date': date,
+            'formula_id': formula.id,
+            'report_id': index,
+        })))
+
         temp.append('"%s"' % reverse('admin:algorithm_trade_view', kwargs={
             'symbol': symbol.lower(),
+            'date': date,
             'formula_id': formula.id,
-            'backtest_id': index,
+            'report_id': index,
         }))
         temp.append('"%s"' % reverse('admin:strategy_analysis1', kwargs={
             'symbol': symbol.lower(),
+            'date': date,
             'formula_id': formula.id,
-            'backtest_id': index,
+            'report_id': index,
         }))
 
         reports.append(
@@ -533,3 +553,41 @@ def algorithm_report_json(request, symbol, formula_id):
     )
 
     return HttpResponse(data, content_type="application/json")
+
+
+def algorithm_signal_raw(request, symbol, date, formula_id, report_id):
+    """
+    Raw algorithm trade view with fix columns
+    :param request: request
+    :param symbol: str
+    :param date:
+    :param formula_id: int
+    :param report_id: int
+    :return: render
+    """
+    formula = Formula.objects.get(id=formula_id)
+
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
+    df_report = db.select(
+        'algorithm/report', where='formula == %r & date == %r' % (formula.path, date)
+    )
+    """:type: pd.DataFrame"""
+    report = df_report.ix[int(report_id)]
+    df_trade = db.select(
+        'algorithm/signal', where='formula == %r & date == %r & hd == %r & cs == %r' % (
+            formula.path, date, report['hd'], report['cs']
+        )
+    )
+    db.close()
+
+    template = 'base/raw_df.html'
+    parameters = dict(
+        site_title='Algorithm Trade',
+        title='Formula: < %s > %s' % (symbol.upper(), formula),
+        symbol=symbol,
+        data=df_trade.to_string(line_width=1000),
+        trade=formula,
+        args='<handle_data|%s> <create_signal|%s>' % (report['hd'], report['cs']),
+    )
+
+    return render(request, template, parameters)

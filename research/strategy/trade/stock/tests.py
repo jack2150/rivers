@@ -131,14 +131,18 @@ class TestStrategyOCO(TestStrategy):
         """
         Test trade using stop loss order
         """
+        self.df_signal = self.df_signal[self.df_signal['holding'].apply(lambda x: x.days >= 10)]
+
         for side in ('follow', 'reverse', 'buy', 'sell'):
             print 'side:', side
-            kwargs = {'side': side, 'profit_pct': 10, 'loss_pct': 5}
+            kwargs = {'side': side, 'profit_pct': 10, 'loss_pct': 8}
             df_trade = self.backtest.create_order(
                 self.df_signal, self.backtest.df_stock, **kwargs
             )
-            print df_trade['pct_chg'].sum()
             print df_trade.to_string(line_width=500)
+            print 'sum:', df_trade['pct_chg'].sum(),
+            print 'profit:', len(df_trade[df_trade['pct_chg'] > 0]),
+            print 'loss:', len(df_trade[df_trade['pct_chg'] < 0])
             print '-' * 70
 
     def test_join_data(self):

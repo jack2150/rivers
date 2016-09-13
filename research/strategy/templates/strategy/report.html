@@ -2,112 +2,129 @@
 {% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags staticfiles %}
 
 {% block extrahead %}
-    <link rel="stylesheet" type="text/css" href="{% static 'DataTables/datatables.min.css' %}"/>
+  <link rel="stylesheet" type="text/css" href="{% static 'DataTables/datatables.min.css' %}"/>
 
-    <script type="text/javascript" src="{% static 'DataTables/jQuery-2.1.4/jquery-2.1.4.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'DataTables/datatables.min.js' %}"></script>
-    <script type="text/javascript" charset="utf-8">
-        $(document).ready(function () {
-            var table = $('#report').DataTable({
-                "scrollX": true,
-                "pageLength": 10,
-                "autoWidth": true,
-                "searching": false,
-                "dom": '<"top"i>rt<"bottom"flp><"clear">',
+  <script type="text/javascript" src="{% static 'DataTables/jQuery-2.1.4/jquery-2.1.4.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'DataTables/datatables.min.js' %}"></script>
+  <script type="text/javascript" charset="utf-8">
+    $(document).ready(function () {
+      var table = $('#report').DataTable({
+        "scrollX": true,
+        "pageLength": 10,
+        "autoWidth": true,
+        "searching": false,
+        "dom": '<"top"i>rt<"bottom"flp><"clear">',
 
-                "processing": true,
-                "serverSide": true,
-                "ajax": {
-                    url: '{% url 'admin:strategy_report_json' symbol trade_id %}'
-                },
+        "processing": true,
+        "serverSide": true,
+        "ajax": {
+          url: '{% url 'admin:strategy_report_json' symbol trade_id date %}'
+        },
+        "columnDefs": [
+          {
+            "targets": 23,
+            "data": 23,
+            "render": function (data, type, full, meta) {
+              return '<a href="' + data + '" target="_blank">Order</a>';
+            }
+          },
+          {
+            "targets": 24,
+            "data": 24,
+            "render": function (data, type, full, meta) {
+              return '<a href="' + data + '" target="_blank">Trade</a>';
+            }
+          }
 
-                "initComplete": function (settings, json) {
-                }
-            });
-
-
-
-            $('#mini').on('click', function (e) {
-                e.preventDefault();
-            });
-
-
-        });
-
-
-    </script>
-    <style>
-        .dataTables_scrollBody {
-            margin-bottom: 10px;
+        ],
+        "initComplete": function (settings, json) {
         }
+      });
 
-        .dataTables_length {
-            width: 50%;
-            float: left;
-        }
-    </style>
+
+      $('#mini').on('click', function (e) {
+        e.preventDefault();
+      });
+
+
+    });
+
+
+  </script>
+  <style>
+    .dataTables_scrollBody {
+      margin-bottom: 10px;
+    }
+
+    .dataTables_length {
+      width: 50%;
+      float: left;
+    }
+  </style>
 {% endblock %}
 
 {% if not is_popup %}
-    {% block breadcrumbs %}
-        <ul class="breadcrumb">
-            <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
-            <li><a href="{% url 'admin:app_list' 'algorithm' %}">Algorithm</a></li>
-            <li><a href="{% url 'admin:algorithm_formularesult_changelist' %}">Formula Results</a></li>
-            <li>Report</li>
-        </ul>
-    {% endblock %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'strategy' %}">Strategy</a></li>
+      <li><a href="{% url 'admin:strategy_traderesult_changelist' %}">Trade Results</a></li>
+      <li>Report</li>
+    </ul>
+  {% endblock %}
 {% endif %}
 
 {% block object-tools %}
-    {{ block.super }}
+  {{ block.super }}
 
-    <div id="content-navbar-collapse" class="navbar-collapse collapse">
-        <div class="nav navbar-nav navbar-right">
-            <button id="mini" type="button" class="btn btn-primary">Mini</button>
-        </div>
+  <div id="content-navbar-collapse" class="navbar-collapse collapse">
+    <div class="nav navbar-nav navbar-right">
+      <button id="mini" type="button" class="btn btn-primary">Mini</button>
     </div>
+  </div>
 {% endblock %}
 
 {% block content %}
-    <table id="report">
-        <thead>
-        <tr>
-            <th>Date</th>
-            <th>Formula</th>
-            <th>Report ID</th>
-            <th style="width: 180px;">Args</th>
+  <table id="report">
+    <thead>
+    <tr>
+      <th>Date</th>
+      <th>Formula</th>
+      <th>Report ID</th>
+      <th style="width: 180px;">Args</th>
 
-            <th style="width: 56px;">PL Count</th>
-            <th style="width: 56px;">PL Sum</th>
-            <th>PL Cumprod</th>
-            <th>PL Mean</th>
-            <th>PL Std</th>
+      <th style="width: 56px;">PL Count</th>
+      <th style="width: 56px;">PL Sum</th>
+      <th>PL Cumprod</th>
+      <th>PL Mean</th>
+      <th>PL Std</th>
 
-            <th>Profit Count</th>
-            <th>Profit Chance</th>
-            <th>Profit Max</th>
-            <th>Profit Min</th>
+      <th>Profit Count</th>
+      <th>Profit Chance</th>
+      <th>Profit Max</th>
+      <th>Profit Min</th>
 
-            <th>Loss Count</th>
-            <th>Loss Chance</th>
-            <th>Loss Max</th>
-            <th>Loss Min</th>
+      <th>Loss Count</th>
+      <th>Loss Chance</th>
+      <th>Loss Max</th>
+      <th>Loss Min</th>
 
-            <th>DP Count</th>
-            <th>DP Chance</th>
-            <th>DP Mean</th>
-            <th>DL Count</th>
-            <th>DL Chance</th>
-            <th>DL Mean</th>
+      <th>DP Count</th>
+      <th>DP Chance</th>
+      <th>DP Mean</th>
+      <th>DL Count</th>
+      <th>DL Chance</th>
+      <th>DL Mean</th>
 
-        </tr>
-        </thead>
-    </table>
+      <th>Raw Order</th>
+      <th>Raw Trade</th>
+    </tr>
+    </thead>
+  </table>
 
-    <script type="text/javascript">
-        // For demo to fit into DataTables site builder...
-        $('#report').addClass('table table-striped table-bordered small');
-    </script>
+  <script type="text/javascript">
+    // For demo to fit into DataTables site builder...
+    $('#report').addClass('table table-striped table-bordered small');
+  </script>
 {% endblock %}
 

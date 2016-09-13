@@ -6,12 +6,13 @@ from django import forms
 from django.core.urlresolvers import reverse
 import numpy as np
 from django.shortcuts import render, redirect
-from rivers.settings import BASE_DIR
+from rivers.settings import BASE_DIR, STATEMENT_DIR
 from statement.models import *
 
 
 # use for import
-statement_path = 'demo'
+STATEMENT_PATH = 'real0'
+STATEMENT_NAME = 'TD Ameritrade USA'
 logger = logging.getLogger('views')
 
 
@@ -42,11 +43,11 @@ def statement_import(request):
     template = 'statement/import.html'
 
     files = list()
-    # noinspection PyUnresolvedReferences
-    fpaths = glob.glob(os.path.join(BASE_DIR, 'files', 'statement', statement_path, '*.csv'))
+    fpaths = glob.glob(os.path.join(STATEMENT_DIR, STATEMENT_PATH, '*.csv'))
 
     # for fpath in [f for f in fpaths if '05-11' in f]:
     for fpath in fpaths:  #
+        logger.info(fpath)
         date = os.path.basename(fpath)[:10]
 
         # duplicate date
@@ -66,6 +67,7 @@ def statement_import(request):
         logger.info('Statement obj section')
         acc_index = lines.index('Account Summary')
         statement = Statement()
+        # statement.name = STATEMENT_NAME
         statement.date = date
         statement.csv_data = codecs.open(fpath, encoding="ascii", errors="ignore").read()
         statement.load_csv(lines[acc_index + 1:acc_index + 5])
@@ -188,9 +190,10 @@ def statement_import(request):
         # profit loss
         logger.info('Profit loss obj section')
         symbols = set(symbols)
-        pl_index = lines.index('Profits and Losses')
-        for line in lines[pl_index + 2:last_index(pl_index, lines) - 1]:
-            values = line.split(',')
+        try:
+            pl_index = lines.index('Profits and Losses')
+            for line in lines[pl_index + 2:last_index(pl_index, lines) - 1]:
+                values = line.split(',')
             if '/' not in values[0]:  # skip future
                 profit_loss = ProfitLoss()
                 profit_loss.statement = statement
@@ -202,12 +205,16 @@ def statement_import(request):
                     if get_value(values[4]) or (get_value(values[6]) and get_value(values[7])):
                         profit_loss.load_csv(line)
                         profit_loss.save()
+        except ValueError:
+            pass
         logger.info('Profit loss obj end')
 
         # create positions
         statement.controller.add_relations()
         statement.controller.position_trades()
         statement.controller.position_expires()
+
+        # todo: relation multi-days
 
         # append into files data
         files.append(dict(

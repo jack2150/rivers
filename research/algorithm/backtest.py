@@ -211,7 +211,7 @@ class FormulaBacktest(object):
         path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
         db = pd.HDFStore(path)
         df_stock = pd.DataFrame()
-        df_think = db.select('stock/thinkback')
+
         for source in ('google', 'yahoo'):
             try:
                 df_stock = db.select('stock/%s' % source)
@@ -221,6 +221,11 @@ class FormulaBacktest(object):
 
         if len(df_stock) == 0:
             raise LookupError('Symbol < %s > stock not found (Google/Yahoo)' % symbol.upper())
+
+        if 'df_thinkback' in self.hd_args + self.cs_args:
+            df_think = db.select('stock/thinkback')
+        else:
+            df_think = df_stock
 
         df_stock = df_stock[start:stop]  # slice date range
         df_stock = df_stock[df_stock.index.isin(df_think.index)]  # make sure in thinkback
@@ -367,8 +372,15 @@ class FormulaBacktest(object):
         df_join['ex1'] = df_join['chg0'] - df_join['chg1']  # vs risk free
         df_join['ex2'] = df_join['chg0'] - df_join['chg2']  # vs spy
 
-        sr1 = df_join['ex1'].mean() / df_join['ex1'].std()
-        sr2 = df_join['ex2'].mean() / df_join['ex2'].std()
+        try:
+            sr1 = df_join['ex1'].mean() / df_join['ex1'].std()
+        except ZeroDivisionError:
+            sr1
+
+        try:
+            sr2 = df_join['ex2'].mean() / df_join['ex2'].std()
+        except ZeroDivisionError:
+            sr2 = 0
 
         return sr1, sr2
 

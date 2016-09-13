@@ -117,7 +117,8 @@ class ThinkBack(object):
                             others = group[0]
                         else:
                             if group[0].lower() == 'non standard':
-                                skip = True
+                                # skip = True
+                                others = 'Non Standard'
                             else:
                                 raise LookupError(
                                     'special/others not found for string: %s' % group[0]
@@ -128,6 +129,15 @@ class ThinkBack(object):
                         # print 'special: %s, others: %s' % (special, others)
                 except IndexError:
                     pass  # no special and others
+
+                # aig/ws == aigws
+                if '/' in others:
+                    others = others.replace('/', '')
+
+                # got dte 365248 in bp
+                exact_dte = (pd.to_datetime(date) - pd.to_datetime(self.date)).days + 5
+                if dte > exact_dte:
+                    continue
 
                 start = key + 1
                 cycle = {

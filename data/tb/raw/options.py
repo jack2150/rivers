@@ -8,6 +8,7 @@ from fractions import Fraction
 from django.db.models import Q
 from numba import jit
 
+from base.ufunc import ts
 from data.tb.thinkback import ThinkBack
 from data.models import SplitHistory, Underlying
 from rivers.settings import CLEAN_DIR, THINKBACK_DIR
@@ -217,6 +218,8 @@ class RawOption(object):
         # final data, new format
         self.df_split2 = pd.DataFrame()
 
+        self.db_path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+
     def get_data(self):
         """
         Get data from thinkback file and make df_all
@@ -225,28 +228,44 @@ class RawOption(object):
         print output % ('GET', 'Option data:', self.symbol.upper())
         print '=' * 70
 
-        symbol0 = self.symbol.lower()
-        symbol1 = self.symbol.upper()
+        db = pd.HDFStore(self.db_path)
+        try:
+            df_all = db['all']
+        except KeyError:
+            df_all = pd.DataFrame()
+        db.close()
 
-        options = []
-        path = os.path.join(THINKBACK_DIR, symbol0)
-        logger.info('Get data from path: %s' % path)
-        for key in np.arange(len(self.df_stock)):
-            # open path get option data
-            date = self.df_stock.index[key].date().strftime('%Y-%m-%d')
-            fpath = os.path.join(
-                path, date[:4], '%s-StockAndOptionQuoteFor%s.csv' % (date, symbol1)
-            )
-            print output % (key, 'Read %s' % os.path.basename(fpath), '')
-            # _, data = ThinkBack(fpath).read()
-            options += ThinkBack(fpath).get_options()
+        if len(df_all):
+            self.df_all = df_all.copy()
+            logger.info('Get data from clean: %s' % self.db_path)
+            print output % ('SKIP', 'Read from clean, df_all: %d' % len(df_all), '')
+        else:
+            symbol0 = self.symbol.lower()
+            symbol1 = self.symbol.upper()
 
-        # make all options df
-        df_all = pd.DataFrame(options)
-        # df_all['date'] = pd.to_datetime(df_all['date'])
-        # df_all['ex_date'] = pd.to_datetime(df_all['ex_date'])
+            options = []
+            path = os.path.join(THINKBACK_DIR, symbol0)
+            logger.info('Get data from path: %s' % path)
+            for key in np.arange(len(self.df_stock)):
+                # open path get option data
+                date = self.df_stock.index[key].date().strftime('%Y-%m-%d')
+                fpath = os.path.join(
+                    path, date[:4], '%s-StockAndOptionQuoteFor%s.csv' % (date, symbol1)
+                )
+                print output % (key, 'Read %s' % os.path.basename(fpath), '')
+                # _, data = ThinkBack(fpath).read()
+                options += ThinkBack(fpath).get_options()
 
-        self.df_all = df_all
+            # make all options df
+            df_all = pd.DataFrame(options)
+            # df_all['date'] = pd.to_datetime(df_all['date'])
+            # df_all['ex_date'] = pd.to_datetime(df_all['ex_date'])
+
+            self.df_all = df_all
+
+            db = pd.HDFStore(self.db_path)
+            db['all'] = df_all
+            db.close()
 
     def group_data(self):
         """
@@ -290,10 +309,35 @@ class RawOption(object):
 
                 if len(df_current) != len(df_current['date'].unique()):
                     # todo: too many split in uvxy, vxx
-                    print len(df_current)
-                    print df_current[df_current['date'].duplicated()]
-                    print df_current.to_string(line_width=1000)
-                    raise LookupError('Split data got duplicate date')
+                    #print len(df_current)
+                    ##print df_current[df_current['date'].duplicated()]
+                    #print df_current.to_string(line_width=1000)
+
+                    print output % ('ERROR', 'Duplicated row problem', '')
+                    date_counts = df_current['date'].value_counts()
+                    dup_dates = list(date_counts[date_counts == 2].index)
+                    df_dup = df_current[df_current['date'].isin(dup_dates)]
+                    df_group = df_dup.group_data('date')
+
+                    dup_counts = 0
+                    for n in np.arange(len(dup_dates)):
+                        dup_date = dup_dates[n]
+                        dup_row = df_group.get_group(dup_date)
+                        # print dup_row.to_string(line_width=1000)
+                        if len(dup_row['ask'].unique()) == 1:
+                            dup_counts += 1
+
+                    if dup_counts == len(dup_dates):
+                        print output % ('EXPORT', 'Duplicated row data', index)
+                        # remove duplicated in df_current
+                        old_length = len(df_current)
+                        df_current = df_current[~df_current['date'].duplicated()]
+                        print output % ('DATA', 'df_current old: %d, new: %d' % (
+                            old_length, len(df_current)
+                        ), '')
+                    else:
+                        # print 'found not same'
+                        raise LookupError('Split data got duplicate date')
 
                 print output % ('REMOVE', 'old data in df_split removed', '')
                 self.df_split0 = self.df_split0[~self.df_split0.index.isin(df_current.index)]
@@ -331,7 +375,7 @@ class RawOption(object):
         # print df_normal[df_normal['index'] == 'JAN11PUT2.5'].to_string(line_width=1000)
 
         if len(self.df_others0):
-            group = self.df_others0.groupby('index2')
+            group = self.df_others0.group_data('index2')
             dates = pd.Series(group['date'].max()).sort_values(ascending=False)
             # print dates
 
@@ -399,8 +443,35 @@ class RawOption(object):
 
                 # normal will be add later on another method
                 if len(df_current) != len(df_current['date'].unique()):
-                    print df_current.to_string(line_width=1000)
-                    raise LookupError('Duplicate date!!!')
+
+                    # todo: here
+                    # todo: 130119040.033/100US$
+
+                    print output % ('ERROR', 'Duplicated row problem', '')
+                    date_counts = df_current['date'].value_counts()
+                    dup_dates = list(date_counts[date_counts == 2].index)
+                    df_dup = df_current[df_current['date'].isin(dup_dates)]
+                    df_group = df_dup.group_data('date')
+
+                    dup_counts = 0
+                    for n in np.arange(len(dup_dates)):
+                        dup_date = dup_dates[n]
+                        dup_row = df_group.get_group(dup_date)
+                        # print dup_row.to_string(line_width=1000)
+                        if len(dup_row['ask'].unique()) == 1:
+                            dup_counts += 1
+
+                    if dup_counts == len(dup_dates):
+                        print output % ('EXPORT', 'Duplicated row data', index)
+                        # remove duplicated in df_current
+                        old_length = len(df_current)
+                        df_current = df_current[~df_current['date'].duplicated()]
+                        print output % ('DATA', 'df_current old: %d, new: %d' % (
+                            old_length, len(df_current)
+                        ), '')
+                    else:
+                        print df_current.to_string(line_width=1000)
+                        raise LookupError('Duplicate date for others!!!')
 
                 # update code
                 contract = get_contract(df_current)
@@ -444,7 +515,7 @@ class RawOption(object):
         df_date0 = pd.DataFrame()
         group0 = None
         if len(self.df_split1):
-            group0 = self.df_split1.groupby('option_code')
+            group0 = self.df_split1.group_data('option_code')
             dates0 = group0['date'].min()
             df_date0 = pd.DataFrame(dates0)
             df_date0['event'] = 'split'
@@ -452,7 +523,7 @@ class RawOption(object):
         df_date1 = pd.DataFrame()
         group1 = None
         if len(self.df_others1):
-            group1 = self.df_others1.groupby('option_code')
+            group1 = self.df_others1.group_data('option_code')
             dates1 = group1['date'].min()
             df_date1 = pd.DataFrame(dates1)
             df_date1['event'] = 'others'
@@ -477,8 +548,22 @@ class RawOption(object):
             code = dates.index[j]
             row = dates.ix[code]
 
-            print output % ('FOR', 'code: %s date: %s' % (code, row['date'].strftime('%Y-%m-%d')),
-                            'Event: %s' % row['event'])
+            try:
+                print output % (
+                    'FOR', 'code: %s date: %s' % (code, row['date'].strftime('%Y-%m-%d')),
+                    'Event: %s' % row['event']
+                )
+            except AttributeError:
+                dup_code = row.index[0]
+                df_split2 = group0.get_group(dup_code).copy()
+                df_others2 = group1.get_group(dup_code).copy()
+
+                ts(df_others2)
+                ts(df_split2)
+
+
+                raise
+
 
             # get df_current
             if row['event'] == 'split':
@@ -686,7 +771,7 @@ class RawOption(object):
         df_format = self.df_normal.sort_values('date', ascending=False).copy()
 
         # multi option_code
-        group = df_format.groupby('index2')
+        group = df_format.group_data('index2')
         unique = group['option_code'].unique()
         unique = unique[unique.apply(lambda x: len(x) > 1)]
         df_unique = df_format[df_format['index2'].isin(unique.index)]
@@ -785,11 +870,11 @@ class RawOption(object):
         print output % ('STAT', 'df_split1 length: %d' % len(self.df_split1), '')
         print output % ('STAT', 'df_split2 length: %d' % len(self.df_split2), '')
 
-        if path == '':
-            path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+        if path != '':
+            self.db_path = path
 
         logger.info('Save data into clean, path: %s' % path)
-        db = pd.HDFStore(path)
+        db = pd.HDFStore(self.db_path)
         try:
             db.remove('option/raw')
         except KeyError:

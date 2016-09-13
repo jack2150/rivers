@@ -52,7 +52,7 @@ class TestDTE(TestUnitSetUp):
         # ts(df_stock)
 
         df_stock['group'] = pd.qcut(df_stock['close'], 5)
-        group = df_stock.groupby('group')
+        group = df_stock.group_data('group')
 
         print group['close'].count()
         print '-' * 70

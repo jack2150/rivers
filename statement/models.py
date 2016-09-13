@@ -17,6 +17,7 @@ class Statement(models.Model):
     Commissions/Fees YTD,$159.08
     Futures Commissions YTD,$0.00 <-- skip futures
     """
+    # name = models.CharField(max_length=20)
     date = models.DateField(unique=True)
 
     net_liquid = models.DecimalField(max_digits=20, decimal_places=2)
@@ -602,7 +603,7 @@ class CashBalance(models.Model):
         :param line: str
         :return: CashBalance
         """
-        logger.info('Load cash balance csv line data')
+        # logger.info('Load cash balance csv line data')
         line = remove_comma(line)
 
         values = map(
@@ -666,7 +667,7 @@ class AccountOrder(models.Model):
         :param line: str
         :return: HoldingEquity
         """
-        logger.info('Load account order csv data in lines')
+        # logger.info('Load account order csv data in lines')
         line = remove_comma(line)
         values = line.split(',')
 
@@ -743,7 +744,7 @@ class AccountTrade(models.Model):
         :param line: str
         :return: HoldingEquity
         """
-        logger.info('Load account trade csv data in lines')
+        # logger.info('Load account trade csv data in lines')
         line = remove_comma(line)
         values = line.split(',')
 
@@ -874,7 +875,7 @@ class HoldingOption(models.Model):
         :param line: str
         :return: HoldingEquity
         """
-        logger.info('Load holding options csv data in lines')
+        # logger.info('Load holding options csv data in lines')
         line = remove_comma(line)
 
         values = [

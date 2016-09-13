@@ -107,6 +107,8 @@ class FormulaArgument(models.Model):
         null=True, blank=True, default='', help_text='Explain this arguments.'
     )
 
+    unique_together = (('formula', 'arguments'),)
+
     def get_args(self):
         """
         Get arguments dict
@@ -126,7 +128,7 @@ class FormulaResult(models.Model):
     arguments = models.TextField(max_length=500)
     length = models.IntegerField()
 
-    unique_together = (('formula', 'arguments'),)
+    unique_together = (('symbol', 'formula', 'date'),)
 
     def __unicode__(self):
         return '{date} < {symbol} > {formula}'.format(

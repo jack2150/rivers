@@ -302,6 +302,54 @@ class TestExtractOption(TestSetUp):
         print df_temp.to_string(line_width=1000)
         """
 
+    def test_parts(self):
+        """
+
+        :return:
+        """
+        self.symbol = 'TZA'
+        underlying = Underlying(
+            symbol=self.symbol,
+            start_date='2009-01-01',
+            stop_date='2016-01-01'
+        )
+        underlying.save()
+
+        path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        df_stock = db.select('stock/thinkback')
+        db.close()
+        # test date: 2013-01-18
+        #  df_stock = df_stock[:'2013-01-18']
+
+        path = os.path.join(CLEAN_DIR, 'test_%s.h5' % self.symbol.lower())
+        extract_option = RawOption(self.symbol, df_stock)
+        """
+        extract_option.get_data()
+        extract_option.group_data()
+        extract_option.get_old_split_data()
+        extract_option.get_others_data()
+
+
+        db = pd.HDFStore(path)
+        db['df_normal'] = extract_option.df_normal
+        db['df_split1'] = extract_option.df_split1
+        db['df_others1'] = extract_option.df_others1
+        db.close()
+        """
+        path = os.path.join(CLEAN_DIR, 'test_%s.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        extract_option.df_normal = db['df_normal']
+        extract_option.df_split1 = db['df_split1']
+        extract_option.df_others1 = db['df_others1']
+        db.close()
+
+        extract_option.continue_split_others()
+        #extract_option.merge_new_split_data()
+        #extract_option.format_normal_code()
+
+        # todo: a new method, continue others to others to splits...
+
 
 class TestRawViews(TestSetUp):
     def test_raw_stock_h5(self):

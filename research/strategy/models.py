@@ -78,11 +78,15 @@ class TradeResult(models.Model):
     Trade result that list for report view
     """
     symbol = models.CharField(max_length=20)
+    date = models.DateField()
+    formula_id = models.IntegerField()
+    report_id = models.IntegerField()
     trade = models.ForeignKey(Trade)
 
-    date = models.DateField()
     arguments = models.TextField()
     length = models.IntegerField()
+
+    unique_together = (('symbol', 'formula_id', 'report_id', 'trade', 'date'),)
 
     def __unicode__(self):
         return '{date} < {symbol} > {trade}'.format(

@@ -49,6 +49,7 @@ def web_stock_h5(request, source, symbol):
 
     # do not drop if volume is empty
     df_stock['Volume'] = df_stock['Volume'].replace('-', 0).astype(long)
+    # df_stock = df_stock[df_stock['Volume'] > 0]  # not drop
 
     # rename into lower case
     df_stock.columns = [c.lower() for c in df_stock.columns]

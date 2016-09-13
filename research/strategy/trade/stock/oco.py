@@ -12,7 +12,7 @@ def create_order(df_signal, df_stock, side=('follow', 'reverse', 'buy', 'sell'),
     :param loss_pct: int
     :return: DataFrame
     """
-    df0 = df_stock.copy()
+    df0 = df_stock.set_index('date').copy()
 
     df_signal1 = df_signal.copy()
     if side == 'buy':

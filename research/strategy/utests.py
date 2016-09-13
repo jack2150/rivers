@@ -344,7 +344,7 @@ class TestStrategyBacktest(TestUnitSetUp):
                 'side': 'follow,reverse,buy,sell',
             },
             formula_id=self.formula.id,
-            backtest_id=self.report_id,
+            report_id=self.report_id,
             df_signal=self.df_signal,
             commission_id=self.commission,
             capital=self.capital
