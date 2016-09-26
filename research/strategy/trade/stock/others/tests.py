@@ -3,9 +3,7 @@ from research.strategy.models import Trade
 from research.strategy.trade.tests import TestStrategy
 
 
-# todo: long, lose add more, short, lose, reverse
-# todo: short to long is good result
-# todo: long to short is bad, long should be double up
+
 
 
 class TestStrategyOCOConvert(TestStrategy):

@@ -457,6 +457,7 @@ class TradeBacktest(object):
             df_trade['remain0'] - df_trade['fee1']
         )
         df_trade['pct_chg'] = (df_trade['remain1'] / self.capital) - 1
+        #df_trade['pct_chg'] = (df_trade['net_chg'] / df_trade['amount0']
 
         df_trade = df_trade.round({
             'net_chg': 2,
@@ -723,5 +724,3 @@ class TradeBacktest(object):
         logger.info('Backtest save: %s' % path)
 
         return len(df_report)
-
-# todo: unable save again

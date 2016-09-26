@@ -20,10 +20,14 @@
         "ajax": {
           url: '{% url 'admin:algorithm_report_json' symbol date formula_id %}'
         },
+        "render": function (data, type, row) {
+          //return data +'%';
+          return typeof(data);
+        },
         "columnDefs": [
           {
-            "targets": 32,
-            "data": 32,
+            "targets": {{ length }},
+            "data": {{ length }},
             "render": function (data, type, full, meta) {
               var data_path = data.split(',');
               return '<a href="' + data_path[0] + '" target="_blank">Signal</a> '
@@ -31,52 +35,27 @@
             }
           },
           {
-            "targets": 33,
-            "data": 33,
+            "targets": {{ length|add:1 }},
+            "data": {{ length|add:1 }},
             "render": function (data, type, full, meta) {
               return '<a href="' + data + '" target="_blank">Trade</a>';
             }
           },
           {
-            "targets": 34,
-            "data": 34,
+            "targets": {{ length|add:2 }},
+            "data": {{ length|add:2 }},
             "render": function (data, type, full, meta) {
               return '<a href="' + data + '" target="_blank">Analysis</a>';
             }
           }
         ],
         "initComplete": function (settings, json) {
-          use_mini();
         }
       });
 
-      function use_mini() {
-        var cars = [
-          1, 2, 3, 4, 5, 7,
-          14, 15, 17, 18, 19, 21, 22,
-          23, 24, 25,
-          26, 27, 28, 29, 30, 31
-        ];
-
-        for (var i = 0; i < cars.length; i++) {
-          // Get the column API object
-          var column = table.column(cars[i]);
-
-          // Toggle the visibility
-          column.visible(!column.visible());
-        }
-
-        if ($(this).text() == 'Mini') {
-          $(this).text('Large');
-        }
-        else {
-          $(this).text('Mini');
-        }
-      }
-
-      $('#mini').on('click', function (e) {
+      $('#chart').on('click', function (e) {
         e.preventDefault();
-        use_mini();
+        window.open("{% url 'admin:algorithm_report_chart' symbol date formula_id %}");
       });
 
       $('#report tbody').on('click', 'tr', function () {
@@ -88,7 +67,6 @@
           $(this).addClass('selected');
         }
       });
-
 
     });
 
@@ -121,7 +99,7 @@
 
   <div id="content-navbar-collapse" class="navbar-collapse collapse">
     <div class="nav navbar-nav navbar-right">
-      <button id="mini" type="button" class="btn btn-primary">Mini</button>
+      <button id="chart" type="button" class="btn btn-primary">Chart</button>
     </div>
   </div>
 {% endblock %}
@@ -130,38 +108,9 @@
   <table id="report">
     <thead>
     <tr>
-      <th>Date</th>
-      <th style="width: 180px;">HD Args</th>
-      <th style="width: 180px;">CS Args</th>
-      <th>Start</th>
-      <th>Stop</th>
-      <th>Sharpe RF</th>
-      <th>Sharpe Spy</th>
-      <th>Sortino RF</th>
-      <th>Sortino Spy</th>
-      <th>Buy Hold</th>
-      <th style="width: 56px;">PL Count</th>
-      <th style="width: 56px;">PL Sum</th>
-      <th>PL Cumprod</th>
-      <th>PL Mean</th>
-      <th>PL Std</th>
-      <th>Profit Count</th>
-      <th>Profit Chance</th>
-      <th>Profit Max</th>
-      <th>Profit Min</th>
-      <th>Loss Count</th>
-      <th>Loss Chance</th>
-      <th>Loss Max</th>
-      <th>Loss Min</th>
-      <th>VaR 95</th>
-      <th>VaR 99</th>
-      <th>Max DD</th>
-      <th>DP Count</th>
-      <th>DP Chance</th>
-      <th>DP Mean</th>
-      <th>DL Count</th>
-      <th>DL Chance</th>
-      <th>DL Mean</th>
+      {% for key in keys %}
+        <th>{{ key|cap }}</th>
+      {% endfor %}
       <th>Signal</th>
       <th>Trade</th>
       <th>Analysis</th>

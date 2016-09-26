@@ -1,0 +1,213 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags staticfiles %}
+
+{% block extrahead %}
+  <script src="{% static 'Highstock-4.2.1/js/highstock.js' %}"></script>
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts.js' %}"></script>
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts-more.js' %}"></script>
+  <script type="text/javascript">
+    $(document).ready(function () {
+      $('#container0').highcharts({
+        chart: {
+          zoomType: 'xy'
+        },
+        title: {
+          text: '{{ site_title }}, Bdays to Profit Chance/PL Mean'
+        },
+        subtitle: {
+          text: '{{ title }}'
+        },
+        xAxis: [{
+          categories: [{{ bdays }}],
+          crosshair: true
+        }],
+        yAxis: [{ // Primary yAxis
+          labels: {
+            format: '{value}%',
+            style: {
+              color: Highcharts.getOptions().colors[1]
+            }
+          },
+          title: {
+            text: 'Profit Chance',
+            style: {
+              color: Highcharts.getOptions().colors[1]
+            }
+          }
+        }, { // Secondary yAxis
+          title: {
+            text: 'PL Mean',
+            style: {
+              color: Highcharts.getOptions().colors[0]
+            }
+          },
+          labels: {
+            format: '{value}%',
+            style: {
+              color: Highcharts.getOptions().colors[0]
+            }
+          },
+          opposite: true
+        }],
+        tooltip: {
+          shared: true
+        },
+        series: [{
+          name: 'Profit Chance',
+          type: 'spline',
+          yAxis: 1,
+          data: [{{ data.profit_chance }}],
+          tooltip: {
+            valueSuffix: '%'
+          }
+
+        }, {
+          name: 'PL Mean',
+          type: 'spline',
+          data: [{{ data.pl_mean }}],
+          tooltip: {
+            valueSuffix: '%'
+          }
+        }]
+      });
+
+      $('#container1').highcharts({
+        title: {
+          text: '{{ site_title }} - Bdays to Sharpe/Sortino Ratio',
+          x: -20 //center
+        },
+        subtitle: {
+          text: '{{ title }}',
+          x: -20
+        },
+        xAxis: {
+          categories: [{{ bdays }}],
+          crosshair: true
+        },
+        yAxis: {
+          title: {
+            text: 'Sharpe/Sortino Ratio'
+          },
+          plotLines: [{
+            value: 0,
+            width: 1,
+            color: '#808080'
+          }]
+        },
+        tooltip: {
+          valueSuffix: '',
+          shared: true
+        },
+        legend: {
+          layout: 'vertical',
+          align: 'right',
+          verticalAlign: 'middle',
+          borderWidth: 0
+        },
+        series: [{
+          name: 'Sharpe RF',
+          data: [{{ data.sharpe_rf }}]
+        }, {
+          name: 'Sharpe Spy',
+          data: [{{ data.sharpe_spy }}]
+        }, {
+          name: 'Sortino RF',
+          data: [{{ data.sortino_rf }}]
+        }, {
+          name: 'Sortino Spy',
+          data: [{{ data.sortino_spy }}]
+        }]
+      });
+
+      $('#container2').highcharts({
+        title: {
+          text: '{{ site_title }} - Bdays to Profit Max/PL Mean/Loss Max',
+          x: -20 //center
+        },
+        subtitle: {
+          text: '{{ title }}',
+          x: -20
+        },
+        tooltip: {
+          valueSuffix: '%',
+          shared: true
+        },
+        yAxis: {
+          title: {
+            text: 'Profit/Loss Max & PL Mean'
+          }
+        },
+        series: [{
+          name: 'Temperature',
+          data: [{{ data.move_mean }}],
+          zIndex: 1,
+          marker: {
+            fillColor: 'white',
+            lineWidth: 2,
+            lineColor: Highcharts.getOptions().colors[0]
+          }
+        }, {
+          name: 'Range',
+          data: [{{ data.max_range }}],
+          type: 'arearange',
+          lineWidth: 0,
+          linkedTo: ':previous',
+          color: Highcharts.getOptions().colors[0],
+          fillOpacity: 0.3,
+          zIndex: 0
+        }]
+      });
+
+      // filter
+      {% for arg, field in fields %}
+      $("#" + '{{ arg }}').change(function () {
+        $('#parameters').submit();
+      });
+      {% endfor %}
+
+    });
+
+
+  </script>
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'algorithm' %}">Algorithm</a></li>
+      <li><a href="{% url 'admin:algorithm_formularesult_changelist' %}">Formula Results</a></li>
+      <li>Report</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div>
+  <form id="parameters" method="post">
+  <table class="table">
+  <tr>
+  {% for arg, default, field in fields %}
+    <td>
+      <label>{{ arg|cap }}</label>
+    <select class="form-control" name="{{ arg }}" id="{{ arg }}">
+      {% for value in field %}
+        <option value="{{ value }}" {% if value == default %}selected{% endif %}>
+          {{ value }}
+        </option>
+      {% endfor %}
+    </select>
+    </td>
+  {% endfor %}
+  </tr>
+  </table>
+  </form>
+  </div>
+  
+  <div id="container0" style="min-width: 310px; height: 300px; margin: 0 auto"></div>
+  <hr>
+  <div id="container1" style="min-width: 310px; height: 300px; margin: 0 auto"></div>
+  <hr>
+  <div id="container2" style="min-width: 310px; height: 300px; margin: 0 auto"></div>
+{% endblock %}
+

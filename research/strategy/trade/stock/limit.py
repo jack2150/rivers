@@ -139,5 +139,3 @@ def join_data(df_trade, df_stock):
         df_list.append(df_date)
 
     return df_list
-
-# todo: stop price is different

@@ -257,8 +257,6 @@ class TestCalcDayIvView(TestUnitSetUp):
         df_date = df_clean[df_clean['date'] == '2015-08-27']
         df_date = df_date[df_date['name'] == 'CALL'].sort_values('ex_date')
         print df_date.to_string(line_width=1000)
-        # todo: dte is wrong????
-        # wrong clean
 
         # self.client.get(reverse('admin:calc_day_iv', kwargs={'symbol': 'GG', 'insert': 0}))
 

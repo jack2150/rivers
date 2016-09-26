@@ -12,7 +12,7 @@ from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from pandas.tseries.offsets import BDay
 
-from base.ufunc import latest_season
+from base.ufunc import latest_season, ts
 from data.models import Underlying
 from research.algorithm.models import Formula, FormulaArgument, FormulaResult
 from rivers.settings import BASE_DIR, RESEARCH_DIR
@@ -268,8 +268,10 @@ def algorithm_signal_view(request, symbol, date, formula_id, report_id):
     formula = Formula.objects.get(id=formula_id)
 
     db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
-    df_report = db.select('algorithm/report', where='index == %d' % int(report_id))
-    report = df_report.iloc[0]
+    df_report = db.select('algorithm/report', where='date == %r & formula == %r' % (
+        date, formula.path
+    ))
+    report = df_report.iloc[int(report_id)]
     """:type: pd.DataFrame"""
     df_signal = db.select(
         'algorithm/signal', where='formula == %r & date == %r & hd == %r & cs == %r' % (
@@ -346,8 +348,10 @@ def algorithm_trade_view(request, symbol, date, formula_id, report_id):
     formula = Formula.objects.get(id=formula_id)
 
     db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
-    df_report = db.select('algorithm/report', where='index == %d' % int(report_id))
-    report = df_report.iloc[0]
+    df_report = db.select('algorithm/report', where='date == %r & formula == %r' % (
+        date, formula.path
+    ))
+    report = df_report.iloc[int(report_id)]
     """:type: pd.DataFrame"""
     df_signal = db.select(
         'algorithm/signal', where='formula == %r & date == %r & hd == %r & cs == %r' % (
@@ -428,15 +432,25 @@ def algorithm_report_view(request, symbol, date, formula_id):
     :return: render
     """
     formula = Formula.objects.get(id=formula_id)
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
+    df_report = db.select('algorithm/report', where='date == %r & formula == %r' % (
+        date, formula.path
+    ))
+    """:type: pd.DataFrame"""
+    db.close()
+
+    df_report, args, _, _ = remake_report(formula, df_report)
 
     template = 'algorithm/report.html'
-
     parameters = dict(
         site_title='Formula Report',
         title='Symbol: < %s > Formula: %s' % (symbol.upper(), formula),
         symbol=symbol,
         formula_id=formula_id,
-        date=date
+        date=date,
+        args=args,
+        keys=list(df_report.columns),
+        length=len(df_report.columns)
     )
 
     return render(request, template, parameters)
@@ -470,40 +484,37 @@ def algorithm_report_json(request, symbol, date, formula_id):
     """:type: pd.DataFrame"""
     db.close()
 
-    keys = [
-        'date', 'hd', 'cs', 'start', 'stop',
-        'sharpe_rf', 'sharpe_spy', 'sortino_rf', 'sortino_spy', 'buy_hold',
-        'pl_count', 'pl_sum', 'pl_cumprod', 'pl_mean', 'pl_std',
-        'profit_count', 'profit_chance', 'profit_max', 'profit_min',
-        'loss_count', 'loss_chance', 'loss_max', 'loss_min',
-        'var_95', 'var_99', 'max_dd',
-        'dp_count', 'dp_chance', 'dp_mean', 'dl_count', 'dl_chance', 'dl_mean',
-    ]
+    df_report, args, hd_args, cs_args = remake_report(formula, df_report)
+
+    keys = list(df_report.columns)
 
     # server side
-    df_page = df_report[keys]
+    df_page = df_report
 
-    df_page = df_page.sort_values(
-        keys[order_column], ascending=True if order_dir == 'asc' else False
-    )
+    if keys[order_column] != 'date':
+        df_page = df_page.sort_values(
+            keys[order_column], ascending=True if order_dir == 'asc' else False
+        )
     df_page = df_page[start:start + length]
-
-    df_page['hd'] = df_page['hd'].apply(
-        lambda x: x.replace('\'', '').replace('{', '').replace('}', '')
-    )
-    df_page['cs'] = df_page['cs'].apply(
-        lambda x: x.replace('\'', '').replace('{', '').replace('}', '')
-    )
 
     reports = []
     for index, data in df_page.iterrows():
         temp = []
 
         for key in keys:
-            if key in ('hd', 'cs'):
-                temp.append('"%s"' % data[key])
+            if 'hd_' in key or 'cs_' in key:
+                try:
+                    if int(data[key]) == float(data[key]):
+                        temp.append(int(data[key]))
+                    else:
+                        temp.append(float(data[key]))
+                except ValueError:
+                    temp.append('"%s"' % str(data[key]))
+
             elif key in ('date', 'start', 'stop'):
                 temp.append('"%s"' % str(data[key].date()))
+            elif key == 'formula':
+                pass
             else:
                 temp.append(round(data[key], 4))
 
@@ -573,7 +584,7 @@ def algorithm_signal_raw(request, symbol, date, formula_id, report_id):
     )
     """:type: pd.DataFrame"""
     report = df_report.ix[int(report_id)]
-    df_trade = db.select(
+    df_signal = db.select(
         'algorithm/signal', where='formula == %r & date == %r & hd == %r & cs == %r' % (
             formula.path, date, report['hd'], report['cs']
         )
@@ -585,9 +596,166 @@ def algorithm_signal_raw(request, symbol, date, formula_id, report_id):
         site_title='Algorithm Trade',
         title='Formula: < %s > %s' % (symbol.upper(), formula),
         symbol=symbol,
-        data=df_trade.to_string(line_width=1000),
+        data=df_signal.to_string(line_width=1000),
         trade=formula,
         args='<handle_data|%s> <create_signal|%s>' % (report['hd'], report['cs']),
     )
 
     return render(request, template, parameters)
+
+
+@csrf_exempt
+def algorithm_report_chart(request, symbol, date, formula_id):
+    """
+    Algorithm report chart by bdays
+    :param request: request
+    :param symbol: str
+    :param date: str
+    :param formula_id: int
+    :return: render
+    """
+    formula = Formula.objects.get(id=formula_id)
+
+    db = pd.HDFStore(os.path.join(RESEARCH_DIR, '%s.h5' % symbol.lower()))
+    df_report = db.select('algorithm/report', where='date == %r & formula == %r' % (
+        date, formula.path
+    ))
+    """:type: pd.DataFrame"""
+    db.close()
+
+    # start
+    df_report, args, hd_args, cs_args = remake_report(formula, df_report)
+
+    # set default parameters
+    if request.method != 'POST':
+        first = df_report.iloc[0]
+        values = {}
+        for arg in hd_args:
+            if 'bdays' not in arg:
+                values['hd_%s' % arg] = first['hd_%s' % arg]
+
+        for arg in cs_args:
+            if 'bdays' not in arg:
+                values['cs_%s' % arg] = first['cs_%s' % arg]
+    else:
+        values = {}
+        for k, v in request.POST.items():
+            try:
+                if int(v) == float(v):
+                    values[k] = int(v)
+                else:
+                    values[k] = float(v)
+            except ValueError:
+                values[k] = str(v)
+
+    logger.info('values: %s' % values)
+
+    # query params
+    df_page = df_report.copy()
+    if len(values):
+        query = ' & '.join(['%s == %r' % (k, v) for k, v in values.items()])
+
+        df_page = df_report.query(query)
+        # ts(df_page)
+
+    # get bdays data
+    if 'hd_bdays' in args:
+        bdays = 'hd_bdays'
+    elif 'cs_bdays' in args:
+        bdays = 'cs_bdays'
+    else:
+        raise LookupError('No holding days research')
+
+    # generate require data
+    data = {
+        'move_mean': ','.join([s for s in df_page.apply(
+            lambda x: '[%d, %.2f]' % (int(x[bdays]), x['pl_mean']), axis=1
+        )]),
+        'max_range': ','.join(df_page.apply(
+            lambda x: '[%d, %.2f, %.2f]' % (int(x[bdays]), x['profit_max'], x['loss_max']), axis=1
+        ))
+    }
+
+    # put into list_str
+    keys = (
+        'profit_chance', 'pl_mean', 'sharpe_rf', 'sharpe_spy', 'sortino_rf', 'sortino_spy',
+    )
+    for key in keys:
+        data[key] = list_str(df_page, key)
+
+    # set parameter for other cs/hd
+    fields = []
+    for arg in args:
+        if arg not in ('hd_bdays', 'cs_bdays'):
+            fields.append((arg, values[arg], list(df_report[arg].unique())))
+
+    template = 'algorithm/chart.html'
+    parameters = dict(
+        site_title='Algorithm Report Chart',
+        title='Formula: < %s > %s' % (symbol.upper(), formula),
+        symbol=symbol,
+        bdays=','.join(['%d' % int(d) for d in df_page[bdays]]),
+        data=data,
+        fields=fields,
+        link=reverse('admin:algorithm_report_chart', kwargs={
+            'symbol': symbol,
+            'date': date,
+            'formula_id': formula_id
+        })
+    )
+
+    return render(request, template, parameters)
+
+
+def list_str(df_report, key):
+    """
+    Join float list into str
+    :param df_report: pd.DataFrame
+    :param key: str
+    :return: str
+    """
+    return ','.join(['%.2f' % (d * 100) for d in df_report[key]])
+
+
+def remake_report(formula, df_report):
+    """
+    Remake df_report with hd/cs columns
+    :param formula: Formula
+    :param df_report: pd.DataFrame
+    :return: pd.DataFrame
+    """
+    df_report = df_report.sort_index()
+    args = formula.get_args()
+    dtypes = {}
+    for key, arg in args:
+        try:
+            int(arg)
+            dtypes[key] = int
+        except TypeError:
+            dtypes[key] = str
+
+    hd_args = sorted([a[0][len('handle_data_'):] for a in args if 'handle_data' in a[0]])
+    cs_args = sorted([a[0][len('create_signal_'):] for a in args if 'create_signal' in a[0]])
+    # print hd_args
+    # print cs_args
+    for i, arg in enumerate(hd_args, 0):
+        df_report['hd_%s' % arg] = df_report['hd'].apply(
+            lambda x: x.split(',')[i]
+        ).astype(dtypes['handle_data_%s' % arg])
+
+    for i, arg in enumerate(cs_args, 0):
+        df_report['cs_%s' % arg] = df_report['cs'].apply(
+            lambda x: x.split(',')[i]
+        ).astype(dtypes['create_signal_%s' % arg])
+
+    # remove hd, cs
+    del df_report['hd'], df_report['cs']
+
+    # reorder columns
+    columns = list(df_report.columns)
+    args = columns[31:]
+    columns = columns[:2] + columns[31:] + columns[2:31]
+    df_report = df_report[columns]
+    del df_report['formula']
+
+    return df_report, args, hd_args, cs_args

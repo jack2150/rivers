@@ -81,8 +81,6 @@ class TestUpdateUnderlying(TestUnitSetUp):
         for underlying in underlyings:
             print 'run %s web import...' % underlying.symbol
 
-        # todo: after thinkback complete
-
     def test_change_underlying(self):
         """
 
@@ -91,19 +89,3 @@ class TestUpdateUnderlying(TestUnitSetUp):
         underlyings = Underlying.objects.all()
         underlyings.update(google_symbol='')
         underlyings.update(yahoo_symbol='')
-
-    def test123(self):
-        """
-
-        :return:
-        """
-        print 123
-
-
-
-
-
-
-
-
-

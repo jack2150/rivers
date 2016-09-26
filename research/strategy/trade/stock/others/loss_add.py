@@ -1,3 +1,8 @@
+"""
+long, lose add more, short, lose, reverse
+short to long is good result
+long to short is bad, long should be double up
+"""
 import numpy as np
 import pandas as pd
 from base.ufunc import ts, ds
@@ -171,10 +176,11 @@ def create_order(df_signal, df_stock, side=('follow', 'reverse', 'buy', 'sell'),
         data['add_more'].append(add_more)
 
     df = df_signal1.copy()
-    df['date0.5'] = pd.to_datetime(data['exit_dates1'])  # todo: need change
+    df['date0.5'] = pd.to_datetime(data['exit_dates1'])
     df['date1'] = data['exit_dates0']
     df['close0'] = data['close0']
     df['close1'] = np.round(data['exit_prices0'], 2)
+    df['bp_effect'] = df['close0'] * 2
     df['time0'] = data['exit_times0']
     df['time1'] = data['exit_times1']
     df['order0'] = data['order_hits0']
@@ -193,10 +199,19 @@ def create_order(df_signal, df_stock, side=('follow', 'reverse', 'buy', 'sell'),
         , axis=1), 4
     )
 
+    df['close0'] = df.apply(
+        lambda x: x['close0'] if x['signal0'] == 'BUY' else -x['close0'],
+        axis=1
+    )
+    df['close1'] = df.apply(
+        lambda x: x['close1'] if x['signal1'] == 'BUY' else -x['close1'],
+        axis=1
+    )
+
     # order columns
     df = df[[
         'date0', 'date0.5', 'date1', 'signal0', 'signal1', 'holding',
-        'time0', 'order0', 'time1', 'order1', 'close0', 'close1',
+        'time0', 'order0', 'time1', 'order1', 'close0', 'close1', 'bp_effect',
         'enter', 'convert0', 'close0.5', 'convert1',
         'pct_chg0.5', 'pct_chg1', 'pct_chg', 'add_more'
     ]]

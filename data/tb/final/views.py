@@ -1,6 +1,8 @@
 import logging
 import os
 import re
+from time import sleep
+
 import pandas as pd
 from fractions import Fraction
 from django.core.urlresolvers import reverse
@@ -209,12 +211,17 @@ def reshape_h5(fname, dir_name=None):
     :param dir_name: str
     :param fname: str
     """
-    os.chdir(dir_name if dir_name else BASE_DIR)
-    temp = 'temp.h5'
-    p = Popen(r'ptrepack --chunkshape=auto %s %s' % (fname, temp))
-    p.communicate()  # wait complete
-    os.remove(fname)
-    os.rename(temp, fname)
+    sleep(1)
+
+    try:
+        os.chdir(dir_name if dir_name else BASE_DIR)
+        temp = 'temp.h5'
+        p = Popen(r'ptrepack --chunkshape=auto %s %s' % (fname, temp))
+        p.communicate()  # wait complete
+        os.remove(fname)
+        os.rename(temp, fname)
+    except WindowsError:
+        pass
 
 
 def import_option_h5(request, symbol):

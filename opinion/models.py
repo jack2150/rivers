@@ -433,6 +433,62 @@ class FundamentalOpinion(models.Model):
     )
 
 
+class TechnicalOpinion(models.Model):
+    """
+    Technical analysis opinion, daily update
+    """
+    symbol = models.CharField(max_length=6)
+    date = models.DateField()
+
+    # from ranking provider
+    the_street = models.CharField(
+        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
+        help_text='The street ranking'
+    )
+    market_edge = models.CharField(
+        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
+        help_text='The street ranking'
+    )
+    ford_equity = models.CharField(
+        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
+        help_text='Market edge ranking'
+    )
+    bar_chart = models.CharField(
+        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
+        help_text='Bar chart comment'
+    )
+
+    # own assumption
+    candlestick = models.CharField(
+        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
+        help_text='Candlestick chart'
+    )
+
+    # todo: here
+
+
+    # social signal
+
+    # http://stocktwits.com/symbol/WFC?q=wfc
+
+class SocialOpinion(models.Model):
+    """
+    Social signal opinion for across the web
+    """
+    td_shares = models.CharField(
+        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
+        help_text='Candlestick chart'
+    )
+
+    stock_twits = models.CharField(
+        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
+        help_text='Candlestick chart'
+    )
+
+
+
+
+
 class WeekdayOpinion(models.Model):
     """
     Basic stock movement and news/information, daily update
@@ -608,6 +664,7 @@ class PositionOpinion(models.Model):
     event_period = models.CharField(
         max_length=20, blank=True, default='',
         choices=(
+            ('both', 'Earning & Dividend'),
             ('earning', 'Earning'), ('dividend', 'Dividend'), ('split', 'Split'),
             ('announcement', 'Announcement'), ('seasonal', 'Seasonal events'),
             ('multiple', 'Multiple events'), ('', 'None')

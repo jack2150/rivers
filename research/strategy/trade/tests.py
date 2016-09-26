@@ -262,5 +262,3 @@ class TestGetPriceAsk(TestStrategy2):
 
             df_code = pd.DataFrame([option0, option1])
             print df_code.to_string(line_width=1000)
-
-# todo: something wrong

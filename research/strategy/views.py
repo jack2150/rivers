@@ -411,7 +411,7 @@ def strategy_trade_raw(request, symbol, trade_id, report_id):
     return render(request, template, parameters)
 
 
-# todo: real view, mini
+# todo: real view
 
 
 

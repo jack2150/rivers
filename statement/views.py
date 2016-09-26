@@ -11,8 +11,6 @@ from statement.models import *
 
 
 # use for import
-STATEMENT_PATH = 'real0'
-STATEMENT_NAME = 'TD Ameritrade USA'
 logger = logging.getLogger('views')
 
 
@@ -33,17 +31,19 @@ def get_value(x):
     return float((x[1:-1] if '(' in x else x).replace('$', ''))
 
 
-def statement_import(request):
+def statement_import(request, name_id):
     """
     Import all statement in folders
     :param request: request
+    :param name_id: int
     :return: render
     """
-    logger.info('Import all statement in folder')
-    template = 'statement/import.html'
+    statement_name = StatementName.objects.get(id=name_id)
+    logger.info('Statement Name: %s' % statement_name)
+    logger.info('Import all statement in folder: %s' % statement_name.path)
 
     files = list()
-    fpaths = glob.glob(os.path.join(STATEMENT_DIR, STATEMENT_PATH, '*.csv'))
+    fpaths = glob.glob(os.path.join(STATEMENT_DIR, statement_name.path, '*.csv'))
 
     # for fpath in [f for f in fpaths if '05-11' in f]:
     for fpath in fpaths:  #
@@ -64,18 +64,17 @@ def statement_import(request):
         ]
 
         # statement section
-        logger.info('Statement obj section')
         acc_index = lines.index('Account Summary')
         statement = Statement()
-        # statement.name = STATEMENT_NAME
+        statement.statement_name = statement_name
         statement.date = date
         statement.csv_data = codecs.open(fpath, encoding="ascii", errors="ignore").read()
         statement.load_csv(lines[acc_index + 1:acc_index + 5])
         statement.save()
-        logger.info('Statement obj end')
+        logger.info('[%s] Net liquid: %s' % (date, statement.net_liquid))
 
         # cash balance
-        logger.info('Cash balance obj section')
+        cash_balances = []
         cb_index = lines.index('Cash Balance')
         for line in lines[cb_index + 2:last_index(cb_index, lines) - 1]:
             values = line.split(',')
@@ -83,11 +82,15 @@ def statement_import(request):
                 cash_balance = CashBalance()
                 cash_balance.statement = statement
                 cash_balance.load_csv(line)
-                cash_balance.save()
-        logger.info('Cash balance obj end')
+                # cash_balance.save()
+                cash_balances.append(cash_balance)
+
+        if len(cash_balances):
+            CashBalance.objects.bulk_create(cash_balances)
+            logger.info('[%s] Cash balance: %d' % (date, len(cash_balances)))
 
         # account order, more than 14 split
-        logger.info('Account order obj section')
+        account_orders = []
         ao_index = lines.index('Account Order History')
         ao_lines = list()
         for key, line in enumerate(lines[ao_index + 2:last_index(ao_index, lines)]):
@@ -101,7 +104,7 @@ def statement_import(request):
                 ao_lines.append(values)
 
         if len(ao_lines):
-            df = DataFrame(ao_lines, columns=lines[ao_index + 1].split(','))
+            df = pd.DataFrame(ao_lines, columns=lines[ao_index + 1].split(','))
             # df['Spread'] = df.apply(lambda x: np.nan if 'RE #' in x['Spread'] else x['Spread'], axis=1)
             df = df.replace('', np.nan).fillna(method='pad')  # fill empty
             df['Exp'] = df.apply(
@@ -111,22 +114,25 @@ def statement_import(request):
                 lambda x: np.nan if 'STOCK' in (x['Spread'], x['Type']) else x['Strike'], axis=1
             )
             df = df[df.apply(lambda x: False if '/' in x['Symbol'] else True, axis=1)]  # no future forex
-
             ao_lines = df.drop(df.columns[0], axis=1).to_csv().split('\n')[1:-1]  # back into csv lines
 
             for line in ao_lines:
                 account_order = AccountOrder()
                 account_order.statement = statement
                 account_order.load_csv(line)
-                account_order.save()
-        logger.info('Account order obj end')
+                # account_order.save()
+                account_orders.append(account_order)
+
+            if len(account_orders):
+                AccountOrder.objects.bulk_create(account_orders)
+                logger.info('[%s] Account order: %d' % (date, len(account_orders)))
 
         # account trade
-        logger.info('Account trade obj section')
+        account_trades = []
         at_index = lines.index('Account Trade History')
         at_lines = [line.split(',') for line in lines[at_index + 2:last_index(at_index, lines)]]
         if len(at_lines):
-            df = DataFrame(at_lines, columns=lines[at_index + 1].split(','))
+            df = pd.DataFrame(at_lines, columns=lines[at_index + 1].split(','))
             df = df.replace('', np.nan).replace('DEBIT', np.nan).fillna(method='pad')  # remove debit
             df['Exp'] = df.apply(
                 lambda x: np.nan if 'STOCK' in (x['Spread'], x['Type']) else x['Exp'], axis=1
@@ -150,12 +156,15 @@ def statement_import(request):
                 account_trade = AccountTrade()
                 account_trade.statement = statement
                 account_trade.load_csv(line)
-                account_trade.save()
+                # account_trade.save()
+                account_trades.append(account_trade)
 
-        logger.info('Account trade obj end')
+            if len(account_trades):
+                AccountTrade.objects.bulk_create(account_trades)
+                logger.info('[%s] Account trade: %s' % (date, len(account_trades)))
 
         # holding equity
-        logger.info('Holding equity obj section')
+        holding_equities = []
         symbols = list()
         try:
             he_index = lines.index('Equities')
@@ -164,57 +173,69 @@ def statement_import(request):
                 holding_equity = HoldingEquity()
                 holding_equity.statement = statement
                 holding_equity.load_csv(line)
-                holding_equity.save()
+                # holding_equity.save()
+                holding_equities.append(holding_equity)
 
                 symbols.append(holding_equity.symbol)
+
+            if len(holding_equities):
+                HoldingEquity.objects.bulk_create(holding_equities)
+                logger.info('[%s] Holding equity: %d' % (date, len(holding_equities)))
         except ValueError:
-            logger.info('No holding equity')
-            pass
-        logger.info('Holding equity obj end')
+            logger.info('[%s] Holding equity: %d' % (date, 0))
 
         # holding option
-        logger.info('Holding options obj section')
         try:
             ho_index = lines.index('Options')
+            holding_options = []
             for line in lines[ho_index + 2:last_index(ho_index, lines) - 1]:
                 holding_option = HoldingOption()
                 holding_option.statement = statement
                 holding_option.load_csv(line)
-                holding_option.save()
+                # holding_option.save()
+                holding_options.append(holding_option)
 
                 symbols.append(holding_option.symbol)
+
+            if len(holding_options):
+                HoldingOption.objects.bulk_create(holding_options)
+                logger.info('[%s] Holding options: %d' % (date, len(holding_options)))
         except ValueError:
-            logger.info('No holding options')
-        logger.info('Holding options obj end')
+            logger.info('[%s] Holding options: %d' % (date, 0))
 
         # profit loss
-        logger.info('Profit loss obj section')
+        profit_losses = []
         symbols = set(symbols)
         try:
             pl_index = lines.index('Profits and Losses')
             for line in lines[pl_index + 2:last_index(pl_index, lines) - 1]:
                 values = line.split(',')
-            if '/' not in values[0]:  # skip future
-                profit_loss = ProfitLoss()
-                profit_loss.statement = statement
-                if values[0] in symbols:  # symbol in holdings
-                    profit_loss.load_csv(line)
-                    profit_loss.save()
-                elif len(values[0]):
-
-                    if get_value(values[4]) or (get_value(values[6]) and get_value(values[7])):
+                if '/' not in values[0]:  # skip future
+                    profit_loss = ProfitLoss()
+                    profit_loss.statement = statement
+                    if values[0] in symbols:  # symbol in holdings
                         profit_loss.load_csv(line)
                         profit_loss.save()
+                    elif len(values[0]):
+                        if get_value(values[4]) or (get_value(values[6]) and get_value(values[7])):
+                            profit_loss.load_csv(line)
+                            # profit_loss.save()
+                            profit_losses.append(profit_loss)
+
+            if len(profit_losses):
+                ProfitLoss.objects.bulk_create(profit_losses)
+                logger.info('[%s] Profit loss: %d' % (date, len(profit_losses)))
         except ValueError:
             pass
-        logger.info('Profit loss obj end')
+
+        # done import statement, position trades
+        statement.refresh_from_db()
+        statement.reset_controller()
 
         # create positions
         statement.controller.add_relations()
         statement.controller.position_trades()
         statement.controller.position_expires()
-
-        # todo: relation multi-days
 
         # append into files data
         files.append(dict(
@@ -231,12 +252,12 @@ def statement_import(request):
             profit_loss=statement.profitloss_set.count(),
         ))
 
+    # template page
+    template = 'statement/import.html'
     parameters = dict(
         title='Statement Import',
         files=files
     )
-
-    # Statement.objects.all().delete()
 
     return render(request, template, parameters)
 
@@ -249,27 +270,32 @@ class TruncateStatementForm(forms.Form):
     )
 
     @staticmethod
-    def truncate_data():
+    def truncate_data(statement_name):
         """
         Remove all data for single symbol
+        :param statement_name: StatementName
         """
-        Statement.objects.all().delete()
-        Position.objects.all().delete()
+        Position.objects.filter(name=statement_name).all().delete()
+        Statement.objects.filter(name=statement_name).all().delete()
 
 
-def truncate_statement(request):
+def statement_truncate(request, name_id):
     """
     Truncate all statement data
     :param request: request
+    :param name_id: int
     :return: render
     """
-    logger.info('Truncate all statements')
+    statement_name = StatementName.objects.get(id=name_id)
+    logger.info('%s' % statement_name)
+    logger.info('Truncate all statements for: %s' % statement_name.path)
+
     stats = None
     if request.method == 'POST':
         form = TruncateStatementForm(request.POST)
 
         if form.is_valid():
-            form.truncate_data()
+            form.truncate_data(statement_name)
             logger.info('All statements removed')
             return redirect(reverse('admin:app_list', args=('statement',)))
     else:

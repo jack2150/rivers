@@ -1,11 +1,34 @@
 import logging
 from importlib import import_module
+
+from datetime import datetime
 from django.db import models
 from django.db.models import Q
-from pandas import DataFrame
+import pandas as pd
+from pandas.tseries.offsets import Day
 from base.ufunc import remove_comma
 
 logger = logging.getLogger('views')
+
+
+class StatementName(models.Model):
+    """
+    Name for all real/test statement
+    """
+    path = models.CharField(max_length=20)
+    name = models.CharField(max_length=50)
+    cash_type = models.CharField(
+        max_length=20, choices=(('real_money', 'Real Money'), ('paper_money', 'Paper money')),
+        help_text='Statement cash type'
+    )
+    description = models.TextField()
+    capital = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+
+    start = models.DateField()
+    stop = models.DateField(null=True, blank=True)
+
+    def __unicode__(self):
+        return '{name}'.format(name=self.name)
 
 
 class Statement(models.Model):
@@ -17,7 +40,7 @@ class Statement(models.Model):
     Commissions/Fees YTD,$159.08
     Futures Commissions YTD,$0.00 <-- skip futures
     """
-    # name = models.CharField(max_length=20)
+    statement_name = models.ForeignKey(StatementName)
     date = models.DateField(unique=True)
 
     net_liquid = models.DecimalField(max_digits=20, decimal_places=2)
@@ -33,13 +56,17 @@ class Statement(models.Model):
         :param lines: str
         :return: Statement
         """
-        logger.info('Load statement csv data in lines')
         values = list()
         for line in [x.replace('$', '') for x in lines]:
             if '"' in line:
-                values.append(map(lambda y: y.replace(',', ''), line.split('"')[1::2])[0])
+                item = map(lambda y: y.replace(',', ''), line.split('"')[1::2])[0]
             else:
-                values.append(line.split(',')[1])
+                item = line.split(',')[1]
+
+            if '(' in item[0] and ')' in item[-1]:
+                item = '-%s' % item[1:-1]
+
+            values.append(item)
 
         self.net_liquid = values[0] if values[0] != 'N/A' else 0.0
         self.stock_bp = values[1] if values[1] != 'N/A' else 0.0
@@ -52,8 +79,7 @@ class Statement(models.Model):
         """
         :return: DataFrame
         """
-        logger.info('Convert statement data into dataframe')
-        return DataFrame(
+        return pd.DataFrame(
             data=[[self.net_liquid, self.stock_bp, self.option_bp, self.commission_ytd]],
             index=[self.date],
             columns=['Net Liquid', 'Stock BP', 'Option BP', 'Commission YTD']
@@ -64,6 +90,12 @@ class Statement(models.Model):
             date=self.date
         )
 
+    def reset_controller(self):
+        """
+        After statement create, controller intance reset
+        """
+        self.controller = self.Controller(self)
+
     class Controller(object):
         def __init__(self, statement):
             self.statement = statement
@@ -71,6 +103,8 @@ class Statement(models.Model):
 
             self.open_pos = Position.objects.filter(status='OPEN')
             """:type: QuerySet"""
+            self.holding_equity = self.statement.holdingequity_set.all()
+            self.holding_option = self.statement.holdingoption_set.all()
 
         def position_trades(self):
             """
@@ -101,6 +135,25 @@ class Statement(models.Model):
                 for trade in trades:
                     position.accounttrade_set.add(trade)
 
+            # check got holding but no position
+            for equity in self.holding_equity:
+                # skip if bonus share or split
+                if ':' in equity.description:
+                    continue
+
+                pos = self.open_pos.filter(symbol=equity.symbol)
+                if not pos.exists():
+                    raise LookupError('<%s> %s have equity, no open position' % (
+                        equity.symbol, self.statement.date
+                    ))
+
+            for option in self.holding_option:
+                pos = self.open_pos.filter(symbol=option.symbol)
+                if not pos.exists():
+                    raise LookupError('<%s> %s have equity, no open position' % (
+                        option.symbol, self.statement.date
+                    ))
+
         def position_open(self, symbol, time, trades):
             """
             Replace position trades with more functions
@@ -109,18 +162,19 @@ class Statement(models.Model):
             :param trades: list of AccountTrade
             :return: Position
             """
-            logger.info('POS: %s position opened, trades: %d' % (symbol.upper(), len(trades)))
+            logger.info('POS: %s open, date: %s' % (symbol.upper(), self.statement.date))
             if self.open_pos.filter(symbol=symbol).exists():
                 position = self.open_pos.get(symbol=symbol)
 
                 # different strategy
-                if position.spread != Position().set_open(trades).spread:
-                    logger.info('POS: Exists symbol diff strategy found, set position to custom')
+                if position.spread != Position().set_open(self.statement, trades).spread:
+                    logger.info('POS: %s different strategy found, set custom' % symbol)
                     position.set_custom()
                     position.save()
 
                 # same strategy but different expire date
                 if position.name != 'STOCK':
+                    # check expire date
                     expire_date0 = sorted(list(set([
                         p['exp'] for p in position.accounttrade_set.filter(
                             pos_effect='TO OPEN'
@@ -131,14 +185,26 @@ class Statement(models.Model):
                         t['exp'] for t in trades.filter().values('exp')
                     ])))
                     if expire_date0 != expire_date1:
-                        logger.info('POS: Exists symbol diff expire found, set position to custom')
+                        logger.info('POS: %s different expire found, set custom' % symbol)
                         position.set_custom()
                         position.save()
+
+                    # check strike
+                    strikes0 = [
+                        float(p['strike']) for p in position.accounttrade_set.filter(
+                            pos_effect='TO OPEN'
+                        ).values('strike')
+                    ]
+                    strikes1 = [
+                        float(t['strike']) for t in trades.filter().values('strike')
+                    ]
+
+                    if set(strikes0) != set(strikes1):
+                        position.set_custom()
             else:
-                logger.info('POS: Create new position without existing conflict')
                 # create new pos if no existing pos
                 position = Position()
-                position.set_open(trades)
+                position.set_open(self.statement, trades)
                 position.save()
                 position.create_stages(trades)
                 self.add_relations(symbol=symbol, time=time)
@@ -153,23 +219,39 @@ class Statement(models.Model):
             :param trades: list
             :return: Position
             """
-            logger.info('POS: %s position closed, trade: %s' % (symbol.upper(), len(trades)))
+            logger.info('POS: %s close, date: %s' % (symbol.upper(), self.statement.date))
             opens = self.open_pos.filter(symbol=symbol)
+
             if opens.exists():
+                if opens.count() > 1:
+                    raise LookupError('<%s> more than one open position' % symbol)
+
                 position = self.open_pos.get(symbol=symbol)
                 self.add_relations(symbol=symbol, time=time)
+                equity = self.holding_equity.filter(symbol=symbol)
+                options = self.holding_option.filter(symbol=symbol)
 
-                # quantity match work on stock, covered, options
-                close_qty = sum([abs(t.qty) for t in trades])
-                open_qty = sum([abs(t.qty) for t in position.accounttrade_set.all()])
-
-                if open_qty == close_qty:
-                    position.set_close(self.statement.date)
+                if equity.exists() and options.exists():
+                    logger.info('<%s> equity and options still exists, partial close' % symbol)
+                elif equity.exists() and not options.exists():
+                    logger.info('<%s> equity still exists, partial close' % symbol)
+                elif not equity.exists() and options.exists():
+                    logger.info('<%s> options still exists, partial close' % symbol)
+                else:
+                    logger.info('<%s> no more holding, set close' % symbol)
+                    position.set_close(self.statement, time)
                     position.save()
             else:
-                raise ValueError('Position < {symbol} > not found when closing.'.format(
-                    symbol=symbol
-                ))
+                equity = self.holding_equity.filter(symbol=symbol)
+                options = self.holding_option.filter(symbol=symbol)
+                if equity.exists() or options.exists():
+                    raise ValueError('Position <{symbol}> not found for closing {date}'.format(
+                        symbol=symbol, date=self.statement.date
+                    ))
+                else:
+                    date = pd.to_datetime(self.statement.date)
+                    position = Position.objects.filter(symbol=symbol).latest('stop')
+                    logger.info('<%s> position already close' % symbol)
 
             return position
 
@@ -183,9 +265,10 @@ class Statement(models.Model):
                 equity = self.statement.holdingequity_set.filter(symbol=position.symbol)
                 option = self.statement.holdingoption_set.filter(symbol=position.symbol)
 
-                if not(equity.exists() or option.exists()):
-                    position.set_expire(self.statement.date)
-                    position.save()
+                if not equity.exists() and not option.exists():
+                    if position.name != 'STOCK':
+                        position.set_expire(self.statement.date)
+                        position.save()
 
         def add_relations(self, symbol=None, time=None):
             """
@@ -229,28 +312,33 @@ class Statement(models.Model):
 
 
 class Position(models.Model):
+    statement = models.ForeignKey(Statement)
     symbol = models.CharField(max_length=20)
 
     name = models.CharField(max_length=100)
     spread = models.CharField(max_length=100)
     status = models.CharField(max_length=6, default='OPEN')
 
-    start = models.DateField()
-    stop = models.DateField(null=True, blank=True, default=None)
+    start = models.DateTimeField()
+    stop = models.DateTimeField(null=True, blank=True, default=None)
 
-    def set_open(self, trades):
+    def set_open(self, statement, trades):
         """
         Open a new position and identify its strategy
+        :param statement: Statement
         :param trades: QuerySet
         :return: Position
         """
         self.status = 'OPEN'
 
         # set symbol
+        self.statement = statement
         self.symbol = trades[0].symbol
 
         # set start date
-        self.start = trades[0].statement.date
+        self.start = datetime.strptime('%s %s' % (
+            trades[0].statement.date, trades[0].time
+        ), '%Y-%m-%d %H:%M:%S')
 
         # set name
         spreads = list(set([trade.spread for trade in trades]))
@@ -274,8 +362,15 @@ class Position(models.Model):
                 contract=trades[0].contract
             )
         elif self.name == 'COVERED':
-            stock_order = trades.get(contract='STOCK')
-            option_order = trades.get(Q(contract='CALL') | Q(contract='PUT'))
+            # print trades
+            # print [t.contract for t in trades]
+            # print trades.filter(contract='COVERED')
+            stock_order = trades.filter(
+                Q(spread='COVERED') & Q(contract__in=('STOCK', 'ETF'))
+            ).first()
+            option_order = trades.filter(
+                Q(spread='COVERED') & (Q(contract='CALL') | Q(contract='PUT'))
+            ).first()
 
             if stock_order.side == 'BUY':
                 if option_order.side == 'BUY' and option_order.contract == 'PUT':
@@ -329,18 +424,21 @@ class Position(models.Model):
             except (AttributeError, ImportError):
                 logger.info('%s.%s not yet implement' % (self.name, self.spread))
                 pass
+        elif self.name == 'CUSTOM':
+            logger.info('<%s> custom not yet implemented' % self.symbol)
         else:
             raise ValueError('Please set name and spread before run create_stages.')
 
-    def set_close(self, date):
+    def set_close(self, statement, time):
         """
         Close current position
-        :param date: DateTime
+        :param statement: Statement
+        :param time: str
         :return: Position
         """
         if self.id:
             self.status = 'CLOSE'
-            self.stop = date
+            self.stop = datetime.strptime('%s %s' % (statement.date, time), '%Y-%m-%d %H:%M:%S')
         else:
             raise ValueError('Please close a existing positions.')
 
@@ -546,7 +644,7 @@ class PositionStage(models.Model):
         :return: DataFrame
         """
         logger.info('POS: Convert position stages into dataframe')
-        return DataFrame(
+        return pd.DataFrame(
             data=[[self.price, self.gt_stage, self.gt_amount, self.e_stage, self.e_amount,
                    self.lt_stage, self.lt_amount]],
             index=[self.id],
@@ -603,7 +701,6 @@ class CashBalance(models.Model):
         :param line: str
         :return: CashBalance
         """
-        # logger.info('Load cash balance csv line data')
         line = remove_comma(line)
 
         values = map(
@@ -625,8 +722,7 @@ class CashBalance(models.Model):
         """
         :return: DataFrame
         """
-        logger.info('Convert cash balance data into dataframe')
-        return DataFrame(
+        return pd.DataFrame(
             data=[[self.time, self.name, self.ref_no, self.description,
                    self.fee, self.commission, self.amount, self.balance]],
             index=[self.statement.date],
@@ -665,9 +761,8 @@ class AccountOrder(models.Model):
         """
         Format account_order csv line data, save it and return object
         :param line: str
-        :return: HoldingEquity
+        :return: AccountOrder
         """
-        # logger.info('Load account order csv data in lines')
         line = remove_comma(line)
         values = line.split(',')
 
@@ -691,8 +786,7 @@ class AccountOrder(models.Model):
         """
         :return: DataFrame
         """
-        logger.info('Convert account order to dataframe')
-        return DataFrame(
+        return pd.DataFrame(
             data=[[self.time, self.spread, self.side, self.qty, self.pos_effect,
                    self.symbol, self.exp, self.strike if self.strike else '',
                    self.contract, self.price, self.order, self.tif, self.status]],
@@ -742,9 +836,8 @@ class AccountTrade(models.Model):
         """
         Format account_trade csv line data, save it and return object
         :param line: str
-        :return: HoldingEquity
+        :return: AccountTrade
         """
-        # logger.info('Load account trade csv data in lines')
         line = remove_comma(line)
         values = line.split(',')
 
@@ -767,8 +860,7 @@ class AccountTrade(models.Model):
         """
         :return: DataFrame
         """
-        logger.info('Convert account trade to dataframe')
-        return DataFrame(
+        return pd.DataFrame(
             data=[[self.time, self.spread, self.side, self.qty, self.pos_effect,
                    self.symbol, self.exp, self.strike if self.strike else '',
                    self.contract, self.price, self.net_price, self.order_type]],
@@ -813,7 +905,6 @@ class HoldingEquity(models.Model):
         :param line: str
         :return: HoldingEquity
         """
-        logger.info('Load holding equity csv data in lines')
         line = remove_comma(line)
 
         values = [
@@ -825,7 +916,7 @@ class HoldingEquity(models.Model):
         self.description = values[1]
         self.qty = values[2]
         self.trade_price = values[3]
-        self.close_price = values[4]
+        self.close_price = 0.0 if values[4] == 'N/A' else values[4]
         self.close_value = values[5]
 
         return self
@@ -834,8 +925,7 @@ class HoldingEquity(models.Model):
         """
         :return: DataFrame
         """
-        logger.info('Convert holding equity to dataframe')
-        return DataFrame(
+        return pd.DataFrame(
             data=[[self.symbol, self.description, self.qty,
                    self.trade_price, self.close_price, self.close_value]],
             index=[self.statement.date],
@@ -875,7 +965,6 @@ class HoldingOption(models.Model):
         :param line: str
         :return: HoldingEquity
         """
-        # logger.info('Load holding options csv data in lines')
         line = remove_comma(line)
 
         values = [
@@ -899,8 +988,7 @@ class HoldingOption(models.Model):
         """
         :return: DataFrame
         """
-        logger.info('Convert holding options to dataframe')
-        return DataFrame(
+        return pd.DataFrame(
             data=[[self.symbol, self.option_code, self.exp, self.strike, self.contract,
                    self.qty, self.trade_price, self.close_price, self.close_value]],
             index=[self.statement.date],
@@ -941,7 +1029,6 @@ class ProfitLoss(models.Model):
         :param line: str
         :return: ProfitLoss
         """
-        logger.info('Load profit loss csv data in lines')
         line = remove_comma(line)
         values = [
             ('-' + x[1:-1] if x[0] == '(' and x[-1] == ')' else x)
@@ -963,8 +1050,7 @@ class ProfitLoss(models.Model):
         """
         :return: DataFrame
         """
-        logger.info('Convert profit loss to dataframe')
-        return DataFrame(
+        return pd.DataFrame(
             data=[[self.symbol, self.description, self.pl_open, self.pl_pct, self.pl_day,
                    self.pl_ytd, self.margin_req, self.close_value]],
             index=[self.statement.date],

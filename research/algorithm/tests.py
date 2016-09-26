@@ -545,8 +545,9 @@ class TestFormulaBacktest2(TestUnitSetUp):
 class TestBacktestTradeView(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
-        self.symbol = 'AIG'
-        self.formula = Formula.objects.first()
+        self.symbol = 'WFC'
+        self.formula = Formula.objects.get(id=6)
+        self.date = '2016-09-15'
 
     def test_algorithm_report_view(self):
         """
@@ -567,7 +568,7 @@ class TestBacktestTradeView(TestUnitSetUp):
             'admin:algorithm_report_json', kwargs={
                 'symbol': self.symbol.lower(),
                 'formula_id': self.formula.id,
-
+                'date': self.date
             },
         ), {
             'draw': 1,
@@ -602,3 +603,17 @@ class TestBacktestTradeView(TestUnitSetUp):
                 'backtest_id': 1
             }
         ))
+
+    def test_algorithm_report_chart(self):
+        """
+        Test empty algorithm report view page
+        """
+        self.client.post(reverse(
+            'admin:algorithm_report_chart', kwargs={
+                'symbol': 'WFC',
+                'date': '2016-09-16',
+                'formula_id': 6
+            }
+        ), data={
+
+        })

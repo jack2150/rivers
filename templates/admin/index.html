@@ -189,11 +189,11 @@
         <li class="list-group-item">
           3. Create opinions
           <ol style="list-style-type: lower-alpha;">
-            <li>Market valuation (monthly)</li>
-            <li>Market indicators (weekly)</li>
-
-            <li>Stock industry analysis (monthly/symbol)</li>
-            <li>Stock fundamental analysis (season/symbol)</li>
+            <li><a href="{% url 'admin:data_underlying_changelist' %}">Open symbol manage</a></li>
+            <li><a href="{% url 'admin:opinion_marketvaluation_add' %}">Market valuation (monthly)</a></li>
+            <li><a href="{% url 'admin:opinion_marketindicator_add' %}">Market indicators (weekly)</a></li>
+            <li><a href="{% url 'admin:opinion_industryopinion_add' %}">Stock industry analysis (monthly/symbol)</a></li>
+            <li><a href="{% url 'admin:opinion_fundamentalopinion_add' %}">Stock fundamental analysis (season/symbol)</a></li>
           </ol>
         </li>
         <li class="list-group-item">

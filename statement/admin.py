@@ -4,6 +4,42 @@ from bootstrap3_datetime.widgets import DateTimePicker
 from statement.position.views import *
 
 
+class StartStopDateForm(forms.ModelForm):
+    start = forms.DateField(widget=DateTimePicker(
+        options={"format": "YYYY-MM-DD", "pickTime": False}))
+    stop = forms.DateField(widget=DateTimePicker(
+        options={"format": "YYYY-MM-DD", "pickTime": False}))
+
+
+class StatementNameAdmin(admin.ModelAdmin):
+    form = StartStopDateForm
+
+    # noinspection PyMethodMayBeStatic
+    def statement_import(self, obj):
+        return '<a href="{link0}">Import</a> | <a href="{link1}">Truncate</a>'.format(
+            link0=reverse('admin:statement_import', kwargs={'name_id': obj.id}),
+            link1=reverse('admin:statement_truncate', kwargs={'name_id': obj.id}),
+        )
+    statement_import.allow_tags = True
+    statement_import.short_description = ''
+
+    list_display = (
+        'name', 'path', 'cash_type', 'capital', 'start', 'stop', 'statement_import'
+    )
+
+    fieldsets = (
+        ('Primary Fields', {
+            'fields': (
+                'name', 'path', 'cash_type', 'description', 'capital', 'start', 'stop'
+            )
+        }),
+    )
+
+    search_fields = ('name', 'description')
+    list_filter = ('cash_type', )
+    list_per_page = 20
+
+
 class StatementForm(forms.ModelForm):
     date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD",
@@ -21,7 +57,7 @@ class StatementInline(admin.TabularInline):
     def has_add_permission(self, request):
         return False
 
-    #def has_change_permission(self, request, obj=None):
+    # def has_change_permission(self, request, obj=None):
     #    return False
 
     def has_delete_permission(self, request, obj=None):
@@ -107,21 +143,28 @@ class StatementAdmin(admin.ModelAdmin):
     def trades(self, obj):
         return len(obj.accounttrade_set.distinct('symbol'))
 
+    def name(self, obj):
+        return obj.statement_name.name
+
     form = StatementForm
 
     inlines = (CashBalanceInline, AccountOrderInline, AccountTradeInline, HoldingEquityInline,
                HoldingOptionInline, ProfitLossInline)
 
-    list_display = ('date',  'stock_bp', 'option_bp', 'commission_ytd',
+    list_display = ('date', 'name', 'stock_bp', 'option_bp', 'commission_ytd',
                     'trades', 'positions', 'net_liquid', 'report')
 
     fieldsets = (
+        ('Foreign Keys', {
+            'fields': ('statement_name',)
+        }),
         ('Primary Fields', {
             'fields': ('date', 'net_liquid', 'stock_bp', 'option_bp', 'commission_ytd', 'csv_data')
-        }),
+        })
     )
 
     search_fields = ('date', )
+    list_filter = ('statement_name__name', )
     list_per_page = 20
 
     def has_add_permission(self, request):
@@ -322,15 +365,8 @@ class ProfitLossAdmin(StatementModelAdmin):
     list_per_page = 20
 
 
-class PositionForm(forms.ModelForm):
-    start = forms.DateField(widget=DateTimePicker(
-        options={"format": "YYYY-MM-DD", "pickTime": False}))
-    stop = forms.DateField(widget=DateTimePicker(
-        options={"format": "YYYY-MM-DD", "pickTime": False}))
-
-
 class PositionAdmin(admin.ModelAdmin):
-    form = PositionForm
+    form = StartStopDateForm
     inlines = (CashBalanceInline, AccountOrderInline, AccountTradeInline,
                HoldingEquityInline, HoldingOptionInline, ProfitLossInline)
 
@@ -343,15 +379,15 @@ class PositionAdmin(admin.ModelAdmin):
     report.short_description = ''
 
     list_display = ('symbol', 'name', 'spread', 'status', 'start', 'stop', report)
-
-    search_fields = ('symbol', 'name', 'spread', 'status', 'start', 'stop')
-    list_per_page = 20
-
     fieldsets = (
         ('Primary Fields', {
             'fields': ('symbol', 'name', 'spread', 'status', 'start', 'stop')
         }),
     )
+
+    search_fields = ('symbol', 'name', 'spread', 'status', 'start', 'stop')
+    list_filter = ('status', 'name', 'spread')
+    list_per_page = 20
 
     def has_add_permission(self, request):
         return False
@@ -381,6 +417,7 @@ class PositionStageAdmin(admin.ModelAdmin):
 
 #admin.site.app_index_template = 'statement/index.html'
 # admin models
+admin.site.register(StatementName, StatementNameAdmin)
 admin.site.register(Statement, StatementAdmin)
 admin.site.register(Position, PositionAdmin)
 admin.site.register(PositionStage, PositionStageAdmin)
@@ -393,30 +430,24 @@ admin.site.register(ProfitLoss, ProfitLossAdmin)
 
 # custom admin view
 admin.site.register_view(
-    'statement/import',
-    urlname='statement_import',
-    view=statement_import
+    'statement/import/(?P<name_id>\d+)/$', urlname='statement_import', view=statement_import
 )
 
 admin.site.register_view(
     'statement/position/spreads/(?P<date>\d{4}-\d{2}-\d{2})/$',
-    urlname='position_spreads',
-    view=position_spreads
+    urlname='position_spreads', view=position_spreads
 )
 
 admin.site.register_view(
     'statement/position/report/(?P<id>\d+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
-    urlname='position_report',
-    view=position_report
+    urlname='position_report', view=position_report
 )
 admin.site.register_view(
-    'statement/position/report/(?P<id>\d+)/$',
-    urlname='position_report',
-    view=position_report
+    'statement/position/report/(?P<id>\d+)/$', urlname='position_report', view=position_report
 )
 
 admin.site.register_view(
-    'statement/truncate/$', urlname='truncate_statement', view=truncate_statement
+    'statement/truncate/(?P<name_id>\d+)/$', urlname='statement_truncate', view=statement_truncate
 )
 
 admin.site.register_view(

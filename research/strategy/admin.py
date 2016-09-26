@@ -203,7 +203,6 @@ class TradeResultAdmin(admin.ModelAdmin):
     )
     list_per_page = 20
 
-    # todo: delete button
     def has_delete_permission(self, request, obj=None):
         return False
 

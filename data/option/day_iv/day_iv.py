@@ -157,8 +157,6 @@ class DayImplVolStatic(object):
 
         return round(result, 2)
 
-    # todo: gg, empty list???
-
     @staticmethod
     def make_expr(a, b):
         """

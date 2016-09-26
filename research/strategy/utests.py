@@ -338,7 +338,6 @@ class TestStrategyBacktest(TestUnitSetUp):
         """
         Test save df_reports and df_signals
         """
-        # todo: here
         self.backtest.save(
             fields={
                 'side': 'follow,reverse,buy,sell',

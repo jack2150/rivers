@@ -143,13 +143,13 @@ def create_order(df_signal, df_stock, side=('follow', 'reverse', 'buy', 'sell'),
         data['exit_times0'].append(exit_time0)
         data['exit_times1'].append(exit_time1)
         data['exit_prices0'].append(exit_price0)
-        data['convert_price0'].append(convert0)  # todo: wrong
+        data['convert_price0'].append(convert0)
         data['convert_price1'].append(convert1)
         data['pct_chg0.5'].append(pct_chg05)
         data['pct_chg1'].append(pct_chg1)
 
     df = df_signal1.copy()
-    df['date0.5'] = pd.to_datetime(data['exit_dates1'])  # todo: need change
+    df['date0.5'] = pd.to_datetime(data['exit_dates1'])
     df['date1'] = data['exit_dates0']
     df['time0'] = data['exit_times0']
     df['time1'] = data['exit_times1']
@@ -158,6 +158,7 @@ def create_order(df_signal, df_stock, side=('follow', 'reverse', 'buy', 'sell'),
     df['convert0'] = np.round(data['convert_price0'], 2)
     df['convert1'] = np.round(data['convert_price1'], 2)
     df['close1'] = np.round(data['exit_prices0'], 2)
+    df['bp_effect'] = df['close0'] * (1 + stop_loss_pct0)
     df['holding'] = df['date1'] - df['date0']
     df['pct_chg0.5'] = data['pct_chg0.5']
     df['pct_chg1'] = data['pct_chg1']
@@ -168,11 +169,20 @@ def create_order(df_signal, df_stock, side=('follow', 'reverse', 'buy', 'sell'),
         , axis=1), 4
     )
 
+    df['close0'] = df.apply(
+        lambda x: x['close0'] if x['signal0'] == 'BUY' else -x['close0'],
+        axis=1
+    )
+    df['close1'] = df.apply(
+        lambda x: x['close1'] if x['signal1'] == 'BUY' else -x['close1'],
+        axis=1
+    )
+
     # order columns
     df = df[[
         'date0', 'date0.5', 'date1', 'signal0', 'signal1', 'holding',
-        'time0', 'order0', 'time1', 'order1', 'close0', 'close1', 'convert0', 'convert1',
-        'pct_chg0.5', 'pct_chg1', 'pct_chg',
+        'time0', 'order0', 'time1', 'order1', 'close0', 'close1', 'bp_effect',
+        'convert0', 'convert1', 'pct_chg0.5', 'pct_chg1', 'pct_chg',
     ]]
 
     # for stock option quantity multiply

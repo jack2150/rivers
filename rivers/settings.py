@@ -33,10 +33,14 @@ ALLOWED_HOSTS = []
 # install django-bootstrap3
 # install pandas-datareader
 INSTALLED_APPS = (
-    'adminplus',
-    'django_admin_bootstrapped',  # django-admin-bootstrapped version 2.3.5 for django 1.6
-    'bootstrap3_datetime',  # django-bootstrap3-datetimepicker
-    'django_extensions',
+    # pip install psycopg2
+    # pip install django-bootstrap3
+    'adminplus',  # pip install django-adminplus
+    'django_admin_bootstrapped',  # pip install django-admin-bootstrapped
+    'bootstrap3_datetime',  # pip install django-bootstrap3-datetimepicker
+    'django_extensions',  # pip install django-extensions
+    # pip install F:\python\pip\QuantLib_Python-1.6.1-cp27-none-win_amd64.whl
+    # conda install -c https://conda.anaconda.org/anaconda pandas-datareader
 
     # 'django.contrib.admin',
     'django.contrib.admin.apps.SimpleAdminConfig',  # adminplus replace
@@ -163,7 +167,7 @@ LOGGING = {
 }
 
 # HDF5 Store
-DB_DIR = 'Z:/'
+DB_DIR = 'T:/'
 FILES_DIR = os.path.join(DB_DIR, 'files')
 EARNING_DIR = os.path.join(FILES_DIR, 'fidelity', 'earning')
 DIVIDEND_DIR = os.path.join(FILES_DIR, 'fidelity', 'dividend')

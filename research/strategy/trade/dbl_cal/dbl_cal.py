@@ -246,5 +246,3 @@ def join_data(df_order, df_stock, df_all, df_iv):
         # print df.to_string(line_width=1000)
 
     return df_list
-
-# todo: backtest not work with dbl_cal, check

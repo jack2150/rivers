@@ -156,53 +156,55 @@ class FormulaResultAdmin(admin.ModelAdmin):
                 path, date
             ))
 
-            trades = df_report1['trade'].unique()
-            orders = []
-            for trade in trades:
-                df_temp = get_table(
-                    'strategy/order/%s' % trade.replace('.', '/'),
-                    'formula == %r & date == %r & trade == %r' % (
-                        path, date, trade
-                    )
-                )
-                orders.append(df_temp)
-            df_order = pd.concat(orders)
-            """ :type: pd.DataFrame """
-            logger.info('strategy remove, df_report: %d, df_trade: %d, df_order: %d' % (
-                len(df_report1), len(df_trade), len(df_order)
-            ))
+            if len(df_report1):
 
-            try:
-                # delete algorithm
-                if len(df_report0):
-                    delete_table('algorithm/report', 'formula == %r & date == %r' % (
-                        path, date
-                    ))
-                if len(df_signal):
-                    delete_table('algorithm/signal', 'formula == %r & date == %r' % (
-                        path, date
-                    ))
-
-                # delete strategy
-                if len(df_report1):
-                    delete_table('strategy/report', 'formula == %r & date == %r' % (
-                        path, date
-                    ))
-
-                if len(df_report1):
-                    delete_table('strategy/trade', 'formula == %r & date == %r' % (
-                        path, date
-                    ))
-
-                if len(df_order):
-                    trades = df_report1['trade'].unique()
-                    for trade in trades:
-                        delete_table(
-                            'strategy/order/%s' % trade.replace('.', '/'),
-                            'formula == %r & date == %r & trade == %r' % (path, date, trade)
+                trades = df_report1['trade'].unique()
+                orders = []
+                for trade in trades:
+                    df_temp = get_table(
+                        'strategy/order/%s' % trade.replace('.', '/'),
+                        'formula == %r & date == %r & trade == %r' % (
+                            path, date, trade
                         )
-            except KeyError:
-                pass
+                    )
+                    orders.append(df_temp)
+                df_order = pd.concat(orders)
+                """ :type: pd.DataFrame """
+                logger.info('strategy remove, df_report: %d, df_trade: %d, df_order: %d' % (
+                    len(df_report1), len(df_trade), len(df_order)
+                ))
+
+                try:
+                    # delete algorithm
+                    if len(df_report0):
+                        delete_table('algorithm/report', 'formula == %r & date == %r' % (
+                            path, date
+                        ))
+                    if len(df_signal):
+                        delete_table('algorithm/signal', 'formula == %r & date == %r' % (
+                            path, date
+                        ))
+
+                    # delete strategy
+                    if len(df_report1):
+                        delete_table('strategy/report', 'formula == %r & date == %r' % (
+                            path, date
+                        ))
+
+                    if len(df_report1):
+                        delete_table('strategy/trade', 'formula == %r & date == %r' % (
+                            path, date
+                        ))
+
+                    if len(df_order):
+                        trades = df_report1['trade'].unique()
+                        for trade in trades:
+                            delete_table(
+                                'strategy/order/%s' % trade.replace('.', '/'),
+                                'formula == %r & date == %r & trade == %r' % (path, date, trade)
+                            )
+                except KeyError:
+                    pass
 
             db.close()
 
@@ -280,6 +282,12 @@ admin.site.register_view(
     'algorithm/report/json/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/(?P<formula_id>\d+)/$',
     urlname='algorithm_report_json', view=algorithm_report_json
 )
+
+admin.site.register_view(
+    'algorithm/report/chart/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/(?P<formula_id>\d+)/$',
+    urlname='algorithm_report_chart', view=algorithm_report_chart
+)
+
 
 admin.site.register_view(
     'algorithm/report/signal/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/(?P<formula_id>\d+)/(?P<report_id>\d+)/$',

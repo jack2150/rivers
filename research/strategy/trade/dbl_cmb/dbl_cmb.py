@@ -131,6 +131,4 @@ def join_data(df_order, df_stock, df_all, df_iv):
     :param df_iv: pd.DataFrame
     :return: list
     """
-    # todo: not yet
-
-    return []
+    raise NotImplementedError('Not yet implemented')

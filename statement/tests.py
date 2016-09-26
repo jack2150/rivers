@@ -621,27 +621,3 @@ class TestRealMoneyStatement(TestSetUp):
         for f in dates1:
             if f not in dates0:
                 print f.strftime('%m/%d/%Y'), 'not found'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
