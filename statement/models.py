@@ -597,7 +597,7 @@ class Position(models.Model):
             symbol=self.symbol,
             spread=self.spread,
             status=self.status,
-            date=self.stop if self.stop else self.start
+            date=(self.stop if self.stop else self.start).strftime('%Y-%m-%d')
         )
 
 
@@ -1063,3 +1063,116 @@ class ProfitLoss(models.Model):
             symbol=self.symbol,
             pl_open=self.pl_open
         )
+
+
+class PositionComment(models.Model):
+    """
+    Analysis each of trade you made in the past
+    mark down errors and do statistics
+    """
+    date = models.DateField()
+    position = models.OneToOneField(Position)
+    description = models.TextField(null=True, blank=True, default='')
+
+    # others
+    strategy_test = models.BooleanField(
+        help_text='Testing unknown strategy to see effect & result',
+        default=False
+    )
+    target_price = models.BooleanField(
+        help_text='Do you set target price before enter',
+        default=False
+    )
+    market_review = models.BooleanField(
+        help_text='Position fit current market condition',
+        default=False
+    )
+
+    # error list
+    short_period = models.BooleanField(
+        help_text='Holding period or expire cycle is too short',
+        default=False
+    )
+    sold_early = models.BooleanField(
+        help_text='Sold profit position too early',
+        default=False
+    )
+    fear_factor = models.BooleanField(
+        help_text='Fear cause you sold at loss timing',
+        default=False
+    )
+    over_confidence = models.BooleanField(
+        help_text='Over confidence, trade too big & take too much risk',
+        default=False
+    )
+    unaware_news = models.BooleanField(
+        help_text='Ignore news that cause price change',
+        default=False
+    )
+    unaware_event = models.BooleanField(
+        help_text='',
+        default=False
+    )
+    poor_estimate = models.BooleanField(
+        help_text='',
+        default=False
+    )
+    market_event = models.BooleanField(
+        help_text='',
+        default=False
+    )
+
+    # deep analysis
+    deep_analysis = models.BooleanField(
+        help_text='Analysis deep enough before enter position',
+        default=False
+    )
+    broken_holding = models.BooleanField(
+        help_text='Loss interest tracking after holding awhile',
+        default=False
+    )
+
+    # reason of profit/loss
+    fundamental_change = models.BooleanField(
+        help_text='',
+        default=False
+    )
+    underlying_news = models.BooleanField(
+        help_text='',
+        default=False
+    )
+    luck_factor = models.BooleanField(
+        help_text='',
+        default=False
+    )
+    high_probability = models.BooleanField(
+        help_text='',
+        default=False
+    )
+    backtest_sign = models.BooleanField(
+        help_text='',
+        default=False
+    )
+    valid_strategy = models.BooleanField(
+        help_text='',
+        default=False
+    )
+
+
+    # todo: here
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

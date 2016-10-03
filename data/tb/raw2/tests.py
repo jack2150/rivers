@@ -3,7 +3,7 @@ import glob
 import numpy as np
 import pandas as pd
 from base.utests import TestUnitSetUp
-from data.tb.groupOption.groupOption import GroupOption, ComplexGroupOptions
+from data.tb.groupOption.groupOption import GroupOption, ComplexGroupOptions, ThinkbackOption
 from data.tb.raw.stocks import extract_stock
 from django.core.urlresolvers import reverse
 from rivers.settings import QUOTE_DIR, DB_DIR, BASE_DIR
@@ -28,20 +28,21 @@ class TestGroupOption(TestUnitSetUp):
         print 'df_stock length: %d' % len(self.df_stock)
         db.close()
 
-        self.group_option = GroupOption(self.symbol, self.df_stock)
+        self.split_history = SplitHistory.objects.filter(symbol=self.symbol.upper())
+        self.group_option = GroupOption(self.symbol, self.df_stock, self.split_history)
 
     def test_remove_duplicated(self):
         """
         Test remove duplicated rows in df_all
         """
-        self.group_option.get_data()
+        self.group_option.convert_data()
         self.group_option.remove_duplicate()
 
     def test_check_code_no_extra(self):
         """
         Test check new code have no extra when there was split/others
         """
-        self.group_option.get_data()
+        self.group_option.convert_data()
         self.group_option.remove_duplicate()
         self.group_option.prepare_extra()
         self.group_option.update_code()
@@ -52,7 +53,7 @@ class TestGroupOption(TestUnitSetUp):
         Prepare extra code change
         """
         self.group_option = GroupOption(self.symbol, self.df_stock)
-        self.group_option.get_data()
+        self.group_option.convert_data()
         self.group_option.remove_duplicate()
         df_date = self.group_option.prepare_extra()
 
@@ -76,7 +77,7 @@ class TestGroupOption(TestUnitSetUp):
             db.close()
 
             self.group_option = GroupOption(self.symbol, self.df_stock)
-            self.group_option.get_data()
+            self.group_option.convert_data()
             self.group_option.remove_duplicate()
             df_date = self.group_option.prepare_extra()
 
@@ -90,7 +91,7 @@ class TestGroupOption(TestUnitSetUp):
         try:
             self.group_option.df_all = db['df_all0']
         except KeyError:
-            self.group_option.get_data()
+            self.group_option.convert_data()
             self.group_option.remove_duplicate()
             db['df_all0'] = self.group_option.df_all
         db.close()
@@ -105,7 +106,7 @@ class TestGroupOption(TestUnitSetUp):
         try:
             self.group_option.df_all = db['df_all1']
         except KeyError:
-            self.group_option.get_data()
+            self.group_option.convert_data()
             self.group_option.remove_duplicate()
             db['df_all1'] = self.group_option.df_all
         db.close()
@@ -120,7 +121,7 @@ class TestGroupOption(TestUnitSetUp):
         try:
             self.group_option.df_all = db['df_all2']
         except KeyError:
-            self.group_option.get_data()
+            self.group_option.convert_data()
             self.group_option.remove_duplicate()
             self.group_option.update_code()
             db['df_all2'] = self.group_option.df_all
@@ -135,7 +136,7 @@ class TestGroupOption(TestUnitSetUp):
         Test update non_standard into existing split/others
         primary for: UVXY
         """
-        self.group_option.get_data()
+        self.group_option.convert_data()
         self.group_option.update_non_standard()
 
     def test_all(self):
@@ -143,7 +144,7 @@ class TestGroupOption(TestUnitSetUp):
         Test all methods in group_option
         BAC, BP, GOOG, WFC problem fixed
         """
-        self.group_option.get_data()
+        self.group_option.convert_data()
         df_date = self.group_option.ready_data(debug=True)
 
         print df_date
@@ -167,7 +168,7 @@ class TestGroupOption(TestUnitSetUp):
             db.close()
 
             self.group_option = GroupOption(self.symbol, self.df_stock)
-            self.group_option.get_data()
+            self.group_option.convert_data()
             df_date = self.group_option.ready_data(debug=True)
             print df_date
 
@@ -186,7 +187,8 @@ class TestComplexGroupOptions(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = ['AIG', 'TZA', 'WFC', 'VZ', 'TNA', 'UVXY', 'FSLR'][1]
+        self.symbol = ['AIG', 'TZA', 'WFC', 'VZ', 'TNA', 'UVXY', 'FSLR'][2]
+        self.split_history = SplitHistory.objects.filter(symbol=self.symbol.upper())
 
         path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
         db = pd.HDFStore(path)
@@ -202,21 +204,20 @@ class TestComplexGroupOptions(TestUnitSetUp):
             # raise KeyError
             self.df_all = db['df_all']
         except KeyError:
-            self.group_option = GroupOption(self.symbol, self.df_stock)
-            self.group_option.get_data()
+            self.group_option = GroupOption(self.symbol, self.df_stock, self.split_history)
+            self.group_option.convert_data()
             self.group_option.ready_data()
             db['df_all'] = self.group_option.df_all
             self.df_all = self.group_option.df_all
         db.close()
 
-        self.split_history = SplitHistory.objects.filter(symbol=self.symbol.upper())
         self.complex_group = ComplexGroupOptions(self.df_all, self.split_history)
         self.complex_group.prepare_set()
 
     def test_groupby(self):
         """
         Primary test, AIG, TZA, WFC, VZ, UVXY
-        :return:
+        Test groupby split/others into df_date
         """
         self.complex_group.group_data()
         print self.complex_group.df_date
@@ -233,8 +234,7 @@ class TestComplexGroupOptions(TestUnitSetUp):
 
     def test_mass(self):
         """
-
-        :return:
+        Test mass groupby for all symbols
         """
         for symbol in symbols:
             self.symbol = symbol
@@ -255,7 +255,7 @@ class TestComplexGroupOptions(TestUnitSetUp):
                 self.df_all = db[symbol]
             except KeyError:
                 self.group_option = GroupOption(self.symbol, self.df_stock)
-                self.group_option.get_data()
+                self.group_option.convert_data()
                 self.group_option.remove_duplicate()
                 self.group_option.modify_others()
                 self.group_option.update_code()
@@ -273,8 +273,8 @@ class TestComplexGroupOptions(TestUnitSetUp):
 
     def test_join_data(self):
         """
+        Test join split/others data with continuous normal/split/others data
         """
-        #print len(self.complex_group.df_all)
         db = pd.HDFStore(self.path)
         try:
             # raise KeyError
@@ -299,35 +299,20 @@ class TestComplexGroupOptions(TestUnitSetUp):
             print key, len(df)
             # ts(df.head(10))
             # ts(df.tail(10))
-            c = df.iloc[0]['option_code']
-            ts(df[df['option_code'] == c])
+            # c = df.iloc[0]['option_code']
+            # ts(df[df['option_code'] == c])
 
             print '\n' + '-' * 70 + '\n'
 
-        # todo: finally until join_data
 
+class TestThinkbackOption(TestUnitSetUp):
+    def setUp(self):
+        self.symbol = 'AIG'
+        self.tb_option = ThinkbackOption(self.symbol)
 
-
-
-
-
-
-"""
-vz, others symbol share is others
-100 FTR 24; US$ 100 2010-07-06 2010-07-21
---------------------------------------------------
-100 FTR 24; US$ 0.03 2010-07-22 2012-01-20
-
-
-
-wfc, not split, it is others
-19/100 US$ 25.23 2010-01-04 2011-01-20
---------------------------------------------------
-19/100 US$ 3616.11 2010-01-04 2010-01-15
-"""
-
-
-
-
-
+    def test_start(self):
+        """
+        Test create option raw data then save into clean h5 store
+        """
+        self.tb_option.create_raw()
 

@@ -12,7 +12,7 @@ class TestDTE(TestUnitSetUp):
 
         self.backtest = self.formula.start_backtest()
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2015-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         self.backtest.extra_data()
 
     def setUp(self):

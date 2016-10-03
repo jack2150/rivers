@@ -370,15 +370,16 @@ class PositionAdmin(admin.ModelAdmin):
     inlines = (CashBalanceInline, AccountOrderInline, AccountTradeInline,
                HoldingEquityInline, HoldingOptionInline, ProfitLossInline)
 
-    def report(self):
-        return '<a href="{link}">Report</a>'.format(
-            link=reverse('admin:position_report', kwargs={'id': self.id})
+    def link(self):
+        return '<a href="{link0}">Report</a> | <a href="{link1}">Comment</a>'.format(
+            link0=reverse('admin:position_report', kwargs={'id': self.id}),
+            link1=reverse('admin:get_position_comment', kwargs={'position_id': self.id})
         )
 
-    report.allow_tags = True
-    report.short_description = ''
+    link.allow_tags = True
+    link.short_description = ''
 
-    list_display = ('symbol', 'name', 'spread', 'status', 'start', 'stop', report)
+    list_display = ('symbol', 'name', 'spread', 'status', 'start', 'stop', link)
     fieldsets = (
         ('Primary Fields', {
             'fields': ('symbol', 'name', 'spread', 'status', 'start', 'stop')
@@ -415,6 +416,41 @@ class PositionStageAdmin(admin.ModelAdmin):
         return False
 
 
+class PositionCommentAdmin(admin.ModelAdmin):
+    form = StatementForm
+    list_display = ('position', 'date', 'strategy_test', 'target_price', 'market_review')
+
+    fieldsets = (
+        ('Foreign Keys', {
+            'fields': ('position',)
+        }),
+        ('Primary Fields', {
+            'fields': ('date', 'description')
+        }),
+        ('Primary Focus', {
+            'fields': ('strategy_test', 'target_price', 'market_review',)
+        }),
+        ('Error List', {
+            'fields': ('short_period', 'sold_early', 'fear_factor', 'over_confidence',
+                       'unaware_news', 'unaware_event', 'poor_estimate', 'market_event')
+        }),
+        ('Analysis Detail', {
+            'fields': ('deep_analysis', 'broken_holding', )
+        }),
+        ('Reason P/L', {
+            'fields': ('fundamental_change', 'underlying_news', 'luck_factor', 'high_probability',
+                       'backtest_sign', 'valid_strategy', )
+        }),
+    )
+
+    search_fields = ('position__name', 'position__spread', 'description')
+    list_per_page = 20
+
+    readonly_fields = ('position', )
+
+    # todo: add more, need report
+
+
 #admin.site.app_index_template = 'statement/index.html'
 # admin models
 admin.site.register(StatementName, StatementNameAdmin)
@@ -427,6 +463,8 @@ admin.site.register(AccountTrade, AccountTradeAdmin)
 admin.site.register(HoldingEquity, HoldingEquityAdmin)
 admin.site.register(HoldingOption, HoldingOptionAdmin)
 admin.site.register(ProfitLoss, ProfitLossAdmin)
+admin.site.register(PositionComment, PositionCommentAdmin)
+
 
 # custom admin view
 admin.site.register_view(
@@ -453,4 +491,9 @@ admin.site.register_view(
 admin.site.register_view(
     'data/underlying/daily/(?P<date>\d{4}-\d{2}-\d{2})/(?P<ready_all>\d+)/$',
     urlname='daily_import', view=daily_import
+)
+
+admin.site.register_view(
+    'statement/position/comment/(?P<position_id>\d+)/$',
+    urlname='get_position_comment', view=get_position_comment
 )

@@ -7,7 +7,7 @@ class TestEWMAChangeDirection(TestUnitSetUp):
         self.formula = Formula.objects.get(rule=rule)
         self.backtest = self.formula.start_backtest()
         self.backtest.set_symbol_date(self.symbol, '2010-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         self.backtest.extra_data()
 
     def setUp(self):

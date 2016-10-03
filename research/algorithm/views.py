@@ -378,7 +378,7 @@ def algorithm_trade_view(request, symbol, date, formula_id, report_id):
 
     # generate df_list for display
     formula.backtest.set_symbol_date(symbol)
-    formula.backtest.get_data()
+    formula.backtest.convert_data()
     formula.backtest.set_signal(df_signal)
     formula.backtest.prepare_join()
 

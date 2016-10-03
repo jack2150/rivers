@@ -152,12 +152,21 @@ def create_order(df_signal, df_stock, side=('follow', 'reverse', 'buy', 'sell'),
     df['time1'] = exit_times
     df['order'] = order_hits
     df['close1'] = np.round(exit_prices, 2)
+    df['bp_effect'] = df['close0']
     df['holding'] = df['date1'] - df['date0']
-
     df['pct_chg'] = (df['close1'] - df['close0']) / df['close0']
     df['pct_chg'] = np.round(df.apply(
         lambda x: x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg']
         , axis=1), 4
+    )
+
+    df['close0'] = df.apply(
+        lambda x: x['close0'] if x['signal0'] == 'BUY' else -x['close0'],
+        axis=1
+    )
+    df['close1'] = df.apply(
+        lambda x: x['close1'] if x['signal1'] == 'BUY' else -x['close1'],
+        axis=1
     )
 
     # for stock option quantity multiply

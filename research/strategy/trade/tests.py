@@ -19,7 +19,7 @@ class TestStrategy(TestUnitSetUp):
         self.formula = Formula.objects.get(rule='Momentum')
         backtest = self.formula.start_backtest()
         backtest.set_symbol_date(self.symbol, '2010-01-01', '2015-12-31')
-        backtest.get_data()
+        backtest.convert_data()
         hd_args = {
             'period_span': 120,
             'skip_days': 0,
@@ -67,7 +67,7 @@ class TestStrategy2(TestUnitSetUp):
         except KeyError:
             backtest = self.formula.start_backtest()
             backtest.set_symbol_date(self.symbol, '2010-01-01', '2016-06-30')
-            backtest.get_data()
+            backtest.convert_data()
             backtest.extra_data()
             hd_args = {}
             cs_args = {
@@ -96,7 +96,7 @@ class TestStrategy2(TestUnitSetUp):
         except KeyError:
             backtest = self.formula.start_backtest()
             backtest.set_symbol_date(self.symbol, '2010-01-01', '2015-12-31')
-            backtest.get_data()
+            backtest.convert_data()
             hd_args = {
                 'period_span': 60,
                 'skip_days': 5,

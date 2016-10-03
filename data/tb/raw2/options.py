@@ -1,18 +1,14 @@
-import calendar
 import logging
 import os
 import re
 import numpy as np
 import pandas as pd
-from fractions import Fraction
 from django.db.models import Q
-from numba import jit
 from pandas.tseries.offsets import BDay
-
 from base.ufunc import ts, ds
 from data.tb.thinkback import ThinkBack
-from data.models import SplitHistory, Underlying
-from rivers.settings import CLEAN_DIR, THINKBACK_DIR
+from data.models import SplitHistory
+from rivers.settings import CLEAN_DIR, THINKBACK_DIR, QUOTE_DIR
 
 logger = logging.getLogger('views')
 output = '%-6s | %-30s %s'
@@ -240,7 +236,7 @@ class GroupOption(object):
     """
     Grouping raw option data
     """
-    def __init__(self, symbol, df_stock):
+    def __init__(self, symbol, df_stock, split_history):
         """
         :param symbol: str
         :param df_stock: pd.DataFrame
@@ -249,21 +245,17 @@ class GroupOption(object):
         self.require_length = len(self.symbol) + MIN_LENGTH
         self.df_stock = df_stock.sort_index(ascending=False)
         self.df_all = pd.DataFrame()
-        self.split_history = []
+        self.split_history = split_history
 
         self.db_path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
 
-    def get_data(self):
+    def convert_data(self):
         """
         Get data from thinkback file and make df_all
         """
         print '=' * 70
         print output % ('GET', 'Option data:', self.symbol.upper())
         print '=' * 70
-
-        self.split_history = SplitHistory.objects.filter(
-            Q(symbol=self.symbol.upper()) & Q(date__gte=self.df_stock.index[-1])
-        )
 
         print output % ('GET', 'Split history: %d' % len(self.split_history), '')
         for split in self.split_history:
@@ -592,7 +584,7 @@ class GroupOption(object):
         df_non = self.df_all[self.df_all['others'] == 'Non Standard']
         df_normal = self.df_all[~self.df_all.index.isin(df_non.index)]
         group = df_normal.sort_values('date').groupby('option_code')
-        #non_codes = df_non['option_code'].value_counts()
+        # non_codes = df_non['option_code'].value_counts()
         df_search = df_non.groupby('option_code')['date'].max()
 
         if len(df_search) == 0:
@@ -693,12 +685,14 @@ class GroupOption(object):
 
         return proc
 
-    def unique_extra(self):
+    def get_all(self):
         """
-        After grouping, re-visit option_code for fix different extra
+        Get df_all option data
         """
-        # todo: later
-        pass
+        self.convert_data()
+        self.ready_data()
+
+        return self.df_all
 
 
 class ComplexGroupOptions(object):
@@ -740,8 +734,7 @@ class ComplexGroupOptions(object):
         df_date = pd.concat([group['date'].min(), group['date'].max()], axis=1)
         """:type: pd.DataFrame"""
         df_date.columns = ['start', 'stop']
-        df_date = df_date.sort_values('start', ascending=True)
-        # print df_date
+        df_date = df_date.sort_values('start')
 
         follows = []
         removes = []
@@ -1032,8 +1025,6 @@ class ComplexGroupOptions(object):
 
             print '.' * 70
 
-        ts(df_date)
-
         # start remove in df_all
         if len(df_date[df_date['remove_others']]):
             remove_list = list(df_date[df_date['remove_others']].index.get_level_values('others'))
@@ -1060,6 +1051,7 @@ class ComplexGroupOptions(object):
         # join data with normal
         df_list = {}
         for (split0, others0), (start, stop, (split1, others1)) in df_date.iterrows():
+            remove_index = []
             print output % ('DATA', 'split0: %s' % split0, 'others0: %s' % others0)
             print output % ('DATE', 'start: %s' % ds(start), 'stop: %s' % ds(stop))
             key0 = '%s,%s' % (split0, others0)
@@ -1072,8 +1064,11 @@ class ComplexGroupOptions(object):
                 df_before = self.df_normal.query('date < %r' % start)
                 df_continue = df_before[df_before['option_code'].isin(replace_codes.keys())]
                 df_continue['option_code'] = df_continue['option_code'].apply(
-                    lambda c: replace_codes[c]
+                    lambda code: replace_codes[code]
                 )
+
+                if len(df_continue):
+                    remove_index += list(df_continue.index)
 
                 print output % (
                     'CONT', 'df_current: %d' % len(df_current), 'df_continue: %d' % len(df_continue)
@@ -1090,7 +1085,11 @@ class ComplexGroupOptions(object):
 
             print '-' * 70
 
-        #print df_list.keys()
+            # remove df_normal
+            if len(remove_index):
+                print output % ('DEL', 'df_normal remove: %d' % len(remove_index), '')
+                self.df_normal = self.df_normal[~self.df_normal.index.isin(remove_index)]
+                print '-' * 70
 
         # print len(pd.concat(df.values())), len(self.df_remain)
         print output % ('SUB', 'join all follow data', '')
@@ -1159,34 +1158,119 @@ class ComplexGroupOptions(object):
 
             print '-' * 70
 
-        """
-        for key, df in df_list.items():
-            print key, len(df)
-            ts(df.head(10))
-            ts(df.tail(10))
-            #c = df.iloc[0]['option_code']
-            #ts(df[df['option_code'] == c])
-        """
+        # double check
+        assert len(self.df_normal) + sum([len(v) for k, v in df_list.items()]) == len(self.df_all)
 
         return df_list
 
+    def final_data(self):
+        """
+        Run all process and return df_normal, df_list (split/others)
+        :return: pd.DataFrame, pd.DataFrame
+        """
+        self.prepare_set()
+        self.group_data()
+        self.others_is_split()
+        self.group_data()
+        df_list = self.join_data()
+
+        # remove index
+        del self.df_normal['index'], self.df_normal['index2']
+        for df in df_list.values():
+            del df['index'], df['index2']
+
+        return self.df_normal, df_list
 
 
+class ThinkbackOption(object):
+    def __init__(self, symbol):
+        self.symbol = symbol.upper()
+        self.db_path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
+        self.clean_path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+        self.df_stock = pd.DataFrame()
+        self.split_history = []
 
+    def get_stock(self):
+        """
+        Get df_stock data
+        """
+        db = pd.HDFStore(self.db_path)
+        try:
+            self.df_stock = db.select('stock/thinkback')
+        except KeyError:
+            raise KeyError('Please import df_stock first')
+        db.close()
 
+    def get_split_history(self):
+        """
+        Get split history data
+        """
+        self.split_history = SplitHistory.objects.filter(
+            Q(symbol=self.symbol.upper()) & Q(date__gte=self.df_stock.index[-1])
+        )
 
+    def create_raw(self):
+        """
+        Create option raw data that ready for all continue process
+        """
+        # prepare data
+        self.get_stock()
+        self.get_split_history()
 
+        # group option
+        group_option = GroupOption(self.symbol, self.df_stock, self.split_history)
+        df_all = group_option.get_all()
+        proc = group_option.check_split_others()
 
+        # get data
+        df_others = pd.DataFrame()
+        df_split1 = pd.DataFrame()
+        df_split2 = pd.DataFrame()
+        if proc == 'normal':
+            df_normal = df_all
+        else:
+            # complex group
+            complex_group = ComplexGroupOptions(df_all, self.split_history)
+            df_normal, df_list = complex_group.final_data()
 
+            for df in df_list.values():
+                rights = [r for r in df['right'].unique() if r != '100']
+                others = [o for o in df['others'].unique() if o != '']
 
+                if (len(rights) and len(others)) or len(others):
+                    df_others = pd.concat([df_others, df])
+                elif len(rights):
+                    df_split1 = pd.concat([df_split1, df])
+                else:
+                    raise LookupError('Invalid process result no split/others df_list')
 
+            print '=' * 70
+            print output % ('IMPORT', 'Complete extract option data', '')
+            print '=' * 70
+            print output % ('STAT', 'df_normal length: %d' % len(df_normal), '')
+            print output % ('STAT', 'df_others length: %d' % len(df_others), '')
+            print output % ('STAT', 'df_split1 length: %d' % len(df_split1), '')
+            print output % ('STAT', 'df_split2 length: %d' % len(df_split2), '')
 
+        # saving
+        logger.info('Save data into clean, path: %s' % self.clean_path)
+        db = pd.HDFStore(self.clean_path)
+        try:
+            db.remove('option/raw')
+        except KeyError:
+            pass
 
+        db.append('option/raw/normal', df_normal)
 
+        if len(df_others):
+            db.append('option/raw/others', df_others)
 
+        if len(df_split1):
+            db.append('option/raw/split/old', df_split1)
 
+        if len(df_split2):
+            db.append('option/raw/split/new', df_split2)
+        db.close()
 
-
-
-
-
+        print output % ('SAVE', 'All data saved', '')
+        logger.info('Complete save raw options')

@@ -19,7 +19,7 @@ class TestStrategyBacktest(TestUnitSetUp):
         self.backtest0 = self.formula.backtest
 
         self.backtest0.set_symbol_date(self.symbol, '2009-01-01', '2016-06-30')
-        self.backtest0.get_data()
+        self.backtest0.convert_data()
         self.hd_args = {
             'period_span': 120,
             'skip_days': 0,
@@ -377,7 +377,7 @@ class TestStrategyBacktestOption(TestUnitSetUp):
         self.backtest0 = self.formula.backtest
 
         self.backtest0.set_symbol_date(self.symbol, '2009-01-01', '2016-06-30')
-        self.backtest0.get_data()
+        self.backtest0.convert_data()
         self.hd_args = {
             'period_span': 120,
             'skip_days': 0,

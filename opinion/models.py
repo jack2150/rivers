@@ -486,9 +486,6 @@ class SocialOpinion(models.Model):
     )
 
 
-
-
-
 class WeekdayOpinion(models.Model):
     """
     Basic stock movement and news/information, daily update

@@ -204,7 +204,7 @@ class TestFormulaBacktest(TestUnitSetUp):
             self.backtest.set_symbol_date(self.symbol, start, stop)
             print 'using start: %s stop: %s' % (start, stop)
             print 'run get_data...'
-            self.backtest.get_data()
+            self.backtest.convert_data()
 
             print 'df_stock length: %d' % len(self.backtest.df_stock)
             print 'df_change length: %d' % len(self.backtest.df_change)
@@ -249,7 +249,7 @@ class TestFormulaBacktest(TestUnitSetUp):
             'create_signal_direction': 'follow',
             'create_signal_side': 'follow',
         })
-        self.backtest.get_data()
+        self.backtest.convert_data()
         self.backtest.extra_data()
 
         self.backtest.hd_args.append('df_all')
@@ -266,7 +266,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Prepare data that ready for generate report
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(df_test, **self.cs_args)
         self.backtest.set_signal(df_signal)
@@ -286,7 +286,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Test generate sharpe ratio using df_join
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(df_test, **self.cs_args)
         self.backtest.set_signal(df_signal)
@@ -303,7 +303,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Test generate sharpe ratio using df_join
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(df_test, **self.cs_args)
         self.backtest.set_signal(df_signal)
@@ -320,7 +320,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Test calculate buy and hold
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(df_test, **self.cs_args)
         self.backtest.set_signal(df_signal)
@@ -335,7 +335,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Test calculate profit loss detail
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(df_test, **self.cs_args)
         self.backtest.set_signal(df_signal)
@@ -356,7 +356,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Test trade summary for profit loss and chance
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(df_test, **self.cs_args)
         self.backtest.set_signal(df_signal)
@@ -378,7 +378,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Test trade summary for profit loss and chance
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(df_test, **self.cs_args)
         self.backtest.set_signal(df_signal)
@@ -394,7 +394,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Test calculate the draw down effect
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(df_test, **self.cs_args)
         self.backtest.set_signal(df_signal)
@@ -408,7 +408,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Test calculate the draw down effect
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(df_test, **self.cs_args)
         self.backtest.set_signal(df_signal)
@@ -433,7 +433,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Test make report using df_signal
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(df_test, **self.cs_args)
         report = self.backtest.report(df_signal)
@@ -447,7 +447,7 @@ class TestFormulaBacktest(TestUnitSetUp):
         Test start backtest for all formula args
         """
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2014-12-31')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         self.backtest.set_args(fields={
             'handle_data_span': '120:240:20',
             'handle_data_previous': '20:40:20',
@@ -512,7 +512,7 @@ class TestFormulaBacktest2(TestUnitSetUp):
         Test make report using df_signal
         """
         self.backtest.set_symbol_date(self.symbol, '2010-01-01', '2016-06-30')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         self.backtest.extra_data()
         df_test = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
         df_signal = self.backtest.create_signal(
@@ -529,7 +529,7 @@ class TestFormulaBacktest2(TestUnitSetUp):
         Test generate for option formula
         """
         self.backtest.set_symbol_date(self.symbol, '2010-01-01', '2016-06-30')
-        self.backtest.get_data()
+        self.backtest.convert_data()
         self.backtest.extra_data()
         self.backtest.set_args(fields={
             'create_signal_dte': '19',

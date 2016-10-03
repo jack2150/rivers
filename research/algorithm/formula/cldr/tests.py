@@ -3,7 +3,7 @@ from research.algorithm.models import Formula
 
 
 # noinspection PyArgumentList
-class TestBasicPercentMove(TestUnitSetUp):
+class TestMonth2MonthMove(TestUnitSetUp):
     def algorithm_analysis(self, rule):
         self.formula = Formula.objects.get(rule=rule)
 
@@ -16,17 +16,18 @@ class TestBasicPercentMove(TestUnitSetUp):
 
         self.symbol = 'SPY'
         self.hd_args = {
-            'move': 'down',
-            'pct_from': 2,
-            'pct_to': 10,
-            'bdays': 10,
+
         }
         self.cs_args = {
             'side': 'buy',
+            'month0': 10,
+            'date0': 1,
+            'month1': 3,
+            'date1': 31,
         }
 
         self.backtest = None
-        self.algorithm_analysis('Basic % Move')
+        self.algorithm_analysis('Month to month')
 
     def test_handle_data(self):
         """
@@ -36,17 +37,13 @@ class TestBasicPercentMove(TestUnitSetUp):
 
         print self.df_stock.to_string(line_width=200)
 
-        new_columns = ('found', 'date1', 'close1')
-        for column in new_columns:
-            self.assertIn(column, self.df_stock.columns)
-
     def test_create_signal(self):
         """
         Test create signal based on data frame that handle data generate
         """
         self.df_stock = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
 
-        for side in ('buy', 'sell')[:1]:
+        for side in ('buy', 'sell'):
             self.cs_args['side'] = side
             self.df_signal = self.backtest.create_signal(self.df_stock, **self.cs_args)
 
@@ -64,8 +61,7 @@ class TestBasicPercentMove(TestUnitSetUp):
             print '=' * 100
 
 
-# noinspection PyArgumentList
-class TestMultiPercentMove(TestUnitSetUp):
+class TestWeek2WeekMove(TestUnitSetUp):
     def algorithm_analysis(self, rule):
         self.formula = Formula.objects.get(rule=rule)
 
@@ -76,21 +72,18 @@ class TestMultiPercentMove(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'IWM'
+        self.symbol = 'SPY'
         self.hd_args = {
-            'move': 'down',
-            'pct_from': 2,
-            'pct_to': 10,
-            'period': 15,
-            'count': 3,
-            'bdays': 60
+
         }
         self.cs_args = {
             'side': 'buy',
+            'weekday0': 1,
+            'bdays': 4,
         }
 
         self.backtest = None
-        self.algorithm_analysis('Multi-days % Move')
+        self.algorithm_analysis('Weekdays')
 
     def test_handle_data(self):
         """
@@ -106,7 +99,7 @@ class TestMultiPercentMove(TestUnitSetUp):
         """
         self.df_stock = self.backtest.handle_data(self.backtest.df_stock, **self.hd_args)
 
-        for side in ('buy', 'sell')[:1]:
+        for side in ('buy', 'sell'):
             self.cs_args['side'] = side
             self.df_signal = self.backtest.create_signal(self.df_stock, **self.cs_args)
 
