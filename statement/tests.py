@@ -531,8 +531,23 @@ class TestPositionStage(TestSetUp):
 
 class TestStatementImport(TestSetUp):
     def test_statement_import(self):
+        statement_name = StatementName(
+            name='TD Ameritrade USA - Paper Money',
+            path='tda_usa_paper_money',
+            cash_type='paper_money',
+            description='nothing',
+            capital=25000,
+            start='2013-01-01',
+            stop='2017-01-01'
+        )
+        statement_name.save()
+
         print 'run client get statement import view...'
-        response = self.client.get(reverse('admin:statement_import'))
+        response = self.client.get(reverse(
+            'admin:statement_import', kwargs={'name_id': statement_name.id}
+        ))
+
+        # todo: here, cont re-download
 
         title = response.context['title']
         files = response.context['files']
@@ -604,7 +619,7 @@ class TestRealMoneyStatement(TestSetUp):
         """
         Check all statement date files is exists
         """
-        files = glob(os.path.join(STATEMENT_DIR, 'real0', '*.csv'))
+        files = glob(os.path.join(STATEMENT_DIR, 'tda_usa_paper_money', '*.csv'))
 
         dates0 = []
         for f in files:

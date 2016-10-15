@@ -41,7 +41,7 @@ class Statement(models.Model):
     Futures Commissions YTD,$0.00 <-- skip futures
     """
     statement_name = models.ForeignKey(StatementName)
-    date = models.DateField(unique=True)
+    date = models.DateField()
 
     net_liquid = models.DecimalField(max_digits=20, decimal_places=2)
     stock_bp = models.DecimalField(max_digits=20, decimal_places=2)
@@ -49,6 +49,9 @@ class Statement(models.Model):
     commission_ytd = models.DecimalField(max_digits=20, decimal_places=2)
 
     csv_data = models.TextField(blank=True)
+
+    # unique data
+    unique_together = (('statement_name', 'date'),)
 
     def load_csv(self, lines):
         """
@@ -143,16 +146,22 @@ class Statement(models.Model):
 
                 pos = self.open_pos.filter(symbol=equity.symbol)
                 if not pos.exists():
-                    raise LookupError('<%s> %s have equity, no open position' % (
+                    print '<%s> %s have equity, no open position' % (
                         equity.symbol, self.statement.date
-                    ))
+                    )
+                    #raise LookupError('<%s> %s have equity, no open position' % (
+                    #    equity.symbol, self.statement.date
+                    #))
 
             for option in self.holding_option:
                 pos = self.open_pos.filter(symbol=option.symbol)
                 if not pos.exists():
-                    raise LookupError('<%s> %s have equity, no open position' % (
+                    print '<%s> %s have options, no open position' % (
                         option.symbol, self.statement.date
-                    ))
+                    )
+                    #raise LookupError('<%s> %s have options, no open position' % (
+                    #    option.symbol, self.statement.date
+                    #))
 
         def position_open(self, symbol, time, trades):
             """

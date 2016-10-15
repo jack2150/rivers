@@ -1,11 +1,7 @@
 import glob
-
-import numpy as np
-import pandas as pd
 from base.utests import TestUnitSetUp
-from data.tb.groupOption.groupOption import GroupOption, ComplexGroupOptions, ThinkbackOption
+from data.tb.raw2.options import GroupOption, ComplexGroupOptions, ThinkbackOption
 from data.tb.raw.stocks import extract_stock
-from django.core.urlresolvers import reverse
 from rivers.settings import QUOTE_DIR, DB_DIR, BASE_DIR
 from data.tb.raw.options import *
 
@@ -19,7 +15,7 @@ class TestGroupOption(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'UVXY'
+        self.symbol = 'DDD'
         self.path = os.path.join(DB_DIR, 'temp', 'test_%s.h5' % self.symbol.lower())
 
         path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
@@ -187,7 +183,10 @@ class TestComplexGroupOptions(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = ['AIG', 'TZA', 'WFC', 'VZ', 'TNA', 'UVXY', 'FSLR'][2]
+        # old split, others test
+        # self.symbol = ['AIG', 'TZA', 'WFC', 'VZ', 'TNA', 'UVXY', 'FSLR'][1]
+        # new split test
+        self.symbol = ['DDD', 'LULU', 'BIDU'][0]
         self.split_history = SplitHistory.objects.filter(symbol=self.symbol.upper())
 
         path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
@@ -196,6 +195,7 @@ class TestComplexGroupOptions(TestUnitSetUp):
             self.df_stock = db.select('stock/thinkback')
         except KeyError:
             extract_stock(self.symbol)
+            self.df_stock = db.select('stock/thinkback')
         db.close()
 
         self.path = os.path.join(DB_DIR, 'temp', 'test_%s.h5' % self.symbol.lower())
@@ -205,13 +205,11 @@ class TestComplexGroupOptions(TestUnitSetUp):
             self.df_all = db['df_all']
         except KeyError:
             self.group_option = GroupOption(self.symbol, self.df_stock, self.split_history)
-            self.group_option.convert_data()
-            self.group_option.ready_data()
-            db['df_all'] = self.group_option.df_all
-            self.df_all = self.group_option.df_all
+            self.df_all = self.group_option.get_all()
+            db['df_all'] = self.df_all
         db.close()
 
-        self.complex_group = ComplexGroupOptions(self.df_all, self.split_history)
+        self.complex_group = ComplexGroupOptions(self.symbol, self.df_all, self.split_history)
         self.complex_group.prepare_set()
 
     def test_groupby(self):
@@ -254,7 +252,7 @@ class TestComplexGroupOptions(TestUnitSetUp):
             try:
                 self.df_all = db[symbol]
             except KeyError:
-                self.group_option = GroupOption(self.symbol, self.df_stock)
+                self.group_option = GroupOption(self.symbol, self.df_stock, self.split_history)
                 self.group_option.convert_data()
                 self.group_option.remove_duplicate()
                 self.group_option.modify_others()
@@ -263,7 +261,7 @@ class TestComplexGroupOptions(TestUnitSetUp):
                 self.df_all = self.group_option.df_all
             db.close()
 
-            self.complex_group = ComplexGroupOptions(self.df_all, self.split_history)
+            self.complex_group = ComplexGroupOptions(self.symbol, self.df_all, self.split_history)
             self.complex_group.group_data()
             self.complex_group.others_is_split()
             self.complex_group.group_data()
@@ -302,12 +300,47 @@ class TestComplexGroupOptions(TestUnitSetUp):
             # c = df.iloc[0]['option_code']
             # ts(df[df['option_code'] == c])
 
+            codes = list(df['option_code'].unique())
+
+            code = 'TZA1120121C11'
+            if code in codes:
+                df_code = df[df['option_code'] == code]
+                ts(df_code)
+
             print '\n' + '-' * 70 + '\n'
+
+    def test_get_new_split(self):
+        """
+        Get new split and merge with df_normal
+        ddd 150/100 is 150
+        """
+        db = pd.HDFStore(self.path)
+        try:
+            # raise KeyError
+            self.complex_group.df_normal = db['df_normal']
+            self.complex_group.df_remain = db['df_remain']
+            self.complex_group.df_date = db['df_date']
+        except KeyError:
+            self.complex_group.group_data()
+            self.complex_group.others_is_split()
+            self.complex_group.group_data()
+            df_list = self.complex_group.join_data()
+
+            db['df_normal'] = self.complex_group.df_normal
+            db['df_remain'] = self.complex_group.df_remain
+            db['df_date'] = self.complex_group.df_date
+
+        db.close()
+
+        df_split1 = self.complex_group.new_split()
+
+        for code in df_split1['new_code'][:1]:
+            ts(df_split1[df_split1['new_code'] == code])
 
 
 class TestThinkbackOption(TestUnitSetUp):
     def setUp(self):
-        self.symbol = 'AIG'
+        self.symbol = 'DDD'
         self.tb_option = ThinkbackOption(self.symbol)
 
     def test_start(self):
@@ -315,4 +348,16 @@ class TestThinkbackOption(TestUnitSetUp):
         Test create option raw data then save into clean h5 store
         """
         self.tb_option.create_raw()
+
+    def test_check(self):
+        """
+        Check result data is valid
+        """
+        path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        df_normal = db.select('option/raw/normal')
+        db.close()
+
+        ts(df_normal[df_normal['date'] == '2031-11-05'].head())
+
 

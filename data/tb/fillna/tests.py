@@ -3,6 +3,7 @@ from base.tests import TestSetUp
 import numpy as np
 import pandas as pd
 
+from base.ufunc import ts
 from data.models import SplitHistory
 from data.tb.fillna.normal import FillNaNormal
 from data.tb.fillna.split_new import FillNaSplitNew
@@ -14,7 +15,7 @@ class TestFillNaNormal(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = 'AIG'
+        self.symbol = 'DDD'
         self.fillna_normal = FillNaNormal(self.symbol)
 
     def test_get_data(self):
@@ -23,7 +24,8 @@ class TestFillNaNormal(TestSetUp):
         """
         self.fillna_normal.get_data()
 
-        print self.fillna_normal.df_normal.head(20).to_string(line_width=1000)
+        # print self.fillna_normal.df_normal.head(20).to_string(line_width=1000)
+        ts(self.fillna_normal.df_div)
         self.assertTrue(len(self.fillna_normal.close))
         self.assertTrue(len(self.fillna_normal.df_normal))
         self.assertTrue(len(self.fillna_normal.rate))

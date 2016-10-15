@@ -5,6 +5,8 @@ from math import exp, sqrt
 from QuantLib import *
 from pandas.tseries.offsets import BDay
 
+from base.ufunc import ds
+
 
 def extract_code(c):
     """
@@ -24,30 +26,6 @@ def extract_code(c):
     return ex_date, name, float(strike)
 
 
-def get_div_yield(df_stock, df_dividend):
-    """
-    Calculate a series of dividend yield
-    :param df_stock: DataFrame
-    :param df_dividend: DataFrame
-    :return: Series
-    """
-    df_temp = df_dividend.query(
-        '%r <= announce_date <= %r' % (
-            df_stock.index[0].strftime('%Y-%m-%d'),
-            df_stock.index[-1].strftime('%Y-%m-%d')
-        )
-    )
-
-    df = pd.DataFrame(np.zeros(len(df_stock)), index=df_stock.index, columns=['amount'])
-
-    for index, data in df_temp.iterrows():
-        df.loc[data['announce_date']:data['expire_date'], 'amount'] = data['amount']
-
-    df['div'] = df['amount'] / df_stock['close']
-
-    return df
-
-
 class OptionCalc(object):
     def __init__(self, ex_date, name, strike, today, rf_rate, close, bid, ask, impl_vol=0.01, div=0.0):
         """
@@ -64,12 +42,15 @@ class OptionCalc(object):
         :param div:
         """
         # convert ex_date and today from int64 to date
-        ex_date = pd.Timestamp('%s' % ex_date)
-        today = pd.Timestamp('%s' % today)
+        e0 = ex_date
+        t0 = today
+        ex_date = pd.datetime.strptime(ex_date, '%y%m%d')
+        today = pd.datetime.strptime(today, '%y%m%d')
         # ex_date = datetime.strptime(str(ex_date), '%Y%m%d')
         # today = datetime.strptime(str(today), '%Y%m%d')
         if today >= ex_date:
-            raise IndexError('Last trading day: %s, %s' % (today, ex_date))
+            print e0, t0, name, strike, rf_rate, close, bid, ask
+            raise IndexError('Last trading day: %s, %s' % (ds(today), ds(ex_date)))
 
         # extract detail from option code
         self.name = name

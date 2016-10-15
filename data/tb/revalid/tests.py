@@ -136,4 +136,3 @@ class TestValidCleanOption(TestSetUp):
         Test re-valid clean options data
         """
         self.valid_clean.start()
-

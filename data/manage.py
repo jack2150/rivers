@@ -1,6 +1,8 @@
 import os
 import sys
 
+from data.tb.raw2.options import ThinkbackOption
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "rivers.settings")
 
@@ -61,6 +63,21 @@ def proc_raw(symbol):
     extract_option = RawOption(symbol, df_stock)
     extract_option.start()
     extract_option.update_underlying()
+
+
+@manage.command()
+@click.option('--symbol', prompt='Symbol', help='Symbol of raw2 option data.')
+def prepare_raw2(symbol):
+    proc_raw2(symbol)
+    click.pause()
+
+
+def proc_raw2(symbol):
+    click.echo('Create raw2 data for: %s' % symbol.upper())
+    # run import raw option
+    tb_option = ThinkbackOption(symbol)
+    tb_option.create_raw()
+    tb_option.update_underlying()
 
 
 @manage.command()
@@ -200,7 +217,7 @@ def proc_fillna(symbol, name):
 def import_option(symbol):
     symbol = symbol.lower()
     proc_stock(symbol)
-    proc_raw(symbol)
+    proc_raw2(symbol)
     proc_valid_raw(symbol)
 
     path = os.path.join(CLEAN_DIR, '__%s__.h5' % symbol.lower())

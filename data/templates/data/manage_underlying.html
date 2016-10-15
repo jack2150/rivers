@@ -114,8 +114,9 @@
         <a href="{% url 'admin:raw_stock_h5' symbol %}" class="list-group-item">
           1. Import Stock
         </a>
-        <a href="{% url 'admin:raw_option_h5' symbol %}" class="list-group-item">
-          2. Import Raw Option
+        <a href="{% url 'admin:raw2_option_h5' symbol %}" class="list-group-item">
+          2. Import Raw2 Option <br>
+          <span style="margin-left: 1em;">(Multi split, complex others)</span>
         </a>
         <a href="{% url 'admin:valid_option_h5' symbol %}" class="list-group-item">
           3. Valid Raw Option
@@ -146,6 +147,14 @@
         </a>
         <a href="{% url 'admin:merge_final_h5' symbol %}" class="list-group-item">
           7. Merge final data
+        </a>
+      </div>
+
+      <div class="list-group">
+        <a href="#" class="list-group-item disabled">Thinkback CSV Extra</a>
+
+        <a href="{% url 'admin:raw_option_h5' symbol %}" class="list-group-item">
+          2. Import Raw Option
         </a>
       </div>
     </div>

@@ -28,9 +28,9 @@ class CleanSplitNew(object):
         db.close()
 
         # merge all into a single table
-        df_all = pd.merge(df_split1, df_stock.reset_index(), how='inner', on=['date'])
-        df_all = pd.merge(df_all, df_rate.reset_index(), how='inner', on=['date'])
-        self.df_all = pd.merge(df_all, df_div.reset_index(), how='inner', on=['date'])
+        df_all = pd.merge(df_split1, df_stock.reset_index(), on=['date'])
+        df_all = pd.merge(df_all, df_rate.reset_index(), on=['date'])
+        self.df_all = pd.merge(df_all, df_div.reset_index(), on=['date'])
 
     def to_csv(self):
         """
@@ -79,7 +79,7 @@ class CleanSplitNew(object):
             db.remove('option/clean/split/new')
         except KeyError:
             pass
-        db.append('option/%s/clean/split/new', df_clean)
+        db.append('option/clean/split/new', df_clean)
         db.close()
 
     def update_underlying(self):

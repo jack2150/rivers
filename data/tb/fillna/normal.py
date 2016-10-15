@@ -36,7 +36,7 @@ class FillNaNormal(object):
         print output % ('PROC', 'Prepare and merge data')
         self.close = df_stock.set_index('date')['close']
         self.rate = df_rate.set_index('date')['rate']
-        self.df_div = df_div
+        self.df_div = df_div['div']
         self.df_normal = df_normal
 
         # output stat
@@ -150,7 +150,7 @@ class FillNaNormal(object):
                     0.0,
                     0.0,
                     mean['impl_vol'],
-                    0.0  # later
+                    self.df_div[date]
                 )
 
                 theo_price = clean.theo_price() + 0

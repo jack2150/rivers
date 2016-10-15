@@ -474,11 +474,12 @@ class TestFormulaBacktest(TestUnitSetUp):
             start='2009-01-01',
             stop='2014-12-31'
         )
+        self.symbol = 'SPY'
 
-        db = pd.HDFStore(os.path.join(RESEARCH_DIR, self.symbol.lower(), 'algorithm.h5'))
-
-        df_report = db.select('report')
-        df_signal = db.select('signal')
+        path = os.path.join(RESEARCH_DIR, '%s.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        df_report = db.select('algorithm/report')
+        df_signal = db.select('algorithm/signal')
         db.close()
 
         print df_report.head().to_string(line_width=1000)

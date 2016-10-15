@@ -32,7 +32,7 @@ def change_right(x):
 
 def update_old_strike(df_split):
     """
-    Update option_code strike with new strike
+    Update option_code strike with new strike for old_strike
     :param df_split: pd.DataFrame
     :return: pd.DataFrame
     """
@@ -99,7 +99,7 @@ def merge_final(symbol):
     df_all = df_all.sort_values(['date', 'option_code'])
     # print len(df_all)
     # get df_contract
-    group = df_all.group_data('option_code')
+    group = df_all.groupby('option_code')
     logger.info('Option_code length: %d' % len(group))
     index = [(key, value) for key, value in group['date'].max().iteritems()]
     df_index = df_all.set_index(['option_code', 'date'])

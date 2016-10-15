@@ -7,6 +7,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 import numpy as np
 from django.shortcuts import render, redirect
+
+from base.ufunc import ts
 from rivers.settings import BASE_DIR, STATEMENT_DIR
 from statement.models import *
 
@@ -52,7 +54,7 @@ def statement_import(request, name_id):
         date = os.path.basename(fpath)[:10]
 
         # duplicate date
-        if Statement.objects.filter(date=date).exists():
+        if Statement.objects.filter(Q(statement_name=statement_name) & Q(date=date)).exists():
             logger.info('Statement import skip, date exists: %s' % date)
             continue  # skip below and next file
         else:
@@ -142,15 +144,14 @@ def statement_import(request, name_id):
                 lambda x: np.nan if 'STOCK' in (x['Spread'], x['Type']) else x['Strike'], axis=1
             )
 
-            for symbol in df['Symbol'].unique():  # remove credit
-                df_symbol = df[df['Symbol'] == symbol]
-                net_price = float(df_symbol.loc[df_symbol.index.values[0], 'Net Price'])
-
-                if len(df_symbol[df_symbol['Net Price'] == 'CREDIT']):
-                    df.loc[df['Symbol'] == symbol, 'Net Price'] = net_price * -1
-
             # drop future and forex
             df = df[df.apply(lambda x: False if '/' in x['Symbol'] else True, axis=1)]
+            df['Net Price'] = df['Net Price'].apply(
+                lambda x: np.nan if x in ('DEBIT', 'CREDIT') else x
+            )
+            df['Net Price'] = df['Net Price'].fillna(method='ffill')
+
+            # convert back to csv
             at_lines = df.drop('', 1).to_csv().split('\n')[1:-1]  # back into csv lines
 
             for line in at_lines:
@@ -276,8 +277,16 @@ class TruncateStatementForm(forms.Form):
         Remove all data for single symbol
         :param statement_name: StatementName
         """
-        Position.objects.filter(name=statement_name).all().delete()
-        Statement.objects.filter(name=statement_name).all().delete()
+        statements = Statement.objects.filter(statement_name=statement_name)
+        positions = Position.objects.filter(statement__in=statements)
+        position_stages = PositionStage.objects.filter(position__in=positions)
+        logger.info('Remove statement: %d, position: %d, stage: %d' % (
+            statements.count(), positions.count(), position_stages.count()
+        ))
+
+        position_stages.all().delete()
+        positions.all().delete()
+        statements.all().delete()
 
 
 def statement_truncate(request, name_id):
@@ -287,6 +296,8 @@ def statement_truncate(request, name_id):
     :param name_id: int
     :return: render
     """
+    # todo: update truncate
+
     statement_name = StatementName.objects.get(id=name_id)
     logger.info('%s' % statement_name)
     logger.info('Truncate all statements for: %s' % statement_name.path)
@@ -298,30 +309,31 @@ def statement_truncate(request, name_id):
         if form.is_valid():
             form.truncate_data(statement_name)
             logger.info('All statements removed')
-            return redirect(reverse('admin:app_list', args=('statement',)))
+            # return redirect(reverse('admin:app_list', args=('statement',)))
+            return redirect(reverse('admin:statement_statementname_changelist'))
     else:
         form = TruncateStatementForm(
             initial={'confirm': True}
         )
 
         stats = dict()
-        stats['statement'] = Statement.objects.count()
+        statement = Statement.objects.filter(statement_name=statement_name)
+        stats['statement'] = statement.count()
 
         try:
-            stats['start_date'] = Statement.objects.order_by('date').first().date
-            stats['stop_date'] = Statement.objects.order_by('date').last().date
+            stats['start_date'] = statement.order_by('date').first().date
+            stats['stop_date'] = statement.order_by('date').last().date
         except AttributeError:
             stats['start_date'] = '...'
             stats['stop_date'] = '...'
 
-        stats['position'] = Position.objects.count()
-        stats['position_stage'] = PositionStage.objects.count()
-        stats['profit_loss'] = ProfitLoss.objects.count()
-        stats['account_order'] = AccountOrder.objects.count()
-        stats['account_trade'] = AccountTrade.objects.count()
-        stats['cash_balance'] = CashBalance.objects.count()
-        stats['holding_equity'] = HoldingEquity.objects.count()
-        stats['holding_option'] = HoldingOption.objects.count()
+        stats['position'] = Position.objects.filter(statement=statement).count()
+        stats['profit_loss'] = ProfitLoss.objects.filter(statement=statement).count()
+        stats['account_order'] = AccountOrder.objects.filter(statement=statement).count()
+        stats['account_trade'] = AccountTrade.objects.filter(statement=statement).count()
+        stats['cash_balance'] = CashBalance.objects.filter(statement=statement).count()
+        stats['holding_equity'] = HoldingEquity.objects.filter(statement=statement).count()
+        stats['holding_option'] = HoldingOption.objects.filter(statement=statement).count()
 
     # view
     template = 'statement/truncate.html'

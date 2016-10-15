@@ -1,9 +1,33 @@
 import os
+import numpy as np
 import pandas as pd
 from StringIO import StringIO
 from data.models import Underlying
-from data.tb.fillna.calc import get_div_yield
 from rivers.settings import QUOTE_DIR, CLEAN_DIR, TREASURY_DIR
+
+
+def get_div_yield(df_stock, df_dividend):
+    """
+    Calculate a series of dividend yield
+    :param df_stock: DataFrame
+    :param df_dividend: DataFrame
+    :return: Series
+    """
+    df_temp = df_dividend.query(
+        '%r <= announce_date <= %r' % (
+            df_stock.index[0].strftime('%Y-%m-%d'),
+            df_stock.index[-1].strftime('%Y-%m-%d')
+        )
+    )
+
+    df = pd.DataFrame(np.zeros(len(df_stock)), index=df_stock.index, columns=['amount'])
+
+    for index, data in df_temp.iterrows():
+        df.loc[data['announce_date']:data['expire_date'], 'amount'] = data['amount']
+
+    df['div'] = df['amount'] / df_stock['close']
+
+    return df
 
 
 def get_quote_data(symbol):
@@ -28,6 +52,7 @@ def get_quote_data(symbol):
         df_div['date'] = df_stock.index
         df_div['amount'] = 0.0
         df_div['div'] = 0.0
+        df_div = df_div.set_index('date')
     db.close()
 
     df_stock = df_stock.reset_index()
@@ -65,9 +90,9 @@ class CleanNormal(object):
         :param df_stock: pd.DataFrame
         """
         # merge all into a single table
-        df_all = pd.merge(df_normal, df_stock, how='inner', on=['date'])
-        df_all = pd.merge(df_all, df_rate, how='inner', on=['date'])
-        self.df_all = pd.merge(df_all, df_div.reset_index(), how='inner', on=['date'])
+        df_all = pd.merge(df_normal, df_stock, on=['date'])
+        df_all = pd.merge(df_all, df_rate, on=['date'])
+        self.df_all = pd.merge(df_all, df_div.reset_index(),on=['date'])
 
     def to_csv(self):
         """

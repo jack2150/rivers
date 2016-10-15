@@ -330,7 +330,6 @@ class TestExtractOption(TestSetUp):
         extract_option.get_old_split_data()
         extract_option.get_others_data()
 
-
         db = pd.HDFStore(path)
         db['df_normal'] = extract_option.df_normal
         db['df_split1'] = extract_option.df_split1
@@ -345,10 +344,8 @@ class TestExtractOption(TestSetUp):
         db.close()
 
         extract_option.continue_split_others()
-        #extract_option.merge_new_split_data()
-        #extract_option.format_normal_code()
-
-        # todo: a new method, continue others to others to splits...
+        # extract_option.merge_new_split_data()
+        # extract_option.format_normal_code()
 
 
 class TestRawViews(TestSetUp):

@@ -81,7 +81,9 @@
                           class="form-control form-control-inline" style="width: 350px"
                           title="" name="position" data-original-title="">
                           {% for underlying in underlyings %}
-                            <option value="{{ underlying.symbol }}">
+                            <option value="{{ underlying.symbol }}"
+                                {% if underlying.symbol == symbol %}selected{% endif %}
+                            >
                               {{ underlying.symbol }} - {{ underlying.company }}
                             </option>
                           {% endfor %}

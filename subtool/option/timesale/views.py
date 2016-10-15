@@ -1,4 +1,6 @@
 import logging
+import os
+
 import numpy as np
 import pandas as pd
 from bootstrap3_datetime.widgets import DateTimePicker
@@ -72,7 +74,7 @@ class OptionTimeSaleForm(forms.Form):
         df['trade'] = df.apply(lambda x: self.buy_or_sell(x['mark'], x['price']), axis=1)
         df = df.round({'price': 2, 'mark': 2})
 
-        group = df.group_data(['option', 'trade'])
+        group = df.groupby(['option', 'trade'])
         df_sum = group.sum()
         df_mean = group.mean()
 
@@ -106,7 +108,8 @@ def timesale_insert_view(request):
         if form.is_valid():
             symbol, date, df_timesale = form.process()
 
-            db = pd.HDFStore(QUOTE_DIR)
+            path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+            db = pd.HDFStore(path)
             path = 'option/%s/final/timesale' % symbol.lower()
             db.append(path, df_timesale, format='table', data_columns=True, min_itemsize=100)
             db.close()
@@ -144,7 +147,8 @@ def timesale_report_view(request, symbol, date):
     :param date: str
     :return: render
     """
-    db = pd.HDFStore(QUOTE_DIR)
+    path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+    db = pd.HDFStore(path)
     path = 'option/%s/final/timesale' % symbol.lower()
     df_timesale = db.select(path, where='date == %r' % date)
     db.close()

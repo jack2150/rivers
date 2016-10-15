@@ -40,9 +40,9 @@ class CleanSplitOld(object):
         :return:
         """
         # merge all into a single table
-        df_all = pd.merge(df_split0, df_stock.reset_index(), how='inner', on=['date'])
-        df_all = pd.merge(df_all, df_rate.reset_index(), how='inner', on=['date'])
-        self.df_all = pd.merge(df_all, df_div.reset_index(), how='inner', on=['date'])
+        df_all = pd.merge(df_split0, df_stock.reset_index(), on=['date'])
+        df_all = pd.merge(df_all, df_rate.reset_index(), on=['date'])
+        self.df_all = pd.merge(df_all, df_div.reset_index(), on=['date'])
 
     def update_split_date(self):
         """
@@ -53,7 +53,14 @@ class CleanSplitOld(object):
         split_history = SplitHistory.objects.filter(symbol=self.symbol.upper())
 
         for s in split_history:
-            self.df_all.loc[self.df_all['date'] == s.date, 'right'] = s.fraction
+            df_cont = self.df_all[self.df_all['date'] > s.date].sort_values('date')
+
+            if len(df_cont):
+                right = df_cont.iloc[0]['right']
+            else:
+                right = s.fraction
+
+            self.df_all.loc[self.df_all['date'] == s.date, 'right'] = right
 
         # update close price
         self.df_all['multiply'] = self.df_all['right'].apply(

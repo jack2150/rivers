@@ -189,10 +189,6 @@ class AlgorithmAnalysisForm(forms.Form):
 
         os.system(cmd)
 
-        return redirect(reverse(
-            'admin:manage_underlying', kwargs={'symbol': self.cleaned_data['symbol']}
-        ))
-
 
 def algorithm_analysis(request, formula_id, argument_id=0):
     """
@@ -207,15 +203,12 @@ def algorithm_analysis(request, formula_id, argument_id=0):
     # extract arguments
     arguments = formula.get_args()
 
+    symbol = ''
     if request.method == 'POST':
         form = AlgorithmAnalysisForm(request.POST, arguments=arguments)
         if form.is_valid():
             form.analysis()
-            return redirect(reverse(
-                'admin:algorithm_analysis', kwargs={
-                    'formula_id': formula_id, 'argument_id': argument_id
-                }
-            ))
+            symbol = form.cleaned_data['symbol']
     else:
         season = latest_season()
         initial = {
@@ -248,6 +241,7 @@ def algorithm_analysis(request, formula_id, argument_id=0):
         site_title='Algorithm Analysis',
         title='Algorithm Analysis',
         form=form,
+        symbol=symbol,
         arguments=arguments,
         underlyings=Underlying.objects.filter(enable=True)
     )

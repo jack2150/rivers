@@ -1,13 +1,15 @@
 import logging
 import os
 import re
+from fractions import Fraction
+
 import numpy as np
 import pandas as pd
 from django.db.models import Q
 from pandas.tseries.offsets import BDay
 from base.ufunc import ts, ds
 from data.tb.thinkback import ThinkBack
-from data.models import SplitHistory
+from data.models import SplitHistory, Underlying
 from rivers.settings import CLEAN_DIR, THINKBACK_DIR, QUOTE_DIR
 
 logger = logging.getLogger('views')
@@ -83,6 +85,8 @@ class CodeChanger(object):
                 extra = 1
             elif '/' in right:
                 extra = 1
+        elif extra == 'empty':
+            extra = ''
 
         strike = str(strike)
         if strike[-2:] == '.0':
@@ -126,8 +130,8 @@ class CodeChanger(object):
 
         wrong = re.search('^([A-Z]+)\d+[CP]+\d+', code).group(1)
 
-        new_code = '{symbol}{extra}{right}'.format(
-            symbol=symbol.upper(), extra=extra, right=code[len(wrong):]
+        new_code = '{symbol}{extra}{remain}'.format(
+            symbol=symbol.upper(), extra=extra, remain=code[len(wrong):]
         )
 
         return new_code
@@ -192,23 +196,25 @@ class CodeChanger(object):
         return new_code
 
     @staticmethod
-    def extra_to_normal(c):
+    def extra_to_normal(code, strike=''):
         """
         Convert split/others code into normal code
-        :param c: str
+        :param code: str
+        :param strike: float
         :return: set (str, TimeStamp, str, float)
         """
-        symbol = re.search('^([A-Z]+)\d+[CP]+\d+', c).group(1)
-        ex_date = re.search('^[A-Z]+(\d+)[CP]+\d+', c).group(1)
+        symbol = re.search('^([A-Z]+)\d+[CP]+\d+', code).group(1)
+        ex_date = re.search('^[A-Z]+(\d+)[CP]+\d+', code).group(1)
         if len(ex_date) != 7:
             raise ValueError('Only can convert a split/others codes')
         ex_date = ex_date[-6:]
-        name = re.search('^[A-Z]+\d+([CP]+)\d+', c).group(1)
+        name = re.search('^[A-Z]+\d+([CP]+)\d+', code).group(1)
 
-        if '.' in c:
-            strike = re.search('^[A-Z]+\d+[CP]+(\d*[.]\d+)', c).group(1)
-        else:
-            strike = re.search('^[A-Z]+\d+[CP]+(\d+)', c).group(1)
+        if strike == '':
+            if '.' in code:
+                strike = re.search('^[A-Z]+\d+[CP]+(\d*[.]\d+)', code).group(1)
+            else:
+                strike = re.search('^[A-Z]+\d+[CP]+(\d+)', code).group(1)
 
         normal_code = '{symbol}{ex_date}{name}{strike}'.format(
             symbol=symbol, ex_date=ex_date, name=name, strike=strike
@@ -255,11 +261,6 @@ class GroupOption(object):
         """
         print '=' * 70
         print output % ('GET', 'Option data:', self.symbol.upper())
-        print '=' * 70
-
-        print output % ('GET', 'Split history: %d' % len(self.split_history), '')
-        for split in self.split_history:
-            print output % ('SPLIT', 'history: ', split)
         print '=' * 70
 
         db = pd.HDFStore(self.db_path)
@@ -404,8 +405,8 @@ class GroupOption(object):
                 False if self.symbol in x else True
             )
         )
-        df_remain = df_all[~df_all['update']]
-        df_change = df_all[df_all['update']]
+        df_remain = df_all[~df_all['update']].copy()
+        df_change = df_all[df_all['update']].copy()
 
         df_group = df_change.groupby('option_code').first()[[
             'others', 'right', 'special', 'ex_date', 'name', 'strike'
@@ -506,15 +507,29 @@ class GroupOption(object):
 
         self.df_all = df_all
 
+    @staticmethod
+    def others_to_right(data):
+        """
+        :param data: str
+        :return: str
+        """
+        result = data['right']
+        right = re.search('^[A-Z]+\s(\d+)', data['others']).group(1)
+
+        if data['right'] != right:
+            result = '%s/100' % re.search('^[A-Z]+\s(\d+)', data['others']).group(1)
+
+        return result
+
     def modify_others(self):
         """
         Modify some others which is same as split
         VXX 25 or TZA 25 is same as 25/100 right but not PYPL 100
         """
         print '-' * 70
-        print output % ('PROC', 'major option_code update', '')
+        print output % ('PROC', 'modify others to split', '')
         print '-' * 70
-        df_others = self.df_all[self.df_all['others'] != '']
+        df_others = self.df_all[self.df_all['others'] != ''].copy()
 
         if len(df_others):
             df_others['update'] = df_others['others'].apply(
@@ -523,18 +538,19 @@ class GroupOption(object):
             print output % ('OTHERS', 'df_others length:', len(df_others))
 
             df_update = df_others[df_others['update']]
-            print output % ('OTHERS', 'others that require modify', len(df_update))
-            df_update['right'] = df_update['others'].apply(
-                lambda x: '%s/100' % re.search('^[A-Z]+\s(\d+)', x).group(1)
-            )
-            df_update['others'] = ''
-            del df_update['update']
-            print output % ('OTHERS', 'remove others and keep split', '')
-            # ts(df_update)
 
-            df_remain = self.df_all[~self.df_all.index.isin(df_update.index)]
-            self.df_all = pd.concat([df_remain, df_update])
-            """:type: pd.DataFrame"""
+            if len(df_update):
+                print output % ('OTHERS', 'others that require modify', len(df_update))
+                df_update['right'] = df_update.apply(self.others_to_right, axis=1)
+
+                df_update['others'] = ''
+                del df_update['update']
+                print output % ('OTHERS', 'remove others and keep split', '')
+                # ts(df_update)
+
+                df_remain = self.df_all[~self.df_all.index.isin(df_update.index)]
+                self.df_all = pd.concat([df_remain, df_update])
+                """:type: pd.DataFrame"""
 
     def remove_duplicate(self):
         """
@@ -579,11 +595,13 @@ class GroupOption(object):
         """
         Some of the cycle have Non standard in others with split is 100 mostly
         replace them with exact split and others with later cycle
+        others: Non Standard
         :return:
         """
-        df_non = self.df_all[self.df_all['others'] == 'Non Standard']
-        df_normal = self.df_all[~self.df_all.index.isin(df_non.index)]
-        group = df_normal.sort_values('date').groupby('option_code')
+        df_non = self.df_all[self.df_all['others'] == 'Non Standard'].copy()
+        df_normal = self.df_all[~self.df_all.index.isin(df_non.index)].copy()
+        group0 = df_non.sort_values('date').groupby('option_code')
+        group1 = df_normal.sort_values('date').groupby('option_code')
         # non_codes = df_non['option_code'].value_counts()
         df_search = df_non.groupby('option_code')['date'].max()
 
@@ -592,25 +610,39 @@ class GroupOption(object):
         else:
             print output % ('UPDATE', 'start update split/others', '"Non Standard"')
 
+        drops = []
         updates = {}
         for code, stop in df_search.iteritems():
-            right, others = group.get_group(code).query(
-                'date > %r' % stop
-            )[['right', 'others']].iloc[0]
-            print output % (
-                'NON', 'code: %s, date: %s' % (code, ds(stop)), '(%s, %s)' % (right, others)
-            )
+            try:
+                right, others = group1.get_group(code).query(
+                    'date > %r' % stop
+                )[['right', 'others']].iloc[0]
+                print output % (
+                    'NON', 'code: %s, date: %s' % (code, ds(stop)), '(%s, %s)' % (right, others)
+                )
 
-            updates[code] = (right, others)
+                updates[code] = (right, others)
+            except (KeyError, IndexError):
+                # df_non code not exists in df_normal
+                df_code = group0.get_group(code).copy()
+                df_code['empty'] = (df_code['ask'] == 0) & (df_code['bid'] == 0)
+                if not np.any(df_code['empty']):
+                    drops.append(code)
+
+        if len(drops):
+            df_non = df_non[~df_non['option_code'].isin(drops)]
+
+        # todo: here, goog
 
         if len(updates):
             df_non['right'] = df_non.apply(lambda x: updates[x['option_code']][0], axis=1)
             df_non['others'] = df_non.apply(lambda x: updates[x['option_code']][1], axis=1)
             print output % ('NON', 'finish update "Non Standard"', '')
             assert len(df_non[df_non['others'] == 'Non Standard']) == 0
-
             self.df_all = pd.concat([df_normal, df_non])
             """:type: pd.DataFrame"""
+        else:
+            self.df_all = self.df_all[~self.df_all['option_code'].isin(drops)]
 
     def ready_data(self, debug=False):
         """
@@ -699,7 +731,8 @@ class ComplexGroupOptions(object):
     """
     Group data using complex group method
     """
-    def __init__(self, df_all, split_history):
+    def __init__(self, symbol, df_all, split_history):
+        self.symbol = symbol
         self.df_all = df_all
         self.split_history = split_history
 
@@ -716,9 +749,12 @@ class ComplexGroupOptions(object):
         """
         Split df_all into df_normal and df_remain for better grouping
         """
-        self.df_normal = self.df_all.query('right == "100" & others == ""')
-        self.df_remain = self.df_all.query('right != "100" | others != ""')
+        self.df_normal = self.df_all.query('right == "100" & others == ""').copy()
+        self.df_remain = self.df_all.query('right != "100" | others != ""').copy()
         # print len(self.df_all), len(self.df_normal),  len(df_remain)
+        print output % ('DATA', 'df_normal: %d' % len(self.df_normal), '')
+        print output % ('DATA', 'df_remain: %d' % len(self.df_remain), '')
+        print '-' * 70
 
     def group_data(self):
         """
@@ -730,7 +766,9 @@ class ComplexGroupOptions(object):
         print output % ('PROC', 'group data', '')
         print '.' * 70
 
-        group = self.df_remain.groupby(['right', 'others'])
+        # drop new split
+        df_temp = self.df_remain[self.df_remain['right'].str.contains('/')]
+        group = df_temp.groupby(['right', 'others'])
         df_date = pd.concat([group['date'].min(), group['date'].max()], axis=1)
         """:type: pd.DataFrame"""
         df_date.columns = ['start', 'stop']
@@ -1043,9 +1081,10 @@ class ComplexGroupOptions(object):
         :return:
         """
         print output % ('PROC', 'split/others join previous df_normal data', '')
-        print '-' * 70
+        print '=' * 70
 
-        df_date = self.df_date.sort_values('start', ascending=False)
+        # first asc order
+        df_date = self.df_date.sort_values('start')
         # ts(df_date)
 
         # join data with normal
@@ -1056,13 +1095,16 @@ class ComplexGroupOptions(object):
             print output % ('DATE', 'start: %s' % ds(start), 'stop: %s' % ds(stop))
             key0 = '%s,%s' % (split0, others0)
             df_current = self.df_remain.query('right == %r & others == %r' % (split0, others0))
+            self.df_remain = self.df_remain[~self.df_remain.index.isin(df_current.index)]
+            print output % ('DATA', 'df_current: %d' % len(df_current), '')
+            print output % ('DATA', 'df_remain: %d' % len(self.df_remain), '')
 
             if split1 == '' and others1 == '':
                 print output % ('FIND', 'search old df_normal data', '')
                 current_codes = df_current['option_code'].unique()
                 replace_codes = {CodeChanger.change_extra(c, ''): c for c in current_codes}
                 df_before = self.df_normal.query('date < %r' % start)
-                df_continue = df_before[df_before['option_code'].isin(replace_codes.keys())]
+                df_continue = df_before[df_before['option_code'].isin(replace_codes.keys())].copy()
                 df_continue['option_code'] = df_continue['option_code'].apply(
                     lambda code: replace_codes[code]
                 )
@@ -1088,12 +1130,28 @@ class ComplexGroupOptions(object):
             # remove df_normal
             if len(remove_index):
                 print output % ('DEL', 'df_normal remove: %d' % len(remove_index), '')
+                length0 = len(self.df_normal)
                 self.df_normal = self.df_normal[~self.df_normal.index.isin(remove_index)]
+                print output % (
+                    'DATA', 'df_normal0: %d' % length0, 'df_normal1: %d' % len(self.df_normal)
+                )
+                assert len(remove_index) == length0 - len(self.df_normal)
                 print '-' * 70
 
         # print len(pd.concat(df.values())), len(self.df_remain)
         print output % ('SUB', 'join all follow data', '')
+        print output % ('DATA', 'df_remain: %d' % len(self.df_remain), '')
         print '-' * 70
+
+        if len(self.df_remain):
+            if np.any(self.df_remain['right'].apply(lambda x: '/' in x)):
+                raise LookupError('df_remain still exists: %d' % len(self.df_remain))
+            else:
+                print output % ('SPLIT', 'df_remain contain new split', '')
+                print '-' * 70
+
+        # desc orders
+        df_date = self.df_date.sort_values('start', ascending=False)
 
         # join follow data
         for (split0, others0), (start, stop, (split1, others1)) in df_date.iterrows():
@@ -1153,15 +1211,128 @@ class ComplexGroupOptions(object):
                     follows.append(df_follow)
 
                 if len(follows):
-                    df_list[key0] = pd.concat([df_current] + follows)
+                    df_key = pd.concat([df_current] + follows)
+                    """:type: pd.DataFrame"""
+                    df_key = df_key.sort_values(['date', 'option_code'], ascending=False)
+                    df_list[key0] = df_key
                     print output % ('END', 'df_current + df_follow: %d' % len(df_list[key0]), '')
 
             print '-' * 70
 
         # double check
-        assert len(self.df_normal) + sum([len(v) for k, v in df_list.items()]) == len(self.df_all)
+        # print len(self.df_normal) + sum([len(v) for k, v in df_list.items()]), len(self.df_all)
+        assert ((len(self.df_normal) + sum([len(v) for k, v in df_list.items()]) +
+                 len(self.df_remain)) == len(self.df_all))
 
         return df_list
+
+    def new_split(self):
+        """
+        After remove old_split/others and remain normal
+        use split history to determine new split data
+        :return: pd.DataFrame
+        """
+        print output % ('PROC', 'new split section', '')
+        print '=' * 70
+
+        data = []
+        for split in self.split_history:
+            print output % ('SPLIT', 'history: ', split)
+            print '-' * 70
+
+            # get yesterday
+            previous_dates = self.df_normal[self.df_normal['date'] < split.date]['date'].unique()
+            previous_dates.sort()
+            # using 2-days because mostly yesterday have no data
+            yesterday = pd.to_datetime(previous_dates)[-2]
+            df_yesterday = self.df_normal[self.df_normal['date'] == yesterday]
+            print output % ('DATA', 'yesterday: %s' % ds(yesterday), '')
+            # ts(df_yesterday)
+
+            # get current split date
+            df_current = self.df_remain[self.df_remain['date'] == split.date].copy()
+            df_current['strike1'] = df_current['strike'] * Fraction(split.fraction)
+            df_current['strike1'] = np.round(df_current['strike1'].astype('float64'), 2)
+            strikes = []
+            for strike in df_current['strike1']:
+                strike_str = '%.2f' % strike
+                if strike_str[-2:] in ('99', '01'):
+                    strike = round(strike)
+                elif strike_str[-2:] in ('49', '51'):
+                    strike = round(strike, 1)
+                elif strike_str[-2:] in ('26', '24'):
+                    strike = '%s.25' % strike_str[:-2]
+
+                strike = float(strike)
+                if strike == int(strike):
+                    strikes.append('%d' % strike)
+                elif strike == round(strike, 1):
+                    strikes.append('%.1f' % strike)
+                else:
+                    strikes.append('%.2f' % strike)
+
+            df_current['strike2'] = strikes
+
+            old_codes0 = list(df_yesterday['option_code'])
+            old_codes1 = df_current.apply(
+                lambda c: CodeChanger.extra_to_normal(
+                    code=c['option_code'], strike=c['strike2']
+                ),
+                axis=1
+            )
+
+            print output % ('CHECK', 'new split code update', '')
+            code_updates = {}
+            for x, y in zip(old_codes1, df_current['option_code']):
+                print output % ('CODE', 'convert back: %s ->' % x, '%s' % y)
+
+                if x in old_codes0:
+                    code_updates[x] = y
+                    print output % ('FOUND', 'old_code found in df_normal', '')
+                else:
+                    print output % ('EMPTY', 'old_code NOT FOUND in df_normal!', '')
+
+            df_previous = self.df_normal[
+                self.df_normal['option_code'].isin(code_updates.keys())
+            ].copy()
+            df_previous['new_code'] = df_previous['option_code'].apply(
+                lambda c: code_updates[c] if c in code_updates.keys() else c
+            )
+
+            df_after = self.df_remain[
+                self.df_remain['option_code'].isin(code_updates.values())
+            ].copy()
+
+            df_after['new_code'] = df_after['option_code']
+            # df = pd.concat([df_previous, df_current])
+            # """:type: pd.DataFrame"""
+            data.append(df_previous)
+            data.append(df_after)
+
+            print '-' * 70
+            print output % ('DATA', 'df_previous: %d' % len(df_previous), 'df_after: %d' % len(df_after))
+
+            if len(df_previous):
+                self.df_normal = self.df_normal[~self.df_normal.index.isin(df_previous.index)]
+
+            if len(df_after):
+                self.df_remain = self.df_remain[~self.df_remain.index.isin(df_after.index)]
+
+        df_split2 = pd.DataFrame()
+        if len(data):
+            # concat all
+            df_split2 = pd.concat(data)
+            """:type: pd.DataFrame"""
+
+            df_split2 = df_split2.sort_values(['date', 'new_code'])
+
+            print output % ('DATA', 'df_normal: %d' % len(self.df_normal), '')
+            print output % ('DATA', 'df_remain: %d' % len(self.df_remain), '')
+
+            # make sure no more new split
+            assert len(self.df_remain) == 0
+
+        return df_split2
 
     def final_data(self):
         """
@@ -1173,13 +1344,14 @@ class ComplexGroupOptions(object):
         self.others_is_split()
         self.group_data()
         df_list = self.join_data()
+        df_split2 = self.new_split()
 
         # remove index
         del self.df_normal['index'], self.df_normal['index2']
         for df in df_list.values():
             del df['index'], df['index2']
 
-        return self.df_normal, df_list
+        return self.df_normal, df_list, df_split2
 
 
 class ThinkbackOption(object):
@@ -1189,6 +1361,12 @@ class ThinkbackOption(object):
         self.clean_path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
         self.df_stock = pd.DataFrame()
         self.split_history = []
+
+        # for update log
+        self.df_normal = pd.DataFrame()
+        self.df_others = pd.DataFrame()
+        self.df_split1 = pd.DataFrame()
+        self.df_split2 = pd.DataFrame()
 
     def get_stock(self):
         """
@@ -1206,8 +1384,12 @@ class ThinkbackOption(object):
         Get split history data
         """
         self.split_history = SplitHistory.objects.filter(
-            Q(symbol=self.symbol.upper()) & Q(date__gte=self.df_stock.index[-1])
+            Q(symbol=self.symbol.upper()) & Q(date__gte=self.df_stock.index.min())
         )
+        print output % ('GET', 'Split history: %d' % len(self.split_history), '')
+        for split in self.split_history:
+            print output % ('SPLIT', 'history: ', split)
+        print '=' * 70
 
     def create_raw(self):
         """
@@ -1230,8 +1412,11 @@ class ThinkbackOption(object):
             df_normal = df_all
         else:
             # complex group
-            complex_group = ComplexGroupOptions(df_all, self.split_history)
-            df_normal, df_list = complex_group.final_data()
+            complex_group = ComplexGroupOptions(self.symbol, df_all, self.split_history)
+            df_normal, df_list, df_split2 = complex_group.final_data()
+
+            if len(complex_group.df_date):
+                ts(complex_group.df_date)
 
             for df in df_list.values():
                 rights = [r for r in df['right'].unique() if r != '100']
@@ -1274,3 +1459,19 @@ class ThinkbackOption(object):
 
         print output % ('SAVE', 'All data saved', '')
         logger.info('Complete save raw options')
+
+        self.df_normal = df_normal
+        self.df_others = df_others
+        self.df_split1 = df_split1
+        self.df_split2 = df_split2
+
+    def update_underlying(self):
+        """
+        Update underlying after completed
+        """
+        Underlying.write_log(self.symbol, [
+            'Raw df_normal length: %d' % len(self.df_normal),
+            'Raw df_others length: %d' % len(self.df_others),
+            'Raw df_split/old length: %d' % len(self.df_split1),
+            'Raw df_split/new length: %d' % len(self.df_split2)
+        ])

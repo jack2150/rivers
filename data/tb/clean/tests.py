@@ -1,6 +1,7 @@
+import numpy as np
 from django.core.urlresolvers import reverse
-
 from base.tests import TestSetUp
+from base.utests import TestUnitSetUp
 from data.models import SplitHistory
 from data.tb.clean import *
 from data.tb.clean.split_new import CleanSplitNew
@@ -54,7 +55,7 @@ class TestCppCleanNormal(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = 'GG'
+        self.symbol = 'TZA'
         self.clean_option = CleanNormal(self.symbol)
 
     def test_get_merge_data(self):
@@ -70,7 +71,6 @@ class TestCppCleanNormal(TestSetUp):
     def test_to_csv(self):
         """
         Test df_all with extra column to csv lines
-
         593,2009-01-16,2009-01-16,CALL,55.0,0.43,0.0,0.0,0.05,0.0,0.0
         """
         self.clean_option.get_merge_data()
@@ -105,6 +105,9 @@ class TestCppCleanNormal(TestSetUp):
 
 class TestCppCleanSplitNew(TestSetUp):
     def setUp(self):
+        """
+        Primary test DDD, LULU, BIDU
+        """
         TestSetUp.setUp(self)
 
         self.symbol = 'DDD'
@@ -148,59 +151,3 @@ class TestCppCleanSplitNew(TestSetUp):
 
             print df_stock[df_stock['date'].isin(df_temp['date'])]
 
-
-class TestCppCleanSplitOld(TestSetUp):
-    def setUp(self):
-        TestSetUp.setUp(self)
-
-        self.symbol = 'C'  # test with C
-        self.clean_option = CleanSplitOld(self.symbol)
-
-        self.split_history = SplitHistory(
-            symbol=self.symbol,
-            date='2011-05-09',
-            fraction='1/10'
-        )
-        self.split_history.save()
-
-    def test_update_split_date(self):
-        """
-        Test get_merge_data form db
-        """
-        self.clean_option.get_merge_data()
-        print 'run update_split_date...'
-        self.clean_option.update_split_date()
-
-        df_all = self.clean_option.df_all
-        # noinspection PyTypeChecker
-        same = np.count_nonzero(df_all['close'] == df_all['close1'])
-        self.assertNotEqual(len(df_all), same)
-        print 'df_all close: %d' % len(df_all)
-        print 'df_all close != close1: %d' % same
-
-        code = df_all['option_code'].unique()[0]
-        print df_all[df_all['option_code'] == code].to_string(line_width=1000)
-
-    def test_clean_split_old_view(self):
-        """
-        Test raw option import for cli
-        """
-        self.client.get(reverse('admin:clean_split_old_h5', kwargs={'symbol': 'c'}))
-
-    def test_verify_data(self):
-        db = pd.HDFStore(os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower()))
-        df_split1 = db.select('option/valid/split/old')
-        df_split2 = db.select('option/clean/split/old')
-        df_split2 = df_split2.sort_values('date', ascending=False)
-        db.close()
-
-        for option_code in df_split1['option_code'].unique()[0:1]:
-            df_temp = df_split1.query('option_code == %r' % option_code)[[
-                'ask', 'bid', 'date', 'ex_date', # 'ex_month', 'ex_year',
-                'last', 'mark', 'name', 'open_int', 'option_code', 'others',
-                'right', 'special', 'strike', 'volume',
-                'theo_price', 'impl_vol', 'delta', 'gamma', 'theta', 'vega',
-                'prob_itm', 'prob_otm', 'prob_touch', 'dte', 'intrinsic', 'extrinsic'
-            ]]
-            print df_temp.to_string(line_width=1000)
-            print df_split2.query('option_code == %r' % option_code).to_string(line_width=1000)

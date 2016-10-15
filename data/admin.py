@@ -7,6 +7,7 @@ from data.tb.clean.views import *
 from data.tb.fillna.views import fillna_missing_h5
 from data.tb.final.views import merge_final_h5, remove_clean_h5, import_option_h5, import_weekday_h5
 from data.tb.raw.views import raw_stock_h5, raw_option_h5
+from data.tb.raw2.views import raw2_option_h5
 from data.tb.revalid.views import valid_clean_h5
 from data.tb.valid.views import valid_option_h5
 from data.event.views import html_event_import
@@ -172,12 +173,13 @@ admin.site.register_view(
 
 # csv h5 stock and option
 admin.site.register_view(
-    'data/h5/import/stock/(?P<symbol>\w+)/$',
-    urlname='raw_stock_h5', view=raw_stock_h5
+    'data/h5/import/stock/(?P<symbol>\w+)/$', urlname='raw_stock_h5', view=raw_stock_h5
 )
 admin.site.register_view(
-    'data/h5/import/raw/option/(?P<symbol>\w+)/$',
-    urlname='raw_option_h5', view=raw_option_h5
+    'data/h5/import/raw/option/(?P<symbol>\w+)/$', urlname='raw_option_h5', view=raw_option_h5
+)
+admin.site.register_view(
+    'data/h5/import/raw2/option/(?P<symbol>\w+)/$', urlname='raw2_option_h5', view=raw2_option_h5
 )
 admin.site.register_view(
     'data/h5/process/valid/option/(?P<symbol>\w+)/$',

@@ -17,9 +17,8 @@
   {% block breadcrumbs %}
     <ul class="breadcrumb">
       <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
-      <li><a href="{% url 'admin:app_list' 'data' %}">Data</a></li>
-      <li><a href="{% url 'admin:data_underlying_changelist' %}">Underlyings</a></li>
-      <li>Web Import</li>
+      <li><a href="{% url 'admin:app_list' 'statement' %}">Statement</a></li>
+      <li>Truncate</li>
     </ul>
   {% endblock %}
 {% endif %}
@@ -54,7 +53,7 @@
               <table class="table">
                 <caption>Statement</caption>
                 <tr>
-                  <th class="fix_width">Count:</th>
+                  <th class="fix_width">Days:</th>
                   <td>{{ stats.statement }}</td>
                 </tr>
                 <tr>
@@ -65,12 +64,20 @@
                   <th>Stop date:</th>
                   <td>{{ stats.stop_date }}</td>
                 </tr>
+                <tr>
+                  <th class="fix_width">Position:</th>
+                  <td>{{ stats.position }}</td>
+                </tr>
               </table>
             </div>
 
             <div class="col-md-4">
               <table class="table">
                 <caption>Account</caption>
+                <tr>
+                  <th>Cash Balance:</th>
+                  <td>{{ stats.cash_balance }}</td>
+                </tr>
                 <tr>
                   <th class="fix_width">Account Order:</th>
                   <td>{{ stats.account_order }}</td>
@@ -79,10 +86,12 @@
                   <th>Account Trade:</th>
                   <td>{{ stats.account_trade }}</td>
                 </tr>
-                <tr>
-                  <th>Cash Balance:</th>
-                  <td>{{ stats.cash_balance }}</td>
-                </tr>
+
+              </table>
+            </div>
+            <div class="col-md-4">
+              <table class="table">
+                <caption>Account</caption>
                 <tr>
                   <th>Holding Equity:</th>
                   <td>{{ stats.holding_equity }}</td>
@@ -91,19 +100,9 @@
                   <th>Holding Option:</th>
                   <td>{{ stats.holding_option }}</td>
                 </tr>
-              </table>
-            </div>
-
-            <div class="col-md-4">
-              <table class="table">
-                <caption>Position</caption>
                 <tr>
-                  <th class="fix_width">Count:</th>
-                  <td>{{ stats.position }}</td>
-                </tr>
-                <tr>
-                  <th>Stage:</th>
-                  <td>{{ stats.position_stage }}</td>
+                  <th>Profit Loss:</th>
+                  <td>{{ stats.profit_loss }}</td>
                 </tr>
               </table>
             </div>

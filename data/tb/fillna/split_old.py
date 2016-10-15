@@ -38,7 +38,7 @@ class FillNaSplitOld(object):
         print output % ('PROC', 'Prepare and merge data')
         self.df_stock = df_stock.set_index('date')['close']
         self.df_rate = df_rate.set_index('date')['rate']
-        self.df_div = df_div
+        self.df_div = df_div['div']
         self.df_split0 = df_split0
 
         # get split history, error if not exists
@@ -164,7 +164,7 @@ class FillNaSplitOld(object):
                     0.0,
                     0.0,
                     mean['impl_vol'],
-                    0.0  # later
+                    self.df_div[date]
                 )
 
                 theo_price = clean.theo_price() + 0

@@ -718,7 +718,41 @@ class FormulaBacktest(object):
         self.extra_data()
 
         # generate reports
-        df_report, df_signals = self.generate()
+        df_report, df_signal = self.generate()
+
+        # format
+        report_keys = [
+            'date', 'formula', 'hd', 'cs', 'start', 'stop', 'sharpe_rf', 'sharpe_spy', 'sortino_rf',
+            'sortino_spy', 'buy_hold', 'pl_count', 'pl_sum', 'pl_cumprod', 'pl_mean', 'pl_std', 'dp_count',
+            'dp_chance', 'dp_mean', 'dl_count', 'dl_chance', 'dl_mean', 'profit_count', 'profit_chance',
+            'profit_max', 'profit_min', 'loss_count', 'loss_chance', 'loss_max', 'loss_min', 'var_95',
+            'var_99', 'max_dd'
+        ]
+        for key in report_keys:
+            if key in ('date', 'start', 'stop'):
+                # df_report[key] = pd.to_datetime(df_report[key])
+                pass
+            elif key in ('formula', 'hd', 'cs'):
+                # df_report[key] = pd.to_datetime(df_report[key])
+                pass
+            elif key in ('pl_count', 'dp_count', 'dl_count', 'profit_count', 'loss_count'):
+                df_report[key] = df_report[key].astype('int')
+            else:
+                df_report[key] = df_report[key].astype('float')
+
+        signal_keys = [
+            'formula', 'hd', 'cs', 'date', 'start', 'stop', 'date0', 'date1', 'signal0', 'signal1', 'close0',
+            'close1', 'holding', 'pct_chg']
+
+        for key in signal_keys:
+            if key in ('date', 'start', 'stop', 'date0', 'date1', 'holding'):
+                # df_report[key] = pd.to_datetime(df_report[key])
+                pass
+            elif key in ('formula', 'hd', 'cs', 'signal0', 'signal1'):
+                # df_report[key] = pd.to_datetime(df_report[key])
+                pass
+            else:
+                df_signal[key] = df_signal[key].astype('float')
 
         # save
         if len(df_report):
@@ -737,7 +771,7 @@ class FormulaBacktest(object):
 
             db.append('algorithm/report', df_report,
                       format='table', data_columns=True, min_itemsize=100)
-            db.append('algorithm/signal', df_signals,
+            db.append('algorithm/signal', df_signal,
                       format='table', data_columns=True, min_itemsize=100)
             db.close()
             logger.info('Backtest save: %s' % path)

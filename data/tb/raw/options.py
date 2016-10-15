@@ -308,10 +308,7 @@ class RawOption(object):
                 # print df_current.to_string(line_width=1000)
 
                 if len(df_current) != len(df_current['date'].unique()):
-                    # todo: too many split in uvxy, vxx
-                    #print len(df_current)
-                    ##print df_current[df_current['date'].duplicated()]
-                    #print df_current.to_string(line_width=1000)
+                    # if too many split, use new raw2 options
 
                     print output % ('ERROR', 'Duplicated row problem', '')
                     date_counts = df_current['date'].value_counts()
@@ -443,10 +440,6 @@ class RawOption(object):
 
                 # normal will be add later on another method
                 if len(df_current) != len(df_current['date'].unique()):
-
-                    # todo: here
-                    # todo: 130119040.033/100US$
-
                     print output % ('ERROR', 'Duplicated row problem', '')
                     date_counts = df_current['date'].value_counts()
                     dup_dates = list(date_counts[date_counts == 2].index)
@@ -539,7 +532,7 @@ class RawOption(object):
         append_id = []
 
         # more in list
-        split_data = []  # todo: cause memory error
+        split_data = []  # todo: cause memory error, goog
         others_data = []
         split_panel = []
         others_panel = []
