@@ -243,6 +243,10 @@ class IndustryOpinion(models.Model):
     """
     symbol = models.CharField(max_length=10)
     date = models.DateField()
+
+    # unique data
+    unique_together = (('symbol', 'date'),)
+
     sector = models.CharField(max_length=20)  # main
     industry = models.CharField(max_length=20)  # sub
 
@@ -352,6 +356,9 @@ class FundamentalOpinion(models.Model):
     symbol = models.CharField(max_length=6)
     date = models.DateField()
 
+    # unique data
+    unique_together = (('symbol', 'date'),)
+
     # Strong-Form Hypothesis
     mean_rank = models.FloatField(default=3, help_text='Mean Analyst Recommendation')
 
@@ -433,6 +440,59 @@ class FundamentalOpinion(models.Model):
     )
 
 
+class TechnicalRank(models.Model):
+    """
+    Technical analysis opinion, daily update
+    """
+    symbol = models.CharField(max_length=6)
+    date = models.DateField()
+
+    # unique data
+    unique_together = (('symbol', 'date'),)
+
+    # from ranking provider
+    market_edge = models.CharField(
+        max_length=20, choices=(
+            ('strong_buy', 'Strong Buy'), ('buy', 'Buy'),
+            ('hold', 'Hold'),
+            ('sell', 'Sell'), ('strong_sell', 'Strong Sell')
+        ),
+        help_text='The street ranking'
+    )
+    the_street = models.CharField(
+        max_length=20, choices=(
+            ('strong_buy', 'Strong Buy'), ('buy', 'Buy'),
+            ('hold', 'Hold'),
+            ('sell', 'Sell'), ('strong_sell', 'Strong Sell')
+        ),
+        help_text='The street ranking'
+    )
+    ford_equity = models.CharField(
+        max_length=20, choices=(
+            ('strong_buy', 'Strong Buy'), ('buy', 'Buy'),
+            ('hold', 'Hold'),
+            ('sell', 'Sell'), ('strong_sell', 'Strong Sell')
+        ),
+        help_text='Market edge ranking'
+    )
+    bar_chart = models.CharField(
+        max_length=10, choices=(
+            ('strong_buy', 'Strong Buy'), ('buy', 'Buy'),
+            ('hold', 'Hold'),
+            ('sell', 'Sell'), ('strong_sell', 'Strong Sell')
+        ),
+        help_text='Bar chart comment'
+    )
+    sctr_rank = models.CharField(
+        max_length=20, choices=(
+            ('strong_buy', 'Strong Buy'), ('buy', 'Buy'),
+            ('hold', 'Hold'),
+            ('sell', 'Sell'), ('strong_sell', 'Strong Sell')
+        ),
+        help_text=' StockCharts Technical Rank (SCTR)'
+    )
+
+
 class TechnicalOpinion(models.Model):
     """
     Technical analysis opinion, daily update
@@ -440,29 +500,18 @@ class TechnicalOpinion(models.Model):
     symbol = models.CharField(max_length=6)
     date = models.DateField()
 
-    # from ranking provider
-    the_street = models.CharField(
-        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
-        help_text='The street ranking'
-    )
-    market_edge = models.CharField(
-        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
-        help_text='The street ranking'
-    )
-    ford_equity = models.CharField(
-        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
-        help_text='Market edge ranking'
-    )
-    bar_chart = models.CharField(
-        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
-        help_text='Bar chart comment'
-    )
+    # unique data
+    unique_together = (('symbol', 'date'),)
 
     # own charting
     # SMA 200.50, RSI 25.10
-    sma_trend = models.CharField(
+    sma50_trend = models.CharField(
         max_length=10, choices=(('bullish', 'Bullish'), ('range', 'Range'), ('bearish', 'Bearish')),
-        help_text='Simple Moving Average 200.50, trending'
+        help_text='Simple Moving Average 50, trending'
+    )
+    sma200_trend = models.CharField(
+        max_length=10, choices=(('bullish', 'Bullish'), ('range', 'Range'), ('bearish', 'Bearish')),
+        help_text='Simple Moving Average 200, trending'
     )
     sma_cross = models.BooleanField(
         default=False, help_text='SMA 200.50 cross'
@@ -473,9 +522,15 @@ class TechnicalOpinion(models.Model):
         ), help_text='RSI, x > 70 overbought, x < 30 oversold'
     )
 
+    # volume profile
+    volume_profile = models.CharField(
+        max_length=10, choices=(('above', 'Above'), ('middle', 'Middle'), ('below', 'Below')),
+        help_text='Enter long/short above or below market average'
+    )
+
     # vwap, acc-dist
     vwap_average = models.CharField(
-        max_length=10, choices=(('above', 'Above'), ('below', 'Below')),
+        max_length=10, choices=(('above', 'Above'), ('middle', 'Middle'), ('below', 'Below')),
         help_text='Volume weight average price, 1 month'
     )
     acc_dist = models.CharField(
@@ -546,21 +601,14 @@ class TechnicalOpinion(models.Model):
         ), help_text='MACD 26.9, overbought or oversold'
     )
 
-    # todo: cont... tired
-
-
-class SocialOpinion(models.Model):
-    """
-    Social signal opinion for across the web
-    """
-    td_shares = models.CharField(
-        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
-        help_text='Candlestick chart'
+    # research extra
+    extra_analysis = models.IntegerField(
+        help_text='How many extra technical analysis that you reviews'
     )
 
-    stock_twits = models.CharField(
-        max_length=10, choices=(('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell')),
-        help_text='Candlestick chart'
+    # note
+    description = models.TextField(
+        help_text='Extra note you want to write down', blank=True, null=True
     )
 
 
@@ -570,6 +618,10 @@ class WeekdayOpinion(models.Model):
     """
     symbol = models.CharField(max_length=6)
     date = models.DateField()
+
+    # unique data
+    unique_together = (('symbol', 'date'),)
+
     close_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     # new information
@@ -686,6 +738,9 @@ class PositionOpinion(models.Model):
     symbol = models.CharField(max_length=6)
     date = models.DateField()
 
+    # unique data
+    unique_together = (('symbol', 'date'),)
+
     risk_profile = models.CharField(
         max_length=20, choices=(('low', 'Low'), ('medium', 'Medium'), ('high', 'High')),
         help_text='Risk you willing to take for this position'
@@ -757,6 +812,9 @@ class CloseOpinion(models.Model):
     """
     symbol = models.CharField(max_length=6)
     date = models.DateField()
+
+    # unique data
+    unique_together = (('symbol', 'date'),)
 
     auto_trigger = models.BooleanField(
         default=False, help_text='Create day or gtc order for auto trigger'
@@ -831,6 +889,130 @@ class BehaviorOpinion(models.Model):
     escalation_bias = models.BooleanField(
         default=True, help_text='Do you put more money because of failure?'
     )
+    miss_opportunity = models.BooleanField(
+        default=True, help_text='You trade because you afraid of miss opportunity?'
+    )
     serious_analysis = models.BooleanField(
         default=False, help_text='Do you seriously look for the bad news on the valuation?'
+    )
+    other_mistake = models.TextField(
+        default='', blank=True, help_text='Write down other mistake you done'
+    )
+    other_accurate = models.TextField(
+        default='', blank=True, help_text='Write down other correct/valid things you done'
+    )
+
+
+class TradingPlan(models.Model):
+    name = models.CharField(max_length=100)
+    start = models.DateField()
+    stop = models.DateField(blank=True, null=True)
+
+    # objective
+    goal = models.CharField(
+        choices=(('make_money', 'Make money'), ('test_portfolio', 'Test portfolio'),
+                 ('income', 'Income'), ('others', 'Others')),
+        max_length=50, help_text='Goal of this trading plan'
+    )
+
+    # target, stop if portfolio hit target or drawdown
+    profit_target = models.FloatField(
+        default=10, help_text='Portfolio max target profit'
+    )
+    loss_drawdown = models.FloatField(
+        default=10, help_text='Portfolio max loss drawdown'
+    )
+
+    # position
+    pos_size0 = models.DecimalField(
+        max_digits=6, decimal_places=2, default=0,
+        help_text='Low risk position size'
+    )
+    pos_size1 = models.DecimalField(
+        max_digits=6, decimal_places=2, default=0,
+        help_text='Middle risk position size'
+    )
+    pos_size2 = models.DecimalField(
+        max_digits=6, decimal_places=2, default=0,
+        help_text='High risk position size'
+    )
+    holding_num = models.IntegerField(
+        default=0, help_text='Average holding position number'
+    )
+
+    # risk
+    risk_profile = models.CharField(
+        max_length=20,
+        choices=(('low', 'Low'), ('normal', 'Normal'), ('high', 'High')),
+        help_text='Risk profile for this trading plan'
+    )
+    max_loss = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    max_profit = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+
+    # time period
+    holding_period = models.CharField(
+        max_length=20,
+        choices=(('short', 'Short'), ('middle', 'Middle'), ('long', 'Long')),
+        help_text='Holding period for all positions'
+    )
+    by_term = models.CharField(
+        max_length=20, default='month',
+        choices=(('days', 'Days'), ('week', 'Week'), ('month', 'Month'), ('year', 'Year')),
+        help_text='Holding period for all positions'
+    )
+    term_value = models.IntegerField(default=1, help_text='Value for holding term')
+
+    # instrument
+    instrument = models.CharField(
+        max_length=20,
+        choices=(('stock', 'Stock/ETF only'), ('option', 'Options only'), ('all', 'Stock & Options')),
+        help_text='Instrument that use for this plan'
+    )
+    custom_item = models.CharField(
+        max_length=50, blank=True, null=True, default='',
+        help_text='Extra note on instrument used'
+    )
+    symbols = models.TextField(
+        default='', null=True, blank=True, help_text='Common symbol used for this trading plane'
+    )
+
+    # trade
+    trade_enter = models.CharField(
+        max_length=20,
+        choices=(('daily', 'Daily'), ('timing', 'Timing'), ('prepare', 'Prepare'), ('others', 'Others')),
+        help_text='How often you enter trade'
+    )
+    trade_exit = models.CharField(
+        max_length=20,
+        choices=(('daily', 'Daily'), ('expire', 'Expire'), ('profit', 'Profit')),
+        help_text='How often you exit trade'
+    )
+    trade_adjust = models.CharField(
+        max_length=20,
+        choices=(('require', 'Require'), ('timing', 'Timing'), ('confidence', 'Confidence')),
+        help_text='How often you adjust position'
+    )
+
+    # note
+    description = models.TextField(
+        default='', null=True, blank=True, help_text='Explain trading plan here'
+    )
+
+    # result
+    plan_result = models.CharField(
+        choices=(('none', 'None'), ('require', 'Require'), ('timing', 'Timing'),
+                 ('confidence', 'Confidence')),
+        max_length=20, help_text='How often you adjust position'
+    )
+    plan_return = models.FloatField(
+        default=0, help_text='Return of this trading plan'
+    )
+    advantage = models.TextField(
+        blank=True, null=True, default='', help_text='Advantage of this trading plane'
+    )
+    weakness = models.TextField(
+        blank=True, null=True, default='', help_text='Weakness of this trading plane'
+    )
+    conclusion = models.TextField(
+        blank=True, null=True, default='', help_text='Trading plan conclusion'
     )

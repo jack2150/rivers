@@ -10,6 +10,16 @@ class DateForm(forms.ModelForm):
     )
 
 
+class StartStopForm(forms.ModelForm):
+    start = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
+    stop = forms.DateField(
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
+    )
+
+
 class MarketMovementAdmin(admin.ModelAdmin):
     form = DateForm
 
@@ -253,7 +263,8 @@ class BehaviorOpinionAdmin(admin.ModelAdmin):
 
     list_display = (
         'date', 'prospect_theory', 'anchoring', 'over_confidence', 'confirmation_bias',
-        'self_attribution', 'hindsight_bias', 'escalation_bias', 'serious_analysis'
+        'self_attribution', 'hindsight_bias', 'escalation_bias', 'miss_opportunity',
+        'serious_analysis'
     )
     fieldsets = (
         ('Primary', {
@@ -265,7 +276,12 @@ class BehaviorOpinionAdmin(admin.ModelAdmin):
             'fields': (
                 'prospect_theory', 'belief_perseverance', 'anchoring', 'over_confidence',
                 'confirmation_bias', 'self_attribution', 'hindsight_bias', 'noise_trading',
-                'escalation_bias', 'serious_analysis'
+                'escalation_bias', 'miss_opportunity', 'serious_analysis',
+            )
+        }),
+        ('Note', {
+            'fields': (
+                'other_mistake', 'other_accurate'
             )
         }),
     )
@@ -379,15 +395,113 @@ class WeekdayOpinionAdmin(admin.ModelAdmin):
     )
     list_per_page = 20
 
+
+class TechnicalRankAdmin(admin.ModelAdmin):
+    form = DateForm
+
+    list_display = (
+        'symbol', 'date', 'market_edge', 'the_street', 'ford_equity', 'bar_chart', 'sctr_rank'
+    )
+    fieldsets = (
+        ('Primary', {
+            'fields': ('symbol', 'date')
+        }),
+        ('Ranking Provider', {
+            'fields': ('market_edge', 'the_street', 'ford_equity', 'bar_chart', 'sctr_rank')
+        }),
+    )
+
+    search_fields = ('symbol', 'date',)
+    list_filter = ()
+    list_per_page = 20
+
+
+class TechnicalOpinionAdmin(admin.ModelAdmin):
+    form = DateForm
+
+    list_display = (
+        'symbol', 'date',
+        'sma50_trend', 'sma200_trend', 'sma_cross', 'rsi_score',
+        'volume_profile', 'vwap_average', 'acc_dist',
+        'extra_analysis'
+    )
+    fieldsets = (
+        ('Primary', {
+            'fields': ('symbol', 'date')
+        }),
+        ('Basic Technical Analysis', {
+            'fields': ('sma50_trend', 'sma200_trend', 'sma_cross', 'rsi_score')
+        }),
+        ('Volume Base Analysis', {
+            'fields': ('volume_profile', 'vwap_average', 'acc_dist')
+        }),
+        ('Ichimoku Cloud', {
+            'fields': ('ichimoku_cloud', 'ichimoku_color', 'ichimoku_base', 'ichimoku_conversion')
+        }),
+        ('Parabolic & DMI', {
+            'fields': ('parabolic_trend', 'parabolic_cross', 'dmi_trend', 'dmi_cross')
+        }),
+        ('Stochastic', {
+            'fields': ('stoch_score0', 'stoch_score1', 'stoch_score2')
+        }),
+        ('Bollinger Band & MACD', {
+            'fields': ('band_score', 'macd_score',)
+        }),
+        ('Extra & Description', {
+            'fields': ('extra_analysis', 'description')
+        }),
+    )
+
+    search_fields = ('symbol', 'date',)
+    list_filter = (
+        'sma50_trend', 'sma200_trend', 'sma_cross', 'rsi_score',
+        'volume_profile', 'vwap_average', 'acc_dist',
+        'ichimoku_cloud', 'ichimoku_color', 'ichimoku_base', 'ichimoku_conversion',
+        'parabolic_trend', 'parabolic_cross', 'dmi_trend', 'dmi_cross',
+        'stoch_score0', 'stoch_score1', 'stoch_score2',
+        'band_score', 'macd_score',
+    )
+    list_per_page = 20
+
+
+class TradingPlanAdmin(admin.ModelAdmin):
+    form = StartStopForm
+
+    list_display = (
+        'name', 'start', 'stop', 'goal', 'profit_target', 'loss_drawdown',
+        'plan_result', 'plan_return'
+    )
+    fieldsets = (
+        ('Primary', {'fields': ('name', 'start', 'stop', 'goal')}),
+        ('Portfolio', {'fields': ('profit_target', 'loss_drawdown')}),
+        ('Position', {'fields': ('pos_size0', 'pos_size1', 'pos_size2', 'holding_num',)}),
+        ('Risk ', {'fields': ('risk_profile', 'max_loss', 'max_profit',)}),
+        ('Holding period', {'fields': ('holding_period', 'by_term', 'term_value',)}),
+        ('Instrument', {'fields': ('instrument', 'custom_item', 'symbols')}),
+        ('Trade frequency', {'fields': ('trade_enter', 'trade_exit', 'trade_adjust',)}),
+        ('Note', {'fields': ('description',)}),
+        ('Result', {'fields': ('plan_result', 'plan_return', 'advantage', 'weakness', 'conclusion')}),
+    )
+
+    search_fields = ('name', 'start', 'stop', 'description', 'conclusion')
+    list_filter = ('goal', 'risk_profile', 'holding_period', 'by_term', 'instrument',
+                   'trade_enter', 'trade_exit', 'trade_adjust', 'plan_result')
+
+    list_per_page = 20
+
+
 admin.site.register(MarketMovement, MarketMovementAdmin)
 admin.site.register(MarketValuation, MarketValuationAdmin)
 admin.site.register(MarketIndicator, MarketIndicatorAdmin)
 admin.site.register(FundamentalOpinion, FundamentalOpinionAdmin)
+admin.site.register(TechnicalRank, TechnicalRankAdmin)
+admin.site.register(TechnicalOpinion, TechnicalOpinionAdmin)
 admin.site.register(WeekdayOpinion, WeekdayOpinionAdmin)
 admin.site.register(IndustryOpinion, IndustryOpinionAdmin)
 admin.site.register(PositionOpinion, PositionOpinionAdmin)
 admin.site.register(CloseOpinion, CloseOpinionAdmin)
 admin.site.register(BehaviorOpinion, BehaviorOpinionAdmin)
+admin.site.register(TradingPlan, TradingPlanAdmin)
 
 
 admin.site.register_view(
