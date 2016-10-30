@@ -858,7 +858,7 @@ class BehaviorOpinion(models.Model):
     """
     Emotion and trading condition analysis, daily update
     """
-    date = models.DateField()
+    date = models.DateField(unique=True)
 
     prospect_theory = models.BooleanField(
         default=True, help_text='Hold on to losers too long and sell winners too soon.'
@@ -894,6 +894,9 @@ class BehaviorOpinion(models.Model):
     )
     serious_analysis = models.BooleanField(
         default=False, help_text='Do you seriously look for the bad news on the valuation?'
+    )
+    trade_addict = models.BooleanField(
+        default=True, help_text='Are you addict for trading? Trade cause you want trade'
     )
     other_mistake = models.TextField(
         default='', blank=True, help_text='Write down other mistake you done'
@@ -1016,3 +1019,91 @@ class TradingPlan(models.Model):
     conclusion = models.TextField(
         blank=True, null=True, default='', help_text='Trading plan conclusion'
     )
+
+    def __unicode__(self):
+        return '{name}'.format(name=self.name)
+
+
+class TradingQuest(models.Model):
+    """
+    Trading quest is smaller goal of trading plan
+    a trading plan combine some quest to complete
+    for example:
+    trading plan 10% portfolio return
+    trading quest 3% portfolio return
+    trading quest no make mistake 1 week
+    trading quest real forecast next 30 days
+    trading quest hold 3 positions 10 more days
+    trading quest capture more profit tick
+    """
+    trading_plan = models.ForeignKey(TradingPlan)
+
+    # quest
+    name = models.CharField(max_length=100)
+    category = models.CharField(
+        choices=(('management', 'Management'), ('portfolio', 'Portfolio'),
+                 ('behavior', 'Behavior'), ('compromise', 'Compromise'),
+                 ('avoid', 'Avoid'), ('analysis', 'Analysis')),
+        max_length=50, help_text='What category do this quest belong to?'
+    )
+    start = models.DateField()
+    stop = models.DateField(blank=True, null=True)
+    description = models.TextField(
+        null=True, blank=True, default='',
+        help_text='Explain what is this quest all about?'
+    )
+
+    # result
+    achievement = models.CharField(
+        choices=(('complete', 'Complete'), ('partial', 'Partial'), ('fail', 'Fail'),
+                 ('abandon', 'Abandon')),
+        max_length=50, help_text='Is this quest success?',
+        blank=True, null=True, default=''
+    )
+    experience = models.TextField(
+        null=True, blank=True, default='',
+        help_text='Write down experience for this quest'
+    )
+
+
+class PortfolioOpinion(models.Model):
+    trading_plan = models.ForeignKey(TradingPlan, null=True, blank=True)
+    date = models.DateField()
+
+    trades = models.IntegerField(default=0, help_text='How many trade you made today?')
+    pl_ytd = models.FloatField(default=0, help_text='Profit/Loss year to date!')
+    performance = models.CharField(
+        max_length=50, default='normal', choices=(
+            ('best', 'Best'), ('good', 'Good'), ('normal', 'Normal'),
+            ('bad', 'Bad'), ('trouble', 'Trouble')
+        )
+    )
+
+    emotion = models.TextField(
+        default='', blank=True, null=True, help_text='How you feel for trading today?'
+    )
+    position = models.TextField(
+        default='', blank=True, null=True, help_text='Quick note for every single positions?'
+    )
+    movement = models.TextField(
+        default='', blank=True, null=True, help_text='Portfolio movement for today, good or bad?'
+    )
+    expectation = models.TextField(
+        default='', blank=True, null=True, help_text='What you expectation for this portfolio tomorrow?'
+    )
+    research = models.TextField(
+        default='', blank=True, null=True, help_text='What you watch/research today?'
+    )
+
+
+class TradeIdea(models.Model):
+    symbol = models.CharField(max_length=20)
+    date = models.DateField()
+    unique_together = (('symbol', 'date'),)
+
+    direction = models.CharField(
+        max_length=20, help_text='Estimate direction',
+        choices=(('bear', 'Bear'), ('neutral', 'Neutral'), ('bull', 'Bull'))
+    )
+    trade_idea = models.TextField(help_text='Why you want to enter this positions?')
+    target_price = models.DecimalField(max_digits=6, decimal_places=2)

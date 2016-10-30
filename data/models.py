@@ -113,7 +113,6 @@ class Underlying(models.Model):
         else:
             df_stock = db.select('stock/%s' % source, query)
         db.close()
-
         df_stock['symbol'] = self.symbol.upper()
 
         return df_stock.reset_index()
@@ -174,7 +173,7 @@ class SplitHistory(models.Model):
     symbol = models.CharField(max_length=20)
     date = models.DateField()
     fraction = models.CharField(
-        max_length=20, help_text='Example: 3 for 2 is 2/3'
+        max_length=20, help_text='Example: 2 for 3 is 2/3'
     )
 
     def __unicode__(self):

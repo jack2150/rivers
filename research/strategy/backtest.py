@@ -1,11 +1,15 @@
 import logging
 import os
+from fractions import Fraction
 from inspect import getargspec
 
 import numpy as np
 import pandas as pd
 from itertools import product
 
+from django.db.models import Q
+
+from data.models import SplitHistory
 from research.algorithm.models import Formula
 from research.strategy.models import Commission
 from rivers.settings import QUOTE_DIR, RESEARCH_DIR
@@ -32,6 +36,7 @@ class TradeBacktest(object):
         self.df_signal = pd.DataFrame()
 
         # research data
+        self.df_thinkback = pd.DataFrame()
         self.df_stock = pd.DataFrame()
         self.df_contract = pd.DataFrame()
         self.df_option = pd.DataFrame()
@@ -161,24 +166,38 @@ class TradeBacktest(object):
         Make data frame from objects data
         :return: DataFrame
         """
+        if len(self.df_signal) == 0:
+            raise LookupError('No data in df_signal')
+
         start = self.df_signal['date0'].min()
         stop = self.df_signal['date1'].max()
 
         path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
         db = pd.HDFStore(path)
-        df_stock = pd.DataFrame()
+        df_thinkback = db.select('stock/thinkback')
+
+        df = {}
         for source in ('google', 'yahoo'):
             try:
-                df_stock = db.select('stock/%s' % source)
-                break
+                df[source] = db.select('stock/%s' % source)
             except KeyError:
                 pass
+        else:
+            if len(df):
+                if len(df['google']) >= len(df['yahoo']):
+                    df_stock = df['google']
+                else:
+                    df_stock = df['yahoo']
+            else:
+                raise LookupError('No <%s> google/yahoo df_stock' % self.symbol)
+
         db.close()
 
         if len(df_stock) == 0:
             raise LookupError('Symbol < %s > stock not found' % self.symbol.upper())
 
         self.df_stock = df_stock[start:stop].reset_index()  # slice date range
+        self.df_thinkback = df_thinkback[start:stop].reset_index()
 
         logger.info('Seed data, df_stock: %d' % len(self.df_stock))
 
@@ -193,11 +212,18 @@ class TradeBacktest(object):
             db = pd.HDFStore(path)
             self.df_contract = db.select('option/contract')
             self.df_option = db.select('option/data')
-            self.df_iv = db.select('option/iv/day')
+
+            print self.df_option.query('option_code == %r & date == %r' % ('VXX1121117C92', '2012-09-27'))
+
+            try:
+                self.df_iv = db.select('option/iv/day')
+            except KeyError:
+                pass
+
             db.close()
 
             self.df_all = pd.merge(self.df_option, self.df_contract, on='option_code')
-            self.set_option_price(50)
+            self.set_option_price()
 
             logger.info('Seed df_contract: %d, df_option: %d' % (
                 len(self.df_contract), len(self.df_option)
@@ -386,6 +412,56 @@ class TradeBacktest(object):
 
         return fee
 
+    def update_signal(self):
+        """
+        Update df_signal price from google/yahoo to thinkback
+        so it can use for options data
+        """
+        start = min(self.df_signal['date0']).date()
+        stop = max(self.df_signal['date1']).date()
+        split_history = SplitHistory.objects.filter(
+            Q(symbol=self.symbol.upper()) & Q(date__gte=start) & Q(date__lte=stop)
+        )
+        print split_history
+
+        # only work for have split
+        if len(split_history) > 0:
+            logger.info('Update df_signal to df_thinkback price')
+            df_thinkback = self.df_thinkback.set_index('date')
+            df_signal = self.df_signal.copy()
+            # make sure all date in df_thinkback
+            df_signal = df_signal[df_signal['date0'].isin(df_thinkback.index)]
+            df_signal = df_signal[df_signal['date1'].isin(df_thinkback.index)]
+            df_signal['close0'] = df_signal['date0'].apply(
+                lambda x: df_thinkback.ix[x]['close']
+            )
+            df_signal['close1'] = df_signal['date1'].apply(
+                lambda x: df_thinkback.ix[x]['close']
+            )
+
+            # check start stop date in split
+            dates = pd.to_datetime([s.date for s in split_history])
+            fractions = pd.Series({pd.to_datetime(s.date): s.fraction for s in split_history})
+            updates = []
+            for index, data in df_signal.iterrows():
+                count = 0
+                split = None
+                for date in dates:
+                    if data['date0'] <= date <= data['date1']:
+                        count += 1
+                        split = fractions[date]
+
+                updates.append(
+                    data['close0'] / Fraction(split) if count == 1 else data['close0']
+                )
+
+                # todo: to be cont...
+
+            # print df_signal
+            df_signal['close0'] = updates
+            # print df_signal
+            self.df_signal = df_signal
+
     def make_trade(self, **kwargs):
         """
         Generate trade using df_order that ready to report
@@ -398,6 +474,7 @@ class TradeBacktest(object):
             kwargs['df_contract'] = self.df_contract
         if 'df_all' in self.arg_names:
             kwargs['df_all'] = self.df_all
+            self.update_signal()  # only have df_all use update_signal
         if 'df_option' in self.arg_names:
             kwargs['df_option'] = self.df_option
 

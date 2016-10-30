@@ -71,7 +71,8 @@ def get_cycle_strike2(df_all, date0, date1,
     """
     df_enter = df_all.query('date == %r & dte >= %r' % (date0, (date1 - date0).days))
     df_exit = df_all.query('date == %r' % date1)
-    # print df_date.to_string(line_width=1000)
+    # print df_enter.to_string(line_width=1000)
+    # print df_exit.to_string(line_width=1000)
 
     cycles = np.sort(df_enter['dte'].unique())
     if cycle0 < 0 or cycle1 < 0:
@@ -85,27 +86,29 @@ def get_cycle_strike2(df_all, date0, date1,
         df_cycle1 = df_enter.query('dte == %r & name == %r' % (
             cycles[cycle1], name1
         )).sort_values('strike')
-        # print df_cycle.to_string(line_width=1000)
+
+    # print df_cycle0.to_string(line_width=1000)
+    # print df_cycle1.to_string(line_width=1000)
 
     strikes0 = np.sort(df_cycle0['strike'])
     atm0 = np.argmin(np.abs(strikes0 - close0))
     if name0 == 'CALL':
         if close0 > strikes0[atm0]:
-            atm0 += 1
+            atm0 += 1 if atm0 + 1 <= len(strikes0) else 0
         atm0 += strike0
     elif name0 == 'PUT':
         if close0 < strikes0[atm0]:
-            atm0 -= 1
+            atm0 -= 1 if atm0 - 1 >= len(strikes0) else 0
         atm0 -= strike0
     strikes1 = np.sort(df_cycle1['strike'])
     atm1 = np.argmin(np.abs(strikes1 - close1))
     if name1 == 'CALL':
         if close1 > strikes1[atm1]:
-            atm1 += 1
+            atm1 += 1 if atm1 + 1 <= len(strikes1) else 0
         atm1 += strike1
     elif name1 == 'PUT':
         if close1 < strikes1[atm1]:
-            atm1 -= 1
+            atm1 -= 1 if atm0 - 1 >= len(strikes1) else 0
         atm1 -= strike1
 
     enter0 = df_cycle0.query('strike == %r' % strikes0[atm0]).iloc[0]

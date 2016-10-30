@@ -7,6 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from pandas_datareader.data import get_data_google, get_data_yahoo
+import pandas.io.data as web
 from data.models import Underlying, Treasury
 from rivers.settings import QUOTE_DIR, DB_DIR
 import numpy as np
@@ -34,14 +35,15 @@ def web_stock_h5(request, source, symbol):
 
     # get data function and get data
     if source == 'google':
-        f = get_data_google
         use_symbol = underlying.google_symbol if underlying.google_symbol != '' else symbol
-
-    else:
-        f = get_data_yahoo
+        df_stock = get_data_google(symbols=use_symbol, start=start, end=end)
+    elif source == 'yahoo':
         use_symbol = underlying.yahoo_symbol if underlying.yahoo_symbol != '' else symbol
-
-    df_stock = f(symbols=use_symbol, start=start, end=end)
+        df_stock = get_data_yahoo(symbols=use_symbol, start=start, end=end)
+        df_stock['Close'] = df_stock['Adj Close']
+        df_stock = df_stock[['Open', 'High', 'Low', 'Close', 'Volume']]
+    else:
+        raise ValueError('Only google/yahoo web data source')
 
     # drop if ohlc is empty
     for field in ['Open', 'High', 'Low', 'Close']:
@@ -53,9 +55,6 @@ def web_stock_h5(request, source, symbol):
 
     # rename into lower case
     df_stock.columns = [c.lower() for c in df_stock.columns]
-
-    if source == 'yahoo':
-        del df_stock['adj close']
 
     df_stock.index.names = ['date']
     df_stock = df_stock.round({'open': 2, 'high': 2, 'low': 2, 'close': 2})

@@ -67,11 +67,11 @@ class TestStrategy2(TestUnitSetUp):
         except KeyError:
             backtest = self.formula.start_backtest()
             backtest.set_symbol_date(self.symbol, '2010-01-01', '2016-06-30')
-            backtest.convert_data()
+            backtest.get_data()
             backtest.extra_data()
             hd_args = {}
             cs_args = {
-                'dte': 25,
+                'dte': 50,
                 'side': 'buy',
                 'special': 'standard'
             }
@@ -96,7 +96,7 @@ class TestStrategy2(TestUnitSetUp):
         except KeyError:
             backtest = self.formula.start_backtest()
             backtest.set_symbol_date(self.symbol, '2010-01-01', '2015-12-31')
-            backtest.convert_data()
+            backtest.get_data()
             hd_args = {
                 'period_span': 60,
                 'skip_days': 5,

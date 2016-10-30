@@ -276,7 +276,7 @@ class BehaviorOpinionAdmin(admin.ModelAdmin):
             'fields': (
                 'prospect_theory', 'belief_perseverance', 'anchoring', 'over_confidence',
                 'confirmation_bias', 'self_attribution', 'hindsight_bias', 'noise_trading',
-                'escalation_bias', 'miss_opportunity', 'serious_analysis',
+                'escalation_bias', 'miss_opportunity', 'serious_analysis', 'trade_addict'
             )
         }),
         ('Note', {
@@ -490,6 +490,60 @@ class TradingPlanAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
+class TradingQuestAdmin(admin.ModelAdmin):
+    form = StartStopForm
+
+    list_display = (
+        'trading_plan', 'name', 'category', 'start', 'stop', 'achievement'
+    )
+    fieldsets = (
+        ('Primary', {'fields': ('trading_plan', )}),
+        ('Portfolio', {'fields': ('name', 'category', 'start', 'stop', 'description')}),
+        ('Result', {'fields': ('achievement', 'experience')}),
+    )
+
+    search_fields = ('trading_plan__name', 'name', 'description', 'experience')
+    list_filter = ('trading_plan__name', 'category', 'achievement',)
+
+    list_per_page = 20
+
+
+class PortfolioOpinionAdmin(admin.ModelAdmin):
+    form = DateForm
+
+    list_display = (
+        'date', 'trading_plan', 'trades', 'pl_ytd', 'performance'
+    )
+    fieldsets = (
+        ('Primary', {'fields': ('date', 'trading_plan')}),
+        ('Portfolio', {'fields': ('trades', 'pl_ytd', 'performance')}),
+        ('Description', {'fields': ('emotion', 'position', 'movement', 'expectation', 'research')}),
+    )
+
+    search_fields = (
+        'trading_plan__name', 'emotion', 'position', 'movement', 'expectation', 'research'
+    )
+    list_filter = ('trading_plan__name', 'performance')
+
+    list_per_page = 20
+
+
+class TradeIdeaAdmin(admin.ModelAdmin):
+    form = DateForm
+
+    list_display = (
+        'symbol', 'date', 'direction', 'target_price'
+    )
+    fieldsets = (
+        ('Primary', {'fields': ('symbol', 'date')}),
+        ('Idea', {'fields': ('direction', 'trade_idea', 'target_price')}),
+    )
+
+    search_fields = ('date', 'symbol', 'trade_idea')
+    list_filter = ('direction', )
+    list_per_page = 20
+
+
 admin.site.register(MarketMovement, MarketMovementAdmin)
 admin.site.register(MarketValuation, MarketValuationAdmin)
 admin.site.register(MarketIndicator, MarketIndicatorAdmin)
@@ -502,6 +556,9 @@ admin.site.register(PositionOpinion, PositionOpinionAdmin)
 admin.site.register(CloseOpinion, CloseOpinionAdmin)
 admin.site.register(BehaviorOpinion, BehaviorOpinionAdmin)
 admin.site.register(TradingPlan, TradingPlanAdmin)
+admin.site.register(TradingQuest, TradingQuestAdmin)
+admin.site.register(PortfolioOpinion, PortfolioOpinionAdmin)
+admin.site.register(TradeIdea, TradeIdeaAdmin)
 
 
 admin.site.register_view(

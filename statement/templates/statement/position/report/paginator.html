@@ -13,15 +13,6 @@
 </div>
 
 <script type="text/javascript">
-  $("#move_predict").click(function () {
-    $(location).attr('href',
-        '{% url 'admin:quantitative_algorithm_changelist' %}');
-  });
-  $("#blind_strategy").click(function () {
-    $(location).attr('href',
-        '{% url 'admin:blind_strategy' position.id %}');
-  });
-
   $("#first_page").click(function () {
     $(location).attr('href', '{{ page.first_page }}');
   });

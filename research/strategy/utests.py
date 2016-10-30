@@ -13,13 +13,13 @@ class TestStrategyBacktest(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'AIG'
+        self.symbol = 'VXX'
         self.formula = Formula.objects.get(rule='Momentum')
         self.formula.start_backtest()
         self.backtest0 = self.formula.backtest
 
         self.backtest0.set_symbol_date(self.symbol, '2009-01-01', '2016-06-30')
-        self.backtest0.convert_data()
+        self.backtest0.get_data()
         self.hd_args = {
             'period_span': 120,
             'skip_days': 0,
@@ -269,6 +269,19 @@ class TestStrategyBacktest(TestUnitSetUp):
 
             print 'fee: %.2f' % fee
             self.assertTrue(fee)
+
+    def test_update_signal(self):
+        """
+        Test update df_signal price to df_thinkback price
+        """
+        self.backtest.get_data()
+        self.backtest.get_extra()
+
+        print self.backtest.df_stock
+        print self.backtest.df_thinkback
+        print self.backtest.df_signal
+        self.backtest.update_signal()
+        print self.backtest.df_signal
 
     def test_make_trade(self):
         """

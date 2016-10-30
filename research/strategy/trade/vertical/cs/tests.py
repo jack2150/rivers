@@ -10,7 +10,7 @@ class TestVerticalCS(TestStrategy2):
     def setUp(self):
         TestStrategy2.setUp(self)
 
-        self.symbol = 'AIG'
+        self.symbol = 'VXX'
         self.ready_signal0()
         self.trade = Trade.objects.get(name='Vertical -CS')
 
@@ -40,13 +40,19 @@ class TestVerticalCS(TestStrategy2):
         """
         Test trade using stop loss order
         """
+        # todo: previous price is wrong???
+        # todo: wrong % for split date
+
         self.ready_backtest()
-        # self.ready_signal1()
         # print self.df_signal.to_string(line_width=1000)
+        self.backtest.update_signal()
+        self.df_signal = self.backtest.df_signal
+        # self.df_signal = self.df_signal[self.df_signal['date0'] == '2012-09-27']
+        print self.df_signal.to_string(line_width=1000)
         report = []
         for side in ('follow', 'reverse', 'buy', 'sell')[2:]:
             for name in ('call', 'put'):
-                kwargs = {'name': name, 'side': side, 'cycle': 0, 'strike': -2, 'wide': 2}
+                kwargs = {'name': name, 'side': side, 'cycle': 0, 'strike': 0, 'wide': 2}
                 print kwargs
                 df_trade = self.backtest.create_order(
                     self.df_signal,
@@ -65,6 +71,8 @@ class TestVerticalCS(TestStrategy2):
                 print ''
 
         print pd.DataFrame(report, columns=['sum', 'profit', 'loss'])
+
+        # todo: problem in backtest
 
     def test_join_data(self):
         """

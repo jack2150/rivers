@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
+from base.ufunc import ts
 from data.models import Underlying
 from data.tb.final.views import update_old_strike, reshape_h5
 from rivers.settings import QUOTE_DIR, CLEAN_DIR, BASE_DIR, RESEARCH_DIR
@@ -12,7 +13,7 @@ class TestMergeFinal(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = 'DDD'
+        self.symbol = 'VXX'  # DDD, VXX
         underlying = Underlying(
             symbol=self.symbol,
             start_date='2009-01-01',
@@ -27,16 +28,19 @@ class TestMergeFinal(TestSetUp):
         self.client.get(reverse('admin:merge_final_h5', kwargs={'symbol': self.symbol.lower()}))
 
         # get data from db
-        path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
+        path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
         db = pd.HDFStore(path)
-        df_contract = db.select('option/final/contract')
-        df_option = db.select('option/final/option')
+        df_contract = db.select('option/contract')
+        df_option = db.select('option/data')
         db.close()
 
         print 'df_contract length: %d' % len(df_contract)
         print 'df_option length: %d' % len(df_option)
         self.assertTrue(len(df_contract))
         self.assertTrue(len(df_option))
+
+        ts(df_contract.query('option_code == %r' % 'VXX1121117C92'))
+        ts(df_option.query('option_code == %r & date == %r' % ('VXX1121117C92', '2012-09-27')))
 
         print 'df_contract dtypes:'
         print df_contract.dtypes
@@ -75,7 +79,10 @@ class TestMergeFinal(TestSetUp):
         df_result = update_old_strike(df_split)
         self.assertEqual(len(df_split), len(df_result))
 
+        df_result = df_result.query('option_code == %r' % 'VXX1121117C92')
         print df_result.tail(100).to_string(line_width=1000)
+
+        # todo: here
 
     def test_reshape_h5(self):
         """

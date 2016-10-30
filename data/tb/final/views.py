@@ -8,6 +8,8 @@ from fractions import Fraction
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from subprocess import Popen, PIPE, STDOUT
+
+from base.ufunc import ts
 from data.models import Underlying
 from rivers.settings import QUOTE_DIR, CLEAN_DIR, BASE_DIR, TEMP_DIR
 
@@ -36,21 +38,32 @@ def update_old_strike(df_split):
     :param df_split: pd.DataFrame
     :return: pd.DataFrame
     """
-    df_change = df_split[df_split['right'].apply(lambda x: '/' in x)].copy()
+    df_change = df_split.copy()
+    # df_change = df_split[df_split['right'].apply(lambda x: '/' in x)].copy()
+    # df_remain = df_split[~df_split.index.isin(df_change.index)]
+    print output % ('UPDATE', 'old/split df_change: %d' % len(df_change))
 
-    df_change['strike'] = df_change.apply(
-        lambda x: x['strike'] / Fraction(x['right']), axis=1
-    )
-    df_change['option_code'] = df_change.apply(
+    # change strike
+    df_change['strike'] /= df_change['right'].apply(lambda x: Fraction(x)).astype('float')
+    df_change = df_change.round({'strike': 2})
+    print output % ('UPDATE', 'change old strike into new strike')
+
+    # update option_code
+    print output % ('UPDATE', 'change into new option_code')
+    df_change['option_code'] = df_change[['option_code', 'strike']].apply(
         lambda x: '%s%s' % (
             re.search('^([A-Z]+\d+[CP])[0-9]*\.?[0-9]*', x['option_code']).group(1),
-            int(x['strike']) if int(x['strike']) == x['strike'] else x['strike']
+            int(x['strike']) if int(x['strike']) == x['strike'] else round(x['strike'], 2)
         ), axis=1
-    )
-    df_change['right'] = df_change['right'].apply(change_right)
+    )  # unable speed up
 
-    df_split = df_split[~df_split.index.isin(df_change.index)]
-    df_split = pd.concat([df_split, df_change])
+    # df_change['right'] = df_change['right'].apply(change_right)
+    print output % ('UPDATE', 'set all right into 100')
+    df_change['right'] = '100'
+
+    # df_split = pd.concat([df_split, df_change])
+    df_split = df_change.copy()
+    print output % ('UPDATE', 'complete old/split new option_code and strike')
 
     return df_split
 
@@ -61,7 +74,7 @@ def merge_final(symbol):
     df_contract and df_option data
     :param symbol: str
     """
-    logger.info('merge all data into df_contract, df_option')
+    print output % ('FINAL', 'merge all data into df_contract, df_option')
     symbol = symbol.lower()
 
     # get data
@@ -78,39 +91,37 @@ def merge_final(symbol):
     for key in option_keys:
         try:
             df_list[key] = db.select('option/fillna/%s' % key)
-            logger.info('Get df_%s data length: %d' % (key, len(df_list[key])))
+            print output % ('FINAL', 'Get df_%s data length: %d' % (key, len(df_list[key])))
         except KeyError:
             pass
     db.close()
 
     # replace option_code in df_split/new
     if 'split/new' in df_list.keys():
-        logger.info('Update df_split/new option_code')
+        print output % ('FINAL', 'Update df_split/new option_code')
         df_list['split/new']['option_code'] = df_list['split/new']['new_code']
         del df_list['split/new']['new_code']
 
     if 'split/old' in df_list.keys():
-        logger.info('Update df_split/old option_code')
+        print output % ('FINAL', 'Update df_split/old option_code')
         df_list['split/old'] = update_old_strike(df_list['split/old'])
 
+    print output % ('MERGE', 'join df_normal, df_split old/new')
     df_all = pd.concat(df_list.values())
     """:type: pd.DataFrame"""
-    logger.info('Merge all data length: %d' % len(df_all))
+
+    print output % ('FINAL', 'Merge all data length: %d' % len(df_all))
     df_all = df_all.sort_values(['date', 'option_code'])
-    # print len(df_all)
-    # get df_contract
-    group = df_all.groupby('option_code')
-    logger.info('Option_code length: %d' % len(group))
-    index = [(key, value) for key, value in group['date'].max().iteritems()]
-    df_index = df_all.set_index(['option_code', 'date'])
-    df_contract = df_index[df_index.index.isin(index)]
-    contract_keys = [
-        'ex_date', 'name', 'others', 'right', 'special', 'strike'
-    ]
-    df_contract = df_contract[contract_keys]
-    df_contract = df_contract.reset_index()
-    del df_contract['date']
+
+    # df_contract section
+    df_contract = df_all[[
+        'option_code', 'ex_date', 'name', 'others', 'right', 'special', 'strike'
+    ]].copy()
+    df_contract = df_contract.drop_duplicates(subset=['option_code'], keep='last')
     df_contract['expire'] = df_contract['ex_date'].apply(lambda x: x < last_date)
+    df_contract = df_contract.reset_index(drop=True)
+    print output % ('FINAL', 'df_contract length: %d' % len(df_contract))
+
     # format df_option
     option_keys = [
         'date', 'option_code', 'dte',
@@ -142,17 +153,16 @@ def merge_final(symbol):
         ]
     })
 
-    logger.info('Save df_contract, df_option into h5 db')
+    print output % ('FINAL', 'Save df_contract, df_option into h5 db')
 
     db = pd.HDFStore(os.path.join(QUOTE_DIR, '%s.h5' % symbol))
-    for key in ('contract', 'data'):
-        try:
-            db.remove('option/%s' % key)
-        except KeyError:
-            pass
+    try:
+        db.remove('option')
+    except KeyError:
+        pass
 
     db.append('option/contract', df_contract,
-              format='table', data_columns=True, min_itemsize=100)
+              format='table', data_columns=True)
     db.append('option/data', df_option,
               format='table', data_columns=True, min_itemsize=100)
     db.close()

@@ -116,6 +116,91 @@ def position_spreads(request, date):
     return render(request, template, parameters)
 
 
+def daily_import(request, date, ready_all=0):
+    """
+    Daily google and yahoo import
+    :param request: request
+    :param date: str
+    :param ready_all: int
+    :return: render
+    """
+    statement = Statement.objects.get(date=date)
+
+    if int(ready_all):
+        date = Statement.objects.order_by('date').last().date
+        positions = Position.objects.all()
+    else:
+        date = pd.datetime.strptime(date, '%Y-%m-%d').date()
+
+        positions = Position.objects.filter(
+            id__in=[p[0] for p in statement.profitloss_set.values_list('position')]
+        ).order_by('symbol')
+
+    db = pd.HDFStore(QUOTE_DIR)
+    for symbol in list(set([p.symbol for p in positions] + ['SPY'])):
+        end = date
+        try:
+            underlying = Underlying.objects.get(symbol=symbol)
+            start = underlying.stop_date
+            underlying.stop_date = date
+            underlying.save()
+        except ObjectDoesNotExist:
+            underlying = Underlying()
+            underlying.symbol = symbol
+            underlying.start_date = '2009-01-01'
+            underlying.stop_date = date
+            underlying.save()
+            start = underlying.start_date
+
+        if start == end:
+            continue
+
+        # drop if ohlc is empty
+        for source, f in (('google', get_data_google), ('yahoo', get_data_yahoo)):
+            try:
+                df_stock = f(symbols=symbol, start=start, end=end)
+
+                if not len(df_stock):
+                    continue
+
+                for field in ['Open', 'High', 'Low', 'Close']:
+                    df_stock[field] = df_stock[field].replace('-', np.nan).astype(float)
+
+                # do not drop if volume is empty
+                df_stock['Volume'] = df_stock['Volume'].replace('-', 0).astype(long)
+
+                # rename into lower case
+                df_stock.columns = [c.lower() for c in df_stock.columns]
+
+                if source == 'yahoo':
+                    del df_stock['adj close']
+
+                df_stock.index.names = ['date']
+
+                # skip or insert
+                # for line in data.dropna().to_csv().split('\n')[1:-1]:
+                print 'import from %-10s for %-10s total: %-10d' % (source, symbol, len(df_stock))
+
+                db.append(
+                    'stock/%s/%s' % (source, symbol.lower()), df_stock,
+                    format='table', data_columns=True, min_itemsize=100
+                )
+
+                # update symbol stat
+                underlying.log += 'Web stock imported, source: %s symbol: %s length: %d\n' % (
+                    source.upper(), symbol.upper(), len(df_stock)
+                )
+                underlying.save()
+
+            except IOError:
+                pass
+
+    # close db
+    db.close()
+
+    return redirect(reverse('admin:position_spreads', kwargs={'date': date}))
+
+
 # noinspection PyShadowingBuiltins
 def position_report(request, id, date=None):
     """
@@ -174,8 +259,8 @@ def position_report(request, id, date=None):
     date0 = datetime.strptime(date, '%Y-%m-%d').date()
     basic['open'] = stocks.ix[stocks.index[-1]]['open']  # stocks.last().open
     basic['close'] = stocks.ix[stocks.index[-1]]['close']  # float(stocks.last().close)
-    basic['holding_day'] = (date0 - position.start).days
-    basic['start_date'] = position.start
+    basic['holding_day'] = (date0 - position.start.date()).days
+    basic['start_date'] = position.start.date()
     basic['stop_date'] = date0
     basic['expire_date'] = None
     basic['dte'] = None
@@ -292,6 +377,7 @@ def position_report(request, id, date=None):
     basic['max_bear'] = min([r['stock']['pct_chg'] for r in reports])
 
     # strategy
+    """
     strategy_result = position.strategy_result
 
     # quant
@@ -338,6 +424,7 @@ def position_report(request, id, date=None):
         pl_close = float(historical.profitloss_set.get(statement__date=historical.stop).pl_ytd)
         historical.pl_close = pl_close - last_pl
         last_pl = pl_close
+    """
 
     # paginator
     dates = [pl.statement.date.strftime('%Y-%m-%d') for pl in
@@ -357,95 +444,59 @@ def position_report(request, id, date=None):
         stages=position.positionstage_set.all(),
         conditions=conditions,
         reports=reports,
-        result=strategy_result,
-        quant=quant,
-        historicals=historicals,
+        #result=strategy_result,
+        #quant=quant,
+        #historicals=historicals,
         page=date_page(dates, date, 'admin:position_report', {'id': id})
     )
 
     return render(request, template, parameters)
 
 
-def daily_import(request, date, ready_all=0):
+
+
+
+# todo: rework position report
+
+
+def position_report2(request, pos_id, date=''):
     """
-    Daily google and yahoo import
+    A single position detail report from start to stop
     :param request: request
+    :param pos_id: int
     :param date: str
-    :param ready_all: int
     :return: render
     """
-    statement = Statement.objects.get(date=date)
+    position = Position.objects.get(id=pos_id)
 
-    if int(ready_all):
-        date = Statement.objects.order_by('date').last().date
-        positions = Position.objects.all()
-    else:
-        date = pd.datetime.strptime(date, '%Y-%m-%d').date()
+    # chart, pos + stock + pos - fee
+    # to portfolio detail, pl, bp effect,
 
-        positions = Position.objects.filter(
-            id__in=[p[0] for p in statement.profitloss_set.values_list('position')]
-        ).order_by('symbol')
 
-    db = pd.HDFStore(QUOTE_DIR)
-    for symbol in list(set([p.symbol for p in positions] + ['SPY'])):
-        end = date
-        try:
-            underlying = Underlying.objects.get(symbol=symbol)
-            start = underlying.stop_date
-            underlying.stop_date = date
-            underlying.save()
-        except ObjectDoesNotExist:
-            underlying = Underlying()
-            underlying.symbol = symbol
-            underlying.start_date = '2009-01-01'
-            underlying.stop_date = date
-            underlying.save()
-            start = underlying.start_date
+    # view
+    template = 'statement/position/report2/index.html'
 
-        if start == end:
-            continue
+    parameters = dict(
+        site_title='Position report',
+        title='Position report: {symbol} {date}'.format(symbol=position.symbol, date=date),
+        date=date,
+        position=position,
+    )
 
-        # drop if ohlc is empty
-        for source, f in (('google', get_data_google), ('yahoo', get_data_yahoo)):
-            try:
-                df_stock = f(symbols=symbol, start=start, end=end)
+    return render(request, template, parameters)
 
-                if not len(df_stock):
-                    continue
 
-                for field in ['Open', 'High', 'Low', 'Close']:
-                    df_stock[field] = df_stock[field].replace('-', np.nan).astype(float)
 
-                # do not drop if volume is empty
-                df_stock['Volume'] = df_stock['Volume'].replace('-', 0).astype(long)
 
-                # rename into lower case
-                df_stock.columns = [c.lower() for c in df_stock.columns]
 
-                if source == 'yahoo':
-                    del df_stock['adj close']
 
-                df_stock.index.names = ['date']
 
-                # skip or insert
-                # for line in data.dropna().to_csv().split('\n')[1:-1]:
-                print 'import from %-10s for %-10s total: %-10d' % (source, symbol, len(df_stock))
 
-                db.append(
-                    'stock/%s/%s' % (source, symbol.lower()), df_stock,
-                    format='table', data_columns=True, min_itemsize=100
-                )
 
-                # update symbol stat
-                underlying.log += 'Web stock imported, source: %s symbol: %s length: %d\n' % (
-                    source.upper(), symbol.upper(), len(df_stock)
-                )
-                underlying.save()
 
-            except IOError:
-                pass
 
-    # close db
-    db.close()
 
-    return redirect(reverse('admin:position_spreads', kwargs={'date': date}))
+
+
+
+

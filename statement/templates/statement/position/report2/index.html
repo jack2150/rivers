@@ -1,0 +1,36 @@
+{% extends "admin/base_site.html" %}
+{% load static admintags %}
+
+{% block extrastyle %}
+  <style>
+    .fix_col {
+      width: 12.5%;
+    }
+
+    .fix_col2 {
+      width: 25%;
+    }
+
+    .padtop10 {
+      margin-top: 10px;
+    }
+  </style>
+{% endblock %}
+
+
+{% block breadcrumbs %}
+  <ul class="breadcrumb">
+    <li><a href="{% url 'admin:index' %}">Home</a></li>
+    <li><a href="{% url 'admin:app_list' 'statement' %}">Statement</a></li>
+    <li><a href="{% url 'admin:statement_position_changelist' %}">Positions</a></li>
+    <li>Report</li>
+  </ul>
+{% endblock %}
+
+{% block object-tools %}
+
+{% endblock %}
+
+{% block content %}
+
+{% endblock %}

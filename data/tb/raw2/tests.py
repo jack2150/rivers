@@ -15,7 +15,7 @@ class TestGroupOption(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'DDD'
+        self.symbol = 'GOOG'
         self.path = os.path.join(DB_DIR, 'temp', 'test_%s.h5' % self.symbol.lower())
 
         path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
@@ -186,7 +186,7 @@ class TestComplexGroupOptions(TestUnitSetUp):
         # old split, others test
         # self.symbol = ['AIG', 'TZA', 'WFC', 'VZ', 'TNA', 'UVXY', 'FSLR'][1]
         # new split test
-        self.symbol = ['DDD', 'LULU', 'BIDU'][0]
+        self.symbol = ['DDD', 'LULU', 'BIDU', 'VXX'][-1]
         self.split_history = SplitHistory.objects.filter(symbol=self.symbol.upper())
 
         path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
@@ -217,6 +217,7 @@ class TestComplexGroupOptions(TestUnitSetUp):
         Primary test, AIG, TZA, WFC, VZ, UVXY
         Test groupby split/others into df_date
         """
+        self.complex_group.group_data()
         self.complex_group.group_data()
         print self.complex_group.df_date
 
@@ -299,10 +300,12 @@ class TestComplexGroupOptions(TestUnitSetUp):
             # ts(df.tail(10))
             # c = df.iloc[0]['option_code']
             # ts(df[df['option_code'] == c])
-
             codes = list(df['option_code'].unique())
 
-            code = 'TZA1120121C11'
+            # VXX121117C1, VXX1121117C1
+            code = 'VXX1121117C1'
+            # code = 'TZA1120121C11'
+            # code = codes[0]
             if code in codes:
                 df_code = df[df['option_code'] == code]
                 ts(df_code)
@@ -340,7 +343,7 @@ class TestComplexGroupOptions(TestUnitSetUp):
 
 class TestThinkbackOption(TestUnitSetUp):
     def setUp(self):
-        self.symbol = 'DDD'
+        self.symbol = 'VXX'  # DDD, VXX
         self.tb_option = ThinkbackOption(self.symbol)
 
     def test_start(self):
@@ -355,9 +358,18 @@ class TestThinkbackOption(TestUnitSetUp):
         """
         path = os.path.join(CLEAN_DIR, '__%s__.h5' % self.symbol.lower())
         db = pd.HDFStore(path)
-        df_normal = db.select('option/raw/normal')
+        for key in ('raw', 'valid', 'fillna', 'clean'):
+            df_normal = db.select('option/%s/normal' % key)
+            df_split0 = db.select('option/%s/split/old' % key)
+            ts(df_normal[df_normal['date'] == '2012-09-27'])
+            ts(df_split0[df_split0['date'] == '2012-09-27'])
+
+            print '-' * 70
+
         db.close()
 
-        ts(df_normal[df_normal['date'] == '2031-11-05'].head())
 
 
+
+# todo: vxx is very wrong, 25/100 is not direct follow
+# todo: multiple VXX1121117C92, check why, raw only 1

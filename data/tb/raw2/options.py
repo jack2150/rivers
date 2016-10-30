@@ -537,8 +537,7 @@ class GroupOption(object):
             )
             print output % ('OTHERS', 'df_others length:', len(df_others))
 
-            df_update = df_others[df_others['update']]
-
+            df_update = df_others[df_others['update']].copy()
             if len(df_update):
                 print output % ('OTHERS', 'others that require modify', len(df_update))
                 df_update['right'] = df_update.apply(self.others_to_right, axis=1)
@@ -624,15 +623,11 @@ class GroupOption(object):
                 updates[code] = (right, others)
             except (KeyError, IndexError):
                 # df_non code not exists in df_normal
-                df_code = group0.get_group(code).copy()
-                df_code['empty'] = (df_code['ask'] == 0) & (df_code['bid'] == 0)
-                if not np.any(df_code['empty']):
-                    drops.append(code)
+                # ts(group0.get_group(code))
+                drops.append(code)
 
         if len(drops):
             df_non = df_non[~df_non['option_code'].isin(drops)]
-
-        # todo: here, goog
 
         if len(updates):
             df_non['right'] = df_non.apply(lambda x: updates[x['option_code']][0], axis=1)
@@ -803,9 +798,15 @@ class ComplexGroupOptions(object):
                 print output % ('DEL', 'remove follow in df_date:', '(%s, %s)' % (split1, others1))
 
                 # update df_remain
-                self.df_remain['others'] = self.df_remain['others'].apply(
-                    lambda x: others0 if x == others1 else x
-                )
+                df_older = self.df_remain.query('right == %r & others == %r' % (split1, others1))
+                df_older['others'] = others0
+                df_remain = self.df_remain[~self.df_remain.index.isin(df_older.index)]
+                self.df_remain = pd.concat([df_remain, df_older])
+                """:type: pd.DataFrame"""
+
+                # update df_date
+                df_date.ix[(split0, others0)]['start'] = df_older['date'].min()
+
                 print output % (
                     'UPDATE', '(%s, %s) ->' % (split1, others1), '(%s, %s)' % (split0, others0)
                 )
@@ -834,6 +835,9 @@ class ComplexGroupOptions(object):
         df_date['follow'] = df_date['follow'].apply(
             lambda x: ('', '') if x in removes else x
         )
+
+        # require
+        print df_date
 
         self.df_date = df_date
 
@@ -1018,7 +1022,7 @@ class ComplexGroupOptions(object):
         """
         print output % ('PROC', 'check others is split', '')
         print '.' * 70
-        df_date = self.df_date
+        df_date = self.df_date.sort_values('start', ascending=False)
         df_date['remove_others'] = False
 
         for (split0, others0), (start, stop, (split1, others1), _) in df_date.iterrows():
@@ -1068,7 +1072,7 @@ class ComplexGroupOptions(object):
             remove_list = list(df_date[df_date['remove_others']].index.get_level_values('others'))
 
             df_keep = self.df_remain[~self.df_remain['others'].isin(remove_list)]
-            df_update = self.df_remain[self.df_remain['others'].isin(remove_list)]
+            df_update = self.df_remain[self.df_remain['others'].isin(remove_list)].copy()
             print output % ('UPDATE', 'df_others that remove others', len(df_update))
 
             df_update['others'] = ''
@@ -1103,11 +1107,14 @@ class ComplexGroupOptions(object):
                 print output % ('FIND', 'search old df_normal data', '')
                 current_codes = df_current['option_code'].unique()
                 replace_codes = {CodeChanger.change_extra(c, ''): c for c in current_codes}
-                df_before = self.df_normal.query('date < %r' % start)
+                df_before = self.df_normal.query('date < %r' % stop)
+
                 df_continue = df_before[df_before['option_code'].isin(replace_codes.keys())].copy()
                 df_continue['option_code'] = df_continue['option_code'].apply(
                     lambda code: replace_codes[code]
                 )
+                df_continue['right'] = split0
+                df_continue['others'] = others0
 
                 if len(df_continue):
                     remove_index += list(df_continue.index)
@@ -1115,6 +1122,13 @@ class ComplexGroupOptions(object):
                 print output % (
                     'CONT', 'df_current: %d' % len(df_current), 'df_continue: %d' % len(df_continue)
                 )
+
+                # check unique
+                group = df_continue.groupby(['option_code', 'date'])
+                size = group.size()
+                if len(size[size == 2]):
+                    print size
+                    raise LookupError('Duplicate date for option code')
 
                 df_current = pd.concat([df_current, df_continue])
                 """:type: pd.DataFrame"""

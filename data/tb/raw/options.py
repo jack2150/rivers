@@ -532,7 +532,7 @@ class RawOption(object):
         append_id = []
 
         # more in list
-        split_data = []  # todo: cause memory error, goog
+        split_data = []  # cause memory error, goog
         others_data = []
         split_panel = []
         others_panel = []

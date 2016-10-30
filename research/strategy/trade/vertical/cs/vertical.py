@@ -18,7 +18,6 @@ def create_order(df_signal, df_all,
                  cycle=0, strike=0, wide=1):
     """
     Single CALL option strategy, support follow, long, short
-
     :param df_signal: pd.DataFrame
     :param df_all: pd.DataFrame
     :param name: str ('call', 'put')
@@ -93,7 +92,8 @@ def create_order(df_signal, df_all,
                 data['price1b'] = -option1b['sell']
 
             signals.append(data)
-        except (KeyError, ValueError, IndexError):
+        except (KeyError, ValueError, IndexError) as error:
+            logger.info(error)
             logger.info('Option not found, date: %s cycle: %s strike: %s' % (
                 data['date0'].strftime('%Y-%m-%d'), cycle, strike
             ))
@@ -109,7 +109,10 @@ def create_order(df_signal, df_all,
         axis=1
     )
     df['net_chg'] = -df['close1'] - df['close0']
-    df['pct_chg'] = (df['net_chg']) / np.abs(df['strike1'] - df['strike0'])
+
+    # wrong for split data
+    # df['pct_chg'] = (df['net_chg']) / np.abs(df['strike1'] - df['strike0'])
+    df['pct_chg'] = df['net_chg'] / np.abs(df['close0'])
 
     df['sqm0'] = 0
     df['sqm1'] = 0

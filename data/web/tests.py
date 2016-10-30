@@ -1,3 +1,5 @@
+import os
+
 from django.core.urlresolvers import reverse
 from base.tests import TestSetUp
 from data.models import Underlying, Treasury
@@ -9,11 +11,11 @@ class TestWebStockTreasury(TestSetUp):
     def setUp(self):
         TestSetUp.setUp(self)
 
-        self.symbol = 'SNDK'
+        self.symbol = 'AIG'
         self.underlying = Underlying(
             symbol=self.symbol,
-            start='2009-01-01',
-            stop='2009-03-01'
+            start_date='2009-01-01',
+            stop_date='2009-03-01'
         )
         self.underlying.save()
 
@@ -27,16 +29,17 @@ class TestWebStockTreasury(TestSetUp):
         """
         Test import thinkback csv option into db
         """
-        self.skipTest('Only test when need!')
+        # self.skipTest('Only test when need!')
 
+        path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
         print 'run csv stock import view...'
         for source in ('google', 'yahoo'):
             self.client.get(reverse('admin:web_stock_h5', kwargs={
                 'symbol': self.symbol, 'source': source
             }))
 
-            db = pd.HDFStore(QUOTE_DIR)
-            df_stock = db.select('stock/%s/%s' % (source, self.symbol.lower()))
+            db = pd.HDFStore(path)
+            df_stock = db.select('stock/%s' % source)
             db.close()
 
             self.assertTrue(len(df_stock))

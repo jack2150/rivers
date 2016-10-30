@@ -24,26 +24,25 @@ class StatementNameAdmin(admin.ModelAdmin):
     statement_import.short_description = ''
 
     list_display = (
-        'name', 'path', 'cash_type', 'capital', 'start', 'stop', 'statement_import'
+        'name', 'short_name', 'path', 'cash_type', 'capital', 'start', 'stop', 'statement_import'
     )
 
     fieldsets = (
         ('Primary Fields', {
             'fields': (
-                'name', 'path', 'cash_type', 'description', 'capital', 'start', 'stop'
+                'name', 'short_name', 'path', 'cash_type', 'description', 'capital', 'start', 'stop'
             )
         }),
     )
 
-    search_fields = ('name', 'description')
+    search_fields = ('name', 'short_name', 'description')
     list_filter = ('cash_type', )
     list_per_page = 20
 
 
 class StatementForm(forms.ModelForm):
     date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD",
-                                       "pickTime": False}))
+        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False}))
 
 
 # noinspection PyMethodMayBeStatic
@@ -209,6 +208,7 @@ class CashBalanceAdmin(StatementModelAdmin):
     list_per_page = 20
 
 
+# noinspection PyAbstractClass
 class SpreadFilter(admin.SimpleListFilter):
     """
     Remove re, oco, trg spread
@@ -379,15 +379,15 @@ class PositionAdmin(admin.ModelAdmin):
     link.allow_tags = True
     link.short_description = ''
 
-    list_display = ('symbol', 'name', 'spread', 'status', 'start', 'stop', link)
+    list_display = ('symbol', 'statement', 'name', 'spread', 'status', 'start', 'stop', link)
     fieldsets = (
         ('Primary Fields', {
-            'fields': ('symbol', 'name', 'spread', 'status', 'start', 'stop')
+            'fields': ('statement', 'symbol', 'name', 'spread', 'status', 'start', 'stop')
         }),
     )
 
     search_fields = ('symbol', 'name', 'spread', 'status', 'start', 'stop')
-    list_filter = ('status', 'name', 'spread')
+    list_filter = ('statement__statement_name__short_name', 'status', 'name', 'spread')
     list_per_page = 20
 
     def has_add_permission(self, request):
@@ -418,7 +418,8 @@ class PositionStageAdmin(admin.ModelAdmin):
 
 class PositionCommentAdmin(admin.ModelAdmin):
     form = StatementForm
-    list_display = ('position', 'date', 'strategy_test', 'target_price', 'market_review')
+    list_display = ('position', 'date', 'strategy_test', 'target_price',
+                    'market_review', 'complete_focus', 'mistake_trade')
 
     fieldsets = (
         ('Foreign Keys', {
@@ -427,20 +428,26 @@ class PositionCommentAdmin(admin.ModelAdmin):
         ('Primary Fields', {
             'fields': ('date', 'description')
         }),
-        ('Primary Focus', {
-            'fields': ('strategy_test', 'target_price', 'market_review',)
+        ('Enter comment', {
+            'fields': (
+                'strategy_test', 'short_period', 'over_confidence', 'unknown_trade',
+                'target_price', 'market_review', 'feel_lucky', 'wrong_timing',
+                'well_backtest', 'valid_strategy', 'high_chance', 'chase_news',
+                'deep_analysis', 'unaware_event', 'poor_estimate'
+            )
         }),
-        ('Error List', {
-            'fields': ('short_period', 'sold_early', 'fear_factor', 'over_confidence',
-                       'unaware_news', 'unaware_event', 'poor_estimate', 'market_event')
+        ('Holding comment', {
+            'fields': (
+                'keep_update', 'unaware_news', 'unaware_eco', 'unaware_stat',
+                'hold_loser', 'wrong_wait', 'miss_profit', 'greed_wait'
+            )
         }),
-        ('Analysis Detail', {
-            'fields': ('deep_analysis', 'broken_holding', )
-        }),
-        ('Reason P/L', {
-            'fields': ('fundamental_change', 'underlying_news', 'luck_factor', 'high_probability',
-                       'backtest_sign', 'valid_strategy', )
-        }),
+        ('Exit comment', {
+            'fields': (
+                'afraid_loss', 'luck_factor', 'news_effect', 'sold_early',
+                'fear_factor', 'complete_focus', 'mistake_trade'
+            )
+        })
     )
 
     search_fields = ('position__name', 'position__spread', 'description')
@@ -448,10 +455,9 @@ class PositionCommentAdmin(admin.ModelAdmin):
 
     readonly_fields = ('position', )
 
-    # todo: add more, need report
-
 
 #admin.site.app_index_template = 'statement/index.html'
+
 # admin models
 admin.site.register(StatementName, StatementNameAdmin)
 admin.site.register(Statement, StatementAdmin)
@@ -481,7 +487,13 @@ admin.site.register_view(
     urlname='position_report', view=position_report
 )
 admin.site.register_view(
-    'statement/position/report/(?P<id>\d+)/$', urlname='position_report', view=position_report
+    'statement/position/report/(?P<id>\d+)/$',
+    urlname='position_report', view=position_report
+)
+
+admin.site.register_view(
+    'statement/position/report2/(?P<pos_id>\d+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
+    urlname='position_report2', view=position_report2
 )
 
 admin.site.register_view(

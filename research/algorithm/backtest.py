@@ -210,14 +210,21 @@ class FormulaBacktest(object):
 
         path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
         db = pd.HDFStore(path)
-        df_stock = pd.DataFrame()
 
+        df = {}
         for source in ('google', 'yahoo'):
             try:
-                df_stock = db.select('stock/%s' % source)
-                break
+                df[source] = db.select('stock/%s' % source)
             except KeyError:
                 pass
+        else:
+            if len(df):
+                if len(df['google']) >= len(df['yahoo']):
+                    df_stock = df['google']
+                else:
+                    df_stock = df['yahoo']
+            else:
+                raise LookupError('No <%s> google/yahoo df_stock' % self.symbol)
 
         if len(df_stock) == 0:
             raise LookupError('Symbol < %s > stock not found (Google/Yahoo)' % symbol.upper())
