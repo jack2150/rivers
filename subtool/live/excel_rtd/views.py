@@ -4,7 +4,7 @@ import pandas as pd
 from string import ascii_uppercase
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
-from rivers.settings import BASE_DIR
+from rivers.settings import BASE_DIR, SERVER_DIR
 from statement.models import Statement, Position
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Style
@@ -12,8 +12,7 @@ from subtool.live.excel_rtd.stat import ExcelRtdStatData
 
 logger = logging.getLogger('views')
 MAX_ROW = 500
-# noinspection PyUnresolvedReferences
-EXCEL_FILE = os.path.join(BASE_DIR, 'rtd.xlsx')
+EXCEL_FILE = os.path.join(SERVER_DIR, 'rtd.xlsx')
 STOCK_NAMES = ('last', 'net_chg', 'volume', 'open', 'high', 'low')
 STOCK_INDEX = ('A', 'C', 'I', 'J', 'K', 'L')
 OPTION_ORDER = (
@@ -27,15 +26,23 @@ HOLD_OPTION = (
     'trade_price', 'trade_value', 'close_price', 'close_value',
     'profit_loss_$', 'profit_loss_%'
 )
+"""
+Delta	Gamma	Theta	Vega	Impl Vol	Prob.ITM	Prob.OTM	Prob.Touch
+Volume	Open.Int	Option Code	BID	BX	ASK	AX
+"""
 CALL_NAMES = (
-    'last', 'mark', 'delta', 'gamma', 'theta', 'vega', 'impl_vol', 'prob_itm', 'prob_otm',
-    'prob_touch', 'volume', 'open_int', 'intrinsic', 'extrinsic', 'option_code', 'bid', 'bx',
-    'ask', 'ax'
+    'delta', 'gamma', 'theta', 'vega', 'impl_vol', 'prob_itm', 'prob_otm',
+    'prob_touch', 'volume', 'open_int', 'option_code', 'bid', 'bx', 'ask', 'ax'
+
 )
+"""
+BID	BX	ASK	AX	Delta	Gamma	Theta	Vega	Impl Vol
+Prob.ITM	Prob.OTM	Prob.Touch	Volume	Open.Int	Option Code
+"""
 PUT_NAMES = (
-    'bid', 'bx', 'ask', 'ax', 'last', 'mark', 'delta', 'gamma', 'theta', 'vega', 'impl_vol',
-    'prob_itm', 'prob_otm', 'prob_touch', 'volume', 'open_int', 'intrinsic', 'extrinsic',
-    'option_code',
+    'bid', 'bx', 'ask', 'ax', 'delta', 'gamma', 'theta', 'vega', 'impl_vol',
+    'prob_itm', 'prob_otm', 'prob_touch', 'volume', 'open_int', 'option_code'
+
 )
 STAGE_NAMES = (
     'price', 'lt_stage', 'lt_amount',
@@ -114,18 +121,8 @@ def excel_rtd_create(request):
     sheets = wb.get_sheet_names()
 
     # get statement/holding data from db
-    """
-    statement = Statement.objects.latest('date')
-    positions = Position.objects.filter(status='OPEN').order_by('symbol')
-
-    holding_equity = statement.holdingequity_set.all()
-    holding_options = statement.holdingoption_set.all()
-
-    symbols = [
-        s[0] for s in holding_options.distinct('symbol').values_list('symbol')
-    ]
-    """
-    symbols = ['BA', 'HRB']
+    # symbols = ['BA', 'HRB']
+    symbols = [n for n in wb.get_sheet_names() if '_' not in n]
 
     # calc stat data
     excel_stat = ExcelRtdStatData(symbols)
@@ -198,7 +195,7 @@ def excel_rtd_create(request):
         set_header(ws0, 'H%d' % row, 'prev_close')
         set_float(ws0, 'H%d' % (row + 1), stat_data[symbol]['close'])
         set_header(ws0, 'I%d' % row, 'c2_open_$')
-        set_float(ws0, 'I%d' % (row + 1), '=H%d-E%d' % (row + 1, row + 1))
+        set_float(ws0, 'I%d' % (row + 1), '=E%d-H%d' % (row + 1, row + 1))
         set_header(ws0, 'J%d' % row, 'c2_open_%')
         set_percent(ws0, 'J%d' % (row + 1), '=I%d/H%d' % (row + 1, row + 1))
         set_header(ws0, 'K%d' % row, 'net_chg_%')
@@ -348,7 +345,6 @@ def excel_rtd_create(request):
 
             row += 2
         """
-
         # set excel stat
         set_header(ws0, 'A%d' % row, 'days')
         set_header(ws0, 'B%d' % row, 'mean vol')

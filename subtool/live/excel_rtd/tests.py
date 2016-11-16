@@ -9,7 +9,7 @@ from subtool.live.excel_rtd.views import EXCEL_FILE
 
 
 class TestExcelRTD(TestUnitSetUp):
-    def excel_rtd_create(self):
+    def test_excel_rtd_create(self):
         """
         Test add analysis sheet to rtd excel file
         """

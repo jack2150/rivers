@@ -1,0 +1,40 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+
+{% block extrastyle %}
+  <style>
+    .mb10px {
+      margin-bottom: 10px;
+    }
+
+    .ordered_list {
+      padding-left: 1em;
+    }
+  </style>
+{% endblock %}
+
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a></li>
+      <li><a href="{% url 'admin:opinion_tradenote_changelist' %}">Trade Note</a></li>
+      <li>{{ title }}</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div class="panel panel-default">
+
+    <div class="panel-collapse panel-body collapse in " id="event">
+      {% for trade_note in trade_notes %}
+        <h4>{{ trade_note.note }} <br>
+          <small>{{ trade_note.explain }}</small>
+        </h4>
+      {% endfor %}
+    </div>
+  </div>
+
+{% endblock %}

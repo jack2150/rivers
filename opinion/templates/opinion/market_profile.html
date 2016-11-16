@@ -446,6 +446,250 @@
   <div class="panel panel-default">
     <div class="panel-heading">
       <h4 class="panel-title">
+        <a class="" href="#market_opinion" data-parent="#accordion" data-toggle="collapse">
+          Market opinion: {{ market_opinion.date }}
+        </a>
+      </h4>
+    </div>
+
+    <table class="panel-collapse collapse table in table-bordered" id="market_opinion">
+      <tr>
+        <td class="col-md-4">
+          <label>Market volatility:</label>
+
+          <div>
+            {% if market_opinion.volatility == 'high' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% elif market_opinion.volatility == 'low' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_opinion.volatility == 'high' %}
+              Higher volatility will have larger swings in price over a given period of time.
+              It can be very bullish or ver bearish in the up coming period. If you are not sure,
+              reduce position if necessary; if you confident, increase position on side; do not
+              try to enter neutral position.
+            {% elif market_opinion.volatility == 'low' %}
+              Low volatility mean price will have tighter swings in price over a given period of time.
+              If it is bullish trend, enter bullish position; if it is bearish, enter bearish position;
+              neutral position not profitable because no enough premium.
+            {% else %}
+              Volatility is ranging. No significant trend effect. Neutral strategy will work well
+              on ranging volatility period.
+            {% endif %}
+        </td>
+        <td class="col-md-4">
+          <label>Bond market:</label>
+
+          <div>
+            {% if market_opinion.bond == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% elif market_opinion.bond == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_opinion.bond == 'bullish' %}
+              Bond market price is trending higher. Bond market have negative correlation with
+              stock market. Bond bullish indicate stock market bearish.
+            {% elif market_opinion.bond == 'bearish' %}
+              Bond market price is trending lower. Bond market have negative correlation with
+              stock market. Bond bearish indicate stock market bullish.
+            {% else %}
+              Bond market price keep in a range. No significant effect on stock market price.
+            {% endif %}
+          </p>
+        </td>
+        <td class="col-md-4">
+          <label>Commodity market:</label>
+
+          <div>
+            {% if market_opinion.bond == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif market_opinion.bond == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_opinion.bond == 'bullish' %}
+              Most of the commodity futures are trading higher. Increase in common product will
+              result greater cost for most company and generate increase profit for some company.
+              If company you invest is related to commodity market, it should follow trend. If is
+              do not related to commodity market, it should no effect no it.
+            {% elif market_opinion.bond == 'bearish' %}
+              Most of the commodity futures are trading lower. Decrease in common product will
+              result lower cost for most company and generate decrease profit for some company.
+              If company you invest is related to commodity market, it should follow trend. If is
+              do not related to commodity market, it should no effect no it.
+            {% else %}
+              Commodity market are trading in range. No significant effect on stock market.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Currency market:</label>
+
+          <div>
+            {% if market_opinion.currency == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% elif market_opinion.currency == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_opinion.currency == 'bullish' %}
+              Increase in foreign currency will result higher cost and higher profit for
+              some international business.
+              It will also attract more foreign investment into stock market.
+            {% elif market_opinion.currency == 'bearish' %}
+              Decrease in foreign currency will result lower cost and
+              lower profit for some international business.
+              It will also attract more foreign investment into stock market.
+            {% else %}
+              Ranging foreign currency. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Short-term market trend:</label>
+
+          <div>
+            {% if market_opinion.current_short_trend == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif market_opinion.current_short_trend == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            Previous short-term market trend is {{ market_opinion.previous_short_trend }}.
+            Current short-term market trend is {{ market_opinion.current_short_trend }}.
+            Position can only adjust according to current market trend.
+            Unless you have a very good reason to enter reverse position,
+            follow market trend is always work well.
+          </p>
+        </td>
+        <td>
+          <label>Long-term market trend:</label>
+
+          <div>
+            {% if market_opinion.current_long_trend == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif market_opinion.current_long_trend == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            Previous long-term market trend is {{ market_opinion.previous_long_trend }}.
+            Current long-term market trend is {{ market_opinion.current_long_trend }}.
+            Position can only adjust according to current market trend.
+            Unless you have a very good reason to enter reverse position,
+            follow market trend is always work well.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Events in Economics Calendar:</label>
+
+          <div>
+            {% if market_opinion.market_indicator > 3 %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% elif market_opinion.market_indicator > 0 or market_opinion.extra_attention > 2 %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% endif %}
+          </div>
+          <p class="padtop10">
+            {% if market_opinion.market_indicator > 3 %}
+              There was totally {{ market_opinion.market_indicator }} Market Moving Indicator
+              release today. It will move the stock market heavy because uncertainty.
+              Today also onclude {{ market_opinion.extra_attention }} Merit Extra Attention and
+              {{ market_opinion.key_indicator }} Other Key Indicator.
+              Trading should be carefully and caution.
+            {% elif market_opinion.market_indicator > 0 or market_opinion.extra_attention > 2 %}
+              There was totally {{ market_opinion.market_indicator }} Market Moving Indicator
+              and {{ market_opinion.extra_attention }} Merit Extra Attention
+              release today. It will effect the stock market but not too strong.
+              Today include {{ market_opinion.key_indicator }} Other Key Indicator.
+              Need to pay extra attention to market.
+            {% else %}
+              Today got {{ market_opinion.market_indicator }} Market Moving Indicator,
+              {{ market_opinion.extra_attention }} Merit Extra Attention and
+              {{ market_opinion.key_indicator }} Other Key Indicator.
+              Trading should be smooth and entering position or adjustment is recommended.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Stock market condition:</label>
+
+          <p class="padtop10">
+            {% if market_opinion.special_news %}
+              Market movement news happen today.
+            {% else %}
+              No market move news today.
+            {% endif %}
+            {{ market_opinion.market_news }}
+          </p>
+        </td>
+        <td>
+          <label>Market opinion Summary:</label>
+          {% if summary2.total > 0 %}
+            <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+          {% elif summary2.total < 0 %}
+            <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+          {% endif %}
+          <div class="col-md-10 padtop10">
+            <table class="table table-condensed borderless">
+              <tr>
+                <td></td>
+                <td>Bullish</td>
+                <td> {{ summary2.bullish }}</td>
+              </tr>
+              <tr>
+                <td>+</td>
+                <td>Neutral</td>
+                <td>{{ summary2.neutral }}</td>
+              </tr>
+              <tr>
+                <td>+</td>
+                <td>Bearish</td>
+                <td>{{ summary2.bearish }}</td>
+              </tr>
+              <tr style="border-top: solid 1px darkgrey">
+                <td>=</td>
+                <td>Summary</td>
+                <td>{{ summary2.total }} / 5</td>
+              </tr>
+            </table>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
         <a class="" href="#macro_valuation" data-parent="#accordion" data-toggle="collapse">
           Macro valuation: {{ macro_valuation.date }}
         </a>
@@ -590,242 +834,4 @@
     </tr>
     </table>
   </div>
-
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a class="" href="#market_opinion" data-parent="#accordion" data-toggle="collapse">
-          Market opinion: {{ market_opinion.date }}
-        </a>
-      </h4>
-    </div>
-
-    <table class="panel-collapse collapse table in table-bordered" id="market_opinion">
-      <tr>
-        <td class="col-md-4">
-          <label>Market volatility:</label>
-          <div>
-            {% if market_opinion.volatility == 'high' %}
-              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
-            {% elif market_opinion.volatility == 'low' %}
-              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
-            {% else %}
-              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
-            {% endif %}
-          </div>
-          <p class="padtop10">
-            {% if market_opinion.volatility == 'high' %}
-              Higher volatility will have larger swings in price over a given period of time.
-              It can be very bullish or ver bearish in the up coming period. If you are not sure,
-              reduce position if necessary; if you confident, increase position on side; do not
-              try to enter neutral position.
-            {% elif market_opinion.volatility == 'low' %}
-              Low volatility mean price will have tighter swings in price over a given period of time.
-              If it is bullish trend, enter bullish position; if it is bearish, enter bearish position;
-              neutral position not profitable because no enough premium.
-            {% else %}
-              Volatility is ranging. No significant trend effect. Neutral strategy will work well
-              on ranging volatility period.
-            {% endif %}
-        </td>
-        <td class="col-md-4">
-          <label>Bond market:</label>
-          <div>
-            {% if market_opinion.bond == 'bullish' %}
-              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
-            {% elif market_opinion.bond == 'bearish' %}
-              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
-            {% else %}
-              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
-            {% endif %}
-          </div>
-          <p class="padtop10">
-            {% if market_opinion.bond == 'bullish' %}
-              Bond market price is trending higher. Bond market have negative correlation with
-              stock market. Bond bullish indicate stock market bearish.
-            {% elif market_opinion.bond == 'bearish' %}
-              Bond market price is trending lower. Bond market have negative correlation with
-              stock market. Bond bearish indicate stock market bullish.
-            {% else %}
-              Bond market price keep in a range. No significant effect on stock market price.
-            {% endif %}
-          </p>
-        </td>
-        <td class="col-md-4">
-          <label>Commodity market:</label>
-          <div>
-            {% if market_opinion.bond == 'bullish' %}
-              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
-            {% elif market_opinion.bond == 'bearish' %}
-              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
-            {% else %}
-              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
-            {% endif %}
-          </div>
-          <p class="padtop10">
-            {% if market_opinion.bond == 'bullish' %}
-              Most of the commodity futures are trading higher. Increase in common product will
-              result greater cost for most company and generate increase profit for some company.
-              If company you invest is related to commodity market, it should follow trend. If is
-              do not related to commodity market, it should no effect no it.
-            {% elif market_opinion.bond == 'bearish' %}
-              Most of the commodity futures are trading lower. Decrease in common product will
-              result lower cost for most company and generate decrease profit for some company.
-              If company you invest is related to commodity market, it should follow trend. If is
-              do not related to commodity market, it should no effect no it.
-            {% else %}
-              Commodity market are trading in range. No significant effect on stock market.
-            {% endif %}
-          </p>
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Currency market:</label>
-          <div>
-            {% if market_opinion.currency == 'bullish' %}
-              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
-            {% elif market_opinion.currency == 'bearish' %}
-              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
-            {% else %}
-              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
-            {% endif %}
-          </div>
-          <p class="padtop10">
-            {% if market_opinion.currency == 'bullish' %}
-              Increase in foreign currency will result higher cost and higher profit for
-              some international business.
-              It will also attract more foreign investment into stock market.
-            {% elif market_opinion.currency == 'bearish' %}
-              Decrease in foreign currency will result lower cost and
-              lower profit for some international business.
-              It will also attract more foreign investment into stock market.
-            {% else %}
-              Ranging foreign currency. No significant effect.
-            {% endif %}
-          </p>
-        </td>
-        <td>
-          <label>Short-term market trend:</label>
-          <div>
-            {% if market_opinion.current_short_trend == 'bullish' %}
-              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
-            {% elif market_opinion.current_short_trend == 'bearish' %}
-              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
-            {% else %}
-              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
-            {% endif %}
-          </div>
-          <p class="padtop10">
-            Previous short-term market trend is {{ market_opinion.previous_short_trend }}.
-            Current short-term market trend is {{ market_opinion.current_short_trend }}.
-            Position can only adjust according to current market trend.
-            Unless you have a very good reason to enter reverse position,
-            follow market trend is always work well.
-          </p>
-        </td>
-        <td>
-          <label>Long-term market trend:</label>
-          <div>
-            {% if market_opinion.current_long_trend == 'bullish' %}
-              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
-            {% elif market_opinion.current_long_trend == 'bearish' %}
-              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
-            {% else %}
-              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
-            {% endif %}
-          </div>
-          <p class="padtop10">
-            Previous long-term market trend is {{ market_opinion.previous_long_trend }}.
-            Current long-term market trend is {{ market_opinion.current_long_trend }}.
-            Position can only adjust according to current market trend.
-            Unless you have a very good reason to enter reverse position,
-            follow market trend is always work well.
-          </p>
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <label>Events in Economics Calendar:</label>
-          <div>
-            {% if market_opinion.market_indicator > 3 %}
-              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
-            {% elif market_opinion.market_indicator > 0 or market_opinion.extra_attention > 2 %}
-              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
-            {% else %}
-              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
-            {% endif %}
-          </div>
-          <p class="padtop10">
-            {% if market_opinion.market_indicator > 3 %}
-              There was totally {{ market_opinion.market_indicator }} Market Moving Indicator
-              release today. It will move the stock market heavy because uncertainty.
-              Today also onclude {{ market_opinion.extra_attention }} Merit Extra Attention and
-              {{ market_opinion.key_indicator }} Other Key Indicator.
-              Trading should be carefully and caution.
-            {% elif market_opinion.market_indicator > 0 or market_opinion.extra_attention > 2 %}
-              There was totally {{ market_opinion.market_indicator }} Market Moving Indicator
-              and {{ market_opinion.extra_attention }} Merit Extra Attention
-              release today. It will effect the stock market but not too strong.
-              Today include {{ market_opinion.key_indicator }} Other Key Indicator.
-              Need to pay extra attention to market.
-            {% else %}
-              Today got {{ market_opinion.market_indicator }} Market Moving Indicator,
-              {{ market_opinion.extra_attention }} Merit Extra Attention and
-              {{ market_opinion.key_indicator }} Other Key Indicator.
-              Trading should be smooth and entering position or adjustment is recommended.
-            {% endif %}
-          </p>
-        </td>
-        <td>
-          <label>Stock market condition:</label>
-          <p class="padtop10">
-            {% if market_opinion.special_news %}
-              Market movement news happen today.
-            {% else %}
-              No market move news today.
-            {% endif %}
-            {{ market_opinion.market_news }}
-          </p>
-        </td>
-        <td>
-          <label>Market opinion Summary:</label>
-          {% if summary2.total > 0 %}
-            <img src="{% static 'admin/market_profile/signal_buy.png' %}">
-          {% elif summary2.total < 0 %}
-            <img src="{% static 'admin/market_profile/signal_sell.png' %}">
-          {% else %}
-            <img src="{% static 'admin/market_profile/signal_hold.png' %}">
-          {% endif %}
-          <div class="col-md-10 padtop10">
-            <table class="table table-condensed borderless">
-              <tr>
-                <td></td>
-                <td>Bullish</td>
-                <td> {{ summary2.bullish }}</td>
-              </tr>
-              <tr>
-                <td>+</td>
-                <td>Neutral</td>
-                <td>{{ summary2.neutral }}</td>
-              </tr>
-              <tr>
-                <td>+</td>
-                <td>Bearish</td>
-                <td>{{ summary2.bearish }}</td>
-              </tr>
-              <tr style="border-top: solid 1px darkgrey">
-                <td>=</td>
-                <td>Summary</td>
-                <td>{{ summary2.total }} / 5</td>
-              </tr>
-            </table>
-          </div>
-        </td>
-      </tr>
-    </table>
-  </div>
-
-
-
 {% endblock %}

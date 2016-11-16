@@ -367,9 +367,3 @@ class TestThinkbackOption(TestUnitSetUp):
             print '-' * 70
 
         db.close()
-
-
-
-
-# todo: vxx is very wrong, 25/100 is not direct follow
-# todo: multiple VXX1121117C92, check why, raw only 1

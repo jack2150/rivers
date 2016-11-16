@@ -212,14 +212,10 @@ class TradeBacktest(object):
             db = pd.HDFStore(path)
             self.df_contract = db.select('option/contract')
             self.df_option = db.select('option/data')
-
-            print self.df_option.query('option_code == %r & date == %r' % ('VXX1121117C92', '2012-09-27'))
-
             try:
                 self.df_iv = db.select('option/iv/day')
             except KeyError:
                 pass
-
             db.close()
 
             self.df_all = pd.merge(self.df_option, self.df_contract, on='option_code')
@@ -454,8 +450,6 @@ class TradeBacktest(object):
                 updates.append(
                     data['close0'] / Fraction(split) if count == 1 else data['close0']
                 )
-
-                # todo: to be cont...
 
             # print df_signal
             df_signal['close0'] = updates

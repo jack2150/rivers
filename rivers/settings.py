@@ -59,7 +59,23 @@ INSTALLED_APPS = (
     'research.strategy',
     # 'research.strategy',
     'opinion',
+
+    # opinion
+    'opinion.comment',
+    'opinion.market',
+    'opinion.personal',
+    'opinion.plan',
+    'opinion.stock',
+    'opinion.technical',
+
+    # subtool
     'subtool',
+
+    # broker
+    'broker.ib',
+    'broker.tda',
+
+    # statement
 )
 
 # for django-admin-bootsrapped
@@ -167,6 +183,7 @@ LOGGING = {
 }
 
 # HDF5 Store
+SERVER_DIR = 'S:/'
 DB_DIR = 'T:/'
 FILES_DIR = os.path.join(DB_DIR, 'files')
 EARNING_DIR = os.path.join(FILES_DIR, 'fidelity', 'earning')
@@ -179,6 +196,8 @@ CLEAN_DIR = TEMP_DIR = os.path.join(DB_DIR, 'temp')
 TREASURY_DIR = os.path.join(DB_DIR, 'treasury.h5')
 SPY_DIR = os.path.join(QUOTE_DIR, 'spy.h5')
 
+IB_STATEMENT_DIR = os.path.join(FILES_DIR, 'statement', 'ib')
+TDA_STATEMENT_DIR = os.path.join(FILES_DIR, 'statement', 'tda')
 
 # for test only
 if 'test' in sys.argv:

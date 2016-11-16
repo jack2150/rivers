@@ -1,0 +1,392 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+
+{% block extrastyle %}
+  <style>
+    .mb10px {
+      margin-bottom: 10px;
+    }
+
+    .ordered_list {
+      padding-left: 1em;
+    }
+
+    .divider {
+      height: 1px;
+      width: 100%;
+      display: block; /* for use on default inline elements like span */
+      margin: 9px 0;
+      overflow: hidden;
+      background-color: #e5e5e5;
+    }
+  </style>
+{% endblock %}
+
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li>{{ title }}</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-3">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Before market open <br>
+              (8:30am to 9:30am)
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse panel-body collapse in " id="event">
+          <ol class="ordered_list">
+            <li>
+              <a href="{% url 'admin:trade_note' %}" target="_blank">
+                Read trade note
+              </a>
+            </li>
+            <li>
+              <a href="http://www.accuradio.com/history/" target="_blank">
+                Listen to music
+              </a>
+            </li>
+            <li>
+              <a href="http://play.chessbase.com/?lang=en" target="_blank">
+                Wash bad luck
+              </a>
+            </li>
+            <li>
+              <a href="http://www.pray.com.au/daily-gospel-reflections.html" target="_blank">
+                Daily prayer
+              </a>
+            </li>
+          </ol>
+          <hr class="divider">
+          <ol class="ordered_list" start="5">
+            <li>
+              <a href="https://mail.google.com/mail/u/1/#inbox" target="_blank">
+              Read market news (Google)
+              </a>
+            </li>
+            <li>
+              <a href="https://outlook.live.com/owa/?path=/calendar/view/Month" target="_blank">
+                Check economics calendar
+              </a>
+              <a href="http://mam.econoday.com/" target="_blank">
+                (Econoday calendar)
+              </a>
+            </li>
+            <li>
+                Commodity/Currency/Sector <br>
+                Read traded stock/etf news
+            </li>
+          </ol>
+          <hr class="divider">
+          <ol class="ordered_list" start="8">
+            <li>
+              <a href="{% url 'admin:market_marketmovement_add' %}" target="_blank">
+                Market movement opinion
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'admin:market_marketindicator_add' %}" target="_blank">
+                Market indicator opinion
+              </a><br>
+              <a href="{% url 'admin:opinion_link' 'AIG' %}" target="_blank">
+                Opinion links
+              </a><br>
+              <a href="{% url 'admin:market_marketindicator_changelist' %}" target="_blank">
+                Market profile
+              </a>
+            </li>
+          </ol>
+          <hr class="divider">
+          <ol class="ordered_list" start="10">
+            <li>
+              Export excel from TDA<br>
+              <a href="{% url 'admin:excel_rtd_create' %}" target="_blank">
+                Ready excel RTD
+              </a><br>
+              Open rtd.xlsx
+            </li>
+          </ol>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#trading_plan" data-parent="#accordion" data-toggle="collapse">
+              Trading plan
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse panel-body collapse in" id="trading_plan">
+          {% for plan, quest in trading_data %}
+            {{ plan.name }}
+            <ol class="ordered_list">
+              {% for q in quest %}
+                <li>
+                  <a href="{% url 'admin:plan_tradingquest_change' q.id %}" target="_blank">
+                    {{ q.name }}
+                  </a> -
+                  {{ q.description }}
+                </li>
+              {% endfor %}
+            </ol>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Trading hours (9:30am to 4:00pm)
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse panel-body collapse in" id="season_update">
+          <ol class="ordered_list">
+            <li>
+              <a href="{% url 'admin:comment_portfolioopinion_add' %}" target="_blank">
+                Create portfolio opinion
+              </a>
+            </li>
+
+            <li>
+              <b>Enter a trade</b>
+              <ol>
+                <li>
+                  Research
+                  <ol>
+                    <li>ETF or stocks related market news</li>
+                    <li>Price in theory - before or after</li>
+                    <li>Timing - early, middle, late</li>
+                  </ol>
+                  Research - Stock only
+                  <ol>
+                    <li>
+                      <a href="{% url 'admin:stock_fundamentalopinion_add' %}" target="_blank">
+                        Fundamental opinion
+                      </a> &#62;
+                      <a href="{% url 'admin:stock_industryopinion_add' %}" target="_blank">
+                        Industry opinion
+                      </a> &#62;
+                      <a href="{% url 'admin:technical_technicalrank_add' %}" target="_blank">
+                        Technical rank
+                      </a>
+                    </li>
+                  </ol>
+                </li>
+                <li>
+                  <a href="{% url 'admin:plan_tradeidea_add' %}" target="_blank">
+                    Trade idea
+                  </a> &#62;
+                  <a href="{% url 'admin:comment_positionopinion_add' %}" target="_blank">
+                    Enter position opinion
+                  </a> &#62;
+                  <a href="{% url 'admin:technical_technicalopinion_add' %}" target="_blank">
+                    Technical opinion
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'admin:data_underlying_changelist' %}" target="_blank">
+                    Import underlying data
+                  </a>
+                </li>
+                <li>
+                  Algorithm formula analysis<br>
+                  <a href="{% url 'admin:algorithm_analysis' 8 0 %}" target="_blank">
+                    Weekdays
+                  </a> &#62;
+                  <a href="{% url 'admin:algorithm_analysis' 5 0 %}" target="_blank">
+                    Percent Move
+                  </a> &#62;
+                  <a href="{% url 'admin:algorithm_analysis' 6 0 %}" target="_blank">
+                    Bdays % Move
+                  </a> &#62;
+                  more research
+                </li>
+                <li>
+                  <a href="{% url 'admin:strategy_trade_changelist' %}" target="_blank">
+                    Strategy formula analysis
+                  </a>, choose strategy wisely
+                </li>
+                <li>
+                  Check excel RTD for timing (hours)
+                </li>
+              </ol>
+            </li>
+            <li>
+              Exit a trade
+              <ol>
+                <li>
+                  <a href="{% url 'admin:comment_closeopinion_add' %}" target="_blank">
+                    Close opinion
+                  </a>
+                </li>
+                <li>
+                  Set higher/lower target price, wait 1 hour or more
+                </li>
+                <li>
+                  Not fill, then close limit/market
+                </li>
+                <li>
+                  <a href="{% url 'admin:comment_closeopinion_add' %}" target="_blank">
+                    Close opinion
+                  </a>
+                  Position comment
+                </li>
+              </ol>
+            </li>
+          </ol>
+
+
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              After market open (9:30am to 12:00am)
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in" id="event">
+
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Mid day (12:00pm to 3:00pm)
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in" id="event">
+
+        </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Before market close (3:00pm to 4:00pm)
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse collapse in" id="event">
+
+        </div>
+      </div>
+    </div>
+
+
+    <div class="col-md-3">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Market close (4:00pm to 5:00pm)
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse panel-body collapse in" id="event">
+          <ol class="ordered_list">
+            <li>
+              Export TDA statement <br>
+              <a href="{% url 'admin:statement_statementname_changelist' %}" target="_blank">
+                Import TDA statement
+              </a>
+            </li>
+            <li>
+              <a href="#" target="_blank">
+                Update google/yahoo data
+                todo here
+              </a>
+            </li>
+            <li>
+              <a href="#" target="_blank">
+                Holding position analysis
+                todo here
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'admin:timesale_insert_view' %}" target="_blank">
+                Create option timesale
+              </a><br>
+              <a href="{% url 'admin:subtool_optiontimesale_changelist' %}" target="_blank">
+                Option timesale report
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'admin:personal_behavioropinion_add' %}" target="_blank">
+                Create Behavior opinion
+              </a><br>
+              Analysis Behavior opinion
+            </li>
+          </ol>
+          <hr class="divider">
+        </div>
+      </div>
+    </div>
+
+
+    <div class="col-md-3">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Monthly update
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse panel-body collapse in" id="season_update">
+          <ol class="ordered_list">
+            <li>
+              <a href="{% url 'admin:market_marketvaluation_changelist' %}" target="_blank">
+                Market valuation
+              </a>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Season update<br>
+              (Months: Jan, Mar, Jul, Oct)
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse panel-body collapse in" id="season_update">
+          <ol class="ordered_list">
+            <li>
+              <a href="#" target="_blank">
+                Data???
+              </a>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+{% endblock %}

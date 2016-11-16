@@ -40,9 +40,6 @@ class TestVerticalCS(TestStrategy2):
         """
         Test trade using stop loss order
         """
-        # todo: previous price is wrong???
-        # todo: wrong % for split date
-
         self.ready_backtest()
         # print self.df_signal.to_string(line_width=1000)
         self.backtest.update_signal()
@@ -71,8 +68,6 @@ class TestVerticalCS(TestStrategy2):
                 print ''
 
         print pd.DataFrame(report, columns=['sum', 'profit', 'loss'])
-
-        # todo: problem in backtest
 
     def test_join_data(self):
         """

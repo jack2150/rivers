@@ -371,3 +371,9 @@ def get_position_comment(request, position_id):
 
     return redirect(link)
 
+
+
+# todo: support ib statement
+# todo: position comment to opinion
+# todo: add weekdays
+# todo: position into app

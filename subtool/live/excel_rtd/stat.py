@@ -23,9 +23,15 @@ class ExcelRtdStatData(object):
             try:
                 self.df_all[symbol] = db.select('/stock/google')
             except KeyError:
-                self.df_all[symbol] = db.select('/stock/yahoo')
+                try:
+                    self.df_all[symbol] = db.select('/stock/yahoo')
+                except KeyError:
+                    raise LookupError('No google/yahoo data: %s' % symbol)
 
             db.close()
+
+            #
+            # self.df_all[symbol] = self.df_all[symbol].sort_index(ascending=False)
 
     @staticmethod
     def latest_close(df):
@@ -59,6 +65,10 @@ class ExcelRtdStatData(object):
         df_temp['open_close'] = 1 - df['open'] / df['close']
         df_temp['oc_diff'] = df_temp['open_close'] - df_temp['close_open']
         # print pd.cut(df_temp['close_open'], 10)
+        df_temp['close_open'] = df_temp['close_open'].replace(-np.inf, 0)
+        df_temp['open_close'] = df_temp['open_close'].replace(-np.inf, 0)
+        df_temp['close_open'] = df_temp['close_open'].replace(np.inf, 0)
+        df_temp['open_close'] = df_temp['open_close'].replace(np.inf, 0)
 
         df_temp['q-cut'] = pd.qcut(df_temp['close_open'], 10)
         df_temp = df_temp.dropna()

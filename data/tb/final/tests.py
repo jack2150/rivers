@@ -82,8 +82,6 @@ class TestMergeFinal(TestSetUp):
         df_result = df_result.query('option_code == %r' % 'VXX1121117C92')
         print df_result.tail(100).to_string(line_width=1000)
 
-        # todo: here
-
     def test_reshape_h5(self):
         """
         Test reshape h5
