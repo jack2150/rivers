@@ -106,6 +106,29 @@
           </div>
         </div>
       </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">Raw data</div>
+        <div class="panel-body">
+          <div class="btn-group">
+            <a href="{% url 'admin:stock_raw' symbol 'google' %}" type="button" class="btn btn-default">
+              Stock (google)
+            </a>
+            <a href="{% url 'admin:stock_raw' symbol 'yahoo' %}" type="button" class="btn btn-default">
+              Stock (yahoo)
+            </a>
+            <a href="{% url 'admin:stock_raw' symbol 'thinkback' %}" type="button" class="btn btn-default">
+              Stock (thinkback)
+            </a>
+            <a href="{% url 'admin:event_raw' symbol 'earning' %}" type="button" class="btn btn-default">
+              Earning
+            </a>
+            <a href="{% url 'admin:event_raw' symbol 'dividend' %}" type="button" class="btn btn-default">
+              Dividend
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="col-md-3">

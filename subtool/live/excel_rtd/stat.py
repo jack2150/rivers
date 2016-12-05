@@ -3,7 +3,14 @@ import os
 import numpy as np
 import pandas as pd
 
+from base.ufunc import ts
 from rivers.settings import QUOTE_DIR
+
+
+class OpenToCloseEst(object):
+    def __init__(self, group, parts):
+        self.group = group
+        self.parts = parts
 
 
 class ExcelRtdStatData(object):
@@ -52,7 +59,7 @@ class ExcelRtdStatData(object):
         return df.tail(5)['volume'].mean(), df.tail(20)['volume'].mean()
 
     @staticmethod
-    def open_move(df):
+    def open_to_close_move(df):
         """
         Generate stat data for estimate open to close move
         from yesterday close to today open
@@ -70,7 +77,7 @@ class ExcelRtdStatData(object):
         df_temp['close_open'] = df_temp['close_open'].replace(np.inf, 0)
         df_temp['open_close'] = df_temp['open_close'].replace(np.inf, 0)
 
-        df_temp['q-cut'] = pd.qcut(df_temp['close_open'], 10)
+        df_temp['q-cut'] = pd.qcut(df_temp['close_open'], 5)
         df_temp = df_temp.dropna()
         group = df_temp.groupby('q-cut')
 
@@ -85,6 +92,39 @@ class ExcelRtdStatData(object):
             })
 
         return oc_stat
+
+    @staticmethod
+    def close_to_open_move(df):
+        """
+        Close to open, let you make decision to hold overnight or not
+        :param df: pd.DataFrame
+        :return: list of OpenToCloseEst
+        """
+        df1 = df.copy()
+
+        df1['c2o$'] = df1['open'] - df1['close'].shift(1)  # after market
+        df1['c2o%'] = df1['c2o$'] / df1['close'].shift(1)  # after market
+        df1['o2c$'] = df1['close'] - df1['open']
+        df1['o2c%'] = df1['o2c$'] / df1['open']
+
+        df1['q-cut'] = pd.qcut(df1['c2o%'], 5)
+        df1 = df1.dropna()
+        group = df1.groupby('q-cut')
+
+        stats = []
+        for g in group:
+            # [float(n) for n in g[0][1:-1].split(', ')]
+            c2o_group = [float(n) for n in g[0][1:-1].split(', ')]
+
+            o2c_parts = []
+            for b in pd.qcut(g[1]['o2c%'], 5).unique():
+                o2c_parts.append([float(n) for n in b[1:-1].split(', ')])
+
+            o2c_parts = sorted(o2c_parts)
+
+            stats.append(OpenToCloseEst(c2o_group, o2c_parts))
+
+        return stats
 
     @staticmethod
     def hl_wide(df):
@@ -140,7 +180,7 @@ class ExcelRtdStatData(object):
         df_consec = df_consec.round({'length': 0, 'index': 0})
 
         # make history price table
-        df_last = df_last.round({'close_chg': 2, 'pct_chg': 4})
+        df_last = df_last.round({'close_chg': 2, 'pct_chg': 4}).sort_index(ascending=False)
         history = df_last[[
             'close', 'volume', 'close_chg', 'pct_chg',
             'above_std', 'below_std', 'out_std', 'consec'
@@ -168,3 +208,39 @@ class ExcelRtdStatData(object):
             'consec': cs_table,
             'history': hp_table
         }
+
+    class StatData(object):
+        def __init__(self, data):
+            self.close = data['close']
+            self.mean_vol5 = data['mean_vol5']
+            self.mean_vol20 = data['mean_vol20']
+            self.mean_hl5 = data['mean_hl5']
+            self.mean_hl20 = data['mean_hl20']
+            self.oc_stat = data['oc_stat']
+            self.co_stat = data['co_stat']
+            self.std_close = data['std_close']
+
+    def get_symbol_stat(self, symbol):
+        """
+        Get symbol day statistics
+        :param symbol: str
+        :return: StatData
+        """
+        df = self.df_all[symbol]
+        close = self.latest_close(df)
+        vol5, vol20 = self.mean_vol(df)
+        hl5, hl20 = self.hl_wide(df)
+        oc_stat = self.open_to_close_move(df)
+        co_stat = self.close_to_open_move(df)
+        std_close = self.std_close(df)
+
+        return self.StatData({
+            'close': close,
+            'mean_vol5': vol5,
+            'mean_vol20': vol20,
+            'mean_hl5': hl5,
+            'mean_hl20': hl20,
+            'oc_stat': oc_stat,
+            'co_stat': co_stat,
+            'std_close': std_close,
+        })

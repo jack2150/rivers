@@ -48,16 +48,17 @@ def create_signal(df, side=('buy', 'sell')):
 
     df1.columns = ['date0', 'date1', 'signal0', 'signal1', 'close0', 'close1']
 
-    df1['holding'] = df1['date1'] - df1['date0']
-    df1['pct_chg'] = (df1['close1'] - df1['close0']) / df1['close0']
-
-    # apply algorithm result
     if len(df1):
-        f = lambda x: x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg']
-        df1['pct_chg'] = df1.apply(f, axis=1)
-        df1['pct_chg'] = df1['pct_chg']
-    else:
-        raise ValueError('No enough data.')
+        df1['holding'] = df1['date1'] - df1['date0']
+        df1['pct_chg'] = (df1['close1'] - df1['close0']) / df1['close0']
+
+        # apply algorithm result
+        if len(df1):
+            f = lambda x: x['pct_chg'] * -1 if x['signal0'] == 'SELL' else x['pct_chg']
+            df1['pct_chg'] = df1.apply(f, axis=1)
+            df1['pct_chg'] = df1['pct_chg']
+        else:
+            raise ValueError('No enough data.')
 
     return df1.copy()
 

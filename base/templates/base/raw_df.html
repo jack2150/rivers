@@ -6,7 +6,9 @@
 </head>
 <body>
 <div>Symbol: {{ symbol|upper }}</div>
-<div>{% if formula %}Formula {{ formula }}{% else %}Trade: {{ trade }}{% endif %}</div>
+{% if formula or trade %}
+  <div>{% if formula %}Formula {{ formula }}{% else %}Trade: {{ trade }}{% endif %}</div>
+{% endif %}
 <div>Arguments: {{ args }}</div>
 <pre>{{ data }}</pre>
 </body>

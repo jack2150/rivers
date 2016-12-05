@@ -44,6 +44,24 @@ class TestWebStockTreasury(TestSetUp):
 
             self.assertTrue(len(df_stock))
 
+    def test_show_web_data(self):
+        """
+        Simple show web data
+        """
+        self.symbol = 'SPY'
+        path = os.path.join(QUOTE_DIR, '%s.h5' % self.symbol.lower())
+        db = pd.HDFStore(path)
+        df_stock = db.select('stock/%s' % 'google')
+        db.close()
+
+        df_stock['pct_chg'] = df_stock['close'].pct_change()
+
+        # print df_stock
+        #print df_stock[df_stock.index == '2015-11-17']
+        f = open('spy.txt', mode='w')
+        f.write(df_stock.to_csv())
+        f.close()
+
     def test_web_treasury_h5(self):
         """
         Test web treasury url import into h5 db

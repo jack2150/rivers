@@ -321,3 +321,53 @@ def manage_underlying(request, symbol):
     return render(request, template, parameters)
 
 
+def stock_raw(request, symbol, source):
+    """
+    Raw df_stock view for web without analysis
+    :param request: request
+    :param symbol: str
+    :param source: str
+    :return: render
+    """
+    path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+    db = pd.HDFStore(path)
+    df_stock = db.select('/stock/%s/' % source.lower())
+    db.close()
+
+    template = 'base/raw_df.html'
+    parameters = dict(
+        site_title='View df_stock',
+        title='Data df_stock: %s' % symbol.upper(),
+        symbol=symbol,
+        data=df_stock.to_string(line_width=1000),
+        trade='',
+        args='source: %s' % source,
+    )
+
+    return render(request, template, parameters)
+
+
+def event_raw(request, symbol, event):
+    """
+    Raw df_stock view for web without analysis
+    :param request: request
+    :param symbol: str
+    :param event: str
+    :return: render
+    """
+    path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+    db = pd.HDFStore(path)
+    df_event = db.select('/event/%s/' % event.lower())
+    db.close()
+
+    template = 'base/raw_df.html'
+    parameters = dict(
+        site_title='View df_%s' % event.lower(),
+        title='Data df_%s: %s' % (event, symbol.upper()),
+        symbol=symbol,
+        data=df_event.to_string(line_width=1000),
+        trade='',
+        args='event: %s' % event,
+    )
+
+    return render(request, template, parameters)

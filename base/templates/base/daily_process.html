@@ -98,7 +98,7 @@
               <a href="{% url 'admin:market_marketindicator_add' %}" target="_blank">
                 Market indicator opinion
               </a><br>
-              <a href="{% url 'admin:opinion_link' 'AIG' %}" target="_blank">
+              <a href="{% url 'admin:opinion_link' 'SPY' %}" target="_blank">
                 Opinion links
               </a><br>
               <a href="{% url 'admin:market_marketindicator_changelist' %}" target="_blank">
@@ -134,8 +134,8 @@
                 <li>
                   <a href="{% url 'admin:plan_tradingquest_change' q.id %}" target="_blank">
                     {{ q.name }}
-                  </a> -
-                  {{ q.description }}
+                  </a><br>
+                  {{ q.description|cap }}
                 </li>
               {% endfor %}
             </ol>
@@ -221,7 +221,13 @@
                   </a>, choose strategy wisely
                 </li>
                 <li>
-                  Check excel RTD for timing (hours)
+                  Timing: Check excel RTD &#62; Active trade &#62;
+                  <a href="{% url 'admin:timesale_insert_view' %}" target="_blank">
+                    Timesale
+                  </a> &#62;
+                  <a href="{% url 'admin:minute1_si_report' 'SPY'|lower date %}" target="_blank">
+                    Minute 1 Si report
+                  </a>
                 </li>
               </ol>
             </li>
@@ -387,6 +393,48 @@
       </div>
     </div>
 
+    <div class="col-md-3">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Guru news
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse panel-body collapse in" id="season_update">
+          <ol class="ordered_list">
+            <li>
+              Carl Icahn:
+              <a href="https://www.youtube.com/results?sp=CAI%253D&q=carl+icahn" target="_blank">
+                youtube
+              </a>,
+              <a href="https://www.google.com/webhp?oq=carl+icahn#q=carl+icahn&tbm=nws" target="_blank">
+                news
+              </a>
+            </li>
+            <li>
+              George Soros:
+              <a href="https://www.youtube.com/results?q=George+Soros&sp=CAI%253D" target="_blank">
+                youtube
+              </a>,
+              <a href="https://www.google.com/webhp?oq=carl+icahn#tbm=nws&q=George+Soros" target="_blank">
+                news
+              </a>
+            </li>
+            <li>
+              Warren Buffett:
+              <a href="https://www.youtube.com/results?sp=CAI%253D&q=warren+buffett" target="_blank">
+                youtube
+              </a>,
+              <a href="https://www.google.com/webhp?oq=carl+icahn#tbm=nws&q=warren+buffett" target="_blank">
+                news
+              </a>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
 
   </div>
 {% endblock %}

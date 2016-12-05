@@ -28,17 +28,32 @@ class IBStatementTest(TestSetUp):
         statement = IBStatement()
         statement.statement_import(self.statement_name, self.fname)
 
-        ib_statements = IBNetAssetValue.objects.all()
+        ib_statement = IBStatement.objects.first()
+        print ib_statement
+
+        ib_nav = IBNetAssetValue.objects.all()
+        print 'ib_nav length: %d' % len(ib_nav)
+        self.assertTrue(len(ib_nav))
+
+        ib_mark = IBMarkToMarket.objects.all()
+        print 'ib_mark length: %d' % len(ib_mark)
+        self.assertTrue(len(ib_mark))
+
+        ib_perform = IBPerformance.objects.all()
+        print 'ib_perform length: %d' % len(ib_perform)
+        self.assertTrue(len(ib_perform))
+
+        print '-' * 70
 
         keys = ['asset', 'total0', 'total1', 'short_sum', 'long_sum', 'change']
         expects = {
-            'cash': [7886.69, 5711.69, 0, 5711.69, -2175],
-            'stock': [16585.5, 18357, 0, 18357, 1771.5],
-            'total': [24472.19, 24068.69, 0, 24068.69, -403.5]
+            'Cash': [7886.69, 5711.69, 0, 5711.69, -2175],
+            'Stock': [16585.5, 18357, 0, 18357, 1771.5],
+            'Total': [24472.19, 24068.69, 0, 24068.69, -403.5]
         }
 
         for name, expect in expects.items():
-            temp = ib_statements.get(asset=name)
+            temp = ib_nav.get(asset=name)
             print '%s NAV: %s' % (name.capitalize(), temp)
             self.assertEqual(float(temp.total0), expect[0])
             self.assertEqual(float(temp.total1), expect[1])
@@ -50,8 +65,6 @@ class IBStatementTest(TestSetUp):
                 print key, getattr(temp, key)
 
             print '-' * 70
-        # print 'Stock NAV:', stock_nav
-        # print 'Total NAV:', total_nav
 
     def test_ib_statement_imports(self):
         """

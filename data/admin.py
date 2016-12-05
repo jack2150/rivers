@@ -11,6 +11,7 @@ from data.tb.raw2.views import raw2_option_h5
 from data.tb.revalid.views import valid_clean_h5
 from data.tb.valid.views import valid_option_h5
 from data.event.views import html_event_import
+from data.ticker.views import web_yahoo_minute_data
 from data.web.views import web_stock_h5, web_treasury_h5
 from data.models import *
 from data.views import *
@@ -223,11 +224,19 @@ admin.site.register_view(
     'data/h5/import/treasury/$',
     urlname='web_treasury_h5', view=web_treasury_h5
 )
+admin.site.register_view(
+    'data/h5/raw_df/(?P<symbol>\w+)/(?P<source>\w+)/$',
+    urlname='stock_raw', view=stock_raw
+)
 
 # dividend and earning
 admin.site.register_view(
     'data/h5/import/event/(?P<symbol>\w+)/$',
     urlname='html_event_import', view=html_event_import
+)
+admin.site.register_view(
+    'data/h5/raw_event/(?P<symbol>\w+)/(?P<event>\w+)/$',
+    urlname='event_raw', view=event_raw
 )
 
 # calc iv
@@ -235,3 +244,10 @@ admin.site.register_view(
     'data/h5/calc/iv/(?P<symbol>\w+)/(?P<insert>\d)$',
     urlname='calc_day_iv', view=calc_day_iv
 )
+
+# minute ticker
+admin.site.register_view(
+    'ticker/yahoo/minute/download/(?P<symbol>\w+)/$',
+    urlname='web_yahoo_minute_data', view=web_yahoo_minute_data
+)
+

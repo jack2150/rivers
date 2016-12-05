@@ -1,4 +1,7 @@
+import pandas as pd
 from django.shortcuts import render
+
+from base.ufunc import ds
 from opinion.plan.models import TradingPlan
 
 
@@ -8,6 +11,7 @@ def daily_process_summary(request):
     :param request: request
     :return: render
     """
+    date = pd.datetime.today().date()
     trading_plans = TradingPlan.objects.filter(active=True)
 
     trading_data = []
@@ -21,6 +25,7 @@ def daily_process_summary(request):
         site_title='Daily process',
         title='Daily process summary',
         trading_data=trading_data,
+        date=ds(date)
     )
 
     return render(request, template, parameters)

@@ -99,9 +99,9 @@ class MarketIndicatorAdmin(admin.ModelAdmin):
         }),
         ('Major Indicators', {
             'fields': (
-                'fund_cash_ratio', 'fear_greek_index', 'credit_balance', 'put_call_ratio',
-                'investor_sentiment', 'futures_trader', 'confidence_index', 'ted_spread',
-                'margin_debt', 'market_breadth', 'ma200day_pct', 'arms_index',
+                'fund_cash_ratio', 'fear_greek_index', 'margin_debt', 'credit_balance',
+                'put_call_ratio', 'investor_sentiment', 'futures_trader', 'confidence_index',
+                'ted_spread', 'market_breadth', 'ma200day_pct', 'arms_index',
             )
         }),
         ('Market Price Range', {

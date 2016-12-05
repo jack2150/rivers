@@ -71,19 +71,19 @@ class TestMultiPercentMove(TestUnitSetUp):
 
         self.backtest = self.formula.start_backtest()
         self.backtest.set_symbol_date(self.symbol, '2009-01-01', '2016-06-30')
-        self.backtest.convert_data()
+        self.backtest.get_data()
 
     def setUp(self):
         TestUnitSetUp.setUp(self)
 
-        self.symbol = 'IWM'
+        self.symbol = 'XOP'
         self.hd_args = {
             'move': 'down',
-            'pct_from': 2,
-            'pct_to': 10,
-            'period': 15,
-            'count': 3,
-            'bdays': 60
+            'pct_from': 8,
+            'pct_to': 12,
+            'period': 20,
+            'count': 4,
+            'bdays': 5
         }
         self.cs_args = {
             'side': 'buy',

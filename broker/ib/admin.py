@@ -26,7 +26,6 @@ class IBStatementNameAdmin(admin.ModelAdmin):
         ('Detail', {'fields': (
             'path', 'account_type', 'customer_type', 'capability', 'description'
         )}),
-
     )
 
     search_fields = ('name', 'broker_id', 'description')
@@ -47,10 +46,11 @@ class IBStatementAdmin(admin.ModelAdmin):
     ib_import.allow_tags = True
 
     list_display = (
-        'name', 'date', ib_import
+        'name', 'date', 'nav_start', 'nav_mark', 'nav_fee', 'nav_value', ib_import
     )
     fieldsets = (
         ('Primary', {'fields': ('name', 'date')}),
+        ('Net Asset Value', {'fields': ('nav_start', 'nav_mark', 'nav_fee', 'nav_value')}),
 
     )
 
@@ -70,14 +70,57 @@ class IBNetAssetValueAdmin(admin.ModelAdmin):
         )}),
     )
 
-    search_fields = ('name__name', )
+    search_fields = ('statement__name__name', )
     list_filter = ('asset', )
+    list_per_page = 20
+
+
+class IBMarkToMarketAdmin(admin.ModelAdmin):
+    list_display = (
+        'symbol', 'statement', 'qty0', 'qty1', 'price0', 'price1', 'pl_total'
+    )
+    fieldsets = (
+        ('Foreign', {'fields': ('statement',)}),
+        ('Position', {'fields': (
+            'symbol', 'qty0', 'qty1', 'price0', 'price1',
+        )}),
+        ('Profit Loss', {'fields': (
+            'pl_pos', 'pl_trans', 'pl_fee', 'pl_other', 'pl_total'
+        )}),
+    )
+
+    search_fields = ('statement__name__name', 'symbol')
+    list_filter = ()
+    list_per_page = 20
+
+
+class IBPerformanceAdmin(admin.ModelAdmin):
+    list_display = (
+        'symbol', 'statement', 'cost_adj', 'real_total', 'unreal_total', 'total'
+    )
+    fieldsets = (
+        ('Foreign', {'fields': ('statement',)}),
+        ('Performance', {'fields': (
+            'symbol', 'cost_adj', 'total'
+        )}),
+        ('Realized Profit/Loss', {'fields': (
+            'real_st_profit', 'real_st_loss', 'real_lt_profit', 'real_lt_loss', 'real_total',
+        )}),
+        ('Unrealized Profit/Loss', {'fields': (
+            'unreal_st_profit', 'unreal_st_loss', 'unreal_lt_profit', 'unreal_lt_loss', 'unreal_total',
+        )}),
+    )
+
+    search_fields = ('statement__name__name', 'symbol')
+    list_filter = ()
     list_per_page = 20
 
 
 admin.site.register(IBStatementName, IBStatementNameAdmin)
 admin.site.register(IBStatement, IBStatementAdmin)
 admin.site.register(IBNetAssetValue, IBNetAssetValueAdmin)
+admin.site.register(IBMarkToMarket, IBMarkToMarketAdmin)
+admin.site.register(IBPerformance, IBPerformanceAdmin)
 
 admin.site.register_view(
     'broker/ib/date/(?P<broker_id>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
@@ -87,4 +130,3 @@ admin.site.register_view(
     'broker/ib/import/(?P<ib_path>\w+)/$',
     urlname='ib_statement_imports', view=ib_statement_imports
 )
-

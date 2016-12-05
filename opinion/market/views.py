@@ -113,7 +113,7 @@ def market_profile(request, date):
         summary2['total'] += 1
         summary2['bullish'] += 1
 
-    template = 'opinion/market_profile.html'
+    template = 'market/market_profile.html'
 
     parameters = dict(
         site_title='Market profile',

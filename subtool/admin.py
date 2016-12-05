@@ -10,6 +10,7 @@ from rivers.settings import QUOTE_DIR
 from subtool.live.excel_rtd.views import excel_rtd_create
 from subtool.models import OptionTimeSale
 from subtool.option.timesale.views import timesale_report_view, timesale_insert_view
+from subtool.ticker.minute1.views import minute1_si_report
 
 logger = logging.getLogger('views')
 
@@ -92,4 +93,8 @@ admin.site.register_view(
 )
 admin.site.register_view(
     'subtool/live/excel_rtd/create', urlname='excel_rtd_create', view=excel_rtd_create
+)
+admin.site.register_view(
+    'subtool/ticker/minute1/si/report/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
+    urlname='minute1_si_report', view=minute1_si_report
 )

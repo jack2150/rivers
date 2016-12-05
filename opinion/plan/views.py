@@ -10,7 +10,7 @@ def trade_note(request):
     """
     trade_notes = TradeNote.objects.order_by('date').reverse().all()
 
-    template = 'opinion/trade_note.html'
+    template = 'plan/trade_note.html'
 
     parameters = dict(
         site_title='Trade note review',

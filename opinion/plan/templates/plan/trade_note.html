@@ -18,8 +18,8 @@
   {% block breadcrumbs %}
     <ul class="breadcrumb">
       <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
-      <li><a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a></li>
-      <li><a href="{% url 'admin:opinion_tradenote_changelist' %}">Trade Note</a></li>
+      <li><a href="{% url 'admin:app_list' 'plan' %}">Plan</a></li>
+      <li><a href="{% url 'admin:plan_tradenote_changelist' %}">Trade Note</a></li>
       <li>{{ title }}</li>
     </ul>
   {% endblock %}

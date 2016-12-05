@@ -53,14 +53,13 @@ INSTALLED_APPS = (
     'base',
     'data',
     'statement',
-    # 'quantitative',
-    # 'simulation',
+
+    # research
     'research.algorithm',
     'research.strategy',
-    # 'research.strategy',
-    'opinion',
 
     # opinion
+    'opinion',
     'opinion.comment',
     'opinion.market',
     'opinion.personal',

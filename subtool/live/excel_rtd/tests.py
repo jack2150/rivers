@@ -25,7 +25,7 @@ class TestExcelRTD(TestUnitSetUp):
 class TestExcelRtdStatData(TestUnitSetUp):
     def setUp(self):
         TestUnitSetUp.setUp(self)
-        self.symbols = ['AIG', 'BP'][:1]
+        self.symbols = ['AIG', 'BP', 'GLD'][2:]
 
         self.stat = ExcelRtdStatData(self.symbols)
         self.stat.get_data()
@@ -59,7 +59,21 @@ class TestExcelRtdStatData(TestUnitSetUp):
         print 'test calc open_move...'
         for symbol in self.symbols:
             df = self.stat.df_all[symbol]
-            pprint(self.stat.open_move(df))
+            pprint(self.stat.open_to_close_move(df))
+
+    def test_close_to_open_move(self):
+        """
+        Test calc open to close move stat
+        """
+        print 'test calc close_to_open_move...'
+        for symbol in self.symbols:
+            df = self.stat.df_all[symbol]
+            stats = self.stat.close_to_open_move(df)
+
+            for stat in stats:
+                print stat.group
+                print stat.parts
+                print '-' * 70
 
     def test_high_low(self):
         """

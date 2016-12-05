@@ -110,7 +110,7 @@ def timesale_insert_view(request):
 
             path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
             db = pd.HDFStore(path)
-            path = 'option/%s/final/timesale' % symbol.lower()
+            path = 'option/final/timesale'
             db.append(path, df_timesale, format='table', data_columns=True, min_itemsize=100)
             db.close()
 
@@ -149,7 +149,7 @@ def timesale_report_view(request, symbol, date):
     """
     path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
     db = pd.HDFStore(path)
-    path = 'option/%s/final/timesale' % symbol.lower()
+    path = 'option/final/timesale'
     df_timesale = db.select(path, where='date == %r' % date)
     db.close()
 
