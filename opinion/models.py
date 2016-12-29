@@ -1,6 +1,4 @@
-from django.db import models
-from statement.models import Position
-
+from opinion.market import *
 
 
 

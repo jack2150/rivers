@@ -1,7 +1,8 @@
 from django.contrib import admin
+from django.core.urlresolvers import reverse
 
 from base.admin import DateForm
-from opinion.personal.models import BehaviorOpinion
+from opinion.personal.models import BehaviorOpinion, LossHoldChecklist, LossExcuseChecklist
 
 
 class BehaviorOpinionAdmin(admin.ModelAdmin):
@@ -16,35 +17,101 @@ class BehaviorOpinionAdmin(admin.ModelAdmin):
     behavior_profile.short_description = ''
 
     list_display = (
-        'date', 'prospect_theory', 'anchoring', 'over_confidence', 'confirmation_bias',
-        'self_attribution', 'hindsight_bias', 'escalation_bias', 'miss_opportunity',
-        'serious_analysis', 'behavior_profile'
+        'date',
     )
     fieldsets = (
         ('Primary', {
             'fields': (
-                'date',
+                'date', 'over_confident', 'size_matter', 'noise_news',
+                'confirm_bias', 'conservatism_bias'
             )
         }),
-        ('Behavior', {
+        ('Common behavior', {
             'fields': (
-                'prospect_theory', 'belief_perseverance', 'anchoring', 'over_confidence',
-                'confirmation_bias', 'self_attribution', 'hindsight_bias', 'noise_trading',
-                'escalation_bias', 'miss_opportunity', 'serious_analysis', 'trade_addict'
+                'emotion_think', 'trade_control', 'bad_prepare',
+                'over_confident', 'size_matter', 'noise_news',
+                'listen_because', 'confirm_bias',
+                'prove_wrong', 'conservatism_bias', 'attention_blind', 'hold_power',
+                'crown_pick', 'not_contrarian', 'stick_yourself', 'loss_aversion',
+                'quo_bias', 'no_process', 'shortcut', 'outcome_bias',
+                'self_attribute', 'hindsight_bias', 'escalation_bias', 'miss_opportunity',
+                'trade_addict',
             )
         }),
-        ('Note', {
+        ('Extra note', {
             'fields': (
-                'other_mistake', 'other_accurate'
+                'decision_time', 'other_mistake', 'other_accurate'
             )
         }),
     )
 
-    search_fields = ('date',)
-    list_filter = ('prospect_theory', 'belief_perseverance', 'anchoring', 'over_confidence',
-                   'confirmation_bias', 'self_attribution', 'hindsight_bias', 'escalation_bias',
-                   'serious_analysis')
+    search_fields = ('date', 'other_mistake', 'other_accurate')
+    list_filter = ('decision_time',)
     list_per_page = 20
 
 
+class LossHoldChecklistAdmin(admin.ModelAdmin):
+    form = DateForm
+
+    list_display = (
+        'symbol', 'date', 'avoid_now', 'take_loss'
+    )
+    fieldsets = (
+        ('Primary', {
+            'fields': (
+                'symbol', 'date',
+            )
+        }),
+        ('Admit', {
+            'fields': (
+                'wrong_admit', 'bad_analysis', 'good_luck', 'lazy_update'
+            )
+        }),
+        ('Reason', {
+            'fields': (
+                'loss_more', 'irrational', 'new_highlow', 'valid_reverse'
+            )
+        }),
+        ('Action', {
+            'fields': (
+                'avoid_now', 'take_loss'
+            )
+        }),
+    )
+
+    search_fields = ('date', )
+    list_filter = ('avoid_now', 'take_loss')
+    list_per_page = 20
+
+
+class LossExcuseChecklistAdmin(admin.ModelAdmin):
+    form = DateForm
+
+    list_display = (
+        'symbol', 'date', 'only_if', 'outside_occur', 'almost_right', 'still_come',
+        'single_predict', 'out_trouble', 'response_now'
+    )
+    fieldsets = (
+        ('Primary', {
+            'fields': (
+                'symbol', 'date',
+            )
+        }),
+        ('Excuse', {
+            'fields': (
+                'only_if', 'outside_occur', 'almost_right', 'still_come',
+                'single_predict', 'out_trouble', 'response_now'
+            )
+        })
+    )
+
+    search_fields = ('date',)
+    list_filter = ('out_trouble', 'response_now')
+    list_per_page = 20
+
+
+
+
 admin.site.register(BehaviorOpinion, BehaviorOpinionAdmin)
+admin.site.register(LossHoldChecklist, LossHoldChecklistAdmin)
+admin.site.register(LossExcuseChecklist, LossExcuseChecklistAdmin)

@@ -448,6 +448,7 @@ def set_action(ws):
             'today loss---?',
             'loss--- upcoming week?',
             'loss- fd/news change?',
+            'loss- no rational reason?',
         ]),
         (['K', 'M', 'N'], 'Buy more 50%', [
             'today profit++?',

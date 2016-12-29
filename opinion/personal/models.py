@@ -7,29 +7,74 @@ class BehaviorOpinion(models.Model):
     """
     date = models.DateField(unique=True)
 
-    prospect_theory = models.BooleanField(
-        default=True, help_text='Hold on to losers too long and sell winners too soon.'
+    # enter
+    emotion_think = models.BooleanField(
+        default=True, help_text='I trade using emotion not logic thinking'
     )
-    belief_perseverance = models.BooleanField(
-        default=True, help_text='Opinion keep too long not update; skeptical/misinterpret new info'
+    trade_control = models.BooleanField(
+        default=True, help_text='I not control myself when entering a bad trade'
     )
-    anchoring = models.BooleanField(
-        default=True, help_text='Wrong estimate initial stock value with adjustment'
+    bad_prepare = models.BooleanField(
+        default=True, help_text='I not prepare all possible and have wrong guess'
     )
-    over_confidence = models.BooleanField(
-        default=True, help_text='Overestimate growth forecast, overemphasize '
-                                'good news and ignore negative news'
+
+    # mindset
+    over_confident = models.BooleanField(
+        default=True, help_text='I have > 70% confidence and not skeptical at all'
     )
-    confirmation_bias = models.BooleanField(
-        default=True,
-        help_text='Do you believe your positions is good, find news supports that opinions but mis-value'
+    size_matter = models.BooleanField(
+        default=True, help_text='I trade too big, position not fit into portfolio rule'
     )
-    self_attribution = models.BooleanField(
+    noise_news = models.BooleanField(
+        default=True, help_text='I listen to noise news and not the fact'
+    )
+    listen_because = models.BooleanField(
+        default=True, help_text='I listen to because on news'
+    )
+    confirm_bias = models.BooleanField(
+        default=True, help_text='I only look to things that support my view'
+    )
+    prove_wrong = models.BooleanField(
+        default=True, help_text='I do not prove my analysis wrong again and again'
+    )
+    conservatism_bias = models.BooleanField(
+        default=True, help_text='I keep my view too long without news update'
+    )
+    attention_blind = models.BooleanField(
+        default=True, help_text='I not keep up all the market news and blind to them'
+    )
+    hold_power = models.BooleanField(
+        default=True, help_text='I not hold because fact not changing'
+    )
+    crown_pick = models.BooleanField(
+        default=True, help_text='I will follow majority because I stupid'
+    )
+    not_contrarian = models.BooleanField(
+        default=True, help_text='I not a contrarian trader that do crazy thing'
+    )
+    stick_yourself = models.BooleanField(
+        default=True, help_text='I do not stick to my trading plan'
+    )
+    loss_aversion = models.BooleanField(
+        default=True, help_text='I strongly want to avoid loss that obtain gain'
+    )
+    quo_bias = models.BooleanField(
+        default=True, help_text='I do not wish to own what I previously own'
+    )
+    no_process = models.BooleanField(
+        default=True, help_text='I do not focus on process and just trade'
+    )
+    shortcut = models.BooleanField(
+        default=True, help_text='I just want shortcut from trading'
+    )
+    outcome_bias = models.BooleanField(
+        default=True, help_text='I make profit so I always right'
+    )
+
+    self_attribute = models.BooleanField(
         default=True, help_text='Do you blame failure on bad luck, or overestimate your research'
     )
-    noise_trading = models.BooleanField(
-        default=True, help_text='Using nonprofessionals with no special information to trade'
-    )
+
     hindsight_bias = models.BooleanField(
         default=True, help_text='Do you think that you can predict better than analysts?'
     )
@@ -39,17 +84,116 @@ class BehaviorOpinion(models.Model):
     miss_opportunity = models.BooleanField(
         default=True, help_text='You trade because you afraid of miss opportunity?'
     )
-    serious_analysis = models.BooleanField(
-        default=False, help_text='Do you seriously look for the bad news on the valuation?'
-    )
     trade_addict = models.BooleanField(
         default=True, help_text='Are you addict for trading? Trade cause you want trade'
     )
+
+    decision_time = models.BooleanField(
+        default=True, help_text='You have wrong mindset, no enter or close the trade now'
+    )
+
     other_mistake = models.TextField(
         default='', blank=True, help_text='Write down other mistake you done'
     )
     other_accurate = models.TextField(
         default='', blank=True, help_text='Write down other correct/valid things you done'
     )
+
+
+class LossHoldChecklist(models.Model):
+    """
+    Most important behavior checklist
+    """
+    symbol = models.CharField(max_length=20)
+    date = models.DateField()
+    unique_together = (('symbol', 'date'), )
+
+    # admit
+    wrong_admit = models.BooleanField(
+        default=True, help_text='I was wrong because rational not work'
+    )
+    bad_analysis = models.BooleanField(
+        default=True, help_text='Not valid analysis & reason on trade'
+    )
+    good_luck = models.BooleanField(
+        default=True, help_text='It was not good luck enough to profit'
+    )
+    lazy_update = models.BooleanField(
+        default=True, help_text='I was lazy not keep update on price & news'
+    )
+
+    # primary
+    loss_more = models.BooleanField(
+        default=True, help_text='Position loss more than expected'
+    )
+    irrational = models.BooleanField(
+        default=True, help_text='No valid reason but keep trend loss'
+    )
+    new_highlow = models.BooleanField(
+        default=True, help_text='Out of current range, to new high/low'
+    )
+    valid_reverse = models.BooleanField(
+        default=True,
+        help_text='If all 3 above true, reverse position and make money back it keep trending'
+    )
+
+    # take it
+    avoid_now = models.BooleanField(
+        default=True, help_text='It is painful but I will close it and avoid this'
+    )
+    take_loss = models.BooleanField(
+        default=True, help_text='It is painful but I will close it and keep cash for later'
+    )
+
+
+class LossExcuseChecklist(models.Model):
+    """
+    Excuse checklist when loss happen
+    """
+    symbol = models.CharField(max_length=20)
+    date = models.DateField()
+    unique_together = (('symbol', 'date'),)
+
+    only_if = models.BooleanField(
+        default=True, help_text='You think if this happen, I will be profit'
+    )
+    outside_occur = models.BooleanField(
+        default=True, help_text='Something outside analysis occur, it not my fault'
+    )
+    almost_right = models.BooleanField(
+        default=True, help_text='I almost right, just a bit more'
+    )
+    still_come = models.BooleanField(
+        default=True, help_text='Just not happen yet, I will wait'
+    )
+    single_predict = models.BooleanField(
+        default=True, help_text='You cannot judge me by this wrong only'
+    )
+    out_trouble = models.BooleanField(
+        default=True, help_text='I cant get out while I can because is painful'
+    )
+    response_now = models.BooleanField(
+        default=True, help_text='I will be quickly to adjust this trade now'
+    )
+
+
+# todo: a view that show all recent opinion on a given symbol
+
+# todo: update technical opinion, add report view
+
+# todo: enter decision, not enough advantage? summary of opinion?
+
+
+# todo: step by step news process,
+
+
+# todo: easy to daily comment symbol by symbol
+# todo: syncdb all
+
+
+
+
+
+
 
 

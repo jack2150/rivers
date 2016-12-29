@@ -1,3 +1,5 @@
+from base.ufunc import ts
+
 
 class SiData(object):
     def __init__(self):
@@ -42,8 +44,8 @@ class SimpleIndicatorStat(object):
 
         df_min10 = df[df['min10'] == 0]
         df_min30 = df[df['min30'] == 0]
-        print df_min10
-        print df_min30
+        ts(df_min10)
+        ts(df_min30)
 
         # todo: no idea now, wait
 

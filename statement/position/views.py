@@ -201,6 +201,30 @@ def daily_import(request, date, ready_all=0):
     return redirect(reverse('admin:position_spreads', kwargs={'date': date}))
 
 
+def get_position_review(request, position_id):
+    """
+    Get position comment if exists,
+    if not exists create new
+    :param request: request
+    :param position_id: int
+    :return: redirect
+    """
+    position = Position.objects.get(id=position_id)
+
+    try:
+        position_review = PositionReview.objects.get(position=position)
+    except ObjectDoesNotExist:
+        position_review = PositionReview(
+            position=position,
+            date=pd.datetime.today().date()
+        )
+        position_review.save()
+
+    link = reverse('admin:statement_positionreview_change', args=(position_review.id,))
+
+    return redirect(link)
+
+
 # noinspection PyShadowingBuiltins
 def position_report(request, id, date=None):
     """

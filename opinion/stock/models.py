@@ -125,50 +125,29 @@ class FundamentalOpinion(models.Model):
 
     # Strong-Form Hypothesis
     mean_rank = models.FloatField(default=3, help_text='Mean Analyst Recommendation')
-
     ownership_activity = models.CharField(
         max_length=20,
         choices=(('selling', 'Selling'), ('holding', 'Holding'), ('buying', 'Buying')),
         help_text='Ownership net activity - 45 days'
     )
     insider_trade = models.CharField(
-        max_length=20,
+        max_length=20, help_text='Insider trades - 30 days', default='holding',
         choices=(('selling', 'Selling'), ('holding', 'Holding'), ('buying', 'Buying')),
-        help_text='Insider trades - 30 days'
     )
     guru_trade = models.CharField(
-        max_length=20,
+        max_length=20, help_text='Guru trades - 90 days', default='holding',
         choices=(('selling', 'Selling'), ('holding', 'Holding'), ('buying', 'Buying')),
-        help_text='Guru trades - 90 days'
     )
     short_interest = models.CharField(
-        max_length=20,
+        max_length=20, help_text='Short interest - 0.5 month', default='range',
         choices=(('decrease', 'Decrease'), ('range', 'Range'), ('increase', 'Increase')),
-        help_text='Short interest'
+    )
+    risk = models.CharField(
+        max_length=20, help_text='Risk', default='middle',
+        choices=(('low', 'Low'), ('middle', 'Middle'), ('high', 'High'))
     )
 
-    # Semi strong-Form Hypothesis
-    # http://markets.ft.com/research/Markets/Tearsheets/Forecasts?s=MSFT:NSQ
-    earning_surprise = models.CharField(
-        max_length=20, blank=True, default='',
-        choices=(('negative', 'Negative'), ('no-surprise', 'No-surprise'), ('positive', 'Positive')),
-        help_text='Earning surprise'
-    )
-    earning_grow = models.CharField(
-        max_length=20,
-        choices=(('decrease', 'Decrease'), ('range', 'Range'), ('increase', 'Increase')),
-        help_text='EPS Growth Estimate'
-    )
-    dividend_grow = models.CharField(
-        max_length=20, blank=True,
-        choices=(
-            ('decrease', 'Decrease'), ('range', 'Range'), ('increase', 'Increase'),
-            ('', 'No dividend')
-        ),
-        default='',
-        help_text='Dividend Growth Estimate'
-    )
-    # http://markets.ft.com/research/Markets/Tearsheets/Forecasts?s=AIG:NYQ
+    # target price
     target_price_max = models.DecimalField(
         max_digits=10, decimal_places=2, default=0, help_text='Max Target Price'
     )
@@ -179,27 +158,57 @@ class FundamentalOpinion(models.Model):
         max_digits=10, decimal_places=2, default=0, help_text='Min Target Price'
     )
 
-    # Micro valuation analysis
-    # Discounted Cash Flow Model
-    dcf_value = models.DecimalField(
-        max_digits=8, decimal_places=2, default=0,
-        help_text='Discounted cash flow model'
+
+class ArticleOpinion(models.Model):
+    """
+    Primary use for tracking story telling or irrational move
+    """
+    # Semi-Strong Form
+    symbol = models.CharField(max_length=20)
+    date = models.DateField()
+    unique_together = (('symbol', 'date'),)
+
+    category = models.CharField(
+        max_length=20, help_text='Type of this market story',
+        choices=(('title', 'Big title'), ('story', 'Story telling'), ('news', 'Simple News'))
     )
 
-    # Earnings Multiplier
-    pe_ratio_trend = models.CharField(
-        max_length=10,
-        choices=(('decrease', 'Decrease'), ('range', 'Range'), ('increase', 'Increase')),
-        help_text='Price earnings multiplier'
+    article_name = models.CharField(
+        max_length=200, help_text='Name of the story, news, title'
     )
-    div_yield_trend = models.CharField(
-        max_length=10,
-        choices=(('decrease', 'Decrease'), ('range', 'Range'), ('increase', 'Increase'),),
-        help_text='Dividend yield per share'
+    article_story = models.CharField(
+        max_length=20, help_text='Current state of article telling',
+        choices=(
+            ('good90', 'Good story 90% chance, 88% follow'),
+            ('good30', 'Good story 30% chance, 78% follow'),
+            ('bad90', 'Bad story 90% chance, 38% follow'),
+            ('bad30', 'Bad story 30% chance, 7% follow')
+        )
     )
-    valuation = models.CharField(
-        max_length=10,
-        choices=(('expensive', 'Expensive'), ('normal', 'Normal'), ('cheap', 'Cheap')),
-        help_text='TD Valuation'
+    period_state = models.CharField(
+        max_length=20, help_text='Current state of story telling',
+        choices=(
+            ('latest', 'Latest 1 or 2 days'),
+            ('recent', 'Recent 1 week'),
+            ('forget', 'Pass 2 weeks')
+        )
     )
+    fundamental_effect = models.BooleanField(
+        default=True, help_text='This article have fundamental effect?'
+    )
+    rational = models.BooleanField(
+        default=True, help_text='This story is rational? yes or no, you only follow'
+    )
+    blind_follow = models.BooleanField(
+        default=True, help_text='Follow story? Short term follow? Long term reverse?'
+    )
+    reverse_effect = models.BooleanField(
+        default=True, help_text='Is this bad news as good news? good news as bad news?'
+    )
+
+    # news effect price probability
+    bull_chance = models.FloatField(default=33, help_text='Chance of bull move by this news')
+    range_chance = models.FloatField(default=34, help_text='Chance of range move by this news')
+    bear_chance = models.FloatField(default=33, help_text='Chance of bear move by this news')
+
 

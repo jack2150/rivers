@@ -2,8 +2,10 @@ from bootstrap3_datetime.widgets import DateTimePicker
 from django import forms
 from django.contrib import admin
 from base.admin import DateForm
-from opinion.comment.models import PortfolioOpinion, PositionOpinion, WeekdayOpinion, CloseOpinion
-from opinion.comment.views import weekday_profile, position_profile
+from opinion.review.models import PortfolioOpinion, PositionEnterOpinion, PositionHoldOpinion, PositionExitOpinion, \
+    PositionReview
+from opinion.review.views import weekday_profile, position_profile
+from statement.position.views import get_position_review
 
 
 class PortfolioOpinionAdmin(admin.ModelAdmin):
@@ -26,7 +28,7 @@ class PortfolioOpinionAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-class PositionOpinionForm(forms.ModelForm):
+class PositionEnterOpinionForm(forms.ModelForm):
     date = forms.DateField(
         widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
     )
@@ -38,8 +40,8 @@ class PositionOpinionForm(forms.ModelForm):
     )
 
 
-class PositionOpinionAdmin(admin.ModelAdmin):
-    form = PositionOpinionForm
+class PositionEnterOpinionAdmin(admin.ModelAdmin):
+    form = PositionEnterOpinionForm
 
     list_display = (
         'symbol', 'date', 'price_movement', 'event_trade',
@@ -85,7 +87,7 @@ class PositionOpinionAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-class CloseOpinionAdmin(admin.ModelAdmin):
+class PositionExitOpinionAdmin(admin.ModelAdmin):
     form = DateForm
 
     list_display = (
@@ -111,7 +113,7 @@ class CloseOpinionAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-class WeekdayOpinionAdmin(admin.ModelAdmin):
+class PositionHoldOpinionAdmin(admin.ModelAdmin):
     form = DateForm
 
     list_display = (
@@ -173,10 +175,52 @@ class WeekdayOpinionAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
+class PositionReviewAdmin(admin.ModelAdmin):
+    form = DateForm
+    list_display = ('position', 'date', 'strategy_test', 'target_price',
+                    'market_review', 'complete_focus', 'mistake_trade')
+
+    fieldsets = (
+        ('Foreign Keys', {
+            'fields': ('position',)
+        }),
+        ('Primary Fields', {
+            'fields': ('date', 'description')
+        }),
+        ('Enter comment', {
+            'fields': (
+                'strategy_test', 'short_period', 'over_confidence', 'unknown_trade',
+                'target_price', 'market_review', 'feel_lucky', 'wrong_timing',
+                'well_backtest', 'valid_strategy', 'high_chance', 'chase_news',
+                'deep_analysis', 'unaware_event', 'poor_estimate'
+            )
+        }),
+        ('Holding comment', {
+            'fields': (
+                'keep_update', 'unaware_news', 'unaware_eco', 'unaware_stat',
+                'hold_loser', 'wrong_wait', 'miss_profit', 'greed_wait'
+            )
+        }),
+        ('Exit comment', {
+            'fields': (
+                'afraid_loss', 'luck_factor', 'news_effect', 'sold_early',
+                'fear_factor', 'complete_focus', 'mistake_trade'
+            )
+        })
+    )
+
+    search_fields = ('position__name', 'position__spread', 'description')
+    list_per_page = 20
+
+    readonly_fields = ('position',)
+
+
 admin.site.register(PortfolioOpinion, PortfolioOpinionAdmin)
-admin.site.register(PositionOpinion, PositionOpinionAdmin)
-admin.site.register(WeekdayOpinion, WeekdayOpinionAdmin)
-admin.site.register(CloseOpinion, CloseOpinionAdmin)
+admin.site.register(PositionEnterOpinion, PositionEnterOpinionAdmin)
+admin.site.register(PositionHoldOpinion, PositionHoldOpinionAdmin)  # not used
+admin.site.register(PositionExitOpinion, PositionExitOpinionAdmin)
+admin.site.register(PositionReview, PositionReviewAdmin)
+
 
 admin.site.register_view(
     'opinion/profile/weekday/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
@@ -185,4 +229,8 @@ admin.site.register_view(
 admin.site.register_view(
     'opinion/profile/position/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
     urlname='position_profile', view=position_profile
+)
+admin.site.register_view(
+    'opinion/position/review/(?P<position_id>\d+)/$',
+    urlname='get_position_review', view=get_position_review
 )

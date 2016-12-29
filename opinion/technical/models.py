@@ -5,52 +5,26 @@ class TechnicalRank(models.Model):
     """
     Technical analysis opinion, daily update
     """
+    # Weak-Form Hypothesis
     symbol = models.CharField(max_length=6)
     date = models.DateField()
-
-    # unique data
     unique_together = (('symbol', 'date'),)
 
-    # from ranking provider
-    market_edge = models.CharField(
-        max_length=20, choices=(
-            ('strong_buy', 'Strong Buy'), ('buy', 'Buy'),
-            ('hold', 'Hold'),
-            ('sell', 'Sell'), ('strong_sell', 'Strong Sell')
-        ),
-        help_text='The street ranking'
+    # third party ranking provider
+    market_edge = models.IntegerField(
+        choices=((0, 'Strong Sell'), (1, 'Sell'), (3, 'Hold'), (4, 'Buy'), (5, 'Strong Buy'),
+                 (None, 'No score')),
+        max_length=20, help_text='Market edge ranking', null=True, default=3
     )
-    the_street = models.CharField(
-        max_length=20, choices=(
-            ('strong_buy', 'Strong Buy'), ('buy', 'Buy'),
-            ('hold', 'Hold'),
-            ('sell', 'Sell'), ('strong_sell', 'Strong Sell')
-        ),
-        help_text='The street ranking'
+    bar_chart = models.IntegerField(
+        choices=((0, 'Strong Sell'), (1, 'Sell'), (3, 'Hold'), (4, 'Buy'), (5, 'Strong Buy'),
+                 (None, 'No score')),
+        max_length=20, help_text='Market edge ranking', null=True, default=3
     )
-    ford_equity = models.CharField(
-        max_length=20, choices=(
-            ('strong_buy', 'Strong Buy'), ('buy', 'Buy'),
-            ('hold', 'Hold'),
-            ('sell', 'Sell'), ('strong_sell', 'Strong Sell')
-        ),
-        help_text='Market edge ranking'
-    )
-    bar_chart = models.CharField(
-        max_length=10, choices=(
-            ('strong_buy', 'Strong Buy'), ('buy', 'Buy'),
-            ('hold', 'Hold'),
-            ('sell', 'Sell'), ('strong_sell', 'Strong Sell')
-        ),
-        help_text='Bar chart comment'
-    )
-    sctr_rank = models.CharField(
-        max_length=20, choices=(
-            ('strong_buy', 'Strong Buy'), ('buy', 'Buy'),
-            ('hold', 'Hold'),
-            ('sell', 'Sell'), ('strong_sell', 'Strong Sell')
-        ),
-        help_text=' StockCharts Technical Rank (SCTR)'
+    chartmill = models.IntegerField(
+        choices=((0, 'Strong Sell'), (1, 'Sell'), (3, 'Hold'), (4, 'Buy'), (5, 'Strong Buy'),
+                 (None, 'No score')),
+        max_length=20, help_text='Market edge ranking', null=True, default=3
     )
 
 
@@ -58,6 +32,7 @@ class TechnicalOpinion(models.Model):
     """
     Technical analysis opinion, daily update
     """
+    # Weak-Form Hypothesis
     symbol = models.CharField(max_length=6)
     date = models.DateField()
 
@@ -78,9 +53,8 @@ class TechnicalOpinion(models.Model):
         default=False, help_text='SMA 200.50 cross'
     )
     rsi_score = models.CharField(
-        max_length=10, choices=(
-            ('overbought', 'Overbought'), ('middle', 'Middle'), ('oversold', 'Oversold')
-        ), help_text='RSI, x > 70 overbought, x < 30 oversold'
+        choices=(('overbought', 'Overbought'), ('middle', 'Middle'), ('oversold', 'Oversold')),
+        max_length=10, help_text='RSI, x > 70 overbought, x < 30 oversold'
     )
 
     # volume profile
@@ -174,3 +148,4 @@ class TechnicalOpinion(models.Model):
 
 
 
+# todo: optimize technical opinion into less

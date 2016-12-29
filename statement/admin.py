@@ -371,9 +371,9 @@ class PositionAdmin(admin.ModelAdmin):
                HoldingEquityInline, HoldingOptionInline, ProfitLossInline)
 
     def link(self):
-        return '<a href="{link0}">Report</a> | <a href="{link1}">Comment</a>'.format(
+        return '<a href="{link0}">Report</a> | <a href="{link1}">Review</a>'.format(
             link0=reverse('admin:position_report', kwargs={'id': self.id}),
-            link1=reverse('admin:get_position_comment', kwargs={'position_id': self.id})
+            link1=reverse('admin:get_position_review', kwargs={'position_id': self.id})
         )
 
     link.allow_tags = True
@@ -416,48 +416,6 @@ class PositionStageAdmin(admin.ModelAdmin):
         return False
 
 
-class PositionCommentAdmin(admin.ModelAdmin):
-    form = StatementForm
-    list_display = ('position', 'date', 'strategy_test', 'target_price',
-                    'market_review', 'complete_focus', 'mistake_trade')
-
-    fieldsets = (
-        ('Foreign Keys', {
-            'fields': ('position',)
-        }),
-        ('Primary Fields', {
-            'fields': ('date', 'description')
-        }),
-        ('Enter comment', {
-            'fields': (
-                'strategy_test', 'short_period', 'over_confidence', 'unknown_trade',
-                'target_price', 'market_review', 'feel_lucky', 'wrong_timing',
-                'well_backtest', 'valid_strategy', 'high_chance', 'chase_news',
-                'deep_analysis', 'unaware_event', 'poor_estimate'
-            )
-        }),
-        ('Holding comment', {
-            'fields': (
-                'keep_update', 'unaware_news', 'unaware_eco', 'unaware_stat',
-                'hold_loser', 'wrong_wait', 'miss_profit', 'greed_wait'
-            )
-        }),
-        ('Exit comment', {
-            'fields': (
-                'afraid_loss', 'luck_factor', 'news_effect', 'sold_early',
-                'fear_factor', 'complete_focus', 'mistake_trade'
-            )
-        })
-    )
-
-    search_fields = ('position__name', 'position__spread', 'description')
-    list_per_page = 20
-
-    readonly_fields = ('position', )
-
-
-#admin.site.app_index_template = 'statement/index.html'
-
 # admin models
 admin.site.register(StatementName, StatementNameAdmin)
 admin.site.register(Statement, StatementAdmin)
@@ -469,7 +427,6 @@ admin.site.register(AccountTrade, AccountTradeAdmin)
 admin.site.register(HoldingEquity, HoldingEquityAdmin)
 admin.site.register(HoldingOption, HoldingOptionAdmin)
 admin.site.register(ProfitLoss, ProfitLossAdmin)
-admin.site.register(PositionComment, PositionCommentAdmin)
 
 
 # custom admin view
@@ -503,9 +460,4 @@ admin.site.register_view(
 admin.site.register_view(
     'data/underlying/daily/(?P<date>\d{4}-\d{2}-\d{2})/(?P<ready_all>\d+)/$',
     urlname='daily_import', view=daily_import
-)
-
-admin.site.register_view(
-    'statement/position/comment/(?P<position_id>\d+)/$',
-    urlname='get_position_comment', view=get_position_comment
 )

@@ -57,10 +57,10 @@ class TradeIdeaAdmin(admin.ModelAdmin):
     )
     fieldsets = (
         ('Primary', {'fields': ('symbol', 'date')}),
-        ('Idea', {'fields': ('direction', 'trade_idea', 'target_price')}),
+        ('Idea', {'fields': ('direction', 'trade_idea', 'kill_it', 'target_price')}),
     )
 
-    search_fields = ('date', 'symbol', 'trade_idea')
+    search_fields = ('date', 'symbol', 'trade_idea', 'kill_it')
     list_filter = ('direction',)
     list_per_page = 20
 
@@ -69,13 +69,14 @@ class TradeNoteAdmin(admin.ModelAdmin):
     form = DateForm
 
     list_display = (
-        'date', 'note'
+        'note', 'date', 'category'
     )
     fieldsets = (
-        ('Primary', {'fields': ('date', 'note', 'explain')}),
+        ('Primary', {'fields': ('date', 'category', 'note', 'explain')}),
     )
 
     search_fields = ('date', 'note')
+    list_filter = ('category',)
     list_per_page = 20
 
 
@@ -85,5 +86,5 @@ admin.site.register(TradeIdea, TradeIdeaAdmin)
 admin.site.register(TradeNote, TradeNoteAdmin)
 
 admin.site.register_view(
-    'opinion/profile/tradenote/$', urlname='trade_note', view=trade_note
+    'opinion/profile/tradenote/(?P<category>\w+)/$', urlname='trade_note', view=trade_note
 )

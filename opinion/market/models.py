@@ -234,3 +234,25 @@ class MarketIndicator(models.Model):
         choices=(('decrease', 'Decrease'), ('range', 'Range'), ('increase', 'Increase')),
         help_text='Market fair value'
     )
+
+
+class EconomicReview(models.Model):
+    """
+    Weekly, Eco data, market condition, bubble analysis
+    """
+
+    bubble_stage = models.CharField(
+        max_length=20, help_text='Market fair value',
+        choices=(
+            ('birth', 'The birth of a boom - some sector, other sector down'),
+            ('breed', 'The breed of a bubble - rate low, credit grow, company increase profit'),
+            ('new_era', 'Everyone buy new ara - always go up, valuation standard abandon'),
+            ('distress', 'Financial distress - insider cash out, excess leverage, fraud detected'),
+            ('scare', 'Financial scare - investor scare, no longer trade in market'),
+        ),
+    )
+    pass
+
+
+
+# todo: add another eco data checklist for eco

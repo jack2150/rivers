@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from base.admin import DateForm
-from opinion.stock.models import IndustryOpinion, FundamentalOpinion
+from opinion.stock.models import IndustryOpinion, FundamentalOpinion, ArticleOpinion
 from opinion.stock.views import industry_profile
 
 
@@ -49,8 +49,8 @@ class FundamentalOpinionAdmin(admin.ModelAdmin):
     form = DateForm
 
     list_display = (
-        'symbol', 'date', 'ownership_activity', 'insider_trade', 'guru_trade', 'short_interest',
-        'mean_rank', 'target_price_mean', 'earning_surprise', 'valuation',
+        'symbol', 'date', 'ownership_activity', 'insider_trade',
+        'guru_trade', 'short_interest', 'risk'
     )
     fieldsets = (
         ('Primary', {
@@ -60,7 +60,7 @@ class FundamentalOpinionAdmin(admin.ModelAdmin):
         }),
         ('Ownership', {
             'fields': (
-                'ownership_activity', 'insider_trade', 'guru_trade', 'short_interest',
+                'ownership_activity', 'insider_trade', 'guru_trade', 'short_interest', 'risk'
             )
         }),
         ('Rank & Target Price', {
@@ -68,26 +68,47 @@ class FundamentalOpinionAdmin(admin.ModelAdmin):
                 'mean_rank', 'target_price_max', 'target_price_mean', 'target_price_min',
             )
         }),
-        ('Fundamental', {
-            'fields': (
-                'earning_surprise', 'earning_grow', 'dividend_grow',
-                'dcf_value', 'pe_ratio_trend', 'div_yield_trend', 'valuation',
-            )
-        }),
     )
 
     search_fields = ('symbol', 'date')
     list_filter = (
         'ownership_activity', 'insider_trade', 'guru_trade', 'short_interest',
-        'earning_surprise', 'earning_grow', 'dividend_grow',
-        'pe_ratio_trend', 'div_yield_trend', 'valuation',
 
     )
     list_per_page = 20
 
 
+class ArticleOpinionAdmin(admin.ModelAdmin):
+    form = DateForm
+
+    list_display = (
+        'symbol', 'date', 'category', 'article_name', 'bull_chance', 'range_chance', 'bear_chance',
+    )
+    fieldsets = (
+        ('Primary', {
+            'fields': (
+                'symbol', 'date',
+            )
+        }),
+        ('Analysis', {
+            'fields': (
+                'category', 'article_name',
+                'article_story', 'period_state', 'fundamental_effect',
+                'rational', 'blind_follow', 'reverse_effect',
+                'bull_chance', 'range_chance', 'bear_chance',
+            )
+        })
+    )
+    search_fields = ('date', 'article_name')
+    list_filter = ('category', 'article_name',
+                   'article_story', 'period_state', 'fundamental_effect',
+                   'rational', 'blind_follow', 'reverse_effect')
+    list_per_page = 20
+
+
 admin.site.register(IndustryOpinion, IndustryOpinionAdmin)
 admin.site.register(FundamentalOpinion, FundamentalOpinionAdmin)
+admin.site.register(ArticleOpinion, ArticleOpinionAdmin)
 
 admin.site.register_view(
     'opinion/profile/industry/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/$',

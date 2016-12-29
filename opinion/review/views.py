@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.shortcuts import render
 
 # Create your views here.
-from opinion.comment.models import WeekdayOpinion, PositionOpinion, CloseOpinion
+from opinion.review.models import PositionEnterOpinion, PositionExitOpinion
 from statement.models import Statement
 
 
@@ -19,20 +19,20 @@ def position_profile(request, symbol, date, portfolio=0):
     :return: render
     """
     symbol = symbol.upper()
-    position_opinion = PositionOpinion.objects.get(Q(symbol=symbol) & Q(date=date))
-    close_opinion = CloseOpinion.objects.filter(symbol=symbol).order_by('date')
+    position_opinion = PositionEnterOpinion.objects.get(Q(symbol=symbol) & Q(date=date))
+    close_opinion = PositionExitOpinion.objects.filter(symbol=symbol).order_by('date')
     if close_opinion.exists():
         close_opinion = close_opinion.first()
-        weekday_opinions = WeekdayOpinion.objects.filter(
+        weekday_opinions = PositionEnterOpinion.objects.filter(
             Q(symbol=symbol) & Q(date__gte=date) & Q(date__lte=close_opinion.date)
         )
     else:
         close_opinion = None
-        weekday_opinions = WeekdayOpinion.objects.filter(
+        weekday_opinions = PositionEnterOpinion.objects.filter(
             Q(symbol=symbol) & Q(date__gte=date)
         ).order_by('date')
 
-    weekday_opinion = WeekdayOpinion.objects.first()
+    weekday_opinion = PositionEnterOpinion.objects.first()
 
     # write opinion
     commentary = {}
@@ -190,7 +190,7 @@ def weekday_profile(request, symbol, date):
     :return: render
     """
     symbol = symbol.upper()
-    weekday_opinion = WeekdayOpinion.objects.get(Q(symbol=symbol) & Q(date=date))
+    enter_opinion = PositionEnterOpinion.objects.get(Q(symbol=symbol) & Q(date=date))
 
     keys = [
         'new_info_impact', 'put_call_ratio', 'last_5day_return',
@@ -210,10 +210,10 @@ def weekday_profile(request, symbol, date):
     }
 
     for key in keys:
-        value = getattr(weekday_opinion, key)
+        value = getattr(enter_opinion, key)
         if key == 'new_info_impact':
             if value:
-                result = results[getattr(weekday_opinion, 'new_info_move')] * 5
+                result = results[getattr(enter_opinion, 'new_info_move')] * 5
             else:
                 result = 0
         elif key == 'put_call_ratio':
@@ -258,7 +258,7 @@ def weekday_profile(request, symbol, date):
         ),
         symbol=symbol,
         date=date,
-        weekday_opinion=weekday_opinion,
+        weekday_opinion=enter_opinion,
         summary=summary
     )
 

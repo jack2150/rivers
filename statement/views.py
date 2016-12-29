@@ -2,14 +2,11 @@ import logging
 import glob
 import os
 import codecs
-from django import forms
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.urlresolvers import reverse
 import numpy as np
+from django import forms
+from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
-
-from base.ufunc import ts
-from rivers.settings import BASE_DIR, STATEMENT_DIR
+from rivers.settings import STATEMENT_DIR
 from statement.models import *
 
 
@@ -348,28 +345,6 @@ def statement_truncate(request, name_id):
     return render(request, template, parameters)
 
 
-def get_position_comment(request, position_id):
-    """
-    Get position comment if exists,
-    if not exists create new
-    :param request: request
-    :param position_id: int
-    :return: redirect
-    """
-    position = Position.objects.get(id=position_id)
-
-    try:
-        position_comment = PositionComment.objects.get(position=position)
-    except ObjectDoesNotExist:
-        position_comment = PositionComment(
-            position=position,
-            date=pd.datetime.today().date()
-        )
-        position_comment.save()
-
-    link = reverse('admin:statement_positioncomment_change', args=(position_comment.id, ))
-
-    return redirect(link)
 
 
 

@@ -60,7 +60,7 @@ INSTALLED_APPS = (
 
     # opinion
     'opinion',
-    'opinion.comment',
+    'opinion.review',
     'opinion.market',
     'opinion.personal',
     'opinion.plan',

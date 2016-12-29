@@ -30,7 +30,7 @@ class TestSimpleIndicatorStat(TestUnitSetUp):
 
         self.symbol = 'AIG'
 
-        df_minute1, df_day = get_minute1_data(self.symbol, '2016-11-25')
+        df_minute1, df_day = get_minute1_data(self.symbol, '2016-11-22')
 
         self.si_stat = SimpleIndicatorStat(df_minute1, df_day)
 

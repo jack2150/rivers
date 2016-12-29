@@ -47,8 +47,11 @@
         <div class="panel-collapse panel-body collapse in " id="event">
           <ol class="ordered_list">
             <li>
-              <a href="{% url 'admin:trade_note' %}" target="_blank">
+              <a href="{% url 'admin:trade_note' 'trade' %}" target="_blank">
                 Read trade note
+              </a><br>
+              <a href="{% url 'admin:trade_note' 'behavior' %}" target="_blank">
+                Read behavior note
               </a>
             </li>
             <li>
@@ -70,8 +73,15 @@
           <hr class="divider">
           <ol class="ordered_list" start="5">
             <li>
+              Read news:<br>
               <a href="https://mail.google.com/mail/u/1/#inbox" target="_blank">
               Read market news (Google)
+              </a><br>
+              <a href="http://www.valueline.com/markets/dailyupdates.aspx" target="_blank">
+                Valueline market update
+              </a><br>
+              <a href="http://www.schwab.com/public/schwab/resource_center/expert_insight/markets_economy/schwab_market_update" target="_blank">
+                Schwab market update
               </a>
             </li>
             <li>
@@ -156,8 +166,13 @@
         <div class="panel-collapse panel-body collapse in" id="season_update">
           <ol class="ordered_list">
             <li>
-              <a href="{% url 'admin:comment_portfolioopinion_add' %}" target="_blank">
+              <a href="{% url 'admin:review_portfolioopinion_add' %}" target="_blank">
                 Create portfolio opinion
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'admin:personal_behavioropinion_add' %}" target="_blank">
+                Behavior opinion
               </a>
             </li>
 
@@ -187,11 +202,14 @@
                   </ol>
                 </li>
                 <li>
+                  <a href="{% url 'admin:stock_articleopinion_add' %}" target="_blank">
+                    Market story
+                  </a> &#62;
                   <a href="{% url 'admin:plan_tradeidea_add' %}" target="_blank">
                     Trade idea
                   </a> &#62;
-                  <a href="{% url 'admin:comment_positionopinion_add' %}" target="_blank">
-                    Enter position opinion
+                  <a href="{% url 'admin:review_positionenteropinion_add' %}" target="_blank">
+                    Enter opinion
                   </a> &#62;
                   <a href="{% url 'admin:technical_technicalopinion_add' %}" target="_blank">
                     Technical opinion
@@ -229,14 +247,28 @@
                     Minute 1 Si report
                   </a>
                 </li>
+                <li>
+                  Extra read research report
+                </li>
               </ol>
+            </li>
+            <li>
+              Holding a trade
+              <ol>
+                <li>
+                  <a href="{% url 'admin:review_positionholdopinion_add' %}" target="_blank">
+                    Hold opinion
+                  </a>
+                </li>
+              </ol>
+
             </li>
             <li>
               Exit a trade
               <ol>
                 <li>
-                  <a href="{% url 'admin:comment_closeopinion_add' %}" target="_blank">
-                    Close opinion
+                  <a href="{% url 'admin:review_positionexitopinion_add' %}" target="_blank">
+                    Exit opinion
                   </a>
                 </li>
                 <li>
@@ -246,10 +278,9 @@
                   Not fill, then close limit/market
                 </li>
                 <li>
-                  <a href="{% url 'admin:comment_closeopinion_add' %}" target="_blank">
-                    Close opinion
+                  <a href="{% url 'admin:review_positionreview_add' %}" target="_blank">
+                    Position review
                   </a>
-                  Position comment
                 </li>
               </ol>
             </li>
@@ -285,22 +316,6 @@
         </div>
       </div>
 
-      <div class="panel panel-default">
-        <div class="panel-heading">
-          <h4 class="panel-title">
-            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
-              Before market close (3:00pm to 4:00pm)
-            </a>
-          </h4>
-        </div>
-        <div class="panel-collapse collapse in" id="event">
-
-        </div>
-      </div>
-    </div>
-
-
-    <div class="col-md-3">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h4 class="panel-title">
@@ -345,6 +360,70 @@
             </li>
           </ol>
           <hr class="divider">
+        </div>
+      </div>
+    </div>
+
+
+    <div class="col-md-3">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a class="" href="#event" data-parent="#accordion" data-toggle="collapse">
+              Loss & Risk Adjust
+            </a>
+          </h4>
+        </div>
+        <div class="panel-collapse panel-body collapse in" id="season_update">
+          <ol class="ordered_list">
+            <li>
+              Release mind: music & note<br>
+            </li>
+            <li>
+              Check technical & rank:<br>
+              Tos all chart<br>
+              <a href="#" target="_blank">
+                Technical rank opinion
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'admin:stock_articleopinion_add' %}" target="_blank">
+                Article opinion
+              </a>
+            </li>
+            <li>
+              Excel possible action
+            </li>
+            <li>
+              Check backtest<br>
+              <a href="#" target="_blank">
+                Previous backtest result
+              </a><br>
+              <a href="#" target="_blank">
+                Third party software
+              </a>
+            </li>
+            <li>
+              Behavior & position<br>
+              <a href="#" target="_blank">
+                Loss opinion (not yet)
+              </a><br>
+              <a href="{% url 'admin:personal_lossholdchecklist_add' %}" target="_blank">
+                Loss hold checklist
+              </a><br>
+              <a href="{% url 'admin:personal_lossexcusechecklist_add' %}" target="_blank">
+                Loss excuse checklist
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'admin:review_positionholdopinion_add' %}" target="_blank">
+                Hold opinion
+              </a>
+            </li>
+            <li>
+              Hold or take action
+            </li>
+          </ol>
         </div>
       </div>
     </div>

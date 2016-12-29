@@ -1,3 +1,5 @@
+from urllib2 import HTTPError
+
 from base.utests import TestUnitSetUp
 
 import glob
@@ -53,13 +55,16 @@ class TestUpdateUnderlying(TestUnitSetUp):
             if underlying.company == '':
                 print 'empty symbol: %s' % underlying.symbol
                 print 'run update_underlying...'
-                self.client.get(
-                    reverse('admin:update_underlying', kwargs={'symbol': underlying.symbol.lower()})
-                )
-                print 'run add_split_history...'
-                self.client.get(
-                    reverse('admin:add_split_history', kwargs={'symbol': underlying.symbol.lower()})
-                )
+                try:
+                    self.client.get(
+                        reverse('admin:update_underlying', kwargs={'symbol': underlying.symbol.lower()})
+                    )
+                    print 'run add_split_history...'
+                    self.client.get(
+                        reverse('admin:add_split_history', kwargs={'symbol': underlying.symbol.lower()})
+                    )
+                except HTTPError:
+                    pass
             else:
                 print 'skip symbol: %s' % underlying.symbol
 

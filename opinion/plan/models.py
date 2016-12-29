@@ -172,6 +172,7 @@ class TradeIdea(models.Model):
         choices=(('bear', 'Bear'), ('neutral', 'Neutral'), ('bull', 'Bull'))
     )
     trade_idea = models.TextField(help_text='Why you want to enter this positions?')
+    kill_it = models.TextField(help_text='What could go wrong for this idea?')
     target_price = models.DecimalField(max_digits=6, decimal_places=2)
 
 
@@ -180,5 +181,13 @@ class TradeNote(models.Model):
     Note that you read everyday for before trading
     """
     date = models.DateField()
+    category = models.CharField(
+        max_length=20, default='behavior',
+        choices=(
+            ('trade', 'Trade'), ('behavior', 'Behavior'),
+            ('other', 'Other')
+        )
+    )
+
     note = models.CharField(max_length=200)
     explain = models.TextField()

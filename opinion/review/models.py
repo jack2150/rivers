@@ -30,7 +30,7 @@ class PortfolioOpinion(models.Model):
     )
 
 
-class WeekdayOpinion(models.Model):
+class PositionHoldOpinion(models.Model):
     """
     Basic stock movement and news/information, daily update
     """
@@ -149,7 +149,7 @@ class WeekdayOpinion(models.Model):
     )
 
 
-class PositionOpinion(models.Model):
+class PositionEnterOpinion(models.Model):
     """
     Position opinion, only create when enter new position
     """
@@ -224,7 +224,7 @@ class PositionOpinion(models.Model):
     description = models.TextField(null=True, blank=True)
 
 
-class CloseOpinion(models.Model):
+class PositionExitOpinion(models.Model):
     """
     Position closing opinion, create only when close
     """
@@ -271,3 +271,85 @@ class CloseOpinion(models.Model):
 
     others = models.TextField(null=True, blank=True)
 
+
+class PositionReview(models.Model):
+    """
+    Analysis each of trade you made in the past
+    mark down errors and do statistics
+    """
+    date = models.DateField()
+    position = models.OneToOneField('statement.Position')
+
+    # primary
+    good_process = models.BooleanField(default=False, help_text='Good process on this trade')
+    good_outcome = models.BooleanField(default=False, help_text='Good outcome on this trade')
+    good_luck = models.BooleanField(default=False, help_text='Good lucky on this trade')
+    profit_achieve = models.BooleanField(default=False, help_text='Achieve target profit?')
+    loss_achieve = models.BooleanField(default=False, help_text='Achieve target loss?')
+    result_outlier = models.BooleanField(default=False, help_text='Profit loss outside expected?')
+
+    # enter analysis
+    strategy_test = models.BooleanField(help_text='Testing unknown strategy?', default=True)
+    short_period = models.BooleanField(help_text='Holding/expire period is too short', default=True)
+    over_confidence = models.BooleanField(help_text='Trade too big & too much risk', default=True)
+    unknown_trade = models.BooleanField(help_text='No idea what you doing?', default=True)
+    target_price = models.BooleanField(help_text='Set any target price or stop loss?', default=False)
+    market_review = models.BooleanField(help_text='Review market check fit this position?', default=False)
+    feel_lucky = models.BooleanField(help_text='Enter because you feel lucky?', default=True)
+    wrong_timing = models.BooleanField(help_text='Enter at wrong timing?', default=True)
+    well_backtest = models.BooleanField(help_text='Enter after significant backtest?', default=False)
+    valid_strategy = models.BooleanField(help_text='Enter after found a valid strategy?', default=False)
+    high_chance = models.BooleanField(help_text='Enter because high probability?', default=False)
+    chase_news = models.BooleanField(help_text='Enter because market news?', default=True)
+    deep_analysis = models.BooleanField(help_text='Deep analysis before enter?', default=False)
+    unaware_event = models.BooleanField(help_text='Ignore event when you analysis', default=True)
+    poor_estimate = models.BooleanField(help_text='Wrong/poor estimate of price movement', default=True)
+
+    # holding
+    keep_update = models.BooleanField(help_text='Loss interest tracking after awhile', default=False)
+    unaware_news = models.BooleanField(help_text='Ignore news that cause price change', default=True)
+    unaware_eco = models.BooleanField(help_text='Ignore economics data that cause price change', default=True)
+    unaware_stat = models.BooleanField(help_text='Ignore statistics that cause price change', default=True)
+    hold_loser = models.BooleanField(help_text='Hold loser position longer?', default=True)
+    wrong_wait = models.BooleanField(help_text='Hold loser ans wait recover without reason?', default=True)
+    miss_profit = models.BooleanField(help_text='Hold too long that miss profit opportunity?', default=True)
+    greed_wait = models.BooleanField(help_text='Profit not sold because want earn more?', default=True)
+
+    # exit analysis
+    afraid_loss = models.BooleanField(help_text='Exit because you afraid loss more?', default=True)
+    luck_factor = models.BooleanField(help_text='The reason you profit is lucky!', default=True)
+    news_effect = models.BooleanField(help_text='News effect you holding p/l?', default=True)
+    sold_early = models.BooleanField(help_text='Sold for profit too early', default=False)
+    fear_factor = models.BooleanField(help_text='Fear cause you sold at bad timing', default=True)
+    complete_focus = models.BooleanField(help_text='Full focus from start to end', default=False)
+    mistake_trade = models.BooleanField(help_text='This trade is a mistake?', default=True)
+
+    # extra
+    description = models.TextField(
+        blank=True, null=True, default='', help_text='Pros & cons on this trade'
+    )
+
+
+    # todo: comment to position
+
+
+class PositionLossOpinion(models.Model):
+    """
+    How much you loss, how effect your portfolio, money management
+    """
+    pass
+
+    # todo: here
+
+
+class DecisionReview(models.Model):
+    """
+    Final decision for enter, buy more, cut percent, exit
+    """
+    symbol = models.CharField(max_length=20)
+    date = models.DateField()
+    unique_together = (('symbol', 'date'),)
+
+
+
+    # todo: here
