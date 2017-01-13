@@ -1,0 +1,220 @@
+{% extends "base/base.html" %}
+
+{% block webix-script %}
+<script type="text/javascript" charset="utf-8">
+
+  var col1_data = [
+    {
+      id: "1", open: true, value: "Sentiment", path: "#", image: "",
+      data: [
+        {
+          id: "1.1", value: "Mutual fund cash ratio", image: "",
+          path: "http://www.barrons.com/public/page/9_0210-mtlfdidc.html",
+        },
+        {
+          id: "1.2", value: "Fear & Greek Index", image: "",
+          path: "http://money.cnn.com/data/fear-and-greed/",
+        },
+        {
+          id: "1.3", value: "Margin debt", image: "",
+          path: "http://www.barrons.com/public/page/9_0210-nysedatabank.html"
+        },
+        {
+          id: "1.4", value: "Put/Call ratio", image: "",
+          path: "https://ycharts.com/indicators/cboe_equity_put_call_ratio"
+        },
+        {
+          id: "1.5", value: "Investor sentiment", image: "",
+          path: "https://ycharts.com/indicators/us_investor_sentiment_bull_bear_spread"
+        },
+        {
+          id: "1.6", value: "CFTC Indices", image: "",
+          path: "https://www.tradingster.com/"
+        },
+        {
+          id: "1.7", value: "CFTC Russell 2000 Futures", image: "",
+          path: ""
+        },
+        {
+          id: "1.8", value: "Confidence Index", image: "",
+          path: "http://www.barrons.com/public/page/9_0210-wyldgp.html"
+        },
+        {
+          id: "1.9", value: "TED Spread", image: "",
+          path: "https://ycharts.com/indicators/ted_spread"
+        },
+        {
+          id: "1.10", value: "Breadth of Market", image: "",
+          path: "http://www.mcoscillator.com/market_breadth_data/"
+        },
+        {
+          id: "1.11", value: "200D Moving Average %", image: "",
+          path: "http://www.indexindicators.com/charts/none-vs-sp500-stocks-above-200d-sma-params-x-x-x-x/"
+        },
+        {
+          id: "1.12", value: "Short-Term Trading Arms Index", image: "",
+          path: "http://stockcharts.com/h-sc/ui?s=%24trin"
+        },
+        {
+          id: "1.6", value: "Barchart S&P 500 Support/Resistance", image: "",
+          path: "http://www.barchart.com/cheatsheet.php?sym=$SPX"
+        },
+        {
+          id: "1.6", value: "Investing S&P 500 Support/Resistance", image: "",
+          path: "http://www.investing.com/indices/us-spx-500-technical"
+        },
+        {
+          id: "1.6", value: "Market fair value", image: "",
+          path: "http://www.morningstar.com/market-valuation/market-fair-value-graph.aspx"
+        },
+      ]
+    },
+  ];
+  var col2_data = [
+    {
+      id: "1", open: true, value: "Major economics", image: "", path: "",
+      data: [
+        {
+          id: "1.1", value: "Lagging index", image: "",
+          path: "https://ycharts.com/indicators/us_lagging_index"
+        },
+        {
+          id: "1.2", value: "Activity index", image: "",
+          path: "https://ycharts.com/indicators/categories/economic_activity_indexes"
+        },
+        {
+          id: "1.3", value: "Weekly lagging index", image: "",
+          path: "https://ycharts.com/indicators/weekly_leading_index"
+        },
+        {
+          id: "1.4", value: "US lagging index", image: "",
+          path: "https://ycharts.com/indicators/us_lagging_index"
+        },
+        {
+          id: "1.5", value: "Coincident index", image: "",
+          path: "https://ycharts.com/indicators/us_coincident_index"
+        },
+        {
+          id: "1.6", value: "Monetary policy", image: "",
+          path: "https://ycharts.com/indicators/categories/monetary"
+        },
+        {
+          id: "1.7", value: "Business Cycle Indicator", image: "",
+          path: "https://www.conference-board.org/data/bci.cfm"
+        },
+        {
+          id: "1.8", value: "Fed Funds Rate", image: "", path: "",
+          data: [
+            {
+              id: "1.8.1", value: "Fed Funds Rate", image: "",
+              path: "http://www.tradingeconomics.com/united-states/interest-rate"
+            },
+            {
+              id: "1.8.2", value: "Historical Treasury Rates", image: "",
+              path: "https://www.treasury.gov/resource-center/data-chart-center/interest-rates/Pages/Historic-LongTerm-Rate-Data-Visualization.aspx"
+            },
+            {
+              id: "1.8.3", value: "Rate Forecast", image: "",
+              path: "http://www.tradingeconomics.com/united-states/interest-rate/forecast"
+            }
+          ]
+        },
+        {
+          id: "1.9", value: "Inflation Rates", image: "",
+          path: "http://www.usinflationcalculator.com/inflation/current-inflation-rates/"
+        }
+      ]
+    },
+    {
+      id: "2", open: true, value: "Economic data", image: "", path: "",
+      data: [
+        {
+          id: "2.1", value: "Money Supply", image: "",
+          path: "https://research.stlouisfed.org/fred2/series/M2"
+        },
+        {
+          id: "2.2", value: "GDP", image: "",
+          path: "https://ycharts.com/indicators/categories/gdp"
+        },
+        {
+          id: "2.3", value: "Consumer price", image: "",
+          path: "https://ycharts.com/indicators/consumer_price_index"
+        },
+        {
+          id: "2.4", value: "Producer price", image: "",
+          path: "https://ycharts.com/indicators/categories/producer_prices"
+        },
+        {
+          id: "2.5", value: "Consumer sentiment", image: "",
+          path: "https://ycharts.com/indicators/consumer_sentiment"
+        },
+        {
+          id: "2.6", value: "Employment rate", image: "",
+          path: "https://ycharts.com/indicators/categories/employment"
+        },
+        {
+          id: "2.7", value: "Retail & services", image: "",
+          path: "https://ycharts.com/indicators/categories/retail_and_services"
+        },
+        {
+          id: "2.8", value: "Housing starts", image: "",
+          path: "https://ycharts.com/indicators/housing_starts"
+        },
+        {
+          id: "2.9", value: "Industry producation", image: "",
+          path: "https://ycharts.com/indicators/categories/industrial_production"
+        },
+        {
+          id: "2.10", value: "Total biz inventory", image: "",
+          path: "https://ycharts.com/indicators/us_total_business_inventories"
+        },
+        {
+          id: "2.11", value: "Startup activity", image: "",
+          path: "http://www.kauffman.org/microsites/kauffman-index/rankings/national?Report=StartupActivity"
+        },
+        {
+          id: "2.12", value: "Hours & wages", image: "",
+          path: "https://ycharts.com/indicators/categories/hours_and_wages"
+        },
+        {
+          id: "2.13", value: "Foreign exchange", image: "",
+          path: "https://ycharts.com/indicators/categories/foreign_exchange"
+        },
+        {
+          id: "2.14", value: "Interest rate", image: "",
+          path: "https://ycharts.com/indicators/categories/interest_rates"
+        },
+        {
+          id: "2.15", value: "Corporate profit", image: "",
+          path: "https://ycharts.com/indicators/corporate_profits"
+        },
+        {
+          id: "2.16", value: "Trade deficit", image: "",
+          path: "https://ycharts.com/indicators/categories/international_transactions"
+        }
+      ]
+    },
+
+  ];
+  var col3_data = [];
+
+  var path = "{common.icon()} {common.folder()} " +
+      "<span class='webix_icon #image#' style='float:right; margin:5px 12px 0px 1px;'></span>" +
+      "<a href='#path#'>#value#</a>";
+
+  webix.ui({
+    container: "webix-content",
+    id: "layout",
+    minHeight: 1200,
+    type: "space",
+    cols: [
+      {
+        id: "tree1", width: 360, view: "tree", template: path, data: col1_data
+      },
+      {
+        id: "tree2", width: 360, view: "tree", template: path, data: col2_data
+      },
+    ]
+  }).show();
+</script>
+{% endblock %}

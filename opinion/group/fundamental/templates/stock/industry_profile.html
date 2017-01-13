@@ -1,0 +1,767 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls admin_static admin_list admintags %}
+
+{% block extrastyle %}
+  <style>
+    .pad_top10 {
+      padding-top: 10px;
+    }
+
+    .borderless td, .borderless th {
+      border: none !important;
+    }
+  </style>
+{% endblock %}
+
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <ul class="breadcrumb">
+      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+      <li><a href="{% url 'admin:app_list' 'stock' %}">Stock</a></li>
+      <li>Fundamental/Industry profile</li>
+    </ul>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a class="" href="#fundamental_analysis" data-parent="#accordion" data-toggle="collapse">
+          Fundamental analysis for date: {{ date }}
+        </a>
+      </h4>
+    </div>
+
+    <table class="panel-collapse collapse in table table-bordered" id="fundamental_analysis">
+      <tr>
+        <td class="col-md-4">
+          <label>Analysts Ranking:</label>
+          <div>
+            {% if fundamental_opinion.mean_rank < 1.7  %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif fundamental_opinion.mean_rank < 3.4 %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Average brokerage recommendations ranking is {{ fundamental_opinion.mean_rank }}
+            which is a
+            {% if fundamental_opinion.mean_rank <= 1 %}
+              <b>STRONG BUY</b>
+            {% elif fundamental_opinion.mean_rank <= 2 %}
+              <b>BUY</b>
+            {% elif fundamental_opinion.mean_rank <= 3 %}
+              <b>HOLD</b>
+            {% elif fundamental_opinion.mean_rank <= 4 %}
+              <b>SELL</b>
+            {% else %}
+              <b>STRONG SELL</b>
+            {% endif %}
+            signal. It combine ranking from a few big investment company analysts.
+            Usually analysts ranking is valid until new information come out and
+            effect the stock valuation. Ranking usually update once after seasonal earning
+            release. Never goes against analysts ranking unless stock valuation haven't
+            reflect to new information.
+          </p>
+        </td>
+        <td class="col-md-4">
+          <label>Ownership Activity:</label>
+          <div>
+            {% if fundamental_opinion.ownership_activity == 'buying' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif fundamental_opinion.ownership_activity == 'selling' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Ownership Summary as reported in the most recent 13F filings which is
+            45-days late from current date. Ownership activity represent how was the
+            large portion of company shares being trade. Current most of the shareholder
+            are <b>{{ fundamental_opinion.ownership_activity|upper }}</b>. Never goes against
+            ownership; if you want to do that you should better have new information
+            that still not include in latest stock valuation.
+          </p>
+        </td>
+        <td class="col-md-4">
+          <label>Insider trade:</label>
+          <div>
+            {% if fundamental_opinion.insider_trade == 'buying' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif fundamental_opinion.insider_trade == 'selling' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Information is derived from Forms 3 and 4 filings filed.
+            Forms 3 which is new owner fill within 10-days; Forms 4 current owner have
+            2-days to report change in ownership. It represent small
+            portion of how company shares being trade. Insider have good information
+            about how the fundamental change to the company. Usually no significant effect;
+            only if large portion of stock being trade and a lot of insider trade same direction
+            in a short period of time.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Guru trade:</label>
+          <div>
+            {% if fundamental_opinion.guru_trade == 'buying' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif fundamental_opinion.guru_trade == 'selling' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Guru trade is similar ownership activity because it use most recent 13F filings also.
+            Difference is guru trade represent trade from some of the most popular hedge fund manager
+            that consistent outperform the market. It indicate how small portion of market shares being
+            trade. Most of the guru are currently <b>{{ fundamental_opinion.guru_trade|upper }}</b>
+            the shares. Guru have access to superior analysts. Never goes against
+            guru trade even you have new information that effect stock valuation.
+          </p>
+        </td>
+        <td>
+          <label>Short interest:</label>
+          <div>
+            {% if fundamental_opinion.short_interest == 'increase' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% elif fundamental_opinion.short_interest == 'decrease' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Short interest is the quantity of stock shares that investors have sold short but not yet
+            covered or closed out.
+            {% if fundamental_opinion.short_interest == 'increase' %}
+              Increasing in short interest indicate investor are currently short-term bearish.
+            {% elif fundamental_opinion.short_interest == 'decrease' %}
+              Decreasing in short interest indicate investor are currently short-term bullish.
+            {% else %}
+              No-change in short interest. No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Earning surprise:</label>
+          <div>
+            {% if fundamental_opinion.earning_surprise == 'positive' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif fundamental_opinion.earning_surprise == 'negative' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Earnings surprise occurs when a company's reported quarterly or annual profits are
+            above or below analysts' expectations.
+            {% if fundamental_opinion.earning_surprise == 'positive' %}
+              You have good information expect that the earning surprise will occurs next earnings
+              and it is a positive earning surprise that indicate a bullish trend.
+            {% elif fundamental_opinion.earning_surprise == 'negative' %}
+              You have good information expect that the earning surprise will occurs next earnings
+              and it is a negative earning surprise that indicate a bearish trend.
+            {% else %}
+              You do not expect any surprise on next season earning.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Forecast Earning Grow:</label>
+          <div>
+            {% if fundamental_opinion.earning_grow == 'increase' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif fundamental_opinion.earning_grow == 'decrease' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Analysts forecast it will be
+            {% if fundamental_opinion.earning_grow == 'increase' %}
+              continues increase in earning grow. It indicate a bullish trend.
+            {% elif fundamental_opinion.earning_grow == 'decrease' %}
+              decrease in earning grow. It indicate a bearish trend.
+            {% else %}
+              no earning grow. It indicate a neutral market.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Forecast Earning Grow:</label>
+          <div>
+            {% if fundamental_opinion.earning_grow == 'increase' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif fundamental_opinion.earning_grow == 'decrease' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Analysts forecast it will be
+            {% if fundamental_opinion.earning_grow == 'increase' %}
+              continues increase in earning grow. It indicate a bullish trend.
+            {% elif fundamental_opinion.earning_grow == 'decrease' %}
+              decrease in earning grow. It indicate a bearish trend.
+            {% else %}
+              no earning grow. It indicate a neutral market.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Forecast Dividend Grow:</label>
+          <div>
+            {% if fundamental_opinion.dividend_grow == 'increase' %}
+              <img src="{% static 'admin/dividend_grow/signal_buy.png' %}">
+            {% elif fundamental_opinion.dividend_grow == 'decrease' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Analysts forecast it will be
+            {% if fundamental_opinion.dividend_grow == 'increase' %}
+              continues increase in dividend grow. It indicate a bullish trend.
+            {% elif fundamental_opinion.dividend_grow == 'decrease' %}
+              decrease in dividend grow. It indicate a bearish trend.
+            {% else %}
+              no dividend grow. It indicate a neutral market.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>P/E Ratio trend:</label>
+          <div>
+            {% if fundamental_opinion.pe_ratio_trend == 'higher' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif fundamental_opinion.pe_ratio_trend == 'lower' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Price-earnings ratio (P/E Ratio) is the ratio for valuing a company that measures
+            its current share price relative to its EPS.
+            {% if fundamental_opinion.pe_ratio_trend == 'higher' %}
+              Currently P/E ratio is trending higher. Growing P/E consider an increase in
+              company valuation. It indicate a bullish trend.
+            {% elif fundamental_opinion.pe_ratio_trend == 'lower' %}
+              Currently P/E ratio is trending lower. Decline P/E consider an decrease in
+              company valuation. It indicate a bearish trend.
+            {% else %}
+              Currently P/E ratio is trending range.
+            {% endif %}
+            P/E ratio need to compare to industry average in-order to make accurate valuation.
+            If P/E is above industry average, then it's consider expensive and indicate
+            bearish; below industry average, then it's consider cheap and indicate bullish.
+          </p>
+        </td>
+        <td>
+          <label>Dividend yield trend:</label>
+          <div>
+            {% if fundamental_opinion.div_yield_trend == 'higher' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif fundamental_opinion.div_yield_trend == 'lower' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            Dividend yield is represented as a pays out in dividends each year
+            relative to its share price.
+            {% if fundamental_opinion.div_yield_trend == 'higher' %}
+              Current dividend yield is increase. Indicate it is a better investment as a
+              dividend stock. It consider as bullish.
+            {% elif fundamental_opinion.div_yield_trend == 'lower' %}
+              Current dividend yield is decrease. Indicate it is a bad investment as a
+              dividend stock. It consider as bearish.
+            {% else %}
+              Current no change in dividend yield. It consider as neutral.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Company valuation:</label>
+          <div>
+            {% if fundamental_opinion.valuation == 'cheap' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif fundamental_opinion.valuation == 'expensive' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            TD Ameritrade stock valuation analysis using specific parameter of the financial
+            report. Currently the stock price is consider <b>{{ fundamental_opinion.valuation|upper }}</b>.
+            Market valuation need to compare as industry average in order to be valid.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Discounted Cash Flow:</label>
+          <p class="pad_top10">
+            DCF analysis uses future free cash flow projections and discounts them to arrive
+            at a present value estimate. Currently DCF value is {{ fundamental_opinion.dcf_value }}.
+            A stock valuation cannot simply depend on a cash flow. It only serve as a reference price.
+          </p>
+        </td>
+        <td>
+          <label>Analysts Target Price:</label>
+          <p class="pad_top10">
+            Analysts estimate 12 month price targets for {{ symbol }} Inc have a median target of
+            <b>{{ fundamental_opinion.target_price_mean }}</b>, with a high estimate of
+            {{ fundamental_opinion.target_price_max }} and a low estimate of
+            {{ fundamental_opinion.target_price_min }}.
+          </p>
+          <div>
+            <table class="table table-condensed">
+              <tr>
+                <td class="col-md-4">Min:</td>
+                <td>{{ fundamental_opinion.target_price_min }}</td>
+              </tr>
+              <tr>
+                <td>Mean:</td>
+                <td>{{ fundamental_opinion.target_price_mean }}</td>
+              </tr>
+              <tr>
+                <td>Max:</td>
+                <td>{{ fundamental_opinion.target_price_max }}</td>
+              </tr>
+            </table>
+          </div>
+        </td>
+        <td>
+          <label>Fundamental Analysis Summary</label>
+          {% if summary0.total > 0 %}
+            <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+          {% elif summary0.total < 0 %}
+            <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+          {% endif %}
+          <div class="col-md-10 pad_top10">
+            <table class="table table-condensed borderless">
+              <tr>
+                <th></th>
+                <th>Movement</th>
+                <th>Score</th>
+                <th>Count</th>
+              </tr>
+              <tr>
+                <td></td>
+                <td>Bullish</td>
+                <td>{{ summary0.bullish.score }}</td>
+                <td>{{ summary0.bullish.count }}</td>
+              </tr>
+              <tr>
+                <td>+</td>
+                <td>Neutral</td>
+                <td>{{ summary0.neutral.score }}</td>
+                <td>{{ summary0.neutral.count }}</td>
+              </tr>
+              <tr>
+                <td>+</td>
+                <td>Bearish</td>
+                <td>{{ summary0.bearish.score }}</td>
+                <td>{{ summary0.bearish.count }}</td>
+              </tr>
+              <tr style="border-top: solid 1px darkgrey">
+                <td>=</td>
+                <td>Summary</td>
+                <td>{{ summary0.total.score }} / 27</td>
+                <td>{{ summary0.total.count }}</td>
+              </tr>
+            </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a class="" href="#industry_analysis" data-parent="#accordion" data-toggle="collapse">
+          Industry analysis for date: {{ date }}
+        </a>
+      </h4>
+    </div>
+
+    <table class="panel-collapse collapse in table table-bordered" id="industry_analysis">
+      <tr>
+        <td class="col-md-4" rowspan="3">
+          <label>Stock performance in industry:</label>
+
+          <p class="pad_top10">
+            <b>Company structural:</b>
+            {% if industry_opinion.structural_chg == 'demographic' %}
+              Change in population growth and age distributions will effect company
+              {{ symbol }}.
+            {% elif industry_opinion.structural_chg == 'lifestyle' %}
+              Lifestyles deal with how people live, work, form households, consume, enjoy leisure,
+              and educate themselves.
+            {% elif industry_opinion.structural_chg == 'technology' %}
+              Technology can affect the product or service and how it
+              is produced and delivered.
+            {% elif industry_opinion.structural_chg == 'regulations' %}
+              Political change reflects social values, today’s social trend
+              may be tomorrow’s law, regulation, or tax.
+            {% else %}
+              There was no structural change in {{ symbol }} company.
+            {% endif %}
+          </p>
+
+          <p class="pad_top10">
+            <b>Life cycle: {{ industry_opinion.life_cycle|upper }}</b>
+            {% if industry_opinion.life_cycle == 'pioneer' %}
+              Start-up stage, the industry experiences modest sales
+              growth and very small or negative profits. The market for the industry’s
+              product or service during this stage is small, and the firms incur
+              major development costs.
+            {% elif industry_opinion.life_cycle == 'accelerate' %}
+              The industry builds its productive capacity as sales grow at an increasing
+              rate and the industry attempts to meet excess demand. High sales growth and high profit
+              margins that increase as firms become more efficient cause industry and firm profits to
+              explode. Profits can grow at over 100 percent a year because of the low earnings base
+              and the rapid growth of sales and margins
+            {% elif industry_opinion.life_cycle == 'mature' %}
+              Satisfied most of the demand for the industry
+              goods or service, future sales growth may be above normal, but it no longer accelerates.
+              The overall economy is growing at 8 percent, sales for this industry
+              might grow at an above normal rate of 15 percent to 20 percent a year. Also
+              high profit margins attract competitors to the industry, causing
+              an increase in supply and lower prices.
+            {% elif industry_opinion.life_cycle == 'stable' %}
+              Longest phase,the industry growth rate declines to the growth rate of the
+              aggregate economy or its industry segment.
+              Investors can estimate growth easily because sales correlate
+              highly with an economic series.
+              Profit growth varies by industry because the competitive structure varies by industry, and by
+              individual firms within the industry because the ability to control costs differs among
+              companies.
+              Competition produces tight profit margins, and the rates of return on capital
+            {% elif industry_opinion.life_cycle == 'decline' %}
+              Sales growth declines because of shifts in demand or growth of substitutes. Profit margins continue to
+              be squeezed, and some firms experience low profits or even losses. Firms that remain profitable
+              may show very low rates of return on capital. Finally, investors begin thinking about
+              alternative uses for the capital tied up in this industry.
+            {% else %}
+              Undetermined industry life cycle.
+            {% endif %}
+          </p>
+
+          <p class="pad_top10">
+            <b>Competition:</b>
+            {% if industry_opinion.competition == 'rivalry' %}
+              <b>Rivalry among the existing competitors.</b> For each industry analyzed, you must judge if the
+              rivalry among firms is currently intense and growing, or polite and stable. Rivalry increases
+              when many firms of relatively equal size compete in an industry.
+            {% elif industry_opinion.competition == 'new_entry' %}
+              <b>Threat of new entrants.</b> Although an industry may have few competitors, you must determine
+              the likelihood of firms entering the industry and increasing competition. High barriers
+              to entry, such as low current prices relative to costs, keep the threat of new entrants
+              low.
+            {% elif industry_opinion.competition == 'more_product' %}
+              <b>Threat of substitute products.</b> Substitute products limit the profit potential of an industry
+              because they limit the prices firms in an industry can charge. Although almost everything
+              has a substitute, you must determine how close the substitute is in price and function to
+              the product in your industry.
+            {% elif industry_opinion.competition == 'buyer_bargain' %}
+              <b>Bargaining power of buyers.</b> Buyers can influence the profitability of an industry because
+              they can bid down prices or demand higher quality or more services by showing a propensity
+              to switch among competitors. Buyers become powerful when they purchase a large
+              volume relative to the sales of a supplier.
+            {% elif industry_opinion.competition == 'seller_bargain' %}
+              <b>Bargaining power of suppliers.</b> Suppliers can alter future industry returns if they increase
+              prices or reduce the quality of the product or the services they provide. The suppliers are
+              more powerful if there are few of them and if they are more concentrated than the industry
+              to which they sell.
+            {% else %}
+            {% endif %}
+          </p>
+        </td>
+        <td class="col-md-4">
+          <label>Industry-sector index:</label>
+          <div>
+            {% if industry_opinion.index_trend == 'bullish' %}
+              <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+            {% elif industry_opinion.index_trend == 'bearish' %}
+              <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            {{ industry_opinion.industry|cap }}-{{ industry_opinion.sector|lower }} index
+            currently {{ industry_opinion.index_trend }}. If only if stock is isolate from
+            industry sector, you should follow sector index trend.
+          </p>
+        </td>
+        <td class="col-md-4">
+          <label>Stock isolate from sector:</label>
+          <div>
+            {% if industry_opinion.isolate %}
+              {% if industry_opinion.index_trend == 'bullish' %}
+                <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+              {% elif industry_opinion.index_trend == 'bearish' %}
+                <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+              {% else %}
+                <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+              {% endif %}
+            {% else %}
+              {% if industry_opinion.index_trend == 'bullish' %}
+                <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+              {% elif industry_opinion.index_trend == 'bearish' %}
+                <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+              {% else %}
+                <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+              {% endif %}
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            {% if industry_opinion.index_trend == 'bullish' %}
+              Stock {{ symbol|upper }} are isolate from industry-sector index. It should have
+              significant fundamental difference from other similar company.
+            {% else %}
+              Stock {{ symbol|upper }} are follow industry-sector index. No fundamental
+              difference from other similar company.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Risk difference:</label>
+
+          <div>
+            {% if industry_opinion.risk_diff == 'higher' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% elif industry_opinion.risk_diff == 'lower' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            {% if industry_opinion.risk_diff == 'higher' %}
+              Stock {{ symbol|upper }} have higher risk compare to other same industry-sector
+              stocks. Position should have lower weight than other positions.
+            {% elif industry_opinion.risk_diff == 'lower' %}
+              Stock {{ symbol|upper }} have lower risk compare to other same industry-sector
+              stocks. Position should have equal/higher weight than other positions.
+            {% else %}
+              Stock {{ symbol|upper }} have same risk compare to other same industry-sector
+              stocks.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Stock Industry P/E Ratio:</label>
+          <div>
+            {% if industry_opinion.industry_pe == 'higher' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% elif industry_opinion.industry_pe == 'lower' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            {% if industry_opinion.industry_pe == 'higher' %}
+              Stock {{ symbol|upper }} have higher P/E ratio among industry-sector.
+              It is consider expensive compare to other same industry-sector stocks.
+            {% elif industry_opinion.industry_pe == 'lower' %}
+              Stock {{ symbol|upper }} have lower P/E ratio among industry-sector.
+              It is consider cheap compare to other same industry-sector stocks.
+            {% else %}
+              Stock {{ symbol|upper }} have same of P/E ratio among
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Stock Industry Rank:</label>
+          <div>
+            {% if industry_opinion.industry_rank == 'higher' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% elif industry_opinion.industry_rank == 'lower' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            {% if industry_opinion.industry_rank == 'higher' %}
+              Stock {{ symbol|upper }} have higher rank among industry-sector.
+              Analysts suggest it is a better investment compare to other industry-sector stocks.
+            {% elif industry_opinion.industry_rank == 'lower' %}
+              Stock {{ symbol|upper }} have lower rank among industry-sector.
+              Analysts suggest it is a worst investment compare to industry-sector stocks.
+            {% else %}
+              Stock {{ symbol|upper }} have similar rank score among industry-sector.
+              No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Stock Industry Fundamental:</label>
+          <div>
+            {% if industry_opinion.industry_fa == 'better' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% elif industry_opinion.industry_fa == 'worst' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            {% if industry_opinion.industry_fa == 'better' %}
+              Stock {{ symbol|upper }} have better fundamental compare to other industry-sector stocks.
+            {% elif industry_opinion.industry_fa == 'worst' %}
+              Stock {{ symbol|upper }} have worst fundamental compare to other industry-sector stocks.
+            {% else %}
+              Stock {{ symbol|upper }} have similar fundamental compare to other industry-sector stocks.
+            {% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Industry analysis:</label>
+
+          <p class="pad_top10">
+            Current peak business cycle industry is {{ industry_opinion.biz_cycle|upper }} goods.
+            If {{ symbol|upper }} is in this industry, it have potential to be bullish.
+          </p>
+
+          <p class="pad_top10">
+            {% if industry_opinion.cs_trend == 'higher' %}
+              Consumer sentiment currently trending higher.
+              Consumer willing to spend more indicate as a bullish sign.
+            {% elif industry_opinion.cs_trend == 'lower' %}
+              Consumer sentiment currently trending lower.
+              Consumer not willing to spend indicate as a bearish sign.
+            {% else %}
+              Consumer sentiment is ranging.
+              No significant effect.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Industry fair value:</label>
+          <div>
+            {% if industry_opinion.fair_value == 'higher' %}
+              <img src="{% static 'admin/market_profile/volume_reduce.png' %}">
+            {% elif industry_opinion.fair_value == 'lower' %}
+              <img src="{% static 'admin/market_profile/volume_accumulate.png' %}">
+            {% else %}
+              <img src="{% static 'admin/market_profile/volume_hold.png' %}">
+            {% endif %}
+          </div>
+          <p class="pad_top10">
+            {% if industry_opinion.fair_value == 'higher' %}
+              {{ industry_opinion.industry|cap }}-{{ industry_opinion.sector|lower }}
+              index currently trading lower than average fair value and
+              subject to a negative correction (bearish).
+            {% elif industry_opinion.fair_value == 'lower' %}
+              {{ industry_opinion.industry|cap }}-{{ industry_opinion.sector|lower }}
+              index currently trading lower than average fair value and
+              subject to a positive correction (bullish).
+            {% else %}
+              {{ industry_opinion.industry|cap }}-{{ industry_opinion.sector|lower }}
+              index is trading at its fair value.
+            {% endif %}
+          </p>
+        </td>
+        <td>
+          <label>Industry Analysis Summary</label>
+          {% if summary1.total > 0 %}
+            <img src="{% static 'admin/market_profile/signal_buy.png' %}">
+          {% elif summary1.total < 0 %}
+            <img src="{% static 'admin/market_profile/signal_sell.png' %}">
+          {% else %}
+            <img src="{% static 'admin/market_profile/signal_hold.png' %}">
+          {% endif %}
+          <div class="col-md-10 pad_top10">
+          <table class="table table-condensed borderless">
+            <tr>
+              <td></td>
+              <td>Bullish</td>
+              <td> {{ summary1.bullish }}</td>
+            </tr>
+            <tr>
+              <td>+</td>
+              <td>Neutral</td>
+              <td>{{ summary1.neutral }}</td>
+            </tr>
+            <tr>
+              <td>+</td>
+              <td>Bearish</td>
+              <td>{{ summary1.bearish }}</td>
+            </tr>
+            <tr style="border-top: solid 1px darkgrey">
+              <td>=</td>
+              <td>Summary</td>
+              <td>{{ summary1.total }} / 6</td>
+            </tr>
+          </table>
+          </div>
+        </td>
+      </tr>
+
+    </table>
+
+
+  </div>
+
+
+
+
+
+
+
+{% endblock %}

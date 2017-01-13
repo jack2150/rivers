@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n admin_urls admin_static admin_list bootstrapped_goodies_tags admintags %}
+{% load i18n admin_urls admin_static admin_list admintags %}
 
 {% block extrastyle %}
   <style>
@@ -99,6 +99,7 @@
           </ol>
           <hr class="divider">
           <ol class="ordered_list" start="8">
+
             <li>
               <a href="{% url 'admin:market_marketmovement_add' %}" target="_blank">
                 Market movement opinion
@@ -114,6 +115,9 @@
               <a href="{% url 'admin:market_marketindicator_changelist' %}" target="_blank">
                 Market profile
               </a>
+            </li>
+            <li>
+              Market technical (10 minutes)
             </li>
           </ol>
           <hr class="divider">

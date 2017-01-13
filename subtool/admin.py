@@ -16,7 +16,7 @@ logger = logging.getLogger('views')
 
 
 class OptionTimeSaleAdmin(admin.ModelAdmin):
-    form = DateForm  # enable bootstrap datetime js
+      # enable bootstrap datetime js
 
     def report(self):
         return '<a href="{link}">Report</a>'.format(

@@ -24,8 +24,6 @@ SECRET_KEY = '!o+bjv@=p*9#3l*01d)z-nj3v-nfuu+d*d@ufgf9ulesk-!yem'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-TEMPLATE_DEBUG = True
-
 ALLOWED_HOSTS = []
 
 
@@ -36,11 +34,14 @@ INSTALLED_APPS = (
     # pip install psycopg2
     # pip install django-bootstrap3
     'adminplus',  # pip install django-adminplus
-    'django_admin_bootstrapped',  # pip install django-admin-bootstrapped
-    'bootstrap3_datetime',  # pip install django-bootstrap3-datetimepicker
+    # 'django_admin_bootstrapped',  # pip install django-admin-bootstrapped
+    # 'bootstrap3_datetime',  # pip install django-bootstrap3-datetimepicker
     'django_extensions',  # pip install django-extensions
     # pip install F:\python\pip\QuantLib_Python-1.6.1-cp27-none-win_amd64.whl
     # conda install -c https://conda.anaconda.org/anaconda pandas-datareader
+
+    # 'bootstrap_admin',  # always before django.contrib.admin
+    'flat',
 
     # 'django.contrib.admin',
     'django.contrib.admin.apps.SimpleAdminConfig',  # adminplus replace
@@ -49,6 +50,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.admin.widgets',
 
     'base',
     'data',
@@ -60,12 +62,12 @@ INSTALLED_APPS = (
 
     # opinion
     'opinion',
-    'opinion.review',
-    'opinion.market',
-    'opinion.personal',
-    'opinion.plan',
-    'opinion.stock',
-    'opinion.technical',
+    #'opinion.review',
+    #'opinion.market',
+    #'opinion.personal',
+    #'opinion.plan',
+    #'opinion.stock',
+    #'opinion.technical',
 
     # subtool
     'subtool',
@@ -126,10 +128,6 @@ DATE_FORMAT = 'Y-m-d'
 STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "static"),
-)
-
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, 'templates'),
 )
 
 # fixtures
@@ -209,3 +207,32 @@ if 'test' in sys.argv:
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'quote.db')
     }
+
+from django.conf import global_settings
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+        ],
+        # 'DEBUG': True,
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                # Insert your TEMPLATE_CONTEXT_PROCESSORS here or use this
+                # list if you haven't customized them:
+                'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.static',
+                'django.template.context_processors.tz',
+                'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.request'
+            ]
+        },
+    },
+]
+
+BOOTSTRAP_ADMIN_SIDEBAR_MENU = True

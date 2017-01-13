@@ -19,3 +19,6 @@ def opinion_link(request, symbol):
     )
 
     return render(request, template, parameters)
+
+# todo: symbol date report, for all detail, position & technical
+# todo: market & mindset & quest date report, all market

@@ -1,0 +1,19 @@
+{% extends "admin/index.html" %}
+{% load base %}
+
+{% block sidebar %}
+  {{ block.super }}
+
+  {% if custom_list %}
+    <div id="custom_view">
+
+    </div>
+    <script type="text/javascript">
+      var view_data = {{ custom_list|custom_view_json|safe }};
+      list_ui(
+          view_data, "custom_view", "Custom view", 32,
+          "<div><a href='#path#'>#name#</a></div>"
+      );
+    </script>
+  {% endif %}
+{% endblock %}

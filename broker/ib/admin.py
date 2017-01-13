@@ -6,8 +6,6 @@ from broker.ib.views import ib_statement_import, ib_statement_imports
 
 
 class IBStatementNameAdmin(admin.ModelAdmin):
-    form = StartStopForm
-
     def ib_imports(self):
         return '<a href="{link}">Imports</a>'.format(
             link=reverse('admin:ib_statement_imports', kwargs={
@@ -34,8 +32,6 @@ class IBStatementNameAdmin(admin.ModelAdmin):
 
 
 class IBStatementAdmin(admin.ModelAdmin):
-    form = DateForm
-
     def ib_import(self):
         return '<a href="{link}">Import</a>'.format(
             link=reverse('admin:ib_statement_import', kwargs={

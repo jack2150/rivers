@@ -17,21 +17,7 @@ from data.models import *
 from data.views import *
 
 
-class UnderlyingForm(forms.ModelForm):
-    start_date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False}),
-        initial=pd.datetime.strptime('2010-01-01', '%Y-%m-%d')
-    )
-    m = int(pd.datetime.today().month) - 1
-    stop_date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False}),
-        initial=latest_season()
-    )
-
-
 class UnderlyingAdmin(admin.ModelAdmin):
-    form = UnderlyingForm
-
     def data_manage(self):
         return "<a href='{link}'>Manage</a>".format(
             link=reverse('admin:manage_underlying', kwargs={'symbol': self.symbol.lower()})
@@ -81,15 +67,7 @@ class UnderlyingAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-class SplitHistoryForm(forms.ModelForm):
-    date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
-    )
-
-
 class SplitHistoryAdmin(admin.ModelAdmin):
-    form = SplitHistoryForm
-
     list_display = (
         'symbol', 'date', 'fraction'
     )
@@ -106,17 +84,7 @@ class SplitHistoryAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-class TreasuryForm(forms.ModelForm):
-    start_date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
-    )
-    stop_date = forms.DateField(
-        widget=DateTimePicker(options={"format": "YYYY-MM-DD", "pickTime": False})
-    )
-
-
 class TreasuryAdmin(admin.ModelAdmin):
-    form = TreasuryForm
     list_display = ('time_period', 'start_date', 'stop_date', 'unit',
                     'multiplier', 'currency', 'unique_identifier')
     fieldsets = (
