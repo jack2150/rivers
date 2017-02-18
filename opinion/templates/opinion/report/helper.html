@@ -1,0 +1,206 @@
+{% extends "base/empty.html" %}
+
+{% block extrastyle %}
+  <style>
+  .pad10 {
+    padding-left: 1em;
+  }
+
+  .ref_icon {
+    float: right;
+    margin: 0.5em 12px;
+  }
+  </style>
+{% endblock %}
+
+{% block direct-content %}
+
+{% endblock %}
+
+{% block webix-script %}
+  <script type="text/javascript">
+    var ref_data = {
+      technicalrank: [
+        {
+          id: "1", site: "Marketedge", tool: "Second opinion", image: "fa-star-o",
+          path: "https://ameritradew.marketedge.com/Weekly/Stock/S/{{ symbol }}.asp?from=1&sym={{ symbol }}&r=0"
+
+        },
+        {
+          id: "2", site: "Barchart", tool: "Opinion", image: "fa-star-o",
+          path: "https://www.barchart.com/stocks/quotes/{{ symbol }}/opinion"
+        },
+        {
+          id: "3", site: "Chartmill", tool: "Analyzer", image: "fa-star-o",
+          path: "http://www.chartmill.com/analyze.php#/{{ symbol|lower }}"
+        }
+      ],
+      technicalopinion: [
+        {
+          id: "1", site: "Thinkorswim", tool: "Chart", image: "fa-star-o", path: "#"
+        },
+        {
+          id: "2", site: "Thinkorswim", tool: "Prophet chart", image: "fa-star-o", path: "#"
+        }
+      ],
+      stockfundamental: [
+        {
+          id: "1", image: "", site: "Nasdaq", tool: "Institute Holding",
+          path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/institutional-holdings"
+        },
+        {
+          id: "2", site: "Nasdaq", tool: "Insider trade", image: "",
+          path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/insider-trades"
+        },
+        {
+          id: "3.1", site: "ShortSqueeze", tool: "Data", image: "fa-star-o",
+          path: "http://shortsqueeze.com/?symbol={{ symbol|lower }}"
+        },
+        {
+          id: "3.2", site: "Trader Workstation", tool: "Graph", image: "fa-star-o",
+          path: "#"
+        },
+        {
+          id: "4", image: "fa-star-o", site: "Shortvolume", tool: "Chart",
+          path: "http://shortvolume.com/"
+        },
+        {
+          id: "5", image: "fa-star-o", site: "Nasdaq", tool: "Short interest",
+          path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/short-interest"
+        },
+        {
+          id: "6", image: "fa-star-o", site: "TD Ameritrade", tool: "Report",
+          path: "https://research.ameritrade.com/grid/wwws/research/stocks/" +
+                "analystreports?c_name=invest_VENDOR&symbol={{ symbol|lower }}"
+        },
+        {
+          id: "7", image: "fa-star-o", site: "Financial Time", tool: "Forecast",
+          path: "https://markets.ft.com/data/equities/tearsheet/forecasts?s={{ symbol }}:NYQ"
+        },
+      ],
+      stockindustry: [
+        {
+          id: "1", image: "fa-star-o", site: "Zack", tool: "Industry peer & chart",
+          path: "http://www.zacks.com/stock/research/{{ symbol }}/industry-comparison"
+        },
+        {
+          id: "2", image: "fa-star-o", site: "Finviz", tool: "Industry & sector",
+          path: "http://finviz.com/quote.ashx?t={{ symbol|lower }}"
+        },
+        {
+          id: "3", image: "fa-star-o", site: "TD Ameritrade", tool: "Peer compare",
+          path: "https://research.ameritrade.com/grid/wwws/research/stocks/" +
+                "industryposition?symbol={{ symbol }}&c_name=invest_VENDOR"
+        },
+        {
+          id: "4", image: "fa-star-o", site: "Morningstar", tool: "Industry compare",
+          path: "http://financials.morningstar.com/competitors/industry-peer.action?t={{ symbol }}"
+        }
+      ],
+      underlyingarticle: [
+        {
+          id: "1", image: "fa-star-o", site: "Thinkorswim", tool: "Live news",
+          path: "#"
+        },
+        {
+          id: "2", image: "fa-star-o", site: "TD Ameritrade", tool: "S&P IQ news",
+          path: "https://research.ameritrade.com/grid/wwws/research/stocks/" +
+                "analystreports?c_name=invest_VENDOR&symbol={{ symbol|lower }}"
+        },
+        {
+          id: "3", image: "fa-star-o", site: "Finviz", tool: "News",
+          path: "http://finviz.com/quote.ashx?t={{ symbol|lower }}"
+        },
+        {
+          id: "4", image: "fa-star-o", site: "Barchart", tool: "News",
+          path: "https://www.barchart.com/stocks/quotes/{{ symbol }}/news"
+        },
+        {
+          id: "5", image: "fa-star-o", site: "Zack", tool: "News",
+          path: "http://www.zacks.com/stock/research/{{ symbol }}/all-news"
+        },
+        {
+          id: "6", image: "fa-star-o", site: "Nasdaq", tool: "News",
+          path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/news-headlines"
+        }
+      ],
+      positionidea: [
+
+      ],
+      positionenter: [
+        {
+          id: "1", image: "fa-star-o", site: "Thinkorswim", tool: "Analysis",
+          path: "#"
+        }
+      ],
+      positiondecision: [
+        {
+          id: "1", image: "fa-star-o", site: "Rivers", tool: "Summary report",
+          path: "#"
+        }
+      ],
+      stockreport: [
+        {
+          id: "1", image: "fa-star-o", site: "Rivers", tool: "Ready Excel RTD",
+          path: "{% url 'admin:excel_rtd_create' %}"
+        },
+        {
+          id: "2", image: "fa-star-o", site: "Rivers", tool: "Options timesale",
+          path: "{% url 'admin:timesale_insert_view' %}"
+        },
+        {
+          id: "3", image: "fa-star-o", site: "Rivers", tool: "Ticker Minute1",
+          path: "#"
+        }
+      ]
+    };
+
+    var property_data = [
+      {label: "Technical created?", type: "label"},
+      {
+        label: "Rank", type: "select",
+        options: {{ summary.technicalrank|safe }},
+        value: {{ summary.technicalrank|safe }}[0]
+      },
+      {
+        label: "Opinion", type: "select",
+        options: {{ summary.technicalopinion|safe }},
+        value: {{ summary.technicalopinion|safe }}[0]
+      },
+      {label: "Position created?", type: "label"},
+      {label: "Idea", type: "text", value: "{{ summary.positionidea }}"},
+      {label: "Enter", type: "text", value: "{{ summary.positionenter }}"},
+      {label: "Decision", type: "text", value: "{{ summary.positiondecision }}"},
+      {label: "Stock created?", type: "label"},
+      {label: "Fundamental", type: "text", value: "{{ summary.stockfundamental }}"},
+      {label: "Industry", type: "text", value: "{{ summary.stockindustry }}"},
+      {label: "Article", type: "text", value: "{{ summary.underlyingarticle }}"}
+    ];
+
+    webix.ui({
+      cols: [
+        {
+          view: "list",
+          width: 300,
+          template: "<span class='webix_icon #image# ref_icon'></span>#id#. #site#: #tool#" +
+                    "<div class='pad10'>URL: <a href='#path#' target='_blank'>Open link</a></div>",
+          data: ref_data.{{ model }},
+          type: {
+            height: 62
+          }
+        },
+        {
+          // editable: false,
+          // readonly: true,
+          view: "property",
+          id: "sets",
+          width: 300,
+          scroll: true,
+          elements: property_data
+
+        },
+      ]
+    });
+
+  </script>
+{% endblock %}

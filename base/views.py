@@ -45,16 +45,18 @@ def process(request):
     """
     date = pd.datetime.today().date()
 
+    """
     quest_lines = QuestLine.objects.filter(active=True)
     quests = []
     for i, quest in enumerate(quest_lines):
         parts = quest.questpart_set.filter(achievement__isnull=True)
         quests.append((i, quest, parts))
+    """
 
     template = 'base/process.html'
     parameters = {
         'title': "Trading Process",
-        'quests': quests
+        'quests': []
     }
 
     return render(request, template, parameters)

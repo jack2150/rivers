@@ -1,0 +1,48 @@
+{% load base %}
+
+{% with reports.marketedge as report %}
+  <div id="marketedge">
+    <h2>Marketedge</h2>
+    <table>
+      <tr>
+        {% for key, value in report.rank %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+
+      <tr>
+        {% for key, value in report.analysis %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+
+      <tr>
+        {% for key, value in report.price %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+
+      <tr>
+        {% for key, value in report.move %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.date %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+    <tr>
+      <td colspan="8">
+        <pre style="margin: 1em">{{ report_enter.technicalrank.technicalmarketedge.recommend }}</pre>
+      </td>
+    </tr>
+    </table>
+
+  </div>
+{% endwith %}

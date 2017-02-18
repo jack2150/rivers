@@ -1,0 +1,100 @@
+{% extends "base/empty.html" %}
+
+{% block webix-script %}
+  <script type="text/javascript">
+    webix.ready(function () {
+      webix.ui({
+        container: "webix-content",
+        minHeight: 600,
+        scroll: true,
+        rows: [
+          {
+            container: "listA",
+            view: "list",
+            scroll: "x",
+            layout: "x",
+            select: true,
+            type: {
+              width: "auto",
+              height: 40
+            },
+            template: "#id#. #title#",
+            id: "control",
+            data: [
+              {id: 1, title: "Position idea"},
+              {id: 2, title: "Technical rank"},
+              {id: 3, title: "Technical opinion"},
+              {id: 4, title: "Stock fundamental"},
+              {id: 5, title: "Stock industry"},
+              {id: 6, title: "Underlying article"},
+              {id: 7, title: "Position enter"},
+              {id: 8, title: "Subtool opinion"},
+              {id: 9, title: "Position decision"},
+            ]
+          },
+          {
+            cols: [
+              {
+                view: "iframe", id: "model-form",
+                src: "{{ model_data.positionidea.url }}", width: 700
+              },
+              {
+                view: "iframe", id: "ref-link",
+                src: "{% url 'report_url' report_enter.id 'positionidea' %}"
+              }
+            ]
+          }
+        ]
+      });
+
+      $$('control').select(1);
+      $$("control").attachEvent("onItemClick", function (id) {
+        if (id == 1) {
+          $$('model-form').define("src", "{{ model_data.positionidea.url }}");
+          $$('ref-link').define("src", "{% url 'report_url' report_enter.id 'pos_idea' %}");
+        }
+        else if (id == 2) {
+          $$('model-form').define("src", "{{ model_data.technicalrank.url }}");
+          $$('ref-link').define(
+              "src", "{% url 'report_url' report_enter.id 'technicalrank' %}"
+          );
+        }
+        else if (id == 3) {
+          $$('model-form').define("src", "{{ model_data.technicalopinion.url }}");
+          $$('ref-link').define(
+              "src", "{% url 'report_url' report_enter.id 'technicalopinion' %}"
+          );
+        }
+        else if (id == 4) {
+          $$('model-form').define("src", "{{ model_data.stockfundamental.url }}");
+          $$('ref-link').define("src", "{% url 'report_url' report_enter.id 'stockfundamental' %}");
+        }
+        else if (id == 5) {
+          $$('model-form').define("src", "{{ model_data.stockindustry.url }}");
+          $$('ref-link').define("src", "{% url 'report_url' report_enter.id 'stockindustry' %}");
+        }
+        else if (id == 6) {
+          $$('model-form').define("src", "{{ model_data.underlyingarticle.url }}");
+          $$('ref-link').define("src", "{% url 'report_url' report_enter.id 'underlyingarticle' %}");
+        }
+        else if (id == 7) {
+          $$('model-form').define("src", "{{ model_data.positionenter.url }}");
+          $$('ref-link').define("src", "{% url 'report_url' report_enter.id 'positionenter' %}");
+        }
+        else if (id == 8) {
+          $$('model-form').define("src", "{{ model_data.stockreport.url }}");
+          $$('ref-link').define("src", "{% url 'report_url' report_enter.id 'stockreport' %}");
+        }
+        else if (id == 9) {
+          $$('model-form').define("src", "{{ model_data.positiondecision.url }}");
+          $$('ref-link').define("src", "{% url 'report_url' report_enter.id 'positiondecision' %}");
+        }
+        else {
+          $$('model-form').define("src", "/admin/opinion/marketmovement/add/");
+          $$('ref-link').define("src", "/base/market/");
+        }
+
+      });
+    });
+  </script>
+{% endblock %}

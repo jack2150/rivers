@@ -13,10 +13,12 @@
                       <label class="required" for="id_{{ field.field.name }}">{{ field.field.label }}</label>
                       <div style="padding-top: 4px;">
                       <label style="width: auto">
-                      {{ field.field }}
                       {% if field.field.help_text %}
-                        <span>{{ field.field.help_text|safe }}</span>
+                        <div style="width: 260px; float: right;">
+                          {{ field.field.help_text|safe }}
+                        </div>
                       {% endif %}
+                        {{ field.field }}
                       </label>
                       </div>
                     {% else %}

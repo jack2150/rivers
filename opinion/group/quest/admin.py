@@ -1,11 +1,14 @@
 from django.contrib import admin
-
-from base.admin import StartStopForm, DateForm
 from opinion.group.quest.models import QuestLine, QuestPart
 
 
-class QuestLineAdmin(admin.ModelAdmin):
+class QuestPartInline(admin.TabularInline):
+    model = QuestPart
+    extra = 0
 
+
+class QuestLineAdmin(admin.ModelAdmin):
+    inlines = [QuestPartInline]
 
     list_display = (
         'name', 'start', 'stop', 'goal', 'profit_target', 'loss_drawdown',
@@ -30,25 +33,6 @@ class QuestLineAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-class QuestPartAdmin(admin.ModelAdmin):
-
-
-    list_display = (
-        'trading_plan', 'name', 'category', 'start', 'stop', 'achievement'
-    )
-    fieldsets = (
-        ('Primary', {'fields': ('trading_plan',)}),
-        ('Portfolio', {'fields': ('name', 'category', 'start', 'stop', 'description')}),
-        ('Result', {'fields': ('achievement', 'experience')}),
-    )
-
-    search_fields = ('trading_plan__name', 'name', 'description', 'experience')
-    list_filter = ('trading_plan__name', 'category', 'achievement',)
-
-    list_per_page = 20
-
-
 admin.site.register(QuestLine, QuestLineAdmin)
-admin.site.register(QuestPart, QuestPartAdmin)
 
 

@@ -1,7 +1,6 @@
 import json
-
+import lxml.html
 from datetime import datetime
-
 import re
 from django import template
 
@@ -11,6 +10,11 @@ register = template.Library()
 @register.filter
 def fieldset_id(name):
     return re.sub('[^a-zA-Z]+', '', name)
+
+
+@register.filter
+def label(name):
+    return ' '.join(name.split('_')).capitalize()
 
 
 @register.filter
@@ -47,7 +51,6 @@ def custom_view_json(custom_list):
     return json.dumps(data)
 
 
-import lxml.html
 
 @register.filter
 def changelist_item(item):
@@ -210,12 +213,6 @@ def fieldset_json(fieldset):
                 fields.append(control)
             else:
                 raise LookupError('Unknown widget: %s' % widget)
-
-
-
-
-
-            # todo: field.field problem
 
         temp['fields'] = fields
 

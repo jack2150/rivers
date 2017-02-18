@@ -1,5 +1,9 @@
 import datetime
+
+import django
 from django.db import models
+
+from opinion.group.report.models import ReportEnter
 
 
 class PortfolioReview(models.Model):
@@ -38,32 +42,29 @@ class PositionComment(models.Model):
     portfolio_review = models.ForeignKey(PortfolioReview)
     symbol = models.CharField(max_length=20)
     unique_together = (('portfolio_review', 'symbol'),)
+
+    pos_hold = models.BooleanField(default=False, help_text='Hold this position?')
+    pos_enter = models.BooleanField(default=False, help_text='Enter this position?')
+    pos_exit = models.BooleanField(default=False, help_text='Exit this position?')
     comment = models.CharField(max_length=200, help_text='Daily short commentary')
 
 
 class PositionIdea(models.Model):
-    symbol = models.CharField(max_length=20)
-    date = models.DateField(default=datetime.datetime.now)
-    unique_together = (('symbol', 'date'),)
-
+    report = models.OneToOneField(ReportEnter, null=True, blank=True)
     direction = models.CharField(
         max_length=20, help_text='Estimate direction',
         choices=(('bear', 'Bear'), ('neutral', 'Neutral'), ('bull', 'Bull'))
     )
-    trade_idea = models.TextField(help_text='Why you want to enter this positions?')
-    kill_it = models.TextField(help_text='What could go wrong for this idea?')
-    target_price = models.DecimalField(max_digits=6, decimal_places=2)
+    trade_idea = models.TextField(blank=True, help_text='Why enter this positions?')
+    kill_it = models.TextField(blank=True, help_text='What could go wrong for this idea?')
+    target_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
 
 
 class PositionEnter(models.Model):
     """
     Position opinion, only create when enter new position
     """
-    symbol = models.CharField(max_length=6)
-    date = models.DateField(default=datetime.datetime.now)
-
-    # unique data
-    unique_together = (('symbol', 'date'),)
+    report = models.OneToOneField(ReportEnter, null=True, blank=True)
 
     risk_profile = models.CharField(
         max_length=20, choices=(('low', 'Low'), ('medium', 'Medium'), ('high', 'High')),
@@ -95,7 +96,7 @@ class PositionEnter(models.Model):
     )
     optionable = models.BooleanField(default=False, help_text='Option position?')
 
-    enter_date = models.DateField()
+    enter_date = models.DateField(default=datetime.datetime.now)
     exit_date = models.DateField(null=True, blank=True)
     dte = models.IntegerField(
         null=True, blank=True,
@@ -348,16 +349,11 @@ class PositionReview(models.Model):
     )
 
 
-    # todo: comment to position
-
-
 class PositionDecision(models.Model):
     """
     Final decision for enter, buy more, cut percent, exit
     """
-    symbol = models.CharField(max_length=20)
-    date = models.DateField(default=datetime.datetime.now)
-    unique_together = (('symbol', 'date'),)
+    report = models.OneToOneField(ReportEnter, null=True, blank=True)
 
     period = models.CharField(
         choices=(('enter', 'Enter'), ('hold', 'Hold'), ('exit', 'Exit')),

@@ -453,7 +453,7 @@ class TestFormulaBacktest(TestUnitSetUp):
             'handle_data_previous': '20:40:20',
             'create_signal_holding': '30:60:30',
         })
-        df_reports, df_signals = self.backtest.generate()
+        df_reports, df_signals = self.backtest.create()
 
         self.assertEqual(type(df_reports), pd.DataFrame)
         self.assertEqual(type(df_signals), pd.DataFrame)
@@ -537,7 +537,7 @@ class TestFormulaBacktest2(TestUnitSetUp):
             'create_signal_side': 'buy',
             'create_signal_special': 'standard'
         })
-        df_reports, df_signals = self.backtest.generate()
+        df_reports, df_signals = self.backtest.create()
 
         # print df_signals
         print df_reports.to_string(line_width=1000)

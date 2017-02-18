@@ -3,106 +3,113 @@ from django.contrib import admin
 from base.admin import DateForm
 from opinion.group.fundamental.models import StockIndustry, StockFundamental, UnderlyingArticle
 from opinion.group.fundamental.views import industry_profile
+from opinion.group.report.admin import OpinionAdmin
 
 
-class StockIndustryAdmin(admin.ModelAdmin):
-
-
+class StockIndustryAdmin(OpinionAdmin):
     list_display = (
-        'symbol', 'date', 'industry', 'sector',
-        'index_trend', 'isolate', 'risk_diff',
-        'industry_pe', 'industry_rank', 'industry_fa', 'fair_value'
+        'report', 'direction', 'isolate', 'industry_rank', 'sector_rank',
+        'stock_rank', 'stock_growth', 'stock_financial',
     )
 
     fieldsets = (
-        ('Primary', {
+        ('Foreign key', {
             'fields': (
-                'symbol', 'date', 'sector', 'industry'
+                'report',
             )
         }),
-        ('Industry index', {
+        ('Industry', {
             'fields': (
-                'index_trend', 'isolate', 'risk_diff'
+                'direction', 'isolate', 'industry_rank', 'sector_rank'
             )
         }),
-        ('Industry analysis', {
+        ('Valuation', {
             'fields': (
-                'biz_cycle', 'cs_trend', 'structural_chg', 'life_cycle', 'competition'
-            )
-        }),
-        ('Industry valuation', {
-            'fields': (
-                'industry_pe', 'industry_rank', 'industry_fa', 'fair_value'
+                'stock_rank', 'stock_growth', 'stock_financial',
             )
         })
     )
 
-    search_fields = ('symbol', 'date')
+    search_fields = ('report__symbol', 'report__date')
     list_filter = (
-        'sector', 'index_trend', 'isolate', 'risk_diff',
-        'industry_pe', 'industry_rank', 'industry_fa', 'fair_value'
+        'direction', 'isolate', 'industry_rank', 'sector_rank',
+        'stock_rank', 'stock_growth', 'stock_financial',
     )
+    readonly_fields = ('report', )
     list_per_page = 20
 
 
-class StockFundamentalAdmin(admin.ModelAdmin):
-
-
+class StockFundamentalAdmin(OpinionAdmin):
     list_display = (
-        'symbol', 'date', 'ownership_activity', 'insider_trade',
-        'guru_trade', 'short_interest', 'risk'
+        'report', 'mean_rank', 'accuracy', 'rank_change', 'change_date', 'risk',
+        'ownership_activity', 'insider_trade', 'short_interest', 'risk'
     )
     fieldsets = (
-        ('Primary', {
+        ('Foreign key', {
             'fields': (
-                'symbol', 'date'
+                'report',
             )
         }),
         ('Ownership', {
             'fields': (
-                'ownership_activity', 'insider_trade', 'guru_trade', 'short_interest', 'risk'
+                'ownership_activity', 'ownership_date',
+                'insider_trade', 'insider_date',
+                'short_interest', 'short_date',
+                'guru',
             )
         }),
         ('Rank & Target Price', {
             'fields': (
-                'mean_rank', 'target_price_max', 'target_price_mean', 'target_price_min',
+                'mean_rank', 'accuracy', 'rank_change', 'change_date', 'risk',
+                'tp_max', 'tp_mean', 'tp_min'
             )
-        }),
+        })
     )
 
-    search_fields = ('symbol', 'date')
+    search_fields = ('report__symbol', 'report__date')
     list_filter = (
-        'ownership_activity', 'insider_trade', 'guru_trade', 'short_interest',
-
+        'ownership_activity', 'insider_trade', 'guru', 'short_interest',
     )
+    readonly_fields = ('report', )
     list_per_page = 20
 
 
 class UnderlyingArticleAdmin(admin.ModelAdmin):
-
-
     list_display = (
-        'symbol', 'date', 'category', 'article_name', 'bull_chance', 'range_chance', 'bear_chance',
+        'report', 'category', 'article_name', 'news_rank', 'news_effect',
+        'bull_chance', 'range_chance', 'bear_chance',
     )
     fieldsets = (
-        ('Primary', {
+        ('Foreign key', {
             'fields': (
-                'symbol', 'date',
+                'report',
             )
         }),
-        ('Analysis', {
+        ('Primary news', {
             'fields': (
-                'category', 'article_name',
-                'article_story', 'period_state', 'fundamental_effect',
-                'rational', 'blind_follow', 'reverse_effect',
+                'category', 'article_name', 'article_story', 'period_state',
+            )
+        }),
+        ('News summary', {
+            'fields': (
+                'news_rank', 'news_effect',
+            )
+        }),
+        ('News behavior', {
+            'fields': (
+                'fundamental_effect', 'rational', 'blind_follow', 'reverse_effect',
+            )
+        }),
+        ('Probability', {
+            'fields': (
                 'bull_chance', 'range_chance', 'bear_chance',
             )
-        })
+        }),
     )
-    search_fields = ('date', 'article_name')
-    list_filter = ('category', 'article_name',
-                   'article_story', 'period_state', 'fundamental_effect',
-                   'rational', 'blind_follow', 'reverse_effect')
+    search_fields = ('report__symbol', 'report__date', 'article_name')
+    list_filter = ('category', 'article_name', 'article_story', 'period_state',
+                   'news_rank', 'news_effect',)
+    readonly_fields = ('report', )
     list_per_page = 20
 
 

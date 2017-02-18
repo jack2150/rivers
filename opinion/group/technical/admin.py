@@ -1,87 +1,117 @@
+from django import forms
 from django.contrib import admin
+from django.forms import RadioSelect
 
-from base.admin import DateForm
-from opinion.group.technical.models import TechnicalOpinion, TechnicalRank
+from opinion.group.report.admin import OpinionAdmin, OpinionStackedAdmin
+from opinion.group.technical.models import *
 
 
-class TechnicalRankAdmin(admin.ModelAdmin):
+class TechnicalRankForm(forms.ModelForm):
+    class Meta:
+        model = TechnicalRank
+        widgets = {
+            'market_edge': RadioSelect,
+        }
+        fields = '__all__'
 
+
+class TechnicalMarketedgeAdmin(OpinionStackedAdmin):
+    model = TechnicalMarketedge
+
+
+class TechnicalBarchartAdmin(OpinionStackedAdmin):
+    model = TechnicalBarchart
+
+
+class TechnicalChartmillAdmin(OpinionStackedAdmin):
+    model = TechnicalChartmill
+
+
+class TechnicalRankAdmin(OpinionAdmin):
+    inlines = [TechnicalMarketedgeAdmin, TechnicalBarchartAdmin, TechnicalChartmillAdmin]
 
     list_display = (
-        'symbol', 'date', 'market_edge', 'bar_chart', 'chartmill'
+        'report',
+        'technicalmarketedge', 'technicalbarchart', 'technicalchartmill',
     )
     fieldsets = (
-        ('Primary', {
-            'fields': ('symbol', 'date')
-        }),
-        ('Rank Provider', {
-            'fields': ('market_edge', 'bar_chart', 'chartmill')
+        ('Foreign key', {
+            'fields': ('report', )
         }),
     )
 
-    search_fields = ('symbol', 'date',)
-    list_filter = ('market_edge', 'bar_chart', 'chartmill')
+    search_fields = ('report__symbol', 'report__date',)
     list_per_page = 20
 
+    readonly_fields = ('report', )
 
-class TechnicalOpinionAdmin(admin.ModelAdmin):
 
+class TechnicalTickAdmin(OpinionStackedAdmin):
+    model = TechnicalTick
+
+
+class TechnicalSMAAdmin(OpinionStackedAdmin):
+    model = TechnicalSma
+
+
+class TechnicalVolumeAdmin(OpinionStackedAdmin):
+    model = TechnicalVolume
+
+
+class TechnicalIchimokuAdmin(OpinionStackedAdmin):
+    model = TechnicalIchimoku
+
+
+class TechnicalParabolicAdmin(OpinionStackedAdmin):
+    model = TechnicalParabolic
+
+
+class TechnicalStochAdmin(OpinionStackedAdmin):
+    model = TechnicalStoch
+
+
+class TechnicalBandAdmin(OpinionStackedAdmin):
+    model = TechnicalBand
+
+
+class TechnicalFwAdmin(OpinionStackedAdmin):
+    model = TechnicalFw
+
+
+class TechnicalTTMAdmin(OpinionStackedAdmin):
+    model = TechnicalTTM
+
+
+class TechnicalPivotAdmin(OpinionStackedAdmin):
+    model = TechnicalPivot
+
+
+class TechnicalFreeMoveAdmin(OpinionStackedAdmin):
+    model = TechnicalFreeMove
+
+
+class TechnicalZigZagAdmin(OpinionStackedAdmin):
+    model = TechnicalZigZag
+
+
+class TechnicalOpinionAdmin(OpinionAdmin):
+    inlines = [
+        TechnicalTickAdmin, TechnicalSMAAdmin, TechnicalVolumeAdmin, TechnicalIchimokuAdmin,
+        TechnicalParabolicAdmin, TechnicalStochAdmin, TechnicalBandAdmin, TechnicalFwAdmin,
+        TechnicalTTMAdmin, TechnicalPivotAdmin, TechnicalFreeMoveAdmin, TechnicalZigZagAdmin
+    ]
 
     list_display = (
-        'symbol', 'date',
-        'sma50_trend', 'sma200_trend', 'sma_cross', 'rsi_score',
-        'volume_profile', 'vwap_average', 'acc_dist',
+        'report',
     )
     fieldsets = (
         ('Primary', {
-            'fields': ('symbol', 'date')
-        }),
-        ('Basic Technical Analysis', {
-            'fields': ('sma50_trend', 'sma200_trend', 'sma_cross', 'rsi_score')
-        }),
-
-        ('Volume Base Analysis', {
-            'fields': ('volume_profile', 'vwap_average', 'acc_dist')
-        }),
-        ('Ichimoku Cloud', {
-            'fields': ('ichimoku_cloud', 'ichimoku_color', 'ichimoku_base', 'ichimoku_convert')
-        }),
-        ('Parabolic & DMI', {
-            'fields': ('parabolic_trend', 'parabolic_cross', 'dmi_trend', 'dmi_cross')
-        }),
-        ('Stochastic', {
-            'fields': ('stoch_fast', 'stoch_full')
-        }),
-        ('Bollinger Band & MACD', {
-            'fields': ('band_score', 'macd_score')
-        }),
-        ('FW Mobo & MMG', {
-            'fields': ('fw_mobo_trend', 'fw_mobo_signal', 'fw_mmg_signal', 'fw_mmg_trend')
-        }),
-        ('Pivot & 4% & TrendNoise', {
-            'fields': ('pivot_point', 'four_percent', 'trend_noise')
-        }),
-        ('TPO & Freedom movement', {
-            'fields': ('tpo_profile', 'free_move', 'relative_vol', 'market_forecast')
-        }),
-        ('TTM', {
-            'fields': ('ttm_trend', 'ttm_alert', 'ttm_linear', 'ttm_squeeze', 'ttm_wave')
-        }),
-        ('ZigZag', {
-            'fields': ('zigzag_pct', 'zigzag_sign')
-        }),
-        ('Aroon', {
-            'fields': ('aroon_ind', 'aroon_osc')
-        }),
-
-        ('Detail explain', {
-            'fields': ('description', )
+            'fields': ('report', )
         }),
     )
 
-    search_fields = ('symbol', 'date',)
-    list_filter = ('sma50_trend', 'sma200_trend', 'sma_cross',
-                   'volume_profile', 'vwap_average', 'acc_dist')
+    search_fields = ('report__symbol', 'report__date',)
+    readonly_fields = ('report',)
     list_per_page = 20
 
 

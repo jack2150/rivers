@@ -1,0 +1,56 @@
+{% extends "base/base.html" %}
+
+{% block normal-content %}
+  {% include 'opinion/report/technical/rank/rank.html' %}
+  {% include 'opinion/report/fundamental/fundemental.html' %}
+
+
+{% endblock %}
+
+
+{% block webix-script %}
+<script type="text/javascript">
+  // webix.markup.init();
+  // $$("win1").show();
+  webix.ui({
+    container: "webix-content",
+    height: 400,
+    cols: [
+      {
+        view: 'list',
+        width: 300,
+        borderless: true,
+        data: [
+          {
+
+          },
+        ]
+      },
+      {
+        borderless: true,
+        padding: 10,
+        view: "tabview",
+        cells: [
+          {
+            header: "Technical rank",
+            body: {
+              scroll: true,
+              content: "technicalrank"
+            }
+          },
+          {
+            header: "Stock fundamental",
+            body: {
+              scroll: true,
+              content: "fundamental"
+            }
+          },
+        ]
+      }
+    ]
+
+
+  });
+
+</script>
+{% endblock %}

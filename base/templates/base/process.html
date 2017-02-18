@@ -18,6 +18,9 @@
       id: "1", open: true, value: "Before market open (8:30-9:30)", path: "#", image: "fa-bell",
       data: [
         {
+          id: "1.0", value: "Take a shower", path: "#", image: "fa-bath"
+        },
+        {
           id: "1.1", value: "Read trade note", path: "{% url 'admin:trade_note' 'trade' %}",
           image: "fa-sticky-note-o"
         },
@@ -36,6 +39,9 @@
         {
           id: "1.5", value: "Pray to god", path: "http://www.pray.com.au/daily-gospel-reflections.html",
           image: "fa-globe"
+        },
+        {
+          id: "1.5.1", value: "Feel fuzzy, take a nap 2 hours", path: "", image: "fa-bed"
         },
         {
           id: "1.6", open: true, value: "Read news", path: "#", image: "fa-newspaper-o",
@@ -115,18 +121,33 @@
       ]
     },
     {
-      id: "3", open: open, value: "Monthly forecast", path: "#", image: "fa-calendar-o",
+      id: "3", open: open, value: "Weekly adjustment", path: "#", image: "fa-calendar-o",
       data: [
         {
-          id: "3.1", value: "Market review", image: "",
+          id: "3.1", value: "Re-balance portfolio", image: "fa-star-o",
+          path: "#"
+        },
+        {
+          id: "3.2", value: "Market comment & prepare", image: "fa-star-o", path: "#"
+        },
+        {
+          id: "3.3", value: "Market sentiment & article", image: "fa-star-o", path: "#"
+        }
+      ]
+    },
+    {
+      id: "4", open: open, value: "Monthly forecast", path: "#", image: "fa-calendar-o",
+      data: [
+        {
+          id: "4.1", value: "Market review", image: "",
           path: "{% url 'admin:opinion_marketreview_add' %}"
         },
         {
-          id: "3.2", value: "Market technical", image: "",
+          id: "4.2", value: "Market technical", image: "",
           path: "{% url 'admin:opinion_technicalopinion_add' %}"
         },
         {
-          id: "3.3", value: "Earning season estimate", image: "", path: ""
+          id: "4.3", value: "Earning season estimate", image: "", path: ""
         }
       ]
     }

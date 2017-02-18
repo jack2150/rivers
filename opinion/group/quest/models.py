@@ -140,26 +140,21 @@ class QuestPart(models.Model):
         choices=(('management', 'Management'), ('portfolio', 'Portfolio'),
                  ('behavior', 'Behavior'), ('compromise', 'Compromise'),
                  ('avoid', 'Avoid'), ('analysis', 'Analysis')),
-        max_length=50, help_text='What category do this quest belong to?'
+        max_length=50,
     )
     start = models.DateField()
     stop = models.DateField(blank=True, null=True)
-    description = models.TextField(
-        null=True, blank=True, default='',
-        help_text='Explain what is this quest all about?'
+    desc = models.CharField(
+        null=True, blank=True, default='', max_length=300
     )
 
     # result
-    achievement = models.CharField(
+    progress = models.CharField(
         choices=(('complete', 'Complete'), ('partial', 'Partial'), ('fail', 'Fail'),
                  ('abandon', 'Abandon')),
-        max_length=50, help_text='Is this quest success?',
-        blank=True, null=True, default=''
+        max_length=50, blank=True, null=True, default=''
     )
-    experience = models.TextField(
-        null=True, blank=True, default='',
-        help_text='Write down experience for this quest'
-    )
+    context = models.CharField(null=True, blank=True, default='', max_length=300)
 
     def __unicode__(self):
         return '{name} ({stop})'.format(name=self.name, stop=self.stop)

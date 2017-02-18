@@ -1,15 +1,31 @@
 from django.contrib import admin
 from django.core.urlresolvers import reverse
-from base.admin import DateForm
-from opinion.group.market.models import MarketMovement, MarketReview, MarketSentiment
+from opinion.group.market.models import *
 from opinion.group.market.views import market_profile
+from opinion.group.report.admin import OpinionStackedAdmin
+
+
+class CommodityMovementInline(admin.TabularInline):
+    model = CommodityMovement
+    extra = 0
+
+
+class WorldMovementInline(admin.TabularInline):
+    model = WorldMovement
+    extra = 0
+
+
+class SectorMovementInline(admin.TabularInline):
+    model = SectorMovement
+    extra = 0
 
 
 class MarketMovementAdmin(admin.ModelAdmin):
-    #
+    inlines = [CommodityMovementInline, SectorMovementInline, WorldMovementInline]
 
     list_display = (
-        'date',
+        'date', 'resistant', 'resistant', 'volume', 'vix', 'technical_rank',
+        'market_indicator', 'extra_attention', 'key_indicator', 'special_news'
     )
 
     fieldsets = (
@@ -21,15 +37,10 @@ class MarketMovementAdmin(admin.ModelAdmin):
         ('Indices', {
             'fields': (
                 'resistant', 'resistant', 'volume', 'vix', 'technical_rank',
-                'dow_phase', 'dow_movement', 'sector'
+                'dow_phase', 'dow_movement'
             )
         }),
-        ('Commodity', {
-            'fields': (
-                'currency', 'bond', 'energy', 'metal', 'grain',
-            )
-        }),
-        ('Economic Calendar', {
+        ('Eco Data', {
             'fields': (
                 'market_indicator', 'extra_attention', 'key_indicator', 'special_news'
             )
@@ -73,8 +84,17 @@ class MarketReviewAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
+class MarketWeekTechnicalAdmin(OpinionStackedAdmin):
+    model = MarketWeekTechnical
+
+
+class MarketWeekReportAdmin(OpinionStackedAdmin):
+    model = MarketWeekReport
+    extra = 0
+
+
 class MarketSentimentAdmin(admin.ModelAdmin):
-    #
+    inlines = [MarketWeekTechnicalAdmin, MarketWeekReportAdmin]
 
     def market_profile(self, obj):
         return '<a href="{link}">Profile</a>'.format(
@@ -85,7 +105,7 @@ class MarketSentimentAdmin(admin.ModelAdmin):
     market_profile.short_description = ''
 
     list_display = (
-        'date', 'fund_cash_ratio', 'fear_greek_index', 'credit_balance', 'put_call_ratio',
+        'date', 'fund_cash_ratio', 'sentiment_index', 'credit_balance', 'put_call_ratio',
         'investor_sentiment', 'futures_trader'
     )
 
@@ -95,22 +115,65 @@ class MarketSentimentAdmin(admin.ModelAdmin):
                 'date',
             )
         }),
-        ('Major Indicators', {
+        ('Fund cash flow', {
             'fields': (
-                'fund_cash_ratio', 'fear_greek_index', 'margin_debt', 'credit_balance',
-                'put_call_ratio', 'investor_sentiment', 'futures_trader', 'confidence_index',
-                'ted_spread', 'market_breadth', 'ma200day_pct', 'arms_index',
+                'fund_cash_ratio', 'margin_debt', 'credit_balance', 'confidence_index',
+                'futures_trader',
             )
-        })
+        }),
+        ('Sentiment indicator', {
+            'fields': (
+                'sentiment_index', 'put_call_ratio',
+                'market_momentum', 'junk_bond_demand', 'price_strength',
+                'safe_heaven_demand', 'market_volatility'
+            )
+        }),
+        ('Third party', {
+            'fields': (
+                'investor_sentiment', 'ted_spread', 'market_breadth',
+                'ma200day_pct', 'arms_index',
+            )
+        }),
     )
 
     search_fields = ('date',)
     list_per_page = 20
 
 
+class MarketArticleAdmin(admin.ModelAdmin):
+    # noinspection PyMethodMayBeStatic
+    def source_url(self, obj):
+        return '<a href="{link}" target="_blank">Read</a>'.format(link=obj.link)
+
+    source_url.allow_tags = True
+    source_url.short_description = ''
+
+    list_display = (
+        'date', 'name', 'category', 'chance', 'source_url'
+    )
+
+    fieldsets = (
+        ('Primary', {
+            'fields': (
+                'date', 'link', 'name', 'category', 'chance',
+            )
+        }),
+        ('Article', {
+            'fields': (
+                'key_point',
+            )
+        })
+    )
+
+    search_fields = ('date', 'link', 'name', 'key_point')
+    list_filter = ('category', 'chance')
+    list_per_page = 20
+
+
 admin.site.register(MarketMovement, MarketMovementAdmin)
 admin.site.register(MarketReview, MarketReviewAdmin)
 admin.site.register(MarketSentiment, MarketSentimentAdmin)
+admin.site.register(MarketArticle, MarketArticleAdmin)
 
 admin.site.register_view(
     'opinion/profile/market/(?P<date>\d{4}-\d{2}-\d{2})/$',

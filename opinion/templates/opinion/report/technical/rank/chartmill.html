@@ -1,0 +1,22 @@
+{% load base %}
+
+{% with reports.chartmill as report %}
+  <div id="chartmill">
+    <h2>Chartmill</h2>
+    <table>
+      <tr>
+        {% for key, value in report.rank %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+
+      <tr>
+        {% for key, value in report.trade %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+    </table>
+  </div>
+{% endwith %}

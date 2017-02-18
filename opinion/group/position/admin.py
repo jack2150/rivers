@@ -1,10 +1,14 @@
 from bootstrap3_datetime.widgets import DateTimePicker
 from django import forms
 from django.contrib import admin
+from django.db import models
+from django.forms import Textarea
+
 from base.admin import DateForm
 from opinion.group.position.models import PortfolioReview, PositionEnter, \
     PositionHold, PositionExit, PositionReview, PositionIdea, PositionDecision, PositionComment
 from opinion.group.position.views import weekday_profile, position_profile
+from opinion.group.report.admin import OpinionAdmin
 from statement.position.views import get_position_review
 
 
@@ -33,29 +37,35 @@ class PortfolioReviewAdmin(admin.ModelAdmin):
 
 
 class PositionIdeaAdmin(admin.ModelAdmin):
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 6, 'cols': 30})},
+    }
+
     list_display = (
-        'symbol', 'date', 'direction', 'target_price'
+        'report', 'direction', 'target_price'
     )
     fieldsets = (
-        ('Primary', {'fields': ('symbol', 'date')}),
-        ('Idea', {'fields': ('direction', 'trade_idea', 'kill_it', 'target_price')}),
+        ('TradeIdea', {'fields': (
+            'report', 'direction', 'trade_idea', 'kill_it', 'target_price'
+        )}),
     )
 
-    search_fields = ('date', 'symbol', 'trade_idea', 'kill_it')
+    search_fields = ('report__symbol', 'report__date', 'trade_idea', 'kill_it')
     list_filter = ('direction',)
+    readonly_fields = ('report',)
     list_per_page = 20
 
 
-class PositionEnterAdmin(admin.ModelAdmin):
+class PositionEnterAdmin(OpinionAdmin):
     list_display = (
-        'symbol', 'date', 'price_movement', 'event_trade',
+        'report', 'price_movement', 'event_trade',
         'risk_profile', 'bp_effect', 'max_profit', 'max_loss', 'size',
         'strategy', 'spread', 'optionable',
     )
     fieldsets = (
         ('Primary', {
             'fields': (
-                'symbol', 'date',
+                'report',
             )
         }),
         ('Signal', {
@@ -82,12 +92,13 @@ class PositionEnterAdmin(admin.ModelAdmin):
     )
 
     search_fields = (
-        'symbol', 'date', 'strategy', 'enter_date', 'exit_date',
+        'report__symbol', 'report__date', 'strategy', 'enter_date', 'exit_date',
     )
     list_filter = (
         'price_movement', 'event_trade', 'risk_profile', 'spread',
         'optionable', 'event_period',
     )
+    readonly_fields = ('report', )
     list_per_page = 20
 
 
@@ -217,14 +228,14 @@ class PositionReviewAdmin(admin.ModelAdmin):
         return False
 
 
-class PositionDecisionAdmin(admin.ModelAdmin):
+class PositionDecisionAdmin(OpinionAdmin):
     list_display = (
-        'symbol', 'date', 'period', 'action', 'desc',
+        'report', 'period', 'action', 'desc',
     )
     fieldsets = (
         ('Primary', {
             'fields': (
-                'symbol', 'date'
+                'report',
             )
         }),
         ('Decision', {
@@ -234,8 +245,9 @@ class PositionDecisionAdmin(admin.ModelAdmin):
         }),
     )
 
-    search_fields = ('symbol', 'date', 'desc', 'dec_desc', 'adv_desc')
+    search_fields = ('report__symbol', 'report__date', 'desc', 'dec_desc', 'adv_desc')
     list_filter = ('period', 'action')
+    readonly_fields = ('report', )
     list_per_page = 20
 
 

@@ -197,9 +197,7 @@ class MindsetLossExcuse(models.Model):
 
 
 # todo: a view that show all recent opinion on a given symbol
-
 # todo: easy to daily comment symbol by symbol, TabularInline or StackedInline
-# todo: roll back interface...
 
 
 
