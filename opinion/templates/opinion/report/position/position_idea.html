@@ -1,0 +1,35 @@
+{% with reports.idea as idea %}
+<div class="padtop3em" id="positionidea">
+  <fieldset class="module aligned">
+    <h2>Position idea</h2>
+  </fieldset>
+  <table>
+    <tr>
+      <th>About:</th>
+      <td>Initial & intuition about this stocks</td>
+    </tr>
+    <tr>
+      <th>Direction</th>
+      <td>{{ idea.direction|capfirst }}</td>
+    </tr>
+    <tr>
+      <th>Trade idea</th>
+      <td>
+        <pre>{{ idea.trade_idea }}</pre>
+      </td>
+    </tr>
+    <tr>
+      <th>Kill it</th>
+      <td>
+        <pre>{{ idea.kill_it }}</pre>
+      </td>
+    </tr>
+    <tr>
+      <th>Target price</th>
+      <td>${{ idea.target_price }}</td>
+    </tr>
+  </table>
+
+
+</div>
+{% endwith %}

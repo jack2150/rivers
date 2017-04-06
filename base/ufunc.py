@@ -1,4 +1,8 @@
+import datetime
+import os
+
 import pandas as pd
+from django.utils.deconstruct import deconstructible
 from pandas.tseries.offsets import BDay
 
 
@@ -66,3 +70,20 @@ def ds(d):
     :return: str
     """
     return d.strftime('%Y-%m-%d')
+
+
+@deconstructible
+class UploadRenameImage(object):
+    def __init__(self, path):
+        self.sub_path = path
+
+    def __call__(self, instance, filename):
+        symbol, ext = filename.split('.')
+        symbol = symbol.replace(' ', '_')
+        # set filename as random string
+        filename = '{}_{}.{}'.format(
+            symbol.upper(), datetime.date.today().strftime('%Y%m%d'), ext
+        )
+
+        # return the whole path to the file
+        return os.path.join(self.sub_path, filename)

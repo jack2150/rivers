@@ -1,0 +1,43 @@
+{% load base %}
+
+{% with reports.ownership as report %}
+  <div class="padbot2em" id="stockownership">
+    <fieldset class="module aligned">
+      <h2>
+        Ownership
+        <span class="hypo">(&#9733; Backtest based)</span>
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        {% for key, value in report.data.value %}
+          <th style="width: 70px;">{{ key|label }}:</th>
+          <td style="width: 80px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.position %}
+          <th style="width: 70px;">{{ key|label }}:</th>
+          <td style="width: 80px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        <th>Explain:</th>
+        <td colspan="9">
+          <pre style="margin: 1em">{{ report.explain }}</pre>
+        </td>
+      </tr>
+      <tr>
+        <th>Report:</th>
+        <td colspan="9">
+          {% if report.object.pdf_report %}
+            <a href="{{ report.object.pdf_report.url }}" target="_blank">PDF report</a>
+          {% endif %}<br>
+          {% if report.object.excel_report %}
+            <a href="{{ report.object.excel_report.url }}" target="_blank">Excel report</a>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

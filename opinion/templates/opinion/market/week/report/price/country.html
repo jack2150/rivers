@@ -1,0 +1,55 @@
+{% load base %}
+
+{% with reports.country.objects as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Country
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        {% for country in report %}
+          <td>
+          <table>
+            <tr>
+              <th>Name:</th>
+              <td>{{ country.get_name_display }}</td>
+            </tr>
+            <tr>
+              <th>Weight:</th>
+              <td>{{ country.get_weight_display }}</td>
+            </tr>
+            <tr>
+              <th>Grade:</th>
+              <td>{{ country.get_grade_display }}</td>
+            </tr>
+            <tr>
+              <th>Change %:</th>
+              <td>{{ country.change }}%</td>
+            </tr>
+            <tr>
+              <th>Move:</th>
+              <td>{{ country.get_move_display }}</td>
+            </tr>
+            {% if country.chart %}
+              <tr>
+                <th>Chart:</th>
+                <td>
+                  <a href="{{ country.chart.url }}" target="_blank">
+                    <img src="{{ country.chart.url }}" title="chart" class="width220">
+                  </a>
+                </td>
+              </tr>
+            {% endif %}
+          </table>
+          </td>
+          {% if forloop.counter|divisibleby:3 %}
+            </tr>
+            <tr>
+          {% endif %}
+        {% endfor %}
+      </tr>
+    </table>
+  </div>
+{% endwith %}

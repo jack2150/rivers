@@ -1,0 +1,92 @@
+{% extends "base/base.html" %}
+
+{% block extrastyle %}
+  <style>
+    .width80 {
+      width: 80px;
+    }
+
+    .width120 {
+      width: 120px;
+    }
+
+    .width160 {
+      width: 160px;
+    }
+
+    .width220 {
+      width: 220px;
+    }
+
+    .width300 {
+      width: 300px;
+    }
+
+    .width360 {
+      width: 360px;
+    }
+
+    .hypo {
+      font-size: 0.9em;
+    }
+
+    .padtop3em {
+      padding-top: 3em;
+    }
+
+    .padbot2em {
+      padding-bottom: 2em;
+    }
+
+    .sidebar {
+      position: fixed;
+    }
+
+    .section_nav {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+
+    }
+
+    .section_nav li {
+
+    }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a> >
+    <a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a> >
+    <a href="{% url 'admin:opinion_marketweek_change' market_week.id %}">
+      Market week
+    </a> >
+    Report
+  </div>
+{% endblock %}
+
+{% block normal-content %}
+  <table>
+    <tr>
+      <td style="width: 160px;">
+        <div class="sidebar">
+        <h3>Quickbar</h3>
+        <ol class="section_nav">
+          <li><a href="#weekly_report">Market report</a></li>
+          <li><a href="#weekly_transaction">Weekly transaction</a></li>
+          <li><a href="#weekly_sentiment">Weekly sentiment</a></li>
+          <li><a href="#weekly_technical">Weekly technical</a></li>
+          <li><a href="#weekly_sector">Weekly sector</a></li>
+          <li><a href="#weekly_price">Weekly price</a></li>
+        </ol>
+        </div>
+      </td>
+      <td>
+        {% include 'opinion/market/week/report/index.html' %}
+      </td>
+    </tr>
+  </table>
+
+
+{% endblock %}

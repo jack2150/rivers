@@ -1,0 +1,32 @@
+{% load base static %}
+
+{% with reports.short_interest as report %}
+  <div class="padbot2em" id="stockshortinterest">
+    <fieldset class="module aligned">
+      <h2>
+        Short interest
+        <span class="hypo">(&#9733; Backtest based)</span>
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        {% for key, value in report.data.share %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 100px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        <th>Explain:</th>
+        <td colspan="7">
+          <pre style="margin: 1em">{{ report.explain }}</pre>
+        </td>
+      </tr>
+      <tr>
+        <th>Report:</th>
+        <td colspan="7">
+          <a href="{{ report.object.excel_report.url }}">Excel report & chart</a>
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

@@ -321,7 +321,7 @@ def manage_underlying(request, symbol):
     return render(request, template, parameters)
 
 
-def stock_raw(request, symbol, source):
+def raw_stock_data(request, symbol, source):
     """
     Raw df_stock view for web without analysis
     :param request: request
@@ -347,7 +347,7 @@ def stock_raw(request, symbol, source):
     return render(request, template, parameters)
 
 
-def event_raw(request, symbol, event):
+def raw_event_data(request, symbol, event):
     """
     Raw df_stock view for web without analysis
     :param request: request
@@ -368,6 +368,31 @@ def event_raw(request, symbol, event):
         data=df_event.to_string(line_width=1000),
         trade='',
         args='event: %s' % event,
+    )
+
+    return render(request, template, parameters)
+
+
+def raw_iv_data(request, symbol):
+    """
+    Raw df_iv view for web without analysis
+    :param request: request
+    :param symbol: str
+    :return: render
+    """
+    path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
+    db = pd.HDFStore(path)
+    df_iv = db.select('/option/iv/day')
+    db.close()
+
+    template = 'base/raw_df.html'
+    parameters = dict(
+        site_title='View df_iv',
+        title='df_iv: %s' % symbol.upper(),
+        symbol=symbol,
+        data=df_iv.to_string(line_width=1000),
+        trade='',
+        args=''
     )
 
     return render(request, template, parameters)

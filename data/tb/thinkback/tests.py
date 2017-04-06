@@ -2,7 +2,7 @@ import os
 from pprint import pprint
 import pandas as pd
 from glob import glob
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from data.tb.thinkback.thinkback import ThinkBack, CALL_NAMES
 from rivers.settings import THINKBACK_DIR
 

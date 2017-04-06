@@ -1,22 +1,17 @@
-import os
-from django.contrib.auth.models import User
-from django.test import TestCase
+from django.core.urlresolvers import reverse
+
+from base.utests import TestUnitSetUp
 
 
-class TestSetUp(TestCase):
-    def setUp(self):
-        TestCase.setUp(self)
-
-        User.objects.create_superuser('root', 'a@a.a', '123456')
-        self.client.login(username='root', password='123456')
-
-        print '.' * 100
-        print "<%s> currently run: %s" % (self.__class__.__name__, self._testMethodName)
-        print '.' * 100 + '\n'
-
-    def tearDown(self):
-        """
-        remove variables after test
-        """
-        TestCase.tearDown(self)
-        print '\n' + '.' * 100 + '\n'
+class TestExcelDatePrice(TestUnitSetUp):
+    def test_view(self):
+        response = self.client.post(reverse('excel_date_price'), data={
+            'symbol': 'LUV',
+            'dates': """
+                9/13/2016
+                8/25/2016
+                8/10/2016
+                7/27/2016
+                7/13/2016
+            """
+        })

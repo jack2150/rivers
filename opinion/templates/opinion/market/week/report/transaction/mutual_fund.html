@@ -1,0 +1,40 @@
+{% load base %}
+
+{% with reports.mutual_fund as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Mutual Fund indicators
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        {% for key, value in report.data.stock %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 160px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.bond %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 160px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.flow %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 160px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        <th>Explain:</th>
+        <td colspan="5">
+          <pre style="margin: 1em">{{ report.explain }}</pre>
+        </td>
+      </tr>
+
+
+    </table>
+  </div>
+
+{% endwith %}

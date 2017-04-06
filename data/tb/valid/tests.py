@@ -1,7 +1,7 @@
 import os
 
 import pandas as pd
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from data.tb.valid.options import ValidRawOption
 from rivers.settings import CLEAN_DIR, QUOTE_DIR
 

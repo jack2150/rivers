@@ -1,4 +1,4 @@
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from statement.models import Statement, AccountTrade, Position
 
 

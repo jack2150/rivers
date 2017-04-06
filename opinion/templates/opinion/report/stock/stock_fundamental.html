@@ -1,0 +1,59 @@
+{% load base %}
+
+{% with reports.fundamental as report %}
+  <div class="padbot2em" id="stockfundamental">
+    <fieldset class="module aligned">
+      <h2>
+        Fundamental
+        <span class="hypo">(&#9733; &#9733; &#9733; Strong hypothesis)</span>
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        {% for key, value in report.data.rank %}
+          <th class="width80">{{ key|label }}:</th>
+          <td class="width160">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.date %}
+          <th class="width80">{{ key|label }}:</th>
+          <td class="width160">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.price %}
+          <th class="width80">{{ key|label }}:</th>
+          <td class="width160">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        <th class="width80">Explain:</th>
+        <td colspan="9">
+          <pre style="margin: 1em">{{ report.explain }}</pre>
+        </td>
+      </tr>
+      <tr>
+        <th class="width80">Report:</th>
+        <td colspan="9">
+          {% if report.object.rt_report %}
+            <a href="{{ report.object.rt_report.url }}" target="_blank">
+              Research team report
+            </a>
+          {% endif %}<br>
+          {% if report.object.jaywalk_report %}
+            <a href="{{ report.object.jaywalk_report.url }}" target="_blank">
+              Jaywalk reort
+            </a>
+          {% endif %}<br>
+          {% if report.object.zack_report %}
+            <a href="{{ report.object.zack_report.url }}" target="_blank">
+              Zack report
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+
+    </table>
+  </div>
+{% endwith %}

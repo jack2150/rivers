@@ -3,19 +3,19 @@ from django.core.urlresolvers import reverse
 from django.db import models
 from django.forms import Textarea
 
-from opinion.group.fundamental.models import StockFundamental, StockIndustry, UnderlyingArticle
+from opinion.group.stock.models import StockFundamental, StockIndustry, UnderlyingArticle
 from opinion.group.report.models import ReportEnter, SubtoolOpinion
 
 
 class OpinionAdmin(admin.ModelAdmin):
     formfield_overrides = {
-        models.TextField: {'widget': Textarea(attrs={'rows': 6, 'cols': 30})},
+        models.TextField: {'widget': Textarea(attrs={'rows': 6, 'cols': 60})},
     }
 
 
 class OpinionStackedAdmin(admin.StackedInline):
     formfield_overrides = {
-        models.TextField: {'widget': Textarea(attrs={'rows': 6, 'cols': 30})},
+        models.TextField: {'widget': Textarea(attrs={'rows': 6, 'cols': 60})},
     }
 
 
@@ -46,10 +46,10 @@ class ReportEnterAdmin(admin.ModelAdmin):
     def report_link(self):
         links = [
             '<a href="{link}" target="_blank">Create report</a>'.format(
-                link=reverse('report_create', kwargs={'symbol': self.symbol, 'date': self.date})
+                link=reverse('report_enter_create', kwargs={'symbol': self.symbol, 'date': self.date})
             ),
             '<a href="{link}" target="_blank">Report summary</a>'.format(
-                link=reverse('enter_report', kwargs={'report_id': self.id})
+                link=reverse('report_enter_summary', kwargs={'report_id': self.id})
             )
         ]
 

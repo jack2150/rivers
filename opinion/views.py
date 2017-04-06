@@ -1,29 +1,39 @@
 from datetime import datetime
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.shortcuts import render
 from pandas.tseries.offsets import BDay
 
-from opinion.group.fundamental.models import StockFundamental, StockIndustry, UnderlyingArticle
-from opinion.group.fundamental.report import ReportFundamental
+from opinion.group.position.report import ReportOpinionPosition
+from opinion.group.stock.models import StockProfile, UnderlyingArticle
+from opinion.group.stock.report import ReportStockProfile, ReportUnderlyingArticle
 from opinion.group.position.models import PositionIdea, PositionEnter, PositionDecision
 from opinion.group.report.models import ReportEnter
 from opinion.group.technical.report import ReportTechnicalRank
 from opinion.group.technical.models import TechnicalRank, TechnicalOpinion
+from opinion.group.market.views import *
+from opinion.group.stock.views import *
 
 
 MODEL_OBJ = {
     'positionidea': PositionIdea,
     'technicalrank': TechnicalRank,
     'technicalopinion': TechnicalOpinion,
-    'stockfundamental': StockFundamental,
-    'stockindustry': StockIndustry,
+    'stockprofile': StockProfile,
     'underlyingarticle': UnderlyingArticle,
     'positionenter': PositionEnter,
     'positiondecision': PositionDecision,
-
 }
+
+"""
+STOCK_OBJ = {
+    'stockfundamental': StockFundamental,
+    'stockownership': StockOwnership,
+    'stocksnsider': StockInsider,
+    'stockshortinterest': StockShortInterest,
+    'stockindustry': StockIndustry,
+}
+"""
 
 
 def opinion_link(request, symbol):
@@ -46,7 +56,7 @@ def opinion_link(request, symbol):
     return render(request, template, parameters)
 
 
-def generate_report(request, symbol, date=''):
+def report_enter_create(request, symbol, date=''):
     """
     Step by step create opinion then final create report
     :param request: request
@@ -108,7 +118,7 @@ def generate_report(request, symbol, date=''):
     return render(request, template, parameters)
 
 
-def reference_link(request, report_id, model):
+def report_enter_link(request, report_id, model):
     """
 
     :param request:
@@ -132,6 +142,7 @@ def reference_link(request, report_id, model):
     parameters = dict(
         site_title='Reference | %s | %s' % (symbol, model),
         title='Reference | %s | %s' % (symbol, model),
+        report_enter=report_enter,
         symbol=symbol,
         model=model,
         model_data=model_data,
@@ -155,15 +166,11 @@ class OpinionExists(object):
             return False
 
     def created(self):
-        stock_fd = False
-        if self.exists(self.report_enter, 'stockfundamental'):
-            if self.report_enter.stockfundamental.tp_mean > 0:
-                stock_fd = True
-
-        stock_id = False
-        if self.exists(self.report_enter, 'stockindustry'):
-            if self.report_enter.stockindustry.direction:
-                stock_id = True
+        stock_profile = False
+        if self.exists(self.report_enter, 'stockprofile'):
+            if self.exists(self.report_enter.stockprofile, 'stockfundamental'):
+                if self.report_enter.stockprofile.stockfundamental.tp_mean > 0:
+                    stock_profile = True
 
         pos_idea = False
         if self.exists(self.report_enter, 'positionidea'):
@@ -197,10 +204,9 @@ class OpinionExists(object):
 
         article = False
         if self.exists(self.report_enter, 'underlyingarticle'):
-            if len(self.report_enter.underlyingarticle.article_name):
+            if len(self.report_enter.underlyingarticle.name):
                 article = True
 
-        # todo: here
         opinions = [
             'TechnicalTick', 'TechnicalSma', 'TechnicalVolume', 'TechnicalIchimoku',
             'TechnicalParabolic', 'TechnicalStoch', 'TechnicalBand', 'TechnicalFw',
@@ -216,8 +222,7 @@ class OpinionExists(object):
                 tech_op.append('%s %s' % (op.replace('Technical', ''), created))
 
         return {
-            'stockfundamental': 'Yes' if stock_fd else 'Waiting...',
-            'stockindustry': 'Yes' if stock_id else 'Waiting...',
+            'stockfundamental': 'Yes' if stock_profile else 'Waiting...',
             'positionidea': 'Yes' if pos_idea else 'Waiting...',
             'positionenter': 'Yes' if pos_enter else 'Waiting...',
             'positiondecision': 'Yes' if pos_dc else 'Waiting...',
@@ -231,34 +236,75 @@ class OpinionExists(object):
         }
 
 
-def enter_report(request, report_id):
+def report_enter_summary(request, report_id):
     """
-
-    :param request:
-    :param symbol:
-    :param date:
-    :return:
+    Enter report summary
+    :param request: request
+    :param report_id: int
+    :return: render
     """
     report_enter = ReportEnter.objects.get(id=report_id)
     tech_rank_report = ReportTechnicalRank(report_enter.technicalrank, report_enter.close)
-    fd_report = ReportFundamental(report_enter)
+    fd_report = ReportStockProfile(report_enter)
+    news_report = ReportUnderlyingArticle(report_enter)
+    pos_report = ReportOpinionPosition(report_enter)
 
     reports = {
+        # position idea
+        'idea': report_enter.positionidea,
+        'pos_enter': {
+            'data': pos_report.pos_enter.create(),
+            'explain': pos_report.pos_enter.explain(),
+            'object': pos_report.pos_enter.pos_enter,
+        },
+
+        # underlying article
+        'article': {
+            'data': news_report.create(),
+            'explain': '',
+            'object': news_report.article,
+        },
+
         # technical rank
         'marketedge': tech_rank_report.marketedge.create(),
         'barchart': tech_rank_report.barchart.create(),
         'chartmill': tech_rank_report.chartmill.create(),
+
+
         # stock fundamental
-        'fundamental': fd_report.stock_fd.create(),
-        'industry': fd_report.stock_id.create(),
-
+        'fundamental': {
+            'data': fd_report.fundamental.create(),
+            'explain': fd_report.fundamental.explain(),
+            'object': fd_report.fundamental.fundamental,
+        },
+        'industry': {
+            'data': fd_report.industry.create(),
+            'explain': fd_report.industry.explain(),
+            'object': fd_report.industry.industry,
+        },
+        'ownership': {
+            'data': fd_report.ownership.create(),
+            'explain': fd_report.ownership.explain(),
+            'object': fd_report.ownership.ownership,
+        },
+        'insider': {
+            'data': fd_report.insider.create(),
+            'explain': fd_report.insider.explain(),
+            'object': fd_report.insider.insider,
+        },
+        'short_interest': {
+            'data': fd_report.short_interest.create(),
+            'explain': fd_report.short_interest.explain(),
+            'object': fd_report.short_interest.short_interest,
+        },
+        'earning': {
+            'data': fd_report.earning.create(),
+            'explain': fd_report.earning.explain(),
+            'object': fd_report.earning.earning
+        },
     }
-    # report_enter.technicalrank.technicalmarketedge.recommend
 
-    # todo: here, tomorrow, if clv not profit, close it
-    # todo: start closing most of the pos and wait next time
-
-    heats = {
+    heatmap = {
         'marketedge': tech_rank_report.marketedge.to_heat(),
         'barchart': tech_rank_report.barchart.to_heat(),
         'chartmill': tech_rank_report.chartmill.to_heat(),
@@ -280,10 +326,5 @@ def enter_report(request, report_id):
 
     return render(request, template, parameters)
 
-
-
-
-
-
 # todo: symbol date report, for all detail, position & technical
-# todo: market & mindset & quest date report, all market
+# todo: quest date report, all market

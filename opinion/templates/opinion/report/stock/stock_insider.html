@@ -1,0 +1,34 @@
+{% load base %}
+
+{% with reports.insider as report %}
+  <div class="padbot2em" id="stockinsider">
+    <fieldset class="module aligned">
+      <h2>
+        Insider
+        <span class="hypo">(&#9733; Backtest based)</span>
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        {% for key, value in report.data.share %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 100px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        <th>Explain:</th>
+        <td colspan="9">
+          <pre style="margin: 1em">{{ report.explain }}</pre>
+        </td>
+      </tr>
+      <tr>
+        <th>Report:</th>
+        <td colspan="9">
+          {% if report.object.pdf_report %}
+            <a href="{{ report.object.pdf_report.url }}" target="_blank">PDF report</a>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

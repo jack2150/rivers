@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 import sys
+from django.conf import global_settings
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -76,6 +78,9 @@ INSTALLED_APPS = (
     'broker.ib',
     'broker.tda',
 
+    # portfolio
+    'portfolio',
+
     # statement
 )
 
@@ -128,6 +133,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "static"),
 )
+
+
 
 # fixtures
 FIXTURE_DIRS = [os.path.join(BASE_DIR, 'fixtures')]
@@ -207,8 +214,6 @@ if 'test' in sys.argv:
         'NAME': os.path.join(BASE_DIR, 'quote.db')
     }
 
-from django.conf import global_settings
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -234,4 +239,5 @@ TEMPLATES = [
     },
 ]
 
-BOOTSTRAP_ADMIN_SIDEBAR_MENU = True
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(DB_DIR, 'media')

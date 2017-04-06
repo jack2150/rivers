@@ -1,0 +1,306 @@
+{% load base %}
+
+<div class="padtop3em" id="montheconomic">
+  <h1>Month Economic</h1>
+
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Economic indicators
+      </h2>
+    </fieldset>
+
+    todo: policy, comment, market condition, base strategy, weighting, sector, etc...
+
+    sector weight report, to industry to stock
+
+    base strategy
+    trade allocation
+    prime focus
+
+    process
+    1. eco data
+    2. market move
+    3. sector weight (or world)
+    4. stock, industry, report
+    5. pos, strategy, trade
+
+
+
+    <table>
+      <tr>
+        <td colspan="3">
+          <h2>Primary economic indicator</h2>
+          <span>Including: leading, coincident, lagging</span>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h3>Economic Cycle:</h3>
+          <p>{{ month_eco.get_eco_cycle_display }}</p>
+          <div>
+          {% if month_eco.eco_chart0 %}
+            <a href="{{ month_eco.eco_chart0.url }}" target="_blank">
+              <img src="{{ month_eco.eco_chart0.url }}" title="{{ name }}" class="width360">
+            </a>
+          {% endif %}
+          </div>
+        </td>
+        <td>
+          <h3>Economic Index:</h3>
+          <p>{{ month_eco.get_eco_index_display }}</p>
+          <div>
+            {% if month_eco.eco_chart1 %}
+              <a href="{{ month_eco.eco_chart1.url }}" target="_blank">
+                <img src="{{ month_eco.eco_chart1.url }}" title="{{ name }}" class="width360">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <h3>Monetary policy</h3>
+          <pre>{{ month_eco.monetary }}</pre>
+
+          <h3>Commentary</h3>
+          <pre>{{ month_eco.commentary }}</pre>
+
+          {% if month_eco.policy_report %}
+            <a href="{{ month_eco.policy_report.url }}">Report</a>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+
+    <table>
+      <tr>
+        <td colspan="3"><h2>Top 3</h2></td>
+      </tr>
+      <tr>
+        <td>
+          <h3>Inflation rate:</h3>
+          <p>{{ month_eco.get_inflation_display }}</p>
+          <div>
+            {% if month_eco.top_chart0 %}
+              <a href="{{ month_eco.top_chart0.url }}" target="_blank">
+                <img src="{{ month_eco.top_chart0.url }}" title="inflation" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <h3>GDP:</h3>
+          <p>{{ month_eco.get_gdp_display }}</p>
+          <div>
+            {% if month_eco.top_chart1 %}
+              <a href="{{ month_eco.top_chart1.url }}" target="_blank">
+                <img src="{{ month_eco.top_chart1.url }}" title="gdp" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <h3>Unemployment rate:</h3>
+          <p>{{ month_eco.get_employ_display }}</p>
+          <div>
+            {% if month_eco.top_chart2 %}
+              <a href="{{ month_eco.top_chart2.url }}" target="_blank">
+                <img src="{{ month_eco.top_chart2.url }}" title="employ" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3"><h2>Major</h2></td>
+      </tr>
+      <tr>
+        <td>
+          <h3>Interest rate:</h3>
+          <p>{{ month_eco.get_interest_rate_display }}</p>
+          <div>
+            {% if month_eco.major_chart0 %}
+              <a href="{{ month_eco.major_chart0.url }}" target="_blank">
+                <img src="{{ month_eco.major_chart0.url }}" title="interest_rate" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <h3>M2 money stock:</h3>
+          <p>{{ month_eco.get_m2_supply_display }}</p>
+          <div>
+            {% if month_eco.major_chart1 %}
+              <a href="{{ month_eco.major_chart1.url }}" target="_blank">
+                <img src="{{ month_eco.major_chart1.url }}" title="m2_supply" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <h3>Trade balance:</h3>
+          <p>{{ month_eco.get_trade_deficit_display }}</p>
+          <div>
+            {% if month_eco.major_chart2 %}
+              <a href="{{ month_eco.major_chart2.url }}" target="_blank">
+                <img src="{{ month_eco.major_chart2.url }}" title="trade_deficit" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="3"><h2>Consumer</h2></td>
+      </tr>
+      <tr>
+        <td>
+          <h3>Consumer price index:</h3>
+          <p>{{ month_eco.get_cpi_display }}</p>
+          <div>
+            {% if month_eco.consumer_chart0 %}
+              <a href="{{ month_eco.consumer_chart0.url }}" target="_blank">
+                <img src="{{ month_eco.consumer_chart0.url }}" title="cpi" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <h3>Consumer sentiment survey:</h3>
+          <p>{{ month_eco.get_cc_survey_display }}</p>
+          <div>
+            {% if month_eco.consumer_chart1 %}
+              <a href="{{ month_eco.consumer_chart1.url }}" target="_blank">
+                <img src="{{ month_eco.consumer_chart1.url }}" title="cc_survey" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <h3>Retail sale:</h3>
+          <p>{{ month_eco.get_retail_sale_display }}</p>
+          <div>
+            {% if month_eco.consumer_chart2 %}
+              <a href="{{ month_eco.consumer_chart2.url }}" target="_blank">
+                <img src="{{ month_eco.consumer_chart2.url }}" title="retail_sale" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          <h3>Housing start:</h3>
+          <p>{{ month_eco.get_house_start_display }}</p>
+          <div>
+            {% if month_eco.consumer_chart3 %}
+              <a href="{{ month_eco.consumer_chart3.url }}" target="_blank">
+                <img src="{{ month_eco.consumer_chart3.url }}" title="house_start" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="3"><h2>Industry production</h2></td>
+      </tr>
+      <tr>
+        <td>
+          <h3>ppi:</h3>
+          <p>{{ month_eco.get_ppi_display }}</p>
+          <div>
+            {% if month_eco.product_chart0 %}
+              <a href="{{ month_eco.product_chart0.url }}" target="_blank">
+                <img src="{{ month_eco.product_chart0.url }}" title="ppi" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <h3>ipi:</h3>
+          <p>{{ month_eco.get_ipi_display }}</p>
+          <div>
+            {% if month_eco.product_chart1 %}
+              <a href="{{ month_eco.product_chart1.url }}" target="_blank">
+                <img src="{{ month_eco.product_chart1.url }}" title="ipi" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <h3>biz_store:</h3>
+          <p>{{ month_eco.get_biz_store_display }}</p>
+          <div>
+            {% if month_eco.product_chart2 %}
+              <a href="{{ month_eco.product_chart2.url }}" target="_blank">
+                <img src="{{ month_eco.product_chart2.url }}" title="biz_store" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h3>corp_profit:</h3>
+          <p>{{ month_eco.get_corp_profit_display }}</p>
+          <div>
+            {% if month_eco.product_chart3 %}
+              <a href="{{ month_eco.product_chart3.url }}" target="_blank">
+                <img src="{{ month_eco.product_chart3.url }}" title="corp_profit" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+        <td colspan="2">
+          <h3>wage:</h3>
+          <p>{{ month_eco.get_wage_display }}</p>
+          <div>
+            {% if month_eco.product_chart4 %}
+              <a href="{{ month_eco.product_chart4.url }}" target="_blank">
+                <img src="{{ month_eco.product_chart4.url }}" title="wage" class="width300">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+    
+      <tr>
+        <td colspan="3">
+          <h3>Currency strength:</h3>
+          <p>{{ month_eco.get_dollar_display }}</p>
+          <div>
+            {% if month_eco.dollar_chart0 %}
+              <a href="{{ month_eco.dollar_chart0.url }}" target="_blank">
+                <img src="{{ month_eco.dollar_chart0.url }}" title="eur/usd" class="width220">
+              </a>
+            {% endif %}
+            {% if month_eco.dollar_chart1 %}
+              <a href="{{ month_eco.dollar_chart1.url }}" target="_blank">
+                <img src="{{ month_eco.dollar_chart1.url }}" title="usd/cad" class="width220">
+              </a>
+            {% endif %}
+            {% if month_eco.dollar_chart2 %}
+              <a href="{{ month_eco.dollar_chart2.url }}" target="_blank">
+                <img src="{{ month_eco.dollar_chart2.url }}" title="usd/jpy" class="width220">
+              </a>
+            {% endif %}
+            {% if month_eco.dollar_chart3 %}
+              <a href="{{ month_eco.dollar_chart3.url }}" target="_blank">
+                <img src="{{ month_eco.dollar_chart3.url }}" title="usd/cnh" class="width220">
+              </a>
+            {% endif %}
+            {% if month_eco.dollar_chart4 %}
+              <a href="{{ month_eco.dollar_chart4.url }}" target="_blank">
+                <img src="{{ month_eco.dollar_chart4.url }}" title="usd" class="width220">
+              </a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+    </table>
+
+
+
+  </div>
+
+</div>

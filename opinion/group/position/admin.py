@@ -38,7 +38,7 @@ class PortfolioReviewAdmin(admin.ModelAdmin):
 
 class PositionIdeaAdmin(admin.ModelAdmin):
     formfield_overrides = {
-        models.TextField: {'widget': Textarea(attrs={'rows': 6, 'cols': 30})},
+        models.TextField: {'widget': Textarea(attrs={'rows': 6, 'cols': 60})},
     }
 
     list_display = (
@@ -58,7 +58,7 @@ class PositionIdeaAdmin(admin.ModelAdmin):
 
 class PositionEnterAdmin(OpinionAdmin):
     list_display = (
-        'report', 'price_movement', 'event_trade',
+        'report', 'direction', 'event_trade',
         'risk_profile', 'bp_effect', 'max_profit', 'max_loss', 'size',
         'strategy', 'spread', 'optionable',
     )
@@ -70,33 +70,64 @@ class PositionEnterAdmin(OpinionAdmin):
         }),
         ('Signal', {
             'fields': (
-                'price_movement', 'event_trade', 'target_price',
+                'direction', 'target_price'
             )
         }),
-        ('Position', {
+        ('Strategy', {
             'fields': (
-                'risk_profile', 'bp_effect', 'max_profit', 'max_loss', 'size',
-                'strategy', 'spread', 'optionable',
+                'optionable', 'spread', 'side', 'quantity', 'strategy', 'strikes', 'option'
             )
         }),
-        ('Timing', {
+        ('Commission', {
             'fields': (
-                'enter_date', 'exit_date', 'dte',
+                'commission', 'enter_price'
+            )
+        }),
+        ('P/L profile', {
+            'fields': (
+                'risk_profile', 'capital', 'bp_effect', 'max_profit', 'max_loss', 'expect_return'
+            )
+        }),
+        ('Date', {
+            'fields': (
+                'enter_date', 'exit_date', 'dte'
+            )
+        }),
+        ('Event', {
+            'fields': (
+                'event_trade', 'event_period'
+            )
+        }),
+        ('Risk trade-off', {
+            'fields': (
+                'risk_chart', 'risk_ex_chart', 'risk_day_chart', 'risk_uvol_chart',
+                'risk_dvol_chart', 'prob_chart',
+            )
+        }),
+        ('Price chart', {
+            'fields': (
+                'price_chart0', 'price_chart1', 'price_chart2', 'price_chart3', 'price_chart4',
+            )
+        }),
+        ('Report', {
+            'fields': (
+                'excel_report',
             )
         }),
         ('Others', {
             'fields': (
-                'event_period', 'description',
+                'desc',
             )
         }),
     )
 
     search_fields = (
-        'report__symbol', 'report__date', 'strategy', 'enter_date', 'exit_date',
+        'report__symbol', 'report__date', 'strategy', 'risk_profile', 'enter_date', 'exit_date'
     )
     list_filter = (
-        'price_movement', 'event_trade', 'risk_profile', 'spread',
-        'optionable', 'event_period',
+        'direction', 'risk_profile',
+        'optionable', 'side', 'spread', 'option', 'strategy',
+        'event_trade', 'event_period'
     )
     readonly_fields = ('report', )
     list_per_page = 20

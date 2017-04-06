@@ -1,4 +1,4 @@
-{% load i18n admin_urls admin_static admin_modify %}
+{% load i18n admin_urls admin_static admin_modify base %}
 <div class="inline-group" id="{{ inline_admin_formset.formset.prefix }}-group">
   <div class="tabular inline-related {% if forloop.last %}last-related{% endif %}">
 {{ inline_admin_formset.formset.management_form }}
@@ -53,7 +53,18 @@
                   <p>{{ field.contents }}</p>
               {% else %}
                   {{ field.field.errors.as_ul }}
-                  {{ field.field }}
+                  {% if field|admin_field_type == 'AdminDateWidget' %}
+                    {{ field.field }}
+                  {% else %}
+                    {% if field|admin_field_type == 'AdminTextareaWidget' %}
+                      {{ field.field|tabular_textarea|safe }}
+                    {% else %}
+                      {{ field.field|tabular_style|safe }}
+                      {% if field.field.help_text %}
+                        <p class="help">{{ field.field.help_text|safe }}</p>
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}
               {% endif %}
               </td>
               {% endif %}
@@ -61,7 +72,9 @@
           {% endfor %}
         {% endfor %}
         {% if inline_admin_formset.formset.can_delete %}
-          <td class="delete">{% if inline_admin_form.original %}{{ inline_admin_form.deletion_field.field }}{% endif %}</td>
+          <td class="delete">
+            {% if inline_admin_form.original %}{{ inline_admin_form.deletion_field.field }}{% endif %}
+          </td>
         {% endif %}
         </tr>
      {% endfor %}

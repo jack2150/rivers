@@ -1,5 +1,5 @@
 import pandas as pd
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from research.algorithm.formula.event.earning.merge import merge_stock_earning
 from rivers.settings import QUOTE_DIR
 

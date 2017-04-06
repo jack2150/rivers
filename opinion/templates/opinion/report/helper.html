@@ -8,7 +8,7 @@
 
   .ref_icon {
     float: right;
-    margin: 0.5em 12px;
+    margin: 0.4em 12px;
   }
   </style>
 {% endblock %}
@@ -43,58 +43,65 @@
           id: "2", site: "Thinkorswim", tool: "Prophet chart", image: "fa-star-o", path: "#"
         }
       ],
-      stockfundamental: [
+      stockprofile: [
         {
-          id: "1", image: "", site: "Nasdaq", tool: "Institute Holding",
-          path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/institutional-holdings"
-        },
-        {
-          id: "2", site: "Nasdaq", tool: "Insider trade", image: "",
-          path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/insider-trades"
-        },
-        {
-          id: "3.1", site: "ShortSqueeze", tool: "Data", image: "fa-star-o",
-          path: "http://shortsqueeze.com/?symbol={{ symbol|lower }}"
-        },
-        {
-          id: "3.2", site: "Trader Workstation", tool: "Graph", image: "fa-star-o",
-          path: "#"
-        },
-        {
-          id: "4", image: "fa-star-o", site: "Shortvolume", tool: "Chart",
-          path: "http://shortvolume.com/"
-        },
-        {
-          id: "5", image: "fa-star-o", site: "Nasdaq", tool: "Short interest",
-          path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/short-interest"
-        },
-        {
-          id: "6", image: "fa-star-o", site: "TD Ameritrade", tool: "Report",
+          id: "1", image: "fa-star-o", site: "TD Ameritrade", tool: "Report",
           path: "https://research.ameritrade.com/grid/wwws/research/stocks/" +
-                "analystreports?c_name=invest_VENDOR&symbol={{ symbol|lower }}"
+          "analystreports?c_name=invest_VENDOR&symbol={{ symbol|lower }}"
         },
         {
-          id: "7", image: "fa-star-o", site: "Financial Time", tool: "Forecast",
-          path: "https://markets.ft.com/data/equities/tearsheet/forecasts?s={{ symbol }}:NYQ"
-        },
-      ],
-      stockindustry: [
-        {
-          id: "1", image: "fa-star-o", site: "Zack", tool: "Industry peer & chart",
-          path: "http://www.zacks.com/stock/research/{{ symbol }}/industry-comparison"
-        },
-        {
-          id: "2", image: "fa-star-o", site: "Finviz", tool: "Industry & sector",
+          id: "2", image: "fa-star-o", site: "Finviz", tool: "Upgrade/Downgrade",
           path: "http://finviz.com/quote.ashx?t={{ symbol|lower }}"
         },
         {
-          id: "3", image: "fa-star-o", site: "TD Ameritrade", tool: "Peer compare",
+          id: "3", image: "fa-star-o", site: "Financial Time", tool: "Forecast",
+          path: "https://markets.ft.com/data/equities/tearsheet/forecasts?s={{ symbol }}:NYQ"
+        },
+        {
+          id: "4.1", image: "", site: "Nasdaq", tool: "Institute Holding",
+          path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/institutional-holdings"
+        },
+        {
+          id: "4.2", image: "", site: "Gurufocus", tool: "Ownership history",
+          path: "http://www.gurufocus.com/ownership/{{ symbol }}"
+        },
+        {
+          id: "4.3", image: "", site: "System", tool: "Season price",
+          path: "{% url 'ownership_price' symbol %}"
+        },
+        {
+          id: "5.1", site: "Nasdaq", tool: "Insider trade", image: "",
+          path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/insider-trades"
+        },
+        {
+          id: "5.2", site: "InsiderTrading", tool: "History", image: "",
+          path: "http://insidertrading.org/index.php?sort_by=transaction_date&asc=&" +
+                "symbol={{ symbol|lower }}&date_from=2010-01-01&date_to={{ report_enter.date }}&submit=+GO+"
+        },
+        {
+          id: "6.1", site: "ShortSqueeze", tool: "Data", image: "",
+          path: "http://shortsqueeze.com/?symbol={{ symbol|lower }}"
+        },
+        {
+          id: "6.2", site: "Excel", tool: "IB Data & Chart", image: "fa-area-chart",
+          path: "http://127.0.0.1:8000/base/date_price/"
+        },
+        {
+          id: "6.4", image: "", site: "Nasdaq", tool: "Short interest",
+          path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/short-interest"
+        },
+        {
+          id: "7", image: "fa-star-o", site: "Zack", tool: "Industry peer & chart",
+          path: "http://www.zacks.com/stock/research/{{ symbol }}/industry-comparison"
+        },
+        {
+          id: "8", image: "fa-star-o", site: "TD Ameritrade", tool: "Peer compare",
           path: "https://research.ameritrade.com/grid/wwws/research/stocks/" +
                 "industryposition?symbol={{ symbol }}&c_name=invest_VENDOR"
         },
         {
-          id: "4", image: "fa-star-o", site: "Morningstar", tool: "Industry compare",
-          path: "http://financials.morningstar.com/competitors/industry-peer.action?t={{ symbol }}"
+          id: "9", image: "fa-calendar", site: "System", tool: "Earning report",
+          path: "{% url 'report_earning' symbol|lower %}"
         }
       ],
       underlyingarticle: [
@@ -120,7 +127,7 @@
           path: "http://www.zacks.com/stock/research/{{ symbol }}/all-news"
         },
         {
-          id: "6", image: "fa-star-o", site: "Nasdaq", tool: "News",
+          id: "6", image: "", site: "Nasdaq", tool: "News",
           path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/news-headlines"
         }
       ],
@@ -181,20 +188,16 @@
       cols: [
         {
           view: "list",
-          width: 300,
-          template: "<span class='webix_icon #image# ref_icon'></span>#id#. #site#: #tool#" +
-                    "<div class='pad10'>URL: <a href='#path#' target='_blank'>Open link</a></div>",
+          gravity: 1,
+          template: "<span class='webix_icon #image# ref_icon'></span>" +
+                    "<a href='#path#' target='_blank'>#id#. #site#: #tool#</a>",
           data: ref_data.{{ model }},
-          type: {
-            height: 62
-          }
         },
         {
           // editable: false,
           // readonly: true,
           view: "property",
           id: "sets",
-          width: 300,
           scroll: true,
           elements: property_data
 

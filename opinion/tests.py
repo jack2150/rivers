@@ -1,8 +1,7 @@
 from django.core.urlresolvers import reverse
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from opinion.models import *
 from statement.models import Statement
-
 
 
 class TestMarketProfile(TestSetUp):

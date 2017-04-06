@@ -73,10 +73,10 @@ class ReportTechnicalRank(object):
                     ('position', self.market_edge.position)
                 ],
                 'move': [
-                    ('fprice', fprice),
+                    ('fprice', '%s -> %s' % (fprice, self.close)),
                     ('period_netchg', period_netchg),
-                    ('period_netpct', period_netpct),
-                    ('day_avg', period_netpct / day_pass)
+                    ('period_netpct', '%s%%' % period_netpct),
+                    ('day_avg', '%.2f%% per day' % (period_netpct / day_pass))
                 ],
                 'date': [
                     ('start', self.market_edge.date),

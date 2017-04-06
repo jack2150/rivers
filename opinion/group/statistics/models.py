@@ -2,12 +2,12 @@ from django.db import models
 from opinion.group.report.models import ReportEnter
 
 
-class StatisticsData(models.Model):
+class StatisticData(models.Model):
     report = models.OneToOneField(ReportEnter, null=True, blank=True)
 
 
-class StatisticsVolatility(models.Model):
-    stat_data = models.OneToOneField(StatisticsData)
+class StatisticVolatility(models.Model):
+    stat_data = models.OneToOneField(StatisticData)
 
     # today option statistics
     iv_52w_high = models.FloatField(default=0, help_text='IV 52 weeks high')
@@ -31,6 +31,17 @@ class StatisticsVolatility(models.Model):
     iv_desc = models.TextField(
         blank=True, default='', help_text='Take 5 mins, analysis & projection'
     )
+    # todo: to be cont
 
 
-# todo: to be cont
+class StatisticDistribution(models.Model):
+    stat_data = models.OneToOneField(StatisticData)
+
+
+
+
+
+
+
+
+

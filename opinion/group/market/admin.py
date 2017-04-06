@@ -2,136 +2,71 @@ from django.contrib import admin
 from django.core.urlresolvers import reverse
 from opinion.group.market.models import *
 from opinion.group.market.views import market_profile
-from opinion.group.report.admin import OpinionStackedAdmin
+from opinion.group.report.admin import OpinionStackedAdmin, OpinionAdmin
 
 
-class CommodityMovementInline(admin.TabularInline):
-    model = CommodityMovement
-    extra = 0
+class MarketMonthEconomicAdmin(OpinionAdmin):
+    def market_review(self, obj):
+        return '<a href="{link}">Link</a> | <a href="{report}">Report</a>'.format(
+            link=reverse('market_month_economic_create', kwargs={'obj_id': obj.id}),
+            report=reverse('market_month_report', kwargs={'obj_id': obj.id})
+        )
 
-
-class WorldMovementInline(admin.TabularInline):
-    model = WorldMovement
-    extra = 0
-
-
-class SectorMovementInline(admin.TabularInline):
-    model = SectorMovement
-    extra = 0
-
-
-class MarketMovementAdmin(admin.ModelAdmin):
-    inlines = [CommodityMovementInline, SectorMovementInline, WorldMovementInline]
+    market_review.allow_tags = True
+    market_review.short_description = ''
 
     list_display = (
-        'date', 'resistant', 'resistant', 'volume', 'vix', 'technical_rank',
-        'market_indicator', 'extra_attention', 'key_indicator', 'special_news'
+        'date', 'eco_cycle', 'eco_index', 'market_review'
     )
-
-    fieldsets = (
-        ('Primary', {
-            'fields': (
-                'date',
-            )
-        }),
-        ('Indices', {
-            'fields': (
-                'resistant', 'resistant', 'volume', 'vix', 'technical_rank',
-                'dow_phase', 'dow_movement'
-            )
-        }),
-        ('Eco Data', {
-            'fields': (
-                'market_indicator', 'extra_attention', 'key_indicator', 'special_news'
-            )
-        })
-    )
-
-    search_fields = ('date',)
-    list_per_page = 20
-
-
-class MarketReviewAdmin(admin.ModelAdmin):
-    #
-
-    list_display = ('date', 'bubble_stage', 'market_scenario', 'cli_trend', 'bci_trend')
 
     fieldsets = (
         ('Primary', {
             'fields': ('date',)
         }),
-        ('Major economics', {
+        ('Economics', {
             'fields': (
-                'bubble_stage', 'market_scenario', 'cli_trend', 'bci_trend'
+                'eco_cycle', 'eco_index', 'eco_chart0', 'eco_chart1'
             )
         }),
-        ('Economics data', {
+        ('Top 3', {
             'fields': (
-                'm2_supply', 'gdp', 'cpi', 'ppi', 'cc_survey',
-                'employ', 'retail_sale', 'house_start', 'industry', 'biz_inventory',
-                'startup', 'week_earning', 'currency_strength', 'interest_rate',
-                'corp_profit', 'trade_deficit'
+                'inflation', 'gdp', 'employ', 'top_chart0', 'top_chart1', 'top_chart2'
             )
         }),
-        ('Commentary', {
+        ('Major', {
             'fields': (
-                'monetary_policy', 'month_commentary'
+                'interest_rate', 'm2_supply', 'trade_deficit',
+                'major_chart0', 'major_chart1', 'major_chart2'
             )
         }),
-    )
-
-    search_fields = ('date', )
-    list_per_page = 20
-
-
-class MarketWeekTechnicalAdmin(OpinionStackedAdmin):
-    model = MarketWeekTechnical
-
-
-class MarketWeekReportAdmin(OpinionStackedAdmin):
-    model = MarketWeekReport
-    extra = 0
-
-
-class MarketSentimentAdmin(admin.ModelAdmin):
-    inlines = [MarketWeekTechnicalAdmin, MarketWeekReportAdmin]
-
-    def market_profile(self, obj):
-        return '<a href="{link}">Profile</a>'.format(
-            link=reverse('admin:market_profile', kwargs={'date': obj.date.strftime('%Y-%m-%d')})
-        )
-
-    market_profile.allow_tags = True
-    market_profile.short_description = ''
-
-    list_display = (
-        'date', 'fund_cash_ratio', 'sentiment_index', 'credit_balance', 'put_call_ratio',
-        'investor_sentiment', 'futures_trader'
-    )
-
-    fieldsets = (
-        ('Primary', {
+        ('Consumer', {
             'fields': (
-                'date',
+                'cpi', 'cc_survey', 'retail_sale', 'house_start',
+                'consumer_chart0', 'consumer_chart1', 'consumer_chart2', 'consumer_chart3'
             )
         }),
-        ('Fund cash flow', {
+        ('Manufacture', {
             'fields': (
-                'fund_cash_ratio', 'margin_debt', 'credit_balance', 'confidence_index',
-                'futures_trader',
+                'ppi', 'ipi', 'biz_store', 'corp_profit', 'wage',
+                'product_chart0', 'product_chart1', 'product_chart2', 'product_chart3',
+                'product_chart4'
             )
         }),
-        ('Sentiment indicator', {
+        ('Currency', {
             'fields': (
-                'sentiment_index', 'put_call_ratio',
-                'market_momentum', 'junk_bond_demand', 'price_strength',
-                'safe_heaven_demand', 'market_volatility'
+                'dollar',
+                'dollar_chart0', 'dollar_chart1', 'dollar_chart2', 'dollar_chart3',
+                'dollar_chart4'
             )
         }),
-        ('Third party', {
+        ('Policy', {
             'fields': (
-                'investor_sentiment', 'ted_spread', 'market_breadth',
-                'ma200day_pct', 'arms_index',
+                'monetary', 'commentary', 'policy_report'
+            )
+        }),
+        ('State', {
+            'fields': (
+                'bubble_stage', 'market_scenario'
             )
         }),
     )
@@ -140,40 +75,130 @@ class MarketSentimentAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-class MarketArticleAdmin(admin.ModelAdmin):
-    # noinspection PyMethodMayBeStatic
-    def source_url(self, obj):
-        return '<a href="{link}" target="_blank">Read</a>'.format(link=obj.link)
+class MarketWeekRelocationInline(admin.TabularInline):
+    model = MarketWeekRelocation
 
-    source_url.allow_tags = True
-    source_url.short_description = ''
+
+class MarketWeekSectorAdmin(admin.TabularInline):
+    model = MarketWeekSector
+
+
+class MarketWeekSectorItemAdmin(admin.TabularInline):
+    model = MarketWeekSectorItem
+    extra = 0
+
+
+class MarketWeekIndicesAdmin(admin.TabularInline):
+    model = MarketWeekIndices
+    extra = 0
+
+
+class MarketWeekCommodityAdmin(admin.TabularInline):
+    model = MarketWeekCommodity
+    extra = 0
+
+
+class MarketWeekGlobalAdmin(admin.TabularInline):
+    model = MarketWeekGlobal
+    extra = 0
+
+
+class MarketWeekCountryAdmin(admin.TabularInline):
+    model = MarketWeekCountry
+    extra = 0
+
+
+class MarketWeekTechnicalAdmin(OpinionStackedAdmin):
+    model = MarketWeekTechnical
+    extra = 0
+
+
+class MarketWeekFundAdmin(admin.TabularInline):
+    model = MarketWeekFund
+
+
+class MarketWeekFundNetCashAdmin(admin.TabularInline):
+    model = MarketWeekFundNetCash
+    extra = 0
+
+
+class MarketWeekSentimentAdmin(admin.TabularInline):
+    model = MarketWeekSentiment
+
+
+class MarketWeekCommitmentAdmin(admin.TabularInline):
+    model = MarketWeekCommitment
+    extra = 0
+
+
+class MarketWeekValuationAdmin(OpinionStackedAdmin):
+    model = MarketWeekValuation
+
+
+class MarketWeekImplVolAdmin(admin.TabularInline):
+    model = MarketWeekImplVol
+
+
+class MarketWeekResearchInline(admin.TabularInline):
+    model = MarketWeekResearch
+    extra = 0
+
+
+class MarketWeekArticleInline(admin.TabularInline):
+    model = MarketWeekArticle
+    extra = 0
+
+
+class MarketDayEconomicInline(admin.TabularInline):
+    model = MarketDayEconomic
+    extra = 0
+
+
+class MarketWeekEtfFlowInline(admin.TabularInline):
+    model = MarketWeekEtfFlow
+    extra = 0
+
+
+class MarketWeekAdmin(OpinionAdmin):
+    inlines = [
+        MarketDayEconomicInline, MarketWeekResearchInline, MarketWeekArticleInline,
+
+        MarketWeekCommitmentAdmin, MarketWeekRelocationInline,
+        MarketWeekFundAdmin, MarketWeekFundNetCashAdmin,
+        MarketWeekEtfFlowInline,
+
+        MarketWeekSentimentAdmin, MarketWeekValuationAdmin,
+
+        MarketWeekTechnicalAdmin,
+
+        MarketWeekSectorAdmin, MarketWeekSectorItemAdmin,
+
+        MarketWeekIndicesAdmin, MarketWeekCommodityAdmin,
+        MarketWeekGlobalAdmin, MarketWeekCountryAdmin,
+        MarketWeekImplVolAdmin,
+    ]
+
+    def link(self, obj):
+        return '<a href="{link}">Link</a> | <a href="{report}">Report</a>'.format(
+            link=reverse('market_week_create', kwargs={'obj_id': obj.id}),
+            report=reverse('market_week_report', kwargs={'obj_id': obj.id}),
+        )
+
+    link.allow_tags = True
+    link.short_description = ''
 
     list_display = (
-        'date', 'name', 'category', 'chance', 'source_url'
+        'date', 'link'
     )
 
-    fieldsets = (
-        ('Primary', {
-            'fields': (
-                'date', 'link', 'name', 'category', 'chance',
-            )
-        }),
-        ('Article', {
-            'fields': (
-                'key_point',
-            )
-        })
-    )
+    search_fields = ('date',)
 
-    search_fields = ('date', 'link', 'name', 'key_point')
-    list_filter = ('category', 'chance')
     list_per_page = 20
 
 
-admin.site.register(MarketMovement, MarketMovementAdmin)
-admin.site.register(MarketReview, MarketReviewAdmin)
-admin.site.register(MarketSentiment, MarketSentimentAdmin)
-admin.site.register(MarketArticle, MarketArticleAdmin)
+admin.site.register(MarketMonthEconomic, MarketMonthEconomicAdmin)
+admin.site.register(MarketWeek, MarketWeekAdmin)
+
 
 admin.site.register_view(
     'opinion/profile/market/(?P<date>\d{4}-\d{2}-\d{2})/$',

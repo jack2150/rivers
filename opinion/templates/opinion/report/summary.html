@@ -1,8 +1,80 @@
 {% extends "base/base.html" %}
 
+{% block extrastyle %}
+  <style>
+  .width80 {
+    width: 80px;
+  }
+
+  .width120 {
+    width: 120px;
+  }
+
+  .width160 {
+    width: 160px;
+  }
+
+  .width220 {
+    width: 220px;
+  }
+
+  .hypo {
+    font-size: 0.9em;
+  }
+
+  .padtop3em {
+    padding-top: 3em;
+  }
+
+  .padbot2em {
+    padding-bottom: 2em;
+  }
+
+  .section_nav {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .section_nav li {
+
+  }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a> >
+    <a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a> >
+    <a href="{% url 'admin:opinion_reportenter_change' report_enter.id %}">Report enters</a> >
+    Report summary
+  </div>
+{% endblock %}
+
 {% block normal-content %}
-  {% include 'opinion/report/technical/rank/rank.html' %}
-  {% include 'opinion/report/fundamental/fundemental.html' %}
+  <table>
+  <tr>
+    <td style="width: 160px;">
+      <ol class="summary_nav">
+        <li><a href="#underlyingarticle">Article & news</a></li>
+        <li><a href="#positionidea">Position idea</a></li>
+        <li><a href="#stock">Stock</a></li>
+        <li><a href="#technicalrank">Technical rank</a></li>
+      </ol>
+    </td>
+    <td>
+
+      {% include 'opinion/report/position/index.html' %}
+
+      {% if 0 %}
+        {% include 'opinion/report/stock/underlying_article.html' %}
+        {% include 'opinion/report/stock/index.html' %}
+        {% include 'opinion/report/technical/rank/index.html' %}
+      {% endif %}
+
+    </td>
+  </tr>
+  </table>
 
 
 {% endblock %}
@@ -11,46 +83,6 @@
 {% block webix-script %}
 <script type="text/javascript">
   // webix.markup.init();
-  // $$("win1").show();
-  webix.ui({
-    container: "webix-content",
-    height: 400,
-    cols: [
-      {
-        view: 'list',
-        width: 300,
-        borderless: true,
-        data: [
-          {
-
-          },
-        ]
-      },
-      {
-        borderless: true,
-        padding: 10,
-        view: "tabview",
-        cells: [
-          {
-            header: "Technical rank",
-            body: {
-              scroll: true,
-              content: "technicalrank"
-            }
-          },
-          {
-            header: "Stock fundamental",
-            body: {
-              scroll: true,
-              content: "fundamental"
-            }
-          },
-        ]
-      }
-    ]
-
-
-  });
-
+  // todo: finish then add
 </script>
 {% endblock %}

@@ -27,225 +27,251 @@
     .log {
       height: 200px;
       overflow: scroll;
+      border: 1px solid #eee;
+      padding: 1em;
     }
 
     .sec {
       height: 100px;
       overflow: scroll;
+      border: 1px solid #eee;
+      padding: 1em;
+    }
+
+    .inner-list {
+      list-style: lower-alpha;
+      padding-left: 20px
     }
   </style>
 {% endblock %}
 
-{% if not is_popup %}
-  {% block breadcrumbs %}
-    <ul class="breadcrumb">
-      <li><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
-      <li><a href="{% url 'admin:app_list' 'data' %}">Data</a></li>
-      <li><a href="{% url 'admin:data_underlying_changelist' %}">Underlyings</a></li>
-      <li>Manage</li>
-    </ul>
-  {% endblock %}
-{% endif %}
-
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' 'data' %}">Data</a>
+    &rsaquo; <a href="{% url 'admin:data_underlying_changelist' %}">Underlyings</a>
+    &rsaquo; <a href="{% url 'admin:data_underlying_change' underlying.id %}">{{ symbol|upper }}</a>
+    {% if title %} &rsaquo; Manage{% endif %}
+  </div>
+{% endblock %}
 {% block bodyclass %}change-form{% endblock %}
 
 {% block content %}
-  <div class="row">
-    <div class="col-md-6">
-      <div class="panel panel-default">
-        <div class="panel-heading">Underlying status</div>
-        <div class="panel-body">
-          <table class="table borderless">
-            <tr>
-              <td>Symbol:</td>
-              <td>{{ underlying.symbol }}</td>
-              <td>Start:</td>
-              <td>{{ underlying.start_date }}</td>
-              <td>Stop</td>
-              <td>{{ underlying.stop_date }}</td>
-            </tr>
-            <tr>
-              <td>Option:</td>
-              <td>
-                {% if underlying.optionable %}
-                  <span class="glyphicon glyphicon-ok green"></span>
-                {% else %}
-                  <span class="glyphicon glyphicon-remove red"></span>
-                {% endif %}
-              </td>
-              <td>Final:</td>
-              <td>
-                {% if underlying.final %}
-                  <span class="glyphicon glyphicon-ok green"></span>
-                {% else %}
-                  <span class="glyphicon glyphicon-remove red"></span>
-                {% endif %}
-              </td>
-              <td>Enable:</td>
-              <td>
-                {% if underlying.enable %}
-                  <span class="glyphicon glyphicon-ok green"></span>
-                {% else %}
-                  <span class="glyphicon glyphicon-remove red"></span>
-                {% endif %}
-              </td>
-            </tr>
-          </table>
+  <table>
+    <tr>
+      <td>
+        <h2>Basic Info</h2>
+        <table>
+          <tr>
+            <td>Symbol:</td>
+            <td>{{ underlying.symbol }}</td>
+          </tr>
+          <tr>
+            <td>Start:</td>
+            <td>{{ underlying.start_date }}</td>
+          </tr>
+          <tr>
+            <td>Stop</td>
+            <td>{{ underlying.stop_date }}</td>
+          </tr>
+          <tr>
+            <td>Option:</td>
+            <td>
+              {% if underlying.optionable %}
+                <span class="glyphicon glyphicon-ok green"></span>
+              {% else %}
+                <span class="glyphicon glyphicon-remove red"></span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td>Final:</td>
+            <td>
+              {% if underlying.final %}
+                <span class="glyphicon glyphicon-ok green"></span>
+              {% else %}
+                <span class="glyphicon glyphicon-remove red"></span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td>Enable:</td>
+            <td>
+              {% if underlying.enable %}
+                <span class="glyphicon glyphicon-ok green"></span>
+              {% else %}
+                <span class="glyphicon glyphicon-remove red"></span>
+              {% endif %}
+            </td>
 
-          <div class="status">
-            Log:
-            <pre class="log">{{ underlying.log }}</pre>
+          </tr>
+        </table>
+      </td>
 
-            Missing:
-            <pre class="sec">{{ underlying.missing }}</pre>
+      <td style="width: 500px;">
+        <h2>Underlying status</h2>
+        <div class="status">
+          Log:
+          <pre class="log">{{ underlying.log }}</pre>
 
-            {% if split_history|length %}
-              Split History:
-              <pre class="sec">{{ split_history }}</pre>
+          Missing:
+          <pre class="sec">{{ underlying.missing }}</pre>
+
+          {% if split_history|length %}
+            Split History:
+            <pre class="sec">{{ split_history }}</pre>
+          {% endif %}
+        </div>
+      </td>
+
+      <td>
+        <h2>Preparation</h2>
+        <ol>
+          <li><a href="{% url 'quote_reference' symbol %}" target="_blank">
+            Reference links
+          </a></li>
+          <li><a href="{% url 'admin:update_underlying' symbol %}" target="_blank">
+            Update underlying
+          </a></li>
+          <li><a href="{% url 'admin:add_split_history' symbol %}" target="_blank">
+            Add Split History
+          </a></li>
+        </ol>
+
+        <h2>Web Download</h2>
+        <ol>
+          <li><a href="{% url 'admin:web_stock_h5' 'google' symbol %}" target="_blank">
+            Import Google Data
+          </a></li>
+          <li><a href="{% url 'admin:web_stock_h5' 'yahoo' symbol %}" target="_blank">
+            Import Yahoo Data
+          </a></li>
+        </ol>
+
+        <h2>Full Clean Process</h2>
+        <ol>
+          <li><a href="{% url 'admin:html_event_import' symbol %}" target="_blank">
+            Import earning/dividend
+          </a></li>
+          <li><a href="{% url 'admin:import_option_h5' symbol %}" 
+                 title="Data for backtest/analysis" target="_blank">
+            Import stocks/options
+          </a></li>
+          <li><a href="{% url 'admin:calc_day_iv' symbol 1 %}" 
+                 title="Calculate IV" target="_blank">
+            Calc day Implied Volatility
+          </a></li>
+          <li><a href="{% url 'admin:remove_clean_h5' symbol %}" target="_blank">
+            Remove clean data
+          </a></li>
+        </ol>
+
+        <h2>Underlying Control</h2>
+        <ol>
+          <li><a href="{% url 'admin:truncate_symbol' symbol %}" target="_blank">
+            Truncate symbol
+          </a></li>
+          <li><a href="{% url 'admin:data_underlying_change' underlying.id %}" target="_blank">
+            Edit underlying
+          </a></li>
+          <li><a href="{% url 'admin:set_underlying' symbol 'final' %}" target="_blank">
+            {% if underlying.final %}
+              Unset underlying final
+            {% else %}
+              Set underlying final
             {% endif %}
-          </div>
-        </div>
-      </div>
+          </a></li>
+          <li><a href="{% url 'admin:set_underlying' symbol 'enable' %}" target="_blank">
+            {% if underlying.enable %}
+              Disable symbol
+            {% else %}
+              Enable symbol
+            {% endif %}
+          </a></li>
+        </ol>
+      </td>
 
-      <div class="panel panel-default">
-        <div class="panel-heading">Raw data</div>
-        <div class="panel-body">
-          <div class="btn-group">
-            <a href="{% url 'admin:stock_raw' symbol 'google' %}" type="button" class="btn btn-default">
-              Stock (google)
-            </a>
-            <a href="{% url 'admin:stock_raw' symbol 'yahoo' %}" type="button" class="btn btn-default">
-              Stock (yahoo)
-            </a>
-            <a href="{% url 'admin:stock_raw' symbol 'thinkback' %}" type="button" class="btn btn-default">
-              Stock (thinkback)
-            </a>
-            <a href="{% url 'admin:event_raw' symbol 'earning' %}" type="button" class="btn btn-default">
-              Earning
-            </a>
-            <a href="{% url 'admin:event_raw' symbol 'dividend' %}" type="button" class="btn btn-default">
-              Dividend
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
+      <td>
+        <h2>Thinkback CSV (Step by step)</h2>
+        <ol>
+          <li><a href="{% url 'admin:raw_stock_h5' symbol %}" target="_blank">
+            Import stock
+          </a></li>
+          <li>
+            <ol class="inner-list">
+              <li><a href="{% url 'admin:raw2_option_h5' symbol %}" target="_blank">
+                New: Import raw2 option <br>
+                (Multi split, complex others)
+              </a></li>
+              <li><a href="{% url 'admin:raw_option_h5' symbol %}" target="_blank">
+                Old: Import raw option
+              </a></li>
+            </ol>
+          </li>
+          <li><a href="{% url 'admin:valid_option_h5' symbol %}" target="_blank">
+            Valid Raw Option
+          </a></li>
+          <li>
+            <ol class="inner-list">
+              <li><a href="{% url 'admin:clean_valid_h5' symbol 'normal' %}" target="_blank">
+                Clean Normal Option
+              </a></li>
+              <li><a href="{% url 'admin:clean_valid_h5' symbol 'split_new' %}" target="_blank">
+                Clean Split/New Option
+              </a></li>
+              <li><a href="{% url 'admin:clean_valid_h5' symbol 'split_old' %}" target="_blank">
+                Clean Split/Old Option
+              </a></li>
+              <li><a href="#" >
+                Clean Others Option
+              </a></li>
+            </ol>
+          </li>
 
-    <div class="col-md-3">
-      <div class="list-group">
-        <a href="#" class="list-group-item disabled">Thinkback CSV</a>
-        <a href="{% url 'admin:raw_stock_h5' symbol %}" class="list-group-item">
-          1. Import Stock
-        </a>
-        <a href="{% url 'admin:raw2_option_h5' symbol %}" class="list-group-item">
-          2. Import Raw2 Option <br>
-          <span style="margin-left: 1em;">(Multi split, complex others)</span>
-        </a>
-        <a href="{% url 'admin:valid_option_h5' symbol %}" class="list-group-item">
-          3. Valid Raw Option
-        </a>
-        <a href="{% url 'admin:clean_valid_h5' symbol 'normal' %}" class="list-group-item">
-          4a. Clean Normal Option
-        </a>
-        <a href="{% url 'admin:clean_valid_h5' symbol 'split_new' %}" class="list-group-item">
-          4b. Clean Split/New Option
-        </a>
-        <a href="{% url 'admin:clean_valid_h5' symbol 'split_old' %}" class="list-group-item">
-          4c. Clean Split/Old Option
-        </a>
-        <a href="#" class="list-group-item">
-          4d. Clean Others Option
-        </a>
-        <a href="{% url 'admin:valid_clean_h5' symbol %}" class="list-group-item">
-          5. Valid Clean Option
-        </a>
-        <a href="{% url 'admin:fillna_missing_h5' symbol 'normal' %}" class="list-group-item">
-          6a. FillNA Normal Option
-        </a>
-        <a href="{% url 'admin:fillna_missing_h5' symbol 'split_new' %}" class="list-group-item">
-          6b. FillNA Split/New Option
-        </a>
-        <a href="{% url 'admin:fillna_missing_h5' symbol 'split_old' %}" class="list-group-item">
-          6b. FillNA Split/Old Option
-        </a>
-        <a href="{% url 'admin:merge_final_h5' symbol %}" class="list-group-item">
-          7. Merge final data
-        </a>
-      </div>
-
-      <div class="list-group">
-        <a href="#" class="list-group-item disabled">Thinkback CSV Extra</a>
-
-        <a href="{% url 'admin:raw_option_h5' symbol %}" class="list-group-item">
-          2. Import Raw Option
-        </a>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="list-group">
-          <a href="#" class="list-group-item disabled">Preparation</a>
-          <a href="{% url 'admin:opinion_link' symbol %}" class="list-group-item">
-              1. Opinion links
-          </a>
-          <a href="{% url 'admin:update_underlying' symbol %}" class="list-group-item">
-              2. Update underlying
-          </a>
-          <a href="{% url 'admin:add_split_history' symbol %}" class="list-group-item">
-              3. Add Split History
-          </a>
-      </div>
-
-      <div class="list-group">
-        <a href="#" class="list-group-item disabled">Clean Process</a>
-        <a href="{% url 'admin:html_event_import' symbol %}" class="list-group-item">
-          1. Import Earnings/Dividends
-        </a>
-        <a href="{% url 'admin:import_option_h5' symbol %}" class="list-group-item"
-          title="Data for backtest/analysis">
-          2. Import stocks/options
-        </a>
-        <a href="{% url 'admin:calc_day_iv' symbol 1 %}" class="list-group-item"
-           title="Calculate IV">
-          3. Calc day Implied Volatility
-        </a>
-        <a href="{% url 'admin:remove_clean_h5' symbol %}" class="list-group-item">
-          4. Remove clean data
-        </a>
-      </div>
-
-      <div class="list-group">
-        <a href="#" class="list-group-item disabled">Web Download</a>
-        <a href="{% url 'admin:web_stock_h5' 'google' symbol %}" class="list-group-item">
-          1. Import Google Data
-        </a>
-        <a href="{% url 'admin:web_stock_h5' 'yahoo' symbol %}" class="list-group-item">
-          2. Import Yahoo Data
-        </a>
-      </div>
-
-      <div class="list-group">
-        <a href="#" class="list-group-item disabled">Underlying Control</a>
-        <a href="{% url 'admin:truncate_symbol' symbol %}" class="list-group-item">
-          Truncate symbol
-        </a>
-        <a href="{% url 'admin:data_underlying_change' underlying.id %}" class="list-group-item">
-          Edit underlying
-        </a>
-        <a href="{% url 'admin:set_underlying' symbol 'final' %}" class="list-group-item">
-          {% if underlying.final %}
-            Unset underlying final
-          {% else %}
-            Set underlying final
-          {% endif %}
-        </a>
-        <a href="{% url 'admin:set_underlying' symbol 'enable' %}" class="list-group-item">
-          {% if underlying.enable %}
-            Disable symbol
-          {% else %}
-            Enable symbol
-          {% endif %}
-        </a>
-      </div>
-    </div>
-  </div>
+          <li><a href="{% url 'admin:valid_clean_h5' symbol %}" target="_blank">
+            Valid Clean Option
+          </a></li>
+          <li>
+            <ol class="inner-list">
+              <li><a href="{% url 'admin:fillna_missing_h5' symbol 'normal' %}" target="_blank">
+                FillNA Normal Option
+              </a></li>
+              <li><a href="{% url 'admin:fillna_missing_h5' symbol 'split_new' %}" target="_blank">
+                FillNA Split/New Option
+              </a></li>
+              <li><a href="{% url 'admin:fillna_missing_h5' symbol 'split_old' %}" target="_blank">
+                FillNA Split/Old Option
+              </a></li>
+            </ol>
+          </li>
+          <li><a href="{% url 'admin:merge_final_h5' symbol %}" target="_blank">
+            Merge final data
+          </a></li>
+        </ol>
+      </td>
+      <td>
+        <h2>Display raw data</h2>
+        <ol>
+          <li><a href="{% url 'admin:raw_stock_data' symbol 'google' %}">
+            Stock (google)
+          </a></li>
+          <li><a href="{% url 'admin:raw_stock_data' symbol 'yahoo' %}">
+            Stock (yahoo)
+          </a></li>
+          <li><a href="{% url 'admin:raw_stock_data' symbol 'thinkback' %}">
+            Stock (thinkback)
+          </a></li>
+          <li><a href="{% url 'admin:raw_event_data' symbol 'earning' %}">
+            Earning
+          </a></li>
+          <li><a href="{% url 'admin:raw_event_data' symbol 'dividend' %}">
+            Dividend
+          </a></li>
+          <li><a href="{% url 'admin:raw_iv_data' symbol %}">
+            Implied Volatility
+          </a></li>
+        </ol>
+      </td>
+    </tr>
+  </table>
 {% endblock %}

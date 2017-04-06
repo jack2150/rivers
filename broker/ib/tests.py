@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.core.urlresolvers import reverse
 
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from broker.ib.models import *
 
 

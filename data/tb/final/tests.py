@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 from django.core.urlresolvers import reverse
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from base.ufunc import ts
 from data.models import Underlying
 from data.tb.final.views import update_old_strike, reshape_h5

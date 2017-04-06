@@ -1,8 +1,13 @@
 {% load base %}
 
 {% with reports.barchart as report %}
-  <div id="barchart">
-    <h2>Barchart</h2>
+  <div class="padbot2em" id="barchart">
+    <fieldset class="module aligned">
+      <h2>
+        Barchart
+        <span class="hypo">(&#9733; Weak hypothesis)</span>
+      </h2>
+    </fieldset>
     <table>
       <tr>
         {% for key, value in report.rank %}
@@ -10,28 +15,24 @@
           <td>{{ value }}</td>
         {% endfor %}
       </tr>
-
       <tr>
         {% for key, value in report.past %}
           <th>{{ key|label }}:</th>
           <td>{{ value }}</td>
         {% endfor %}
       </tr>
-
       <tr>
         {% for key, value in report.compare %}
           <th>{{ key|label }}:</th>
           <td>{{ value }}</td>
         {% endfor %}
       </tr>
-
       <tr>
         {% for key, value in report.tech %}
           <th>{{ key|label }}:</th>
           <td>{{ value }}</td>
         {% endfor %}
       </tr>
-
       <tr>
         {% for key, value in report.pivot %}
           <th>{{ key|label }}:</th>
@@ -39,6 +40,5 @@
         {% endfor %}
       </tr>
     </table>
-
   </div>
 {% endwith %}

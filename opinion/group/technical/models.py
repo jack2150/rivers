@@ -383,10 +383,16 @@ class TechnicalTTM(models.Model):
         max_length=20, help_text='TTM Linear Regression Channel'
     )
     ttm_squeeze = models.CharField(
-        choices=(('bull', 'On & green'), ('bear', 'On & red'), ('none', 'Indicator off')),
-        help_text='TTM Squeeze, trade dot green=on red=off, bar green=bull red=bear',
-        default='off', max_length=20,
-    )
+        choices=(
+            ('strong_buy', 'Blue bar & green: Strong buy'),
+            ('buy', 'Brown bar & green: Buy (after 2 blue)'),
+            ('hold', 'Any bar & red: Hold'),
+            ('sell', 'Yellow bar & green: Sell (after 2 red)'),
+            ('strong_sell', 'Red bar & green: Strong sell'),
+        ),
+        help_text='Bband to Keltners Channels (price move outside band)',
+        default='hold', max_length=20,
+    )  # todo: to be cont
     ttm_wave = models.IntegerField(
         choices=((1, 'Bear & big gap'), (2, 'Bear & small gap'),
                  (3, 'No & big gap'), (3, 'No & small gap'),
@@ -484,3 +490,4 @@ class TechnicalZigZag(models.Model):
 
 
 # todo: report class
+# todo: cont next, technical for volume weight, momentum agressive, screw squeeze job,

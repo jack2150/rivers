@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from data.tb.revalid.options import ValidCleanOption, check_round, option_round
 from rivers.settings import CLEAN_DIR
 

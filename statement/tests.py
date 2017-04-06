@@ -4,7 +4,7 @@ from datetime import datetime
 from glob import glob
 from pprint import pprint
 from django.core.urlresolvers import reverse
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from rivers.settings import STATEMENT_DIR
 from statement.models import *
 import pandas as pd

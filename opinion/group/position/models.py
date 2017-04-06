@@ -1,8 +1,11 @@
 import datetime
+import os
 
 import django
 from django.db import models
+from django.utils.deconstruct import deconstructible
 
+from base.ufunc import UploadRenameImage
 from opinion.group.report.models import ReportEnter
 
 
@@ -66,69 +69,170 @@ class PositionEnter(models.Model):
     """
     report = models.OneToOneField(ReportEnter, null=True, blank=True)
 
-    risk_profile = models.CharField(
-        max_length=20, choices=(('low', 'Low'), ('medium', 'Medium'), ('high', 'High')),
-        help_text='Risk you willing to take for this position'
+    # trade signal
+    direction = models.CharField(
+        max_length=20, default='neutral',
+        choices=(
+            ('strong_bull', 'Strong bull'),
+            ('bull', 'Neutral to bull'),
+            ('neutral', 'Neutral'),
+            ('bear', 'Neutral to bear'),
+            ('strong_bear', 'Strong bear')
+        ),
     )
-    bp_effect = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0,
-        help_text='Buying power effect to portfolio'
+    target_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    # what strategy
+    side = models.CharField(
+        choices=(('long', 'Long'), ('short', 'Short')), max_length=20, default='long'
     )
-    max_profit = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0,
-        help_text='Max profit for this position'
-    )
-    max_loss = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0,
-        help_text='Max loss for this position'
-    )
-    size = models.IntegerField(
-        default=0, help_text='Trade quantity'
-    )
-    strategy = models.CharField(
-        max_length=50, help_text='Valid strategy for current market, movement, and volatility'
-    )
+    quantity = models.IntegerField(default=0)
+    optionable = models.BooleanField(default=False, help_text='Option position?')
     spread = models.CharField(
         max_length=10,
         choices=(('credit', 'Credit'), ('debit', 'Debit')),
         default='debit',
-        help_text='Credit or debit spread'
     )
-    optionable = models.BooleanField(default=False, help_text='Option position?')
+    option = models.CharField(
+        choices=(
+            ('call', 'Call'), ('put', 'Put'), ('both', 'Both'), ('none', 'None')
+        ), max_length=20, default='none'
+    )
+    strikes = models.CharField(
+        default='', blank=True, null=True, max_length=100,
+        help_text='Option strikes, example: 90/100/110'
+    )
+    strategy = models.CharField(
+        choices=(
+            ('butterfly', 'Butterfly'),
+            ('vertical', 'Vertical'),
+            ('calendar', 'Calendar'),
+            ('diagonal', 'Diagonal'),
+            ('condor', 'Condor'),
+            ('iron_condor', 'Iron condor'),
+            ('covered', 'Covered'),
+            ('ratio', 'Ratio'),
+            ('straddle', 'Straddle'),
+            ('strangle', 'Strangle'),
+            ('combo', 'Combo'),
+            ('stock', 'Stock'),
+            ('custom', 'Custom'),
+        ),
+        max_length=50, default='butterfly'
+    )
 
+    # commission
+    commission = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text='Enter & exit estimate commission fee'
+    )
+    enter_price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text='Enter estimate price'
+    )
+
+    # p/l profile
+    risk_profile = models.CharField(
+        max_length=20, choices=(('low', 'Low'), ('medium', 'Medium'), ('high', 'High')),
+        help_text='Risk you willing to take for this position', default='medium'
+    )
+    capital = models.DecimalField(
+        max_digits=10, decimal_places=2, default=25000, help_text='Margin requirement'
+    )
+    bp_effect = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, help_text='Margin requirement'
+    )
+    max_profit = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, help_text='Target max profit'
+    )
+    max_loss = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, help_text='Target max loss'
+    )
+    expect_return = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, help_text='Expected return'
+    )
+
+    # date
     enter_date = models.DateField(default=datetime.datetime.now)
     exit_date = models.DateField(null=True, blank=True)
     dte = models.IntegerField(
-        null=True, blank=True,
+        null=True, blank=True, default=0,
         help_text='For option strategy only, make sure dte long enough.'
-    )
-
-    # trade signal
-    price_movement = models.CharField(
-        max_length=20,
-        choices=(('bullish', 'Bullish'), ('neutral', 'Neutral'), ('bearish', 'Bearish')),
-        help_text='Profit price movement'
-    )
-    target_price = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0,
-        help_text='Rational expected target price'
     )
 
     # event check
     event_trade = models.BooleanField(default=False, help_text='Event signal trade?')
     event_period = models.CharField(
-        max_length=20, blank=True, default='',
+        max_length=20, blank=True, default='none',
         choices=(
             ('both', 'Earning & Dividend'),
-            ('earning', 'Earning'), ('dividend', 'Dividend'), ('split', 'Split'),
-            ('announcement', 'Announcement'), ('seasonal', 'Seasonal events'),
-            ('multiple', 'Multiple events'), ('', 'None')
+            ('earning', 'Earning'),
+            ('dividend', 'Dividend'),
+            ('split', 'Split'),
+            ('announcement', 'Announcement'),
+            ('seasonal', 'Seasonal events'),
+            ('multiple', 'Multiple events'),
+            ('none', 'None')
         ),
-        help_text='Event happen between holding period'
+        help_text='Holding period cross any event?'
     )
 
-    # extra note
-    description = models.TextField(null=True, blank=True)
+    # risk & probability
+    risk_chart = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/risk/basic'),
+        default=None, null=True, blank=True
+    )
+    risk_ex_chart = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/risk/expire'),
+        default=None, null=True, blank=True
+    )
+    risk_day_chart = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/risk/day'),
+        default=None, null=True, blank=True
+    )
+    risk_uvol_chart = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/risk/u_vol'),
+        default=None, null=True, blank=True
+    )
+    risk_dvol_chart = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/risk/d_vol'),
+        default=None, null=True, blank=True
+    )
+    prob_chart = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/prob'),
+        default=None, null=True, blank=True
+    )
+
+    # price chart
+    price_chart0 = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/price/chart0'),
+        default=None, null=True, blank=True
+    )
+    price_chart1 = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/price/chart1'),
+        default=None, null=True, blank=True
+    )
+    price_chart2 = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/price/chart2'),
+        default=None, null=True, blank=True
+    )
+    price_chart3 = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/price/chart3'),
+        default=None, null=True, blank=True
+    )
+    price_chart4 = models.ImageField(
+        upload_to=UploadRenameImage('position/enter/price/chart4'),
+        default=None, null=True, blank=True
+    )
+
+    # excel
+    excel_report = models.FileField(
+        upload_to=UploadRenameImage('position/enter/excel'),
+        default=None, null=True, blank=True
+    )
+
+    # description
+    desc = models.TextField(null=True, blank=True, default='')
 
 
 class PositionHold(models.Model):

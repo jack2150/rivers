@@ -1,0 +1,22 @@
+{% extends "base/basic_form.html" %}
+
+{% block display-data %}
+  {% if closes|length %}
+    <fieldset class="module aligned ">
+    <h2>Result - close price</h2>
+    <div class="form-row">
+      <div>
+        <label for="data">Data</label>
+        <textarea id="data" cols="60" rows="10" disabled>{{ data }}</textarea>
+      </div>
+    </div>
+      <div class="form-row">
+        <div>
+          <label for="closes">Closes</label>
+          <textarea id="closes" cols="60" rows="10" onclick="this.select()" readonly>{{ closes }}</textarea>
+        </div>
+      </div>
+
+    </fieldset>
+  {% endif %}
+{% endblock %}

@@ -17,6 +17,7 @@
 
   <script type="text/javascript">window.__admin_media_prefix__ = "/static/admin/";</script>
   <script type="text/javascript">window.__admin_utc_offset__ = "0";</script>
+  {% block extrascript %}{% endblock %}
   {% block extrastyle %}{% endblock %}
 
 </head>
@@ -34,10 +35,12 @@
     <a href="/admin/logout/">Log out</a>
   </div>
 </div>
+{% block breadcrumbs %}
 <div class="breadcrumbs">
   <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
   {% if title %} &rsaquo; {{ title }}{% endif %}
 </div>
+{% endblock %}
 <!-- END Header -->
 
 <!-- Container -->

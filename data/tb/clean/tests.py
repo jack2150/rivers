@@ -1,6 +1,6 @@
 import numpy as np
 from django.core.urlresolvers import reverse
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from base.utests import TestUnitSetUp
 from data.models import SplitHistory
 from data.tb.clean import *

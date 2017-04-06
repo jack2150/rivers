@@ -1,0 +1,33 @@
+{% load base %}
+
+{% with reports.eco_day.objects as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Economics calendar
+      </h2>
+    </fieldset>
+    <table>
+      {% for eco_day in report %}
+        <tr>
+          <th>Date:</th>
+          <td>{{ eco_day.date }}</td>
+          <th>Market indicator:</th>
+          <td>{{ eco_day.market_indicator }}</td>
+          <th>Extra attention:</th>
+          <td>{{ eco_day.extra_attention }}</td>
+          <th>Key indicator:</th>
+          <td>{{ eco_day.key_indicator }}</td>
+          <th>Special news:</th>
+          <td>{{ eco_day.special_news }}</td>
+        </tr>
+        <tr>
+          <th>News:</th>
+          <td colspan="9">
+            <pre>{{ eco_day.news }}</pre>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endwith %}

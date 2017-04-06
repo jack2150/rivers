@@ -1,7 +1,7 @@
 import os
 
 from django.core.urlresolvers import reverse
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from data.models import Underlying, Treasury
 from rivers.settings import QUOTE_DIR
 import pandas as pd

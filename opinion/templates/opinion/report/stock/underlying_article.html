@@ -1,0 +1,45 @@
+{% load base %}
+
+{% with reports.article as report %}
+  <div id="underlyingarticle">
+    <h1>News summary</h1>
+    <fieldset class="module aligned">
+      <h2>
+        Underlying articles & News
+        <span class="hypo">(&#9733; &#9733; Semi-Strong hypothesis)</span>
+      </h2>
+    </fieldset>
+    <table>
+      {% for key, value in report.data.article %}
+        <tr>
+          <th>{{ key|label }}:</th>
+          <td colspan="5">{{ value }}</td>
+        </tr>
+      {% endfor %}
+      <tr>
+        {% for key, value in report.data.news %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.behavior %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.direction %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        <th>Desc:</th>
+        <td colspan="9">
+          <pre>{{ report.object.desc }}</pre>
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

@@ -1,0 +1,96 @@
+{% load base %}
+
+{% with reports.valuation as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Indices Valuation
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Investor sentiment:</th>
+        <td>
+          {{ report.object.get_sentiment_display }}
+
+          {% if report.object.chart0 %}
+            <div style="padding-top: 1em">
+            <a href="{{ report.object.chart0.url }}" target="_blank">
+              <img src="{{ report.object.chart0.url }}" title="Sentiment" class="width220">
+            </a>
+            </div>
+          {% endif %}
+        </td>
+
+        <th>TED spread:</th>
+        <td>
+          {{ report.object.get_ted_spread_display }}
+
+          {% if report.object.chart1 %}
+            <div style="padding-top: 1em">
+            <a href="{{ report.object.chart1.url }}" target="_blank">
+              <img src="{{ report.object.chart1.url }}" title="ted_spread" class="width220">
+            </a>
+            </div>
+          {% endif %}
+        </td>
+      </tr>
+
+      <tr>
+        <th>Market breadth:</th>
+        <td>
+          {{ report.object.get_market_breadth_display }}
+
+          {% if report.object.chart2 %}
+            <div style="padding-top: 1em">
+            <a href="{{ report.object.chart2.url }}" target="_blank">
+              <img src="{{ report.object.chart2.url }}" title="market_breadth" class="width220">
+            </a>
+            </div>
+          {% endif %}
+        </td>
+
+        <th>SMA 200d %:</th>
+        <td>
+          {{ report.object.get_ma200day_pct_display }}
+
+          {% if report.object.chart3 %}
+            <div style="padding-top: 1em">
+            <a href="{{ report.object.chart3.url }}" target="_blank">
+              <img src="{{ report.object.chart3.url }}" title="ma200day_pct" class="width220">
+            </a>
+            </div>
+          {% endif %}
+        </td>
+      </tr>
+
+      <tr>
+        <th>Arms index:</th>
+        <td>
+          {{ report.object.get_arms_index_display }}
+          {% if report.object.chart4 %}
+            <div style="padding-top: 1em">
+            <a href="{{ report.object.chart4.url }}" target="_blank">
+              <img src="{{ report.object.chart4.url }}" title="arms_index" class="width220">
+            </a>
+            </div>
+          {% endif %}
+        </td>
+
+        <th>Fair value:</th>
+        <td>
+          {{ report.object.get_fair_value_display }}
+          {% if report.object.chart4 %}
+            <div style="padding-top: 1em">
+            <a href="{{ report.object.chart4.url }}" target="_blank">
+              <img src="{{ report.object.chart4.url }}" title="fair_value" class="width220">
+            </a>
+            </div>
+          {% endif %}
+        </td>
+      </tr>
+
+    </table>
+  </div>
+
+{% endwith %}

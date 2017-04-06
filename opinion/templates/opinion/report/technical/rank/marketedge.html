@@ -1,8 +1,13 @@
 {% load base %}
 
 {% with reports.marketedge as report %}
-  <div id="marketedge">
-    <h2>Marketedge</h2>
+  <div class="padbot2em" id="marketedge">
+    <fieldset class="module aligned">
+      <h2>
+        Marketedge
+        <span class="hypo">(&#9733; Weak hypothesis)</span>
+      </h2>
+    </fieldset>
     <table>
       <tr>
         {% for key, value in report.rank %}
@@ -37,12 +42,12 @@
           <td>{{ value }}</td>
         {% endfor %}
       </tr>
-    <tr>
-      <td colspan="8">
-        <pre style="margin: 1em">{{ report_enter.technicalrank.technicalmarketedge.recommend }}</pre>
-      </td>
-    </tr>
+      <tr>
+        <th>Note:</th>
+        <td colspan="7">
+          <pre style="margin: 1em">{{ report_enter.technicalrank.technicalmarketedge.recommend }}</pre>
+        </td>
+      </tr>
     </table>
-
   </div>
 {% endwith %}

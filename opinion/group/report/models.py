@@ -19,7 +19,7 @@ class ReportEnter(models.Model):
             symbol=self.symbol, date=self.date
         )
 
-    # todo: backtest
+    # todo: add backtest
 
 
 class SubtoolOpinion(models.Model):

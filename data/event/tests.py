@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from django.core.urlresolvers import reverse
 
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from data.event.views import group_event_files
 from data.models import Underlying
 from rivers.settings import QUOTE_DIR, BASE_DIR

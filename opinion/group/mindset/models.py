@@ -194,10 +194,8 @@ class MindsetLossExcuse(models.Model):
         default=True, help_text='I will be quickly to adjust this trade now'
     )
 
-
-
 # todo: a view that show all recent opinion on a given symbol
-# todo: easy to daily comment symbol by symbol, TabularInline or StackedInline
+
 
 
 

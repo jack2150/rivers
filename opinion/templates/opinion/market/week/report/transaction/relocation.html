@@ -1,0 +1,49 @@
+{% load base %}
+
+{% with reports.relocation as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Asset relocation
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Stock to Gold:</th>
+        <td>
+          {{ report.object.gld }}
+        </td>
+        {% if report.object.chart_image %}
+          <th rowspan="4">Chart:</th>
+          <td rowspan="4">
+            <a href="{{ report.object.chart_image.url }}" target="_blank">
+              <img src="{{ report.object.chart_image.url }}" title="Relocation" class="width220">
+            </a>
+          </td>
+        {% endif %}
+      </tr>
+      <tr>
+        <th>Stock to Bond:</th>
+        <td>
+          {{ report.object.tlt }}
+        </td>
+      </tr>
+      <tr>
+        <th>Stock to World:</th>
+        <td>
+          {{ report.object.veu }}
+        </td>
+      </tr>
+      <tr>
+        <th>Stock to Emerging:</th>
+        <td>
+          {{ report.object.eem }}
+        </td>
+      </tr>
+
+
+
+    </table>
+  </div>
+
+{% endwith %}

@@ -1,5 +1,5 @@
 from django.core.urlresolvers import reverse
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from data.tb.raw.stocks import extract_stock
 from options import *
 import numpy as np

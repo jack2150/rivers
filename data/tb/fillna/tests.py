@@ -1,5 +1,5 @@
 from django.core.urlresolvers import reverse
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 import numpy as np
 import pandas as pd
 

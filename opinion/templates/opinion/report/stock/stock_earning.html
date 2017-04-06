@@ -1,0 +1,38 @@
+{% load base %}
+
+{% with reports.earning as report %}
+  <div id="stockearning">
+    <fieldset class="module aligned">
+      <h2>
+        Earning
+        <span class="hypo">(&#9733; Backtest based)</span>
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        {% for key, value in report.data.earning %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 100px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        <th>Explain:</th>
+        <td colspan="5">
+          <pre style="margin: 1em">{{ report.explain }}</pre>
+        </td>
+      </tr>
+      <tr>
+        <th>Desc:</th>
+        <td colspan="5">{{ report.object.desc }}</td>
+      </tr>
+      <tr>
+        <th>Report:</th>
+        <td colspan="5">
+          <a href="{% url 'report_earning' symbol|lower %}" target="_blank">
+            Earning report
+          </a>
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

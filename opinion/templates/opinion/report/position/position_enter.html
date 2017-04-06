@@ -1,0 +1,77 @@
+{% load base %}
+
+{% with reports.pos_enter as report %}
+  <div id="positionidea">
+    <fieldset class="module aligned">
+      <h2>Position enter</h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Name:</th>
+        <td colspan="5">
+          {{ report.data.name|upper }}
+        </td>
+      </tr>
+      <tr>
+        {% for key, value in report.data.move %}
+          <th class="width100">{{ key|label }}:</th>
+          <td class="width160">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.risk %}
+          <th class="width100">{{ key|label }}:</th>
+          <td class="width160">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.position %}
+          <th class="width100">{{ key|label }}:</th>
+          <td class="width160">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.event %}
+          <th class="width100">{{ key|label }}:</th>
+          <td class="width160">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      {% if report.object.excel_report %}
+        <tr>
+          <th>Report:</th>
+          <td colspan="5">
+            <a href="{{ report.object.excel_report.url }}" target="_blank">
+              Excel report
+            </a>
+          </td>
+        </tr>
+      {% endif %}
+      <tr>
+        <th>Desc:</th>
+        <td colspan="5"><pre>{{ report.object.desc }}</pre></td>
+      </tr>
+      <tr>
+        <th class="width80">Explain:</th>
+        <td colspan="9">
+          <pre>{{ report.explain }}</pre>
+        </td>
+      </tr>
+    </table>
+
+    <table>
+    {% for charts in report.data.chart %}
+      <tr>
+      {% for name, url in charts %}
+        {% if url %}
+          <td>
+            <a href="{{ url }}" target="_blank">
+              <img src="{{ url }}" title="{{ name }}" class="width220">
+            </a>
+          </td>
+        {% endif %}
+      {% endfor %}
+      </tr>
+    {% endfor %}
+    </table>
+  </div>
+{% endwith %}

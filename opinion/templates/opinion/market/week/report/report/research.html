@@ -1,0 +1,29 @@
+{% load base %}
+
+{% with reports.research.objects as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Weekly research report
+      </h2>
+    </fieldset>
+    <table>
+      {% for research in report %}
+        <tr>
+          <th>Source:</th>
+          <td>{{ research.get_source_display }}</td>
+          <th>Expect:</th>
+          <td>{{ research.get_expect_display }}</td>
+          <th>Report:</th>
+          <td><a href="{{ research.report }}">Report</a></td>
+        </tr>
+        <tr>
+          <th>Comment:</th>
+          <td colspan="9">
+            <pre>{{ research.comment }}</pre>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endwith %}

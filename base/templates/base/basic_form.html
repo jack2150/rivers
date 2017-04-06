@@ -1,0 +1,32 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" type="text/css" href="{% static 'admin/css/base.css' %}"/>
+  <link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}"/>
+{% endblock %}
+
+{% block normal-content %}
+  <form enctype="multipart/form-data" action="" method="post">
+    {{ form.errors }}
+    {% csrf_token %}
+    <fieldset class="module aligned ">
+      <h2>Input Fields</h2>
+    {% for field in form %}
+      <div class="form-row field-{{ field.name }}">
+        <div>
+          <label class="required" for="id_symbol">{{ field.label }}:</label>
+          {{ field }}
+        </div>
+      </div>
+    {% endfor %}
+    </fieldset>
+    <div class="submit-row">
+      <input type="submit" value="Submit" class="default" name="_submit"/>
+    </div>
+  </form>
+
+  {% block display-data %}
+
+  {% endblock %}
+{% endblock %}

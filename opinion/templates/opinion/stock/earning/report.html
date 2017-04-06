@@ -1,0 +1,145 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block extrascript %}
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts.js' %}"></script>
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts-more.js' %}"></script>
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts-3d.js' %}"></script>
+{% endblock %}
+
+{% block normal-content %}
+
+  <table>
+  {% if not iv %}
+    <tr>
+      <td colspan="2">
+        <h3 style="color: red">Note: No implied volatility data.</h3>
+      </td>
+    </tr>
+  {% endif %}
+  <tr>
+    <td>
+      <div id="earning_report"></div>
+    </td>
+    <td>
+      <div id="earning_est_container" style="width:700px; height:400px;"></div>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <div id="earning_data"></div>
+      <div id="paging_here"></div>
+    </td>
+  </tr>
+  </table>
+
+  <script type="text/javascript">
+    // highchart
+    var ranges = {{ json_data.est_hl|safe }},
+        averages = {{ json_data.est_mean|safe }},
+        prices = {{ json_data.price_move }};
+
+    Highcharts.chart('earning_est_container', {
+      title: {
+        text: 'Earning estimate EPS %'
+      },
+      xAxis: {
+        type: 'datetime'
+      },
+      yAxis: {
+        title: {
+          text: null
+        }
+      },
+      tooltip: {
+        crosshairs: true,
+        shared: true,
+        valueSuffix: '%'
+      },
+      legend: {},
+      series: [{
+        name: 'Estimate EPS/Actual EPS',
+        data: averages,
+        zIndex: 1,
+        marker: {
+          fillColor: 'white',
+          lineWidth: 1,
+          lineColor: Highcharts.getOptions().colors[0]
+        }
+      }, {
+        name: 'High/Low Estimate EPS',
+        data: ranges,
+        type: 'arearange',
+        lineWidth: 0,
+        linkedTo: ':previous',
+        color: Highcharts.getOptions().colors[2],
+        fillOpacity: 0.3,
+        zIndex: 0
+      }, {
+        name: 'Price move %',
+        data: prices,
+        zIndex: 2,
+        marker: {
+          fillColor: 'white',
+          lineWidth: 2,
+          lineColor: Highcharts.getOptions().colors[4]
+        }
+      }]
+    });
+
+    // webix
+    webix.ready(function () {
+      var earning_data = webix.ui({
+        container: "earning_data",
+        view: "datatable",
+        headerRowHeight: 36,
+        select: "row",
+        columns: [
+          {id: "actual_date", header: "Date", css: "rank", width: 100, sort: "string"},
+          {id: "actual_eps", header: "Actual EPS", width: 80, sort: "int"},
+          {id: "adjusted_eps", header: "EPS", width: 80, sort: "int"},
+          {id: "analysts", header: "Analysts", width: 80, sort: "int"},
+          {id: "est_high", header: "EPS high", width: 80, sort: "int"},
+          {id: "est_low", header: "EPS low", width: 80, sort: "int"},
+          {id: "estimate_eps", header: "Mean EPS", width: 80, sort: "int"},
+          {id: "gaap", header: "GAAP", width: 80, sort: "int"},
+          {id: "quarter", header: ["Quarter", {content: "selectFilter"}], width: 80, sort: "string"},
+          {id: "release", header: ["Release", {content: "selectFilter"}], width: 120, sort: "string"},
+          {id: "diff", header: "EPS diff", width: 80, sort: "int"},
+          {id: "diff%", header: ["Diff %",{content: "numberFilter"}], width: 80, sort: "int"},
+          {id: "day%", header: ["Day %", {content: "numberFilter"}], width: 80, sort: "int"},
+          {% if iv %}
+            {id: "day_iv", header: "Impl Vol", width: 80, sort: "int"},
+            {id: "within_iv", header: ["Within IV", {content: "selectFilter"}], width: 90, sort: "string"},
+          {% endif %}
+          {id: "prev5d%", header: ["Prev 5D %", {content: "numberFilter"}], width: 80, sort: "int"},
+          {id: "next5d%", header: ["Next 5D %", {content: "numberFilter"}], width: 80, sort: "int"},
+
+        ],
+        autoheight: true,
+        autowidth: true,
+        pager: {
+          container: "paging_here",
+          size: 12,
+          group: 5
+        },
+        data: {{ df_data|safe }}
+      });
+
+      var earning_report = webix.ui({
+        view: "dataview",
+        container: "earning_report",
+        type: {
+          width: 160,
+          height: 160,
+          template: "<div class='webix_strong'>#name#</div> " +
+          "Count: #count#<br> Median: #median#<br> Std: #std#<br> Cap: $#mean_cap#",
+        },
+
+        xCount: 3, //the number of items in a row
+        yCount: 2, //the number of items in a column
+        data: {{ df_report|safe }}
+      });
+    });
+  </script>
+{% endblock %}

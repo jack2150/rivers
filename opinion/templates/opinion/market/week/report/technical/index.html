@@ -1,0 +1,63 @@
+{% load base %}
+
+<div class="padtop3em" id="weekly_technical">
+  <h1>Technical Analysis</h1>
+
+{% with reports.technical.objects as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Indices Technical
+      </h2>
+    </fieldset>
+    <table>
+      {% for technical in report %}
+        <tr>
+          <th>Symbol:</th>
+          <td>{{ technical.symbol }}</td>
+          <td rowspan="4">
+            {% if technical.chart0 %}
+              <a href="{{ technical.chart0.url }}" target="_blank">
+                <img src="{{ technical.chart0.url }}" title="chart" class="width220">
+              </a>
+            {% endif %}
+            {% if technical.chart1 %}
+              <a href="{{ technical.chart1.url }}" target="_blank">
+                <img src="{{ technical.chart1.url }}" title="chart" class="width220">
+              </a>
+            {% endif %}
+            {% if technical.chart2 %}
+              <a href="{{ technical.chart2.url }}" target="_blank">
+                <img src="{{ technical.chart2.url }}" title="chart" class="width220">
+              </a>
+              <br>
+            {% endif %}
+            {% if technical.chart3 %}
+              <a href="{{ technical.chart3.url }}" target="_blank">
+                <img src="{{ technical.chart3.url }}" title="chart" class="width220">
+              </a>
+            {% endif %}
+            {% if technical.chart4 %}
+              <a href="{{ technical.chart4.url }}" target="_blank">
+                <img src="{{ technical.chart4.url }}" title="chart" class="width220">
+              </a>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>Name:</th>
+          <td>{{ technical.name }}</td>
+        </tr>
+        <tr>
+          <th>Title:</th>
+          <td>{{ technical.title }}</td>
+        </tr>
+        <tr>
+          <th>Direction:</th>
+          <td>{{ technical.direction }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endwith %}
+</div>

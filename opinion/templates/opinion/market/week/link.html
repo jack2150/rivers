@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/base.css" %}"/>
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/dashboard.css" %}"/>
+  <style>
+    .change-form {
+      width: 96%;
+      height: 100vh;
+    }
+
+    ol {
+      margin: 0;
+      padding: 0;
+    }
+
+    li a, li span {
+      display: block;
+      color: #447e9b;
+      font-weight: bold;
+      padding: 2px 8px;
+      text-decoration: none;
+    }
+
+    /* Change the link color to #111 (black) on hover */
+    li a:hover {
+      color: #036;
+    }
+
+    .separator {
+      padding-bottom: 0.5em;
+      margin-bottom: 0.5em;
+      border-bottom: solid 1px #C1C1C1;
+    }
+
+  </style>
+</head>
+<body>
+
+<div style="float: left; width: 80%; ">
+<iframe class="change-form" src="{% url 'admin:opinion_marketweek_change' market_week.id %}"></iframe>
+</div>
+
+<div style="float: left; width: 16%; margin-right: 1em;">
+  <h2>Reference links</h2>
+  <ol>
+    <li class="separator">
+      <a href="http://mam.econoday.com/">
+        Economics calendar
+      </a>
+    </li>
+    <li>
+      <a href="https://eresearch.fidelity.com/eresearch/markets_sectors/sectors/si_weighting_recommendations.jhtml?tab=sirecommendations">
+        Fidelity sector weight
+      </a>
+    </li>
+    <li>
+      <a href="http://www.sectorspdr.com/sectorspdr/tools/sector-tracker">
+        Sector move 5D %
+      </a>
+    </li>
+    <li>
+      <a href="https://www.barchart.com/my/watchlist?watchlist=83176#/viewName=59727">
+        Indices ETF 5D %
+      </a>
+    </li>
+    <li>
+      <a href="https://www.barchart.com/my/watchlist?watchlist=83181#/viewName=59727">
+        Global ETF 5D %
+      </a>
+    </li>
+    <li class="separator">
+      <a href="https://www.barchart.com/my/watchlist?watchlist=83185#/viewName=59727">
+        Country ETF 5D %
+      </a>
+    </li>
+
+
+
+
+    <li>
+      <a href="http://www.barrons.com/public/page/9_0210-mtlfdidc.html" target="reference">
+        Barron: Fund cash ratio
+      </a>
+    </li>
+    <li>
+      <a href="http://www.barrons.com/public/page/9_0210-nysedatabank.html" target="reference">
+        Barron: Margin debt
+      </a>
+    </li>
+    <li class="separator">
+      <a href="http://www.barrons.com/public/page/9_0210-wyldgp.html" target="reference">
+        Barron: Confidence Index
+      </a>
+    </li>
+    <li>
+      <a href="https://www.tradingster.com/" target="_blank">
+        TradingStar: CFTC Indices
+      </a>
+    </li>
+    <li class="separator">
+      <a href="http://www.etf.com/sections/weekly-etf-fund-flows.html" target="_blank">
+        ETF asset flow
+      </a>
+    </li>
+    <li>
+      <a href="http://money.cnn.com/data/fear-and-greed/" target="reference">
+        Money CNN: Fear & Greek Index
+      </a>
+    </li>
+    <li class="separator">
+      <a href="https://ycharts.com/indicators/cboe_equity_put_call_ratio" target="_blank">
+        YChart: Put/Call ratio
+      </a>
+    </li>
+    <li>
+      <a href="https://ycharts.com/indicators/us_investor_sentiment_bull_bear_spread" target="_blank">
+        YChart: Investor sentiment
+      </a>
+    </li>
+    <li>
+      <a href="https://ycharts.com/indicators/ted_spread" target="_blank">
+        YChart: TED Spread
+      </a>
+    </li>
+    <li>
+      <a href="http://www.mcoscillator.com/market_breadth_data/" target="reference">
+        Others: Breadth of Market
+      </a>
+    </li>
+    <li>
+      <a href="http://www.indexindicators.com/charts/none-vs-sp500-stocks-above-200d-sma-params-x-x-x-x/" target="reference">
+        Others: 200D Moving Average %
+      </a>
+    </li>
+    <li>
+      <a href="http://stockcharts.com/h-sc/ui?s=%24trin" target="reference">
+        Others: Short-Term Arms Index
+      </a>
+    </li>
+    <li class="separator">
+      <a href="http://www.morningstar.com/market-valuation/market-fair-value-graph.aspx" target="reference">
+        Morningstar: Fair value
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_blank">
+        Market edge weekly
+      </a>
+    </li>
+    <li class="separator">
+      <a href="#" target="reference">
+        Third party report
+      </a>
+    </li>
+  </ol>
+</div>
+</body>
+</html>

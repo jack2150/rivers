@@ -8,6 +8,33 @@ register = template.Library()
 
 
 @register.filter
+def tabular_style(obj):
+    obj = str(obj)
+    if 'vTextField' in obj:
+        line = obj.replace('vTextField', '')
+        line = line[:-2] + ' style="width: 55px;" ' + line[-2:]
+    else:
+        line = obj
+    return line
+
+
+@register.filter
+def tabular_textarea(obj):
+    obj = str(obj)
+    if 'vLargeTextField' in obj:
+        line = obj.replace('vLargeTextField', '')
+        line = line.replace('rows="10"', 'rows="4"')
+    else:
+        line = obj
+    return line
+
+
+@register.filter
+def admin_field_type(obj):
+    return obj.field.field.widget.__class__.__name__
+
+
+@register.filter
 def fieldset_id(name):
     return re.sub('[^a-zA-Z]+', '', name)
 

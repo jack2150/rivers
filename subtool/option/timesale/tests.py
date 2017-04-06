@@ -1,4 +1,4 @@
-from base.tests import TestSetUp
+from base.dj_tests import TestSetUp
 from subtool.option.timesale.views import OptionTimeSaleForm
 
 

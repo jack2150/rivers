@@ -1,0 +1,23 @@
+{% load base %}
+
+{% with reports.etf.objects as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        ETF asset flow
+      </h2>
+    </fieldset>
+    <table>
+      {% for etf in report %}
+        <tr>
+          <th>Asset:</th>
+          <td>{{ etf.get_asset_display }}</td>
+          <th>% of AUM:</th>
+          <td>{{ etf.pct_aum }}%</td>
+          <th>Move:</th>
+          <td>{{ etf.get_move_display }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endwith %}

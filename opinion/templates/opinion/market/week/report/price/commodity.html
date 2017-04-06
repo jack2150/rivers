@@ -1,0 +1,47 @@
+{% load base %}
+
+{% with reports.commodity.objects as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Commodity
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        {% for commodity in report %}
+          <td>
+            <table>
+              <tr>
+                <th>Name:</th>
+                <td>{{ commodity.get_name_display }}</td>
+              </tr>
+              <tr>
+                <th>Change %:</th>
+                <td>{{ commodity.change }}%</td>
+              </tr>
+              <tr>
+                <th>Move:</th>
+                <td>{{ commodity.get_move_display }}</td>
+              </tr>
+              {% if commodity.chart %}
+                <tr>
+                  <th>Chart:</th>
+                  <td>
+                    <a href="{{ commodity.chart.url }}" target="_blank">
+                      <img src="{{ commodity.chart.url }}" title="chart" class="width220">
+                    </a>
+                  </td>
+                </tr>
+              {% endif %}
+            </table>
+          </td>
+          {% if forloop.counter|divisibleby:3 %}
+            </tr>
+            <tr>
+          {% endif %}
+        {% endfor %}
+        </tr>
+    </table>
+  </div>
+{% endwith %}

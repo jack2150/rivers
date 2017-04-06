@@ -1,0 +1,35 @@
+{% load base %}
+
+{% with reports.impl_vol as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Implied volatility
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Move:</th>
+        <td colspan="3">{{ report.object.get_move_display }}</td>
+      </tr>
+      <tr>
+        <th style="width: 80px;">Resist:</th>
+        <td style="width: 160px;">{{ report.object.resist }}</td>
+        <th style="width: 80px;">Support:</th>
+        <td style="width: 160px;">{{ report.object.support }}</td>
+      </tr>
+      {% if report.object.chart %}
+        <tr>
+        <th>Chart:</th>
+        <td colspan="3">
+          <a href="{{ report.object.chart.url }}" target="_blank">
+            <img src="{{ report.object.chart.url }}" title="impl_vol" class="width220">
+          </a>
+        </td>
+        </tr>
+      {% endif %}
+
+    </table>
+  </div>
+
+{% endwith %}

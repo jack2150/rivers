@@ -1,4 +1,4 @@
-import opinion.group.fundamental.models
+import opinion.group.stock.models
 import opinion.group.market.models
 import opinion.group.mindset.models
 import opinion.group.quest.models

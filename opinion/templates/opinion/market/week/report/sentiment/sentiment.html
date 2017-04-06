@@ -1,0 +1,70 @@
+{% load base %}
+
+{% with reports.sentiment as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Market Sentiment
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Sentiment index:</th>
+        <td>
+          {{ report.object.get_sentiment_index_display }}
+        </td>
+        <th>Put/call ratio:</th>
+        <td>
+          {{ report.object.get_put_call_ratio_display }}
+        </td>
+
+        <td rowspan="4">
+          {% if report.object.index_image %}
+            <div>
+            <a href="{{ report.object.index_image.url }}" target="_blank">
+              <img src="{{ report.object.index_image.url }}" title="Sentiment Index" class="width220">
+            </a>
+            </div>
+          {% endif %}
+          {% if report.object.index_chart %}
+            <div style="padding-top: 1em;">
+            <a href="{{ report.object.index_chart.url }}" target="_blank">
+              <img src="{{ report.object.index_chart.url }}" title="Sentiment Chart" class="width220">
+            </a>
+            </div>
+          {% endif %}
+        </td>
+
+      <tr>
+        <th>Market momentum:</th>
+        <td>
+          {{ report.object.get_market_momentum_display }}
+        </td>
+        <th>Junk bond demand:</th>
+        <td>
+          {{ report.object.get_junk_bond_demand_display }}
+        </td>
+      </tr>
+      <tr>
+        <th>Price strength:</th>
+        <td>
+          {{ report.object.get_price_strength_display }}
+        </td>
+        <th>Safe heaven demand:</th>
+        <td>
+          {{ report.object.get_safe_heaven_demand_display }}
+        </td>
+      </tr>
+      <tr>
+        <th>Volatility</th>
+        <td>
+          {{ report.object.get_market_volatility_display }}
+        </td>
+
+      </tr>
+
+
+    </table>
+  </div>
+
+{% endwith %}

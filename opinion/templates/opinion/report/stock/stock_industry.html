@@ -1,0 +1,43 @@
+{% load base %}
+
+{% with reports.industry as report %}
+  <div class="padbot2em" id="stockindustry">
+    <fieldset class="module aligned">
+      <h2>
+        Industry
+        <span class="hypo">(&#9733; &#9733; &#9733; Strong hypothesis)</span>
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        {% for key, value in report.data.rank %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.peer %}
+          <th>{{ key|label }}:</th>
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        <th>Explain:</th>
+        <td colspan="9">
+          <pre style="margin: 1em">{{ report.explain }}</pre>
+        </td>
+      </tr>
+      <tr>
+        <th>Report:</th>
+        <td colspan="9">
+          {% if report.object.industry_report %}
+            <a href="{{ report.object.industry_report.url }}" target="_blank">Industry report</a>
+          {% endif %}<br>
+          {% if report.object.compare_report %}
+            <a href="{{ report.object.compare_report.url }}" target="_blank">Comparison report</a>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

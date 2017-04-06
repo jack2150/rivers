@@ -1,0 +1,33 @@
+{% load base %}
+
+{% with reports.article.objects as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Weekly Article
+      </h2>
+    </fieldset>
+    <table>
+      {% for article in report %}
+        <tr>
+          <th>Date:</th>
+          <td>{{ article.date }}</td>
+          <th>Link:</th>
+          <td><a href="{{ article.link }}">Link</a></td>
+          <th>Name:</th>
+          <td>{{ article.name }}</td>
+          <th>Date:</th>
+          <td>{{ article.category }}</td>
+          <th>Date:</th>
+          <td>{{ article.chance }}</td>
+        </tr>
+        <tr>
+          <th>Key point:</th>
+          <td colspan="9">
+            <pre>{{ article.key_point }}</pre>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endwith %}

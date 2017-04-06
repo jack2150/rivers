@@ -1,0 +1,39 @@
+{% load base %}
+
+{% with reports.commitment as report %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Commitment of trader (CFTC)
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        {% for key, value in report.data.indices %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 160px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.energy %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 160px;">{{ value }}</td>
+        {% endfor %}
+        {% for key, value in report.data.metal %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 160px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for key, value in report.data.finance %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 160px;">{{ value }}</td>
+        {% endfor %}
+        {% for key, value in report.data.currency %}
+          <th style="width: 80px;">{{ key|label }}:</th>
+          <td style="width: 160px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+    </table>
+  </div>
+{% endwith %}

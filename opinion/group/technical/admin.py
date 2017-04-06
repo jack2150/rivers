@@ -1,7 +1,6 @@
 from django import forms
 from django.contrib import admin
 from django.forms import RadioSelect
-
 from opinion.group.report.admin import OpinionAdmin, OpinionStackedAdmin
 from opinion.group.technical.models import *
 

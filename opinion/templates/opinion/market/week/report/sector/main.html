@@ -1,0 +1,43 @@
+{% with reports.sector.object as sector %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Sector combine chart & weight report
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Chart:</th>
+        <td>
+          {% if sector.join_chart %}
+            <a href="{{ sector.join_chart.url }}" target="_blank">
+              <img src="{{ sector.join_chart.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if sector.week_chart %}
+            <a href="{{ sector.week_chart.url }}" target="_blank">
+              <img src="{{ sector.week_chart.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if sector.weight_chart %}
+            <a href="{{ sector.weight_chart.url }}" target="_blank">
+              <img src="{{ sector.weight_chart.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+
+      {% if sector.weight_report %}
+        <tr>
+          <th>Report:</th>
+          <td>
+            <a href="{{ sector.weight_report.url }}" target="_blank">
+              PDF report
+            </a>
+          </td>
+        </tr>
+      {% endif %}
+
+    </table>
+  </div>
+{% endwith %}

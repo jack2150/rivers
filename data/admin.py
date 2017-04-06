@@ -193,8 +193,12 @@ admin.site.register_view(
     urlname='web_treasury_h5', view=web_treasury_h5
 )
 admin.site.register_view(
-    'data/h5/raw_df/(?P<symbol>\w+)/(?P<source>\w+)/$',
-    urlname='stock_raw', view=stock_raw
+    'data/h5/raw_stock/(?P<symbol>\w+)/(?P<source>\w+)/$',
+    urlname='raw_stock_data', view=raw_stock_data
+)
+admin.site.register_view(
+    'data/h5/raw_iv/data/(?P<symbol>\w+)/$',
+    urlname='raw_iv_data', view=raw_iv_data
 )
 
 # dividend and earning
@@ -204,7 +208,7 @@ admin.site.register_view(
 )
 admin.site.register_view(
     'data/h5/raw_event/(?P<symbol>\w+)/(?P<event>\w+)/$',
-    urlname='event_raw', view=event_raw
+    urlname='raw_event_data', view=raw_event_data
 )
 
 # calc iv

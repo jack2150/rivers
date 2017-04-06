@@ -1,0 +1,52 @@
+{% with reports.sectors.objects as report %}
+  <fieldset class="module aligned">
+    <h2>
+      Sector
+    </h2>
+  </fieldset>
+  <table>
+    <tr>
+      {% for sector in report %}
+        <td>
+          <table>
+            <tr>
+              <th>Name:</th>
+              <td>{{ sector.get_name_display }}</td>
+            </tr>
+            <tr>
+              <th>Weight:</th>
+              <td>{{ sector.get_weight_display }}</td>
+            </tr>
+            <tr>
+              <th>Grade:</th>
+              <td>{{ sector.get_grade_display }}</td>
+            </tr>
+            <tr>
+              <th>Change %:</th>
+              <td>{{ sector.change }}%</td>
+            </tr>
+            <tr>
+              <th>Move:</th>
+              <td>{{ sector.get_move_display }}</td>
+            </tr>
+            {% if sector.chart %}
+              <tr>
+                <th>Chart:</th>
+                <td>
+                  <a href="{{ sector.chart.url }}" target="_blank">
+                    <img src="{{ sector.chart.url }}" title="chart" class="width220">
+                  </a>
+                </td>
+              </tr>
+            {% endif %}
+          </table>
+        </td>
+        {% if forloop.counter|divisibleby:3 %}
+          </tr>
+          <tr>
+        {% endif %}
+      {% endfor %}
+      </tr>
+  </table>
+  </div>
+{% endwith %}
