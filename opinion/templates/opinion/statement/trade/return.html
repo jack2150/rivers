@@ -1,0 +1,105 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthtradereturn as trade_return %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Trade returns: {{ trade_return.trade_return }}
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <td>
+          <table>
+            <tr>
+              <th>Return stock:</th>
+              <td>{{ trade_return.return_stock }}</td>
+            </tr>
+            <tr>
+              <th>Return option:</th>
+              <td>{{ trade_return.return_option }}</td>
+            </tr>
+            <tr>
+              <th>Return asset:</th>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2">{{ trade_return.get_return_asset_display }}</td>
+            </tr>
+          </table>
+        </td>
+        <td>
+          <table>
+            <tr>
+              <th>Stock profit:</th>
+              <td>{{ trade_return.stock_profit }}</td>
+            </tr>
+            <tr>
+              <th>Stock loss:</th>
+              <td>{{ trade_return.stock_loss }}</td>
+            </tr>
+            <tr>
+              <th>Stock return:</th>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2">{{ trade_return.get_stock_return_display }}</td>
+            </tr>
+          </table>
+        </td>
+        <td>
+          <table>
+            <tr>
+              <th>Option profit:</th>
+              <td>{{ trade_return.option_profit }}</td>
+            </tr>
+            <tr>
+              <th>Option loss:</th>
+              <td>{{ trade_return.option_loss }}</td>
+            </tr>
+            <tr>
+              <th>Option return:</th>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                {{ trade_return.get_option_return_display }}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          {% if trade_return.return_chart0 %}
+            <a href="{{ trade_return.return_chart0.url }}" target="_blank">
+              <img src="{{ trade_return.return_chart0.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if trade_return.return_chart1 %}
+            <a href="{{ trade_return.return_chart1.url }}" target="_blank">
+              <img src="{{ trade_return.return_chart1.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if trade_return.return_chart2 %}
+            <a href="{{ trade_return.return_chart2.url }}" target="_blank">
+              <img src="{{ trade_return.return_chart2.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          <br>
+          {% if trade_return.return_chart3 %}
+            <a href="{{ trade_return.return_chart3.url }}" target="_blank">
+              <img src="{{ trade_return.return_chart3.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if trade_return.return_chart4 %}
+            <a href="{{ trade_return.return_chart4.url }}" target="_blank">
+              <img src="{{ trade_return.return_chart4.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

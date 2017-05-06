@@ -2,6 +2,8 @@ from django.conf.urls import url
 from . import views
 
 urlpatterns = [
+    url(r'^tools/', views.tools, name='tools'),
+
     url(r'^process/', views.process, name='process'),
     url(r'^market/', views.market, name='market_reference'),
 

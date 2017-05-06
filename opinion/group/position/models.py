@@ -124,7 +124,7 @@ class PositionEnter(models.Model):
     # commission
     commission = models.DecimalField(
         max_digits=10, decimal_places=2, default=0,
-        help_text='Enter & exit estimate commission fee'
+        help_text='Enter & exit estimate commission fee, is fee too heavy?'
     )
     enter_price = models.DecimalField(
         max_digits=10, decimal_places=2, default=0,

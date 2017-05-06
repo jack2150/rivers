@@ -44,6 +44,7 @@ INSTALLED_APPS = (
 
     # 'bootstrap_admin',  # always before django.contrib.admin
     'flat',
+    #'test_without_migrations',
 
     # 'django.contrib.admin',
     'django.contrib.admin.apps.SimpleAdminConfig',  # adminplus replace
@@ -106,11 +107,11 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'rivers',
-        'USER': 'postgres',
+        'USER': 'admin',
         'PASSWORD': 'qwer1234',
         'HOST': '127.0.0.1',
         'PORT': '5432',
-        'CONN_MAX_AGE': 60
+        # 'CONN_MAX_AGE': 60
     }
 }
 # DATABASE_ROUTERS = ['rivers.router.DataRouter']
@@ -133,7 +134,6 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "static"),
 )
-
 
 
 # fixtures
@@ -202,6 +202,8 @@ SPY_DIR = os.path.join(QUOTE_DIR, 'spy.h5')
 IB_STATEMENT_DIR = os.path.join(FILES_DIR, 'statement', 'ib')
 TDA_STATEMENT_DIR = os.path.join(FILES_DIR, 'statement', 'tda')
 
+CSV_DIR = os.path.join(DB_DIR, 'csv')
+
 # for test only
 if 'test' in sys.argv:
     DATABASES['default'] = {
@@ -241,3 +243,21 @@ TEMPLATES = [
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(DB_DIR, 'media')
+
+# testing
+TESTING = len(sys.argv) > 1 and sys.argv[1] == 'test'
+if TESTING:
+    # print('=========================')
+    # print('In TEST Mode - Disable Migrations')
+    # print('=========================')
+
+
+    class DisableMigrations(object):
+        def __contains__(self, item):
+            return True
+
+        def __getitem__(self, item):
+            return "notmigrations"
+
+
+    MIGRATION_MODULES = DisableMigrations()

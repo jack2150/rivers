@@ -1,0 +1,90 @@
+{% load base %}
+
+<div id="mark">
+  <h1>MarkToMarket</h1>
+
+  {% with ib_month_statement.ibmonthmark as mark %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Hold positions
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>P/L stock:</th>
+        <td>{{ mark.get_pl_stock_display }}</td>
+      </tr>
+
+      <tr>
+        <th>P/L option:</th>
+        <td>{{ mark.get_pl_option_display }}</td>
+      </tr>
+      <tr>
+        <th>Asset:</th>
+        <td>{{ mark.get_asset_display }}</td>
+      </tr>
+      <tr>
+        <th>Change value:</th>
+        <td>{{ mark.change_value }}</td>
+      </tr>
+      <tr>
+        <th>Change move:</th>
+        <td>{{ mark.get_change_move_display }}</td>
+      </tr>
+      <tr>
+        <th>Charts:</th>
+        <td>
+          {% if mark.pl_chart0 %}
+            <a href="{{ mark.pl_chart0.url }}" target="_blank">
+              <img src="{{ mark.pl_chart0.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if mark.pl_chart1 %}
+            <a href="{{ mark.pl_chart1.url }}" target="_blank">
+              <img src="{{ mark.pl_chart1.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if mark.pl_chart2 %}
+            <a href="{{ mark.pl_chart2.url }}" target="_blank">
+              <img src="{{ mark.pl_chart2.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          <br>
+          {% if mark.pl_chart3 %}
+            <a href="{{ mark.pl_chart3.url }}" target="_blank">
+              <img src="{{ mark.pl_chart3.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if mark.pl_chart4 %}
+            <a href="{{ mark.pl_chart4.url }}" target="_blank">
+              <img src="{{ mark.pl_chart4.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if mark.pl_chart5 %}
+            <a href="{{ mark.pl_chart5.url }}" target="_blank">
+              <img src="{{ mark.pl_chart5.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          <br>
+          {% if mark.change_chart %}
+            <a href="{{ mark.change_chart.url }}" target="_blank">
+              <img src="{{ mark.change_chart.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if mark.asset_chart0 %}
+            <a href="{{ mark.asset_chart0.url }}" target="_blank">
+              <img src="{{ mark.asset_chart0.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if mark.asset_chart1 %}
+            <a href="{{ mark.asset_chart1.url }}" target="_blank">
+              <img src="{{ mark.asset_chart1.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}
+</div>

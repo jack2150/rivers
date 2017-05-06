@@ -1,9 +1,7 @@
 from django.contrib import admin
 from django.core.urlresolvers import reverse
-
-from base.admin import DateForm
-from opinion.group.mindset.models import MindsetBehavior, MindsetLossHold, MindsetLossExcuse, MindsetNote
-from opinion.group.mindset.views import trade_note, behavior_profile
+from opinion.group.mindset.models import MindsetBehavior, MindsetLossHold, \
+    MindsetLossExcuse, MindsetNote
 
 
 class MindsetNoteAdmin(admin.ModelAdmin):
@@ -129,12 +127,3 @@ admin.site.register(MindsetNote, MindsetNoteAdmin)
 admin.site.register(MindsetBehavior, MindsetBehaviorAdmin)
 admin.site.register(MindsetLossHold, MindsetLossHoldAdmin)
 admin.site.register(MindsetLossExcuse, MindsetLossExcuseAdmin)
-
-
-admin.site.register_view(
-    'opinion/profile/tradenote/(?P<category>\w+)/$', urlname='trade_note', view=trade_note
-)
-admin.site.register_view(
-    'opinion/profile/behavior/(?P<date>\d{4}-\d{2}-\d{2})/$',
-    urlname='behavior_profile', view=behavior_profile
-)

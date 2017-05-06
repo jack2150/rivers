@@ -1,0 +1,109 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthtradefee as fee %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Trade fees: {{ fee.fee }}
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <td>
+          <table>
+            <tr>
+              <th>Fee stock:</th>
+              <td>{{ fee.fee_stock }}</td>
+            </tr>
+            <tr>
+              <th>Fee option:</th>
+              <td>{{ fee.fee_option }}</td>
+            </tr>
+            <tr>
+              <th>Fee asset:</th>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2">{{ fee.get_fee_asset_display }}</td>
+            </tr>
+          </table>
+        </td>
+        <td>
+          <table>
+            <tr>
+              <th>Fee enter:</th>
+              <td>{{ fee.fee_enter }}</td>
+            </tr>
+            <tr>
+              <th>Fee exit:</th>
+              <td>{{ fee.fee_exit }}</td>
+            </tr>
+            <tr>
+              <th>Fee timing:</th>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2">{{ fee.get_fee_timing_display }}</td>
+            </tr>
+          </table>
+        </td>
+        <td>
+          <table>
+            <tr>
+              <th>Fee profit:</th>
+              <td>{{ fee.fee_profit }}</td>
+            </tr>
+            <tr>
+              <th>Fee even:</th>
+              <td>{{ fee.fee_even }}</td>
+            </tr>
+            <tr>
+              <th>Fee loss:</th>
+              <td>{{ fee.fee_loss }}</td>
+            </tr>
+            <tr>
+              <th>Fee return:</th>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                {{ fee.get_fee_return_display }}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          {% if fee.fee_chart0 %}
+            <a href="{{ fee.fee_chart0.url }}" target="_blank">
+              <img src="{{ fee.fee_chart0.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if fee.fee_chart1 %}
+            <a href="{{ fee.fee_chart1.url }}" target="_blank">
+              <img src="{{ fee.fee_chart1.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if fee.fee_chart2 %}
+            <a href="{{ fee.fee_chart2.url }}" target="_blank">
+              <img src="{{ fee.fee_chart2.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          <br>
+          {% if fee.fee_chart3 %}
+            <a href="{{ fee.fee_chart3.url }}" target="_blank">
+              <img src="{{ fee.fee_chart3.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if fee.fee_chart4 %}
+            <a href="{{ fee.fee_chart4.url }}" target="_blank">
+              <img src="{{ fee.fee_chart4.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

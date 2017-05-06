@@ -1,0 +1,163 @@
+<div id="market_open" class="padbot3em">
+  <h1>Market open (9am-4pm)</h1>
+  <div>
+    <table>
+      <tr>
+        <td class="tool_view">
+          <fieldset class="module aligned">
+            <h2>Daily Process</h2>
+          </fieldset>
+          <table>
+            <tr>
+              <td>
+                <h2>
+                  Portfolio review <span class="webix_icon fa-database"></span>
+                </h2>
+                <p>
+                  Everyday after market open, you write down what you think,
+                  what you expect, what position is good/bad and nav of your account.
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:opinion_portfolioreview_add' %}" class="link_button" target="_blank">
+                  Review
+                </a><br>
+                <a href="{% url 'portfolio_latest' %}" class="link_button" target="_blank">
+                  Update
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Holding <span class="webix_icon fa-cube"></span>
+                </h2>
+                <p>
+                  The longest trading period is holding.
+                  Holding can be difficult; holding can be easy.
+                  If nothing happen, no news, no price move, no event,
+                  then mostly holding a positions is just let it run.
+                  But something thing got tricky. Special news, special announcement,
+                  sudden no news big price move, market swift changing and etc.
+                  All those will put your holding position in danger.
+                  So extra analysis is done when things happen.
+                  (Advantage: Medium)
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:opinion_positionhold_add' %}" class="link_button" target="_blank">
+                  Pos Hold
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Mindset checklist <span class="webix_icon fa-user"></span>
+                </h2>
+                <p>
+                  Analysis your personal mental condition is a critical part of
+                  everyday trading. If you feel emotional trouble, just do not trade.
+                  When emotion breakdown, we mostly will make error. To reduce that,
+                  we need to analysis our daily mental condition.
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:opinion_mindsetbehavior_add' %}" class="link_button" target="_blank">
+                  Behavior
+                </a>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+        <td class="tool_view">
+          <fieldset class="module aligned">
+            <h2>Trading process</h2>
+          </fieldset>
+          <table>
+            <tr>
+              <td>
+                <h2>
+                  Report enter <span class="webix_icon fa-sign-in"></span>
+                </h2>
+                <p>
+                  Whatever you think you want to enter a trade, remember you need
+                  to do the enter report first. Stock enter report or ETF enter report.
+                  Doing enter report will let you re-evaluate the instrument you want
+                  to trade. From fundamental to technical, the enter report include
+                  everything that you can find in the market/web.
+                  (Advantage: Large)
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:opinion_reportenter_changelist' %}" class="link_button" target="_blank">
+                  Report enter
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Backtest <span class="webix_icon fa-retweet"></span>
+                </h2>
+                <p>
+                  By doing backtest, you gain a significant edge over other traders.
+                  Formula give you a way to timing the market, enter or exit,
+                  possible movement and expectation.
+                  Strategy give you different kind of trading method from stock to options.
+                  It will gain you a significant statistics edge on the trade.
+                  (Advantage: Large)
+                </p>
+              </td>
+              <td class="link_cell">
+                In development
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Report exit <span class="webix_icon fa-sign-out"></span>
+                </h2>
+                <p>
+                  After holding a position awhile, you plan on exit.
+                  You need to prepare a exit report so you will have a clear
+                  view on the trade. When you complete the exit report
+                  then you can trigger to exit the trade.
+                  (Advantage: Small)
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:opinion_positionexit_add' %}" class="link_button" target="_blank">
+                  Pos exit
+                </a><br>
+                <a href="{% url 'admin:statement_position_changelist' %}" class="link_button" target="_blank">
+                  Pos review
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Ready underlying <span class="webix_icon fa-database"></span>
+                </h2>
+                Prepare stock & options data in db:
+                <ol>
+                  <li>Download data from thinkback</li>
+                  <li>Import thinkback & web data</li>
+                  <li>Data cleaning</li>
+                  <li>Checking cleaned data</li>
+                </ol>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:data_underlying_changelist' %}" class="link_button" target="_blank">
+                  Underlying
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

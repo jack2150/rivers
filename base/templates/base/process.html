@@ -21,11 +21,11 @@
           id: "1.0", value: "Take a shower", path: "#", image: "fa-bath"
         },
         {
-          id: "1.1", value: "Read trade note", path: "{% url 'admin:trade_note' 'trade' %}",
+          id: "1.1", value: "Read trade note", path: "{% url 'trade_note' 'trade' %}",
           image: "fa-sticky-note-o"
         },
         {
-          id: "1.2", value: "Read behavior note", path: "{% url 'admin:trade_note' 'behavior' %}",
+          id: "1.2", value: "Read behavior note", path: "{% url 'trade_note' 'behavior' %}",
           image: "fa-sticky-note"
         },
         {
@@ -74,19 +74,19 @@
         },
         {
           id: "1.11", value: "Create market movement", image: "fa-comment-o",
-          path: "{% url 'admin:opinion_marketmovement_add' %}"
+          path: "#"
         },
         {
           id: "1.12", value: "Create market sentiment", image: "fa-comment-o",
-          path: "{% url 'admin:opinion_marketsentiment_add' %}"
+          path: "#"
         },
         {
           id: "1.13", value: "Create market technical", image: "fa-comment-o",
-          path: "{% url 'admin:opinion_technicalopinion_add' %}"
+          path: "#"
         },
         {
           id: "1.14", value: "Ready excel & open it", image: "fa-file-excel-o",
-          path: "{% url 'admin:excel_rtd_create' %}"
+          path: "{% url 'excel_rtd_create' %}"
         },
       ]
     },
@@ -109,7 +109,7 @@
         },
         {
           id: "2.3", value: "Create Timesale report", image: "",
-          path: "{% url 'admin:timesale_insert_view' %}"
+          path: "{% url 'timesale_insert_view' %}"
         },
         {
           id: "2.4", value: "Update position hold", image: "",
@@ -140,11 +140,11 @@
       data: [
         {
           id: "4.1", value: "Market review", image: "",
-          path: "{% url 'admin:opinion_marketreview_add' %}"
+          path: "#"
         },
         {
           id: "4.2", value: "Market technical", image: "",
-          path: "{% url 'admin:opinion_technicalopinion_add' %}"
+          path: "#"
         },
         {
           id: "4.3", value: "Earning season estimate", image: "", path: ""
@@ -201,18 +201,18 @@
                   data: [
                     {
                       id: "1.3.1.5.1", value: "Fundamental opinion", image: "",
-                      path: "{% url 'admin:opinion_stockfundamental_add' %}"
+                      path: "#"
                     },
                     {
                       id: "1.3.1.5.2", value: "Industry opinion", image: "",
-                      path: "{% url 'admin:opinion_stockindustry_add' %}"
+                      path: "#"
                     },
 
                   ]
                 },
                 {
                   id: "1.3.1.6", value: "Create enter opinion", image: "fa-check",
-                  path: "{% url 'admin:opinion_positionenter_add' %}"
+                  path: "#"
                 }
               ]
             },
@@ -267,7 +267,7 @@
                 },
                 {
                   id: "1.3.4.2", value: "Timesale report", image: "",
-                  path: "{% url 'admin:timesale_insert_view' %}"
+                  path: "{% url 'timesale_insert_view' %}"
                 },
                 {
                   id: "1.3.4.3", value: "1 Minute report", image: "", path: "#"
@@ -438,7 +438,7 @@
             },
             {
               id: "3.2.2", value: "Google news",
-              path: "https://www.google.com/webhp?oq=carl+icahn#tbm=nws&q=George+Soros",
+              path: "https://www.google.com/search?q=warren+buffett&ie=utf-8&oe=utf-8",
             }
           ]
         },

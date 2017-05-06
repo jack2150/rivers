@@ -1,0 +1,66 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthnav as nav %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Return month
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Cash reserve:</th>
+        <td>{{ nav.get_cash_reserve_display }}</td>
+      </tr>
+      <tr>
+        <th>Asset balance:</th>
+        <td>{{ nav.get_asset_balance_display }}</td>
+
+      </tr>
+      <tr>
+        <th>Long/short:</th>
+        <td>{{ nav.get_long_short_display }}</td>
+      </tr>
+      <tr>
+        <th>Asset comment:</th>
+        <td><pre>{{ nav.asset_comment }}</pre></td>
+      </tr>
+      <tr>
+        <th>Charts:</th>
+        <td>
+          {% if nav.asset_chart0 %}
+            <a href="{{ nav.asset_chart0.url }}" target="_blank">
+              <img src="{{ nav.asset_chart0.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if nav.asset_chart1 %}
+            <a href="{{ nav.asset_chart1.url }}" target="_blank">
+              <img src="{{ nav.asset_chart1.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if nav.asset_chart2 %}
+            <a href="{{ nav.asset_chart2.url }}" target="_blank">
+              <img src="{{ nav.asset_chart2.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          <br>
+          {% if nav.asset_chart3 %}
+            <a href="{{ nav.asset_chart3.url }}" target="_blank">
+              <img src="{{ nav.asset_chart3.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if nav.asset_chart4 %}
+            <a href="{{ nav.asset_chart4.url }}" target="_blank">
+              <img src="{{ nav.asset_chart4.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if nav.asset_chart5 %}
+            <a href="{{ nav.asset_chart5.url }}" target="_blank">
+              <img src="{{ nav.asset_chart5.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

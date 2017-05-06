@@ -1,0 +1,23 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthxraystockstyle_set.all as styles %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Stock style
+      </h2>
+    </fieldset>
+    <table>
+      {% for style in styles %}
+        <tr>
+          <th>Capital:</th>
+          <td>{{ style.get_capital_display }}</td>
+          <th>Style:</th>
+          <td>{{ style.get_style_display }}</td>
+          <th>Hold:</th>
+          <td>{{ style.hold }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endwith %}

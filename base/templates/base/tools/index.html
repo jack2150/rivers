@@ -1,0 +1,151 @@
+{% extends "base/base.html" %}
+
+{% block extrastyle %}
+  <style>
+    .width80 {
+      width: 80px;
+    }
+
+    .width120 {
+      width: 120px;
+    }
+
+    .width160 {
+      width: 160px;
+    }
+
+    .width220 {
+      width: 220px;
+    }
+
+    .width300 {
+      width: 300px;
+    }
+
+    .width360 {
+      width: 360px;
+    }
+
+    .hypo {
+      font-size: 0.9em;
+    }
+
+    .padtop1em {
+      padding-top: 1em;
+    }
+
+    .padtop3em {
+      padding-top: 3em;
+    }
+
+    .padbot2em {
+      padding-bottom: 2em;
+    }
+
+    .padbot3em {
+      padding-bottom: 3em;
+    }
+
+    fieldset {
+      margin-bottom: 0 !important;
+    }
+
+    .sidebar {
+      position: fixed;
+    }
+
+    .section_nav {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+
+    }
+
+    .section_nav li {
+      font-size: 1.1em;
+    }
+
+    .link_button {
+      border: 1px solid #ccc;
+      padding: 2px 10px;
+      margin: 0;
+      vertical-align: middle;
+      background: #fff;
+      box-shadow: 0 -15px 20px -10px rgba(0, 0, 0, 0.15) inset;
+      cursor: pointer;
+      color: #333 !important;
+      border-radius: 4px;
+      font-size: 14px;
+      outline: none;
+      line-height: 2em;
+    }
+
+    .link_button:hover {
+      border-color: #999;
+    }
+
+    .link_cell {
+      vertical-align: middle;
+      width: 160px;
+    }
+
+    .tool_view {
+      width: 600px;
+    }
+
+    .webix_icon {
+      margin-left: 4px !important;
+    }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+    Tools & Process
+  </div>
+{% endblock %}
+
+{% block normal-content %}
+  <table>
+    <tr>
+      <td style="width: 240px; border: none;">
+        <div class="sidebar">
+          <h3>Daily</h3>
+          <ol class="section_nav">
+            <li><a href="#pre_market">Pre-market (8am-9am)</a></li>
+            <li><a href="#market_open">Market open (9am-4pm)</a></li>
+            <li><a href="#after_hour">After hour (4pm-5pm)</a></li>
+          </ol>
+
+          <h3 class="padtop1em">Week/Month</h3>
+          <ol class="section_nav">
+            <li><a href="#weekly">Weekly Analysis (Fri, Sat, Sun)</a></li>
+            <li><a href="#monthly">Monthly Analysis (Day 1-3)</a></li>
+          </ol>
+
+          <h3 class="padtop1em">Emergency</h3>
+          <ol class="section_nav">
+            <li><a href="#risk_adjust">Loss/Risk Adjust</a></li>
+          </ol>
+
+          <h3 class="padtop1em">System</h3>
+          <ol class="section_nav">
+            <li><a href="#season">Season (Jan, Apr, Jul, Oct)</a></li>
+          </ol>
+        </div>
+      </td>
+      <td style="border: none; vertical-align: top;">
+        {% include 'base/tools/pre_market.html' %}
+        {% include 'base/tools/market_open.html' %}
+        {% include 'base/tools/after_hour.html' %}
+        {% include 'base/tools/risk_adjust.html' %}
+        {% include 'base/tools/weekly_analysis.html' %}
+        {% include 'base/tools/monthly_analysis.html' %}
+        {% include 'base/tools/season.html' %}
+      </td>
+    </tr>
+  </table>
+
+
+{% endblock %}

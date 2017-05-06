@@ -1,0 +1,26 @@
+{% load base %}
+<div class="padbot2em">
+  <fieldset class="module aligned">
+    <h2>
+      Opportunity
+    </h2>
+  </fieldset>
+  <table>
+    {% for opportunity in market_strategy.marketstrategyopportunity_set.all %}
+      <tr>
+        <th>Name:</th>
+        <td>
+          {{ opportunity.get_name_display }}
+        </td>
+        <th>Resist:</th>
+        <td>
+          {{ opportunity.resist }}
+        </td>
+        <th>Support:</th>
+        <td>
+          {{ opportunity.support }}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+</div>

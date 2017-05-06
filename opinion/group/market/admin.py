@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.core.urlresolvers import reverse
 from opinion.group.market.models import *
-from opinion.group.market.views import market_profile
 from opinion.group.report.admin import OpinionStackedAdmin, OpinionAdmin
 
 
@@ -196,11 +195,46 @@ class MarketWeekAdmin(OpinionAdmin):
     list_per_page = 20
 
 
+class MarketStrategyOpportunityInline(admin.TabularInline):
+    model = MarketStrategyOpportunity
+    extra = 0
+
+
+class MarketStrategyAllocationInline(admin.TabularInline):
+    model = MarketStrategyAllocation
+    extra = 0
+
+
+class MarketStrategyDistributionInline(admin.TabularInline):
+    model = MarketStrategyDistribution
+    extra = 0
+
+
+class MarketStrategyAdmin(OpinionAdmin):
+    inlines = [
+        MarketStrategyOpportunityInline,
+        MarketStrategyAllocationInline,
+        MarketStrategyDistributionInline
+    ]
+
+    def link(self, obj):
+        return '<a href="{report}">Report</a>'.format(
+            report=reverse('market_strategy_report', kwargs={'obj_id': obj.id}),
+        )
+
+    link.allow_tags = True
+    link.short_description = ''
+
+    list_display = (
+        'date', 'economic', 'week_movement', 'link'
+    )
+
+    search_fields = ('date',)
+    list_filter = ('economic', 'week_movement')
+
+    list_per_page = 20
+
+
 admin.site.register(MarketMonthEconomic, MarketMonthEconomicAdmin)
 admin.site.register(MarketWeek, MarketWeekAdmin)
-
-
-admin.site.register_view(
-    'opinion/profile/market/(?P<date>\d{4}-\d{2}-\d{2})/$',
-    urlname='market_profile', view=market_profile
-)
+admin.site.register(MarketStrategy, MarketStrategyAdmin)

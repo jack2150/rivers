@@ -1,0 +1,6 @@
+/* fix footer css showing problem */
+.webix_hs_center th, .webix_hs_center td {
+    padding: 0;
+    font-size: 1em;
+    font-family: 'PT Sans', Tahoma;
+}

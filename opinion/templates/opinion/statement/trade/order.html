@@ -1,0 +1,105 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthtradeorder as order %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Trade orders: {{ order.order }}
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <td>
+          <table>
+            <tr>
+              <th>Order enter:</th>
+              <td>{{ order.order_enter }}</td>
+            </tr>
+            <tr>
+              <th>Order exit:</th>
+              <td>{{ order.order_exit }}</td>
+            </tr>
+            <tr>
+              <th>Order timing:</th>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2">{{ order.get_order_timing_display }}</td>
+            </tr>
+          </table>
+        </td>
+        <td>
+          <table>
+            <tr>
+              <th>Order stock:</th>
+              <td>{{ order.order_stock }}</td>
+            </tr>
+            <tr>
+              <th>Order option:</th>
+              <td>{{ order.order_option }}</td>
+            </tr>
+            <tr>
+              <th>Order asset:</th>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2">{{ order.get_order_asset_display }}</td>
+            </tr>
+          </table>
+        </td>
+        <td>
+          <table>
+            <tr>
+              <th>Order profit:</th>
+              <td>{{ order.order_profit }}</td>
+            </tr>
+            <tr>
+              <th>Order loss:</th>
+              <td>{{ order.order_loss }}</td>
+            </tr>
+            <tr>
+              <th>Order return:</th>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                {{ order.get_order_return_display }}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          {% if order.order_chart0 %}
+            <a href="{{ order.order_chart0.url }}" target="_blank">
+              <img src="{{ order.order_chart0.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if order.order_chart1 %}
+            <a href="{{ order.order_chart1.url }}" target="_blank">
+              <img src="{{ order.order_chart1.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if order.order_chart2 %}
+            <a href="{{ order.order_chart2.url }}" target="_blank">
+              <img src="{{ order.order_chart2.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          <br>
+          {% if order.order_chart3 %}
+            <a href="{{ order.order_chart3.url }}" target="_blank">
+              <img src="{{ order.order_chart3.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if order.order_chart4 %}
+            <a href="{{ order.order_chart4.url }}" target="_blank">
+              <img src="{{ order.order_chart4.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

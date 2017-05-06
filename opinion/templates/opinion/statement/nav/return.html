@@ -1,0 +1,51 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthnav as nav %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Return month
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Return month:</th>
+        <td>{{ nav.return_month }}</td>
+      </tr>
+      <tr>
+        <th>Return real:</th>
+        <td>{{ nav.return_real }}</td>
+
+      </tr>
+      <tr>
+        <th>Return taxed:</th>
+        <td>{{ nav.return_taxed }}</td>
+      </tr>
+      <tr>
+        <th>Return comment:</th>
+        <td><pre>{{ nav.return_comment }}</pre></td>
+      </tr>
+      <tr>
+        <th>Charts:</th>
+        <td>
+          {% if nav.return_chart0 %}
+            <a href="{{ nav.return_chart0.url }}" target="_blank">
+              <img src="{{ nav.return_chart0.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if nav.return_chart1 %}
+            <a href="{{ nav.return_chart1.url }}" target="_blank">
+              <img src="{{ nav.return_chart1.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if nav.return_chart2 %}
+            <a href="{{ nav.return_chart2.url }}" target="_blank">
+              <img src="{{ nav.return_chart2.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+
+{% endwith %}

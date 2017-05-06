@@ -1,0 +1,126 @@
+<div id="risk_adjust" class="padbot3em">
+  <h1>Risk adjust</h1>
+  <div>
+    <table>
+      <tr>
+        <td class="tool_view">
+          <fieldset class="module aligned">
+            <h2>Main analysis</h2>
+          </fieldset>
+          <table>
+            <tr>
+              <td>
+                <h2>
+                  Update research <span class="webix_icon fa-database"></span>
+                </h2>
+                <p>
+                  When ever your position is in danger, you need to rework all
+                  you research. Maybe the research you do is expire or no up to date.
+                  If you trade stock, re-do the stock report.
+                  If you trade etf, re-do the etf report.
+                  (Advantage: Large)
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:opinion_reportenter_changelist' %}" class="link_button" target="_blank">
+                  Report enter
+                </a><br>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Excel analysis <span class="webix_icon fa-file-excel-o"></span>
+                </h2>
+                <p>
+                  You trade stock or options strategy, you always have excel
+                  spreadsheet to keep track on everything. You should also
+                  make your decision based on excel report.
+                  (Advantage: Small)
+                </p>
+              </td>
+              <td class="link_cell">
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Do backtest <span class="webix_icon fa-retweet"></span>
+                </h2>
+                <p>
+                  You need to backtest current state of the market price to
+                  determine the next price movement. If you test enough,
+                  you should know the next price move favor your trade or not.
+                  How long recover, how much volume, on what situation.
+                  (Advantage: Medium)
+                </p>
+              </td>
+              <td class="link_cell">
+              </td>
+            </tr>
+          </table>
+        </td>
+        <td class="tool_view">
+          <fieldset class="module aligned">
+            <h2>Mindset</h2>
+          </fieldset>
+          <table>
+            <tr>
+              <td>
+                <h2>
+                  Clam your mind <span class="webix_icon fa-user"></span>
+                </h2>
+                <p>
+                  Loss? You have a rough day. You need to clam your mind.
+                  Start with some "before market open" step. Take shower,
+                  listen music, take a sleep and eat something.
+                  After all this, your mind is back and you can make a better decision.
+                </p>
+              </td>
+              <td class="link_cell">
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Understand risk <span class="webix_icon fa-usd"></span>
+                </h2>
+                <p>
+                  At the moment before you enter a trade, do you know the risk?
+                  If you know the risk then you can take it when it loss.
+                  If the loss is bigger than what you expect and you do not have
+                  a plan for that then is you fault. Try to understand the risk
+                  when you enter the trade, will help you make exit decision more easy.
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:opinion_mindsetlosshold_add' %}" class="link_button" target="_blank">
+                  Loss hold
+                </a><br>
+                <a href="{% url 'admin:opinion_mindsetlossexcuse_add' %}" class="link_button" target="_blank">
+                  Loss excuse
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Make decision <span class="webix_icon fa-meh-o"></span>
+                </h2>
+                <p>
+                  I know it is though when you need to close losing trade.
+                  But if market already changed and your holding have already switch
+                  price movement then all you can do is close it.
+                  Yes, you can reverse it but price not always right when you reverse.
+                  Best thing to do it close or hedge and wait another time.
+                </p>
+              </td>
+              <td class="link_cell">
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

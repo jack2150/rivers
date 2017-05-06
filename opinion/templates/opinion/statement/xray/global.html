@@ -1,0 +1,30 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthxrayglobal as global %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Global distribution
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Asset:</th>
+        <td>{{ global.get_asset_display }}</td>
+      </tr>
+
+      <tr>
+        <th>Region:</th>
+        <td>{{ global.get_region_display }}</td>
+      </tr>
+      <tr>
+        <th>Asset_note:</th>
+        <td><pre>{{ global.asset_note }}</pre></td>
+      </tr>
+      <tr>
+        <th>Region_note:</th>
+        <td><pre>{{ global.region_note }}</pre></td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

@@ -1,0 +1,43 @@
+{% load base %}
+
+<div class="padbot2em">
+  <fieldset class="module aligned">
+    <h2>
+      Position distribution
+    </h2>
+  </fieldset>
+  <table>
+    {% for distribution in market_strategy.marketstrategydistribution_set.all %}
+      <tr>
+        <th>Name:</th>
+        <td>
+          {{ distribution.get_name_display }}
+        </td>
+        <th>long_pos:</th>
+        <td>
+          {{ distribution.long_pos }}
+        </td>
+        <th>neutral_long_pos:</th>
+        <td>
+          {{ distribution.neutral_long_pos }}
+        </td>
+        <th>neutral_pos:</th>
+        <td>
+          {{ distribution.neutral_pos }}
+        </td>
+        <th>neutral_short_pos:</th>
+        <td>
+          {{ distribution.neutral_short_pos }}
+        </td>
+        <th>short_pos:</th>
+        <td>
+          {{ distribution.short_pos }}
+        </td>
+        <th>weight:</th>
+        <td>
+          {{ distribution.weight }}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+</div>

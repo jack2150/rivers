@@ -57,11 +57,14 @@
 
 {% block breadcrumbs %}
   <div class="breadcrumbs">
-    <a href="{% url 'admin:index' %}">Home</a> >
-    <a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a> >
-    <a href="{% url 'admin:opinion_marketweek_change' market_week.id %}">
+    <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+    <a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a> &rsaquo;
+    <a href="{% url 'admin:opinion_marketweek_changelist' %}">
       Market week
-    </a> >
+    </a> &rsaquo;
+    <a href="{% url 'admin:opinion_marketweek_change' market_week.id %}">
+      {{ market_week }}
+    </a> &rsaquo;
     Report
   </div>
 {% endblock %}

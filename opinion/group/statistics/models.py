@@ -31,12 +31,13 @@ class StatisticVolatility(models.Model):
     iv_desc = models.TextField(
         blank=True, default='', help_text='Take 5 mins, analysis & projection'
     )
-    # todo: to be cont
 
 
 class StatisticDistribution(models.Model):
     stat_data = models.OneToOneField(StatisticData)
 
+
+# todo: option stat, stock stat, volume analysis, so on
 
 
 

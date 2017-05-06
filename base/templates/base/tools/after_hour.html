@@ -1,0 +1,96 @@
+<div id="after_hour" class="padbot3em">
+  <h1>After hour (4pm-5pm)</h1>
+  <div>
+    <table>
+      <tr>
+        <td class="tool_view">
+          <fieldset class="module aligned">
+            <h2>Portfolio analysis</h2>
+          </fieldset>
+          <table>
+            <tr>
+              <td>
+                <h2>
+                  Statement import <span class="webix_icon fa-file"></span>
+                </h2>
+                <p>
+                  Everyday you export statement from IB & TDA, then you import
+                  csv data into system and update position. You can check your
+                  NAV, orders, holding and other detail using chart and graph.
+                  (Advantage: Medium)
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="#" class="link_button" target="_blank">
+                  IB Model
+                </a><br>
+                <a href="#" class="link_button" target="_blank">
+                  TDA Model
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Position Management <span class="webix_icon fa-table"></span>
+                </h2>
+                <p>
+                  Daily position management is important for you to understand
+                  how your holding doing. By looking at the stat and chart,
+                  you are more easy to make decision. (Advantage: Medium)
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:ib_ibposition_changelist' %}?status__exact=open"
+                   class="link_button" target="_blank">
+                  IB Pos
+                </a><br>
+                <a href="#" class="link_button" target="_blank">
+                  TDA Pos
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+        <td class="tool_view">
+          <fieldset class="module aligned">
+            <h2>Data update</h2>
+          </fieldset>
+          <table>
+            <tr>
+              <td>
+                <h2>
+                  Update web data <span class="webix_icon fa-download"></span>
+                </h2>
+                <p>
+                  After market close, you need to download stock data from google/yahoo.
+                  So next day, if you want to analysis/backtest strategy, you no need
+                  to download it.
+                </p>
+              </td>
+              <td class="link_cell">
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Options Timesale
+                </h2>
+                <p>
+                  Because options timesale do not have historical data, you do it
+                  daily to keep update. You will be able to understand what options
+                  do market trade on which side. (Advantage: Low)
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'timesale_insert_view' %}" class="link_button" target="_blank">
+                  Timesale
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

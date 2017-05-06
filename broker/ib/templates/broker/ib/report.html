@@ -1,0 +1,331 @@
+<!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
+{% extends "base/base.html" %}
+
+{% block extrascript %}
+  <script src="/static/Highcharts-4.2.1/js/highcharts.js"></script>
+  <script src="/static/Highcharts-4.2.1/js/highcharts-more.js"></script>
+  <script src="/static/Highcharts-4.2.1/js/highcharts-3d.js"></script>
+{% endblock %}
+
+{% block extrastyle %}
+  <style>
+    .height60 {
+      height: 100px;
+    }
+
+    .ib_pos {
+      border: #EEEEEE 1px solid;
+    }
+
+    .ib_pos td, .ib_pos th {
+      padding: 1em;
+      font-size: 1em;
+    }
+
+    .ib_trade {
+      border: #EEEEEE 1px solid;
+      width: 500px;
+      height: 450px;
+      overflow: auto;
+    }
+
+    .total_box {
+      float: left;
+      border: solid 1px #EEEEEE;
+      padding: 0.5em 1em;
+      margin-right: 1em;
+      font-size: 2em;
+      line-height: 1.2em;
+    }
+  </style>
+
+
+{% endblock %}
+
+{% block normal-content %}
+  <table>
+    <tr>
+      <th class="total_box">
+        P/L: {{ stat_data.pl_total|floatformat:2 }}<br>
+        Fee: {{ ib_pos.fee }}
+      </th>
+      <td class="total_box">
+        <table>
+          <tr>
+            <th>Symbol:</th>
+            <td>{{ ib_pos.symbol }}</td>
+            <th>Options:</th>
+            <td>{{ ib_pos.options }}</td>
+            <th>Perform:</th>
+            <td>{{ ib_pos.perform|capfirst }}</td>
+            <th>Status:</th>
+            <td>{{ ib_pos.status|upper }}</td>
+          </tr>
+          <tr>
+            <th>Start:</th>
+            <td>{{ ib_pos.date0 }}</td>
+            <th>Stop:</th>
+            <td>
+              {% if ib_pos.date1 %}
+                {{ ib_pos.date1 }}
+              {% else %}
+                {% now "Y-m-d" %} (cont)
+              {% endif %}
+            </td>
+            <th>Period:</th>
+            <td>{{ stat_data.period }} days</td>
+            <th>Fee:</th>
+            <td>{{ ib_pos.fee }}</td>
+          </tr>
+          <tr>
+            <th>Fee (stock):</th>
+            <td>{{ stat_data.fee.stock }}</td>
+            <th>Fee (optinos):</th>
+            <td>{{ stat_data.fee.option }}</td>
+            <th>Qty (stock):</th>
+            <td>{{ stat_data.qty.stock }}</td>
+            <th>Qty (options):</th>
+            <td>{{ stat_data.qty.option }}</td>
+            <th></th>
+            <td></td>
+            <th></th>
+            <td></td>
+          </tr>
+          {% if ib_pos.updated %}
+            <tr>
+              <th>Updated:</th>
+              <td>{{ ib_pos.updated }}</td>
+              <th>Adjusted:</th>
+              <td>{{ ib_pos.adjust }}</td>
+              <th>Qty multiply:</th>
+              <td>{{ ib_pos.qty_multiply }}</td>
+              <th>Move:</th>
+              <td>{{ ib_pos.move|upper }}</td>
+            </tr>
+            <tr>
+              <th>Side:</th>
+              <td>{{ ib_pos.side|upper }}</td>
+              <th>Account:</th>
+              <td>{{ ib_pos.account|upper }}</td>
+              <th>Name:</th>
+              <td>{{ ib_pos.name|upper }}</td>
+              <th>Strikes:</th>
+              <td>{{ ib_pos.strikes }}</td>
+            </tr>
+            <tr>
+              <th>Spread:</th>
+              <td colspan="7">{{ ib_pos.spread }}</td>
+            </tr>
+          {% endif %}
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <table style="width: 98%">
+    <tr>
+      <td style="width: 660px">
+        <h2>Performance & Mark to market</h2>
+        <div id="testA"></div>
+        <div id="paging_here" style="margin-top: 1em;"></div>
+      </td>
+      <td>
+        <h2>Trade orders</h2>
+        <div class="ib_trade">
+          <table>
+            {% for data in order_data %}
+              <tr>
+                <th style="padding-top: 2em;">
+                  Date: {{ data.date }}<br>
+                  Price: {{ data.total|stringformat:"+.2f" }}
+                </th>
+              </tr>
+              {% for trade in data.orders %}
+                <tr>
+                  <td>{{ trade }}</td>
+                </tr>
+              {% endfor %}
+            {% endfor %}
+            <tr>
+              <th style="padding-top: 2em;">
+                Final P/L: {{ trade_total|stringformat:"+.2f" }}
+              </th>
+            </tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <div id="chart"></div>
+      </td>
+    </tr>
+  </table>
+
+{% endblock %}
+
+{% block webix-script %}
+  <script type="text/javascript">
+    var pos_data = {{ json_data|safe }};
+
+    var dates = [];
+    var performs = [];
+    var marks = [];
+    for (var i = 0; i < pos_data.length; i++) {
+      var obj = pos_data[i];
+
+      //console.log(obj.perform);
+      dates.push(obj.date);
+      marks.push(obj.mark);
+      performs.push(obj.perform);
+    }
+    /*
+     console.log(dates);
+     console.log(performs);
+     console.log(marks);
+     */
+
+
+    // webix datatable
+    webix.ready(function () {
+      webix.ui.datafilter.avgColumn = webix.extend({
+        refresh: function (master, node, value) {
+          var result = 0.0;
+          master.mapCells(null, value.columnId, null, 1, function (value) {
+            value = value * 1.0;
+            if (!isNaN(value))
+              result += value;
+            return value;
+          });
+
+          node.firstChild.innerHTML = 'Avg: ' + (result / master.count()).toFixed(2);
+        }
+      }, webix.ui.datafilter.summColumn);
+
+      webix.ui.datafilter.rowCount = webix.extend({
+        refresh: function (master, node, value) {
+          var in_pct = (master.count() / pos_data.length * 100).toFixed(0);
+          node.firstChild.innerHTML = master.count() + " rows (" + in_pct + "%)";
+        }
+      }, webix.ui.datafilter.summColumn);
+
+      webix.ui({
+        container: "testA",
+        view: "datatable",
+        headerRowHeight: 36,
+        select: "row",
+        pager: {
+          container: "paging_here",// the container where the pager controls will be placed into
+          size: 10, // the number of records per a page
+          group: 5   // the number of pages in the pager
+        },
+        columns: [
+          {
+            id: "date", header: "Date", width: 140, sort: "string",
+            footer: {content: "rowCount"}
+          },
+          {
+            id: "weekday", header: ["Weekday", {content: "selectFilter"}],
+            width: 100, sort: "string"
+          },
+          {
+            id: "mark", header: "Mark", width: 100, sort: "int",
+            footer: {content: "avgColumn"}
+          },
+          {
+            id: "move", header: ["Move", {content: "selectFilter"}],
+            width: 100, sort: "string"
+          },
+          {
+            id: "perform", header: "Perform", width: 100, sort: "int",
+            footer: {content: "avgColumn"}
+          },
+          {
+            id: "pos", header: ["Position", {content: "selectFilter"}],
+            width: 100, sort: "string"
+          },
+        ],
+        autoheight: true,
+        autowidth: true,
+        data: pos_data,
+        footer: true
+      });
+    });
+
+    // highchart
+    Highcharts.chart('chart', {
+      chart: {
+        zoomType: 'xy'
+      },
+      title: {
+        text: 'Performs/Marks'
+      },
+      subtitle: {
+        text: "Symbol: {{ ib_pos.symbol }}"
+      },
+      xAxis: [{
+        categories: dates,
+        crosshair: true
+      }],
+      yAxis: [{ // Primary yAxis
+        labels: {
+          format: '${value}',
+          style: {
+            color: Highcharts.getOptions().colors[1]
+          }
+        },
+        title: {
+          text: 'Marks',
+          style: {
+            color: Highcharts.getOptions().colors[1]
+          }
+        }
+      }, { // Secondary yAxis
+        title: {
+          text: 'Performs',
+          style: {
+            color: Highcharts.getOptions().colors[0]
+          }
+        },
+        labels: {
+          format: '${value}',
+          style: {
+            color: Highcharts.getOptions().colors[0]
+          }
+        },
+        opposite: true
+      }],
+      tooltip: {
+        shared: true
+      },
+      legend: {
+        layout: 'vertical',
+        align: 'left',
+        x: 120,
+        verticalAlign: 'top',
+        y: 100,
+        floating: true,
+        backgroundColor: (
+            Highcharts.theme && Highcharts.theme.legendBackgroundColor
+        ) || '#FFFFFF'
+      },
+      series: [{
+        name: 'Marks',
+        type: 'column',
+        yAxis: 1,
+        data: marks,
+        tooltip: {
+          valueSuffix: '$'
+        }
+
+      }, {
+        name: 'Performs',
+        type: 'line',
+        data: performs,
+        tooltip: {
+          valueSuffix: '$'
+        }
+      }]
+    });
+  </script>
+{% endblock %}

@@ -87,3 +87,25 @@ class UploadRenameImage(object):
 
         # return the whole path to the file
         return os.path.join(self.sub_path, filename)
+
+
+@deconstructible
+class UploadDataHeroImage(object):
+    def __init__(self, path):
+        self.sub_path = path
+
+    def __call__(self, instance, filename):
+        name, ext = filename.split('.')
+
+        # remove string
+        name = name.replace('DataHero ', '').replace(' - ', '_')
+        name = name.replace(' ', '_')
+        name = name.replace('(', '').replace(')', '')
+
+        # set filename as random string
+        filename = '{}_{}.{}'.format(
+            name.lower(), datetime.date.today().strftime('%Y%m%d'), ext
+        )
+
+        # return the whole path to the file
+        return os.path.join(self.sub_path, filename)

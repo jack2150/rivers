@@ -38,10 +38,15 @@
       padding-bottom: 2em;
     }
 
+    .sidebar {
+      position: fixed;
+    }
+
     .section_nav {
       list-style-type: none;
       margin: 0;
       padding: 0;
+
     }
 
     .section_nav li {
@@ -52,11 +57,14 @@
 
 {% block breadcrumbs %}
   <div class="breadcrumbs">
-    <a href="{% url 'admin:index' %}">Home</a> >
-    <a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a> >
+    <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+    <a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a> &rsaquo;
     <a href="{% url 'admin:opinion_marketmontheconomic_change' month_eco.id %}">
-      Market month economic
-    </a> >
+      Market month economics
+    </a> &rsaquo;
+    <a href="{% url 'admin:opinion_marketmontheconomic_change' month_eco.id %}">
+      {{ month_eco }}
+    </a> &rsaquo;
     Report
   </div>
 {% endblock %}
@@ -65,17 +73,15 @@
   <table>
     <tr>
       <td style="width: 160px;">
-        <ol class="summary_nav">
-          <li><a href="#montheconomic">Month economic</a></li>
-        </ol>
+        <div class="sidebar">
+          <h3>Quickbar</h3>
+          <ol class="section_nav">
+            <li><a href="#month_eco">Month economics</a></li>
+          </ol>
+        </div>
       </td>
       <td>
-        {% if 0 %}
-        {% include 'opinion/market/month/economic/report.html' %}
-        {% endif %}
-
-        {% include 'opinion/market/week/report/index.html' %}
-
+        {% include 'opinion/market/month/economic/index.html' %}
       </td>
     </tr>
   </table>

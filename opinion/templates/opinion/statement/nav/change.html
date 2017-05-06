@@ -1,0 +1,44 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthnav as nav %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Return month
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Change max:</th>
+        <td>{{ nav.change_max }}</td>
+      </tr>
+      <tr>
+        <th>Change min:</th>
+        <td>{{ nav.change_min }}</td>
+
+      </tr>
+      <tr>
+        <th>Change mean:</th>
+        <td>{{ nav.change_mean }}</td>
+      </tr>
+      <tr>
+        <th>Change review:</th>
+        <td>{{ nav.get_change_review_display }}</td>
+      </tr>
+      <tr>
+        <th>Change comment:</th>
+        <td><pre>{{ nav.change_comment }}</pre></td>
+      </tr>
+      <tr>
+        <th>Charts:</th>
+        <td>
+          {% if nav.change_chart %}
+            <a href="{{ nav.change_chart.url }}" target="_blank">
+              <img src="{{ nav.change_chart.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

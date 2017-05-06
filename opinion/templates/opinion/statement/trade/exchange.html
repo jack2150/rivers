@@ -1,0 +1,23 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthtradeexchange_set.all as exchanges %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Trade exchange
+      </h2>
+    </fieldset>
+    <table>
+      {% for exchange in exchanges %}
+        <tr>
+          <th>Exchange:</th>
+          <td>{{ exchange.exchange }}</td>
+          <th>Asset:</th>
+          <td>{{ exchange.get_asset_display }}</td>
+          <th>Trade:</th>
+          <td>{{ exchange.trade }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endwith %}

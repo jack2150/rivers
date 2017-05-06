@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.shortcuts import render
@@ -13,6 +13,7 @@ from opinion.group.technical.report import ReportTechnicalRank
 from opinion.group.technical.models import TechnicalRank, TechnicalOpinion
 from opinion.group.market.views import *
 from opinion.group.stock.views import *
+from opinion.group.statement.views import *
 
 
 MODEL_OBJ = {
@@ -67,12 +68,12 @@ def report_enter_create(request, symbol, date=''):
     symbol = symbol.upper()
 
     if date == '':
-        date = datetime.today().date()
+        date = datetime.datetime.today().date()
         if date.weekday() not in range(1, 6):  # only weekday
             # noinspection PyUnresolvedReferences
             date = (date - BDay()).to_datetime().date()
     else:
-        date = datetime.strptime(date, '%Y-%m-%d')
+        date = datetime.datetime.strptime(date, '%Y-%m-%d')
 
     # 1. create stock report, if exist open it
     report_enter, exists = ReportEnter.objects.get_or_create(
@@ -309,9 +310,6 @@ def report_enter_summary(request, report_id):
         'barchart': tech_rank_report.barchart.to_heat(),
         'chartmill': tech_rank_report.chartmill.to_heat(),
     }
-
-
-
 
     title = 'Enter report | %s | %s' % (report_enter.symbol, report_enter.date)
     template = 'opinion/report/summary.html'

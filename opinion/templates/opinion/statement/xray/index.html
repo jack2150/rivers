@@ -1,0 +1,45 @@
+{% load base %}
+
+<div id="xray">
+  <h1>Portfolio X-ray</h1>
+
+  {% with ib_month_statement.ibmonthxraynote as note %}
+    <div class="padbot2em">
+      <fieldset class="module aligned">
+        <h2>
+          Asset allocation
+        </h2>
+      </fieldset>
+      <table>
+        <tr>
+          <th>Sector note:</th>
+          <td>{{ note.sector_note }}</td>
+        </tr>
+
+        <tr>
+          <th>Stock style note:</th>
+          <td>{{ note.stock_note }}</td>
+        </tr>
+        <tr>
+          <th>Stock type note:</th>
+          <td>{{ note.type_note }}</td>
+        </tr>
+        <tr>
+          <th>Report:</th>
+          <td>
+            {% if note.report_pdf %}
+              <a href="{{ note.report_pdf.url }}" target="_blank">
+                Morningstar x-ray
+              </a>
+            {% endif %}
+          </td>
+        </tr>
+      </table>
+    </div>
+  {% endwith %}
+
+  {% include 'opinion/statement/xray/global.html' %}
+  {% include 'opinion/statement/xray/sector.html' %}
+  {% include 'opinion/statement/xray/style.html' %}
+  {% include 'opinion/statement/xray/type.html' %}
+</div>

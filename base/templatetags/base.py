@@ -12,9 +12,10 @@ def tabular_style(obj):
     obj = str(obj)
     if 'vTextField' in obj:
         line = obj.replace('vTextField', '')
-        line = line[:-2] + ' style="width: 55px;" ' + line[-2:]
+        line = line[:-2] + ' style="width: 70px;" ' + line[-2:]
     else:
         line = obj
+        line = line[:-2] + ' style="width: 55px;" ' + line[-2:]
     return line
 
 

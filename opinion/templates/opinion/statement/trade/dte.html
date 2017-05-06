@@ -1,0 +1,58 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthtradedte as dte %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Trade order DTE
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <td>
+          <table>
+            <tr>
+              <th>Mean enter:</th>
+              <td>{{ dte.mean_enter }}</td>
+            </tr>
+            <tr>
+              <th>Mean exit:</th>
+              <td>{{ dte.mean_exit }}</td>
+            </tr>
+            <tr>
+              <th>Mean timing:</th>
+              <td>{{ dte.get_mean_timing_display }}</td>
+            </tr>
+            <tr>
+              <th>Profit exit:</th>
+              <td>{{ dte.profit_exit }}</td>
+            </tr>
+            <tr>
+              <th>Loss exit:</th>
+              <td>{{ dte.loss_exit }}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          {% if dte.dte_chart0 %}
+            <a href="{{ dte.dte_chart0.url }}" target="_blank">
+              <img src="{{ dte.dte_chart0.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if dte.dte_chart1 %}
+            <a href="{{ dte.dte_chart1.url }}" target="_blank">
+              <img src="{{ dte.dte_chart1.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if dte.dte_chart2 %}
+            <a href="{{ dte.dte_chart2.url }}" target="_blank">
+              <img src="{{ dte.dte_chart2.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

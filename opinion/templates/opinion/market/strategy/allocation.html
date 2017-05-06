@@ -1,0 +1,37 @@
+{% load base %}
+<div class="padbot2em">
+  <fieldset class="module aligned">
+    <h2>
+      Asset allocation
+    </h2>
+  </fieldset>
+  <table>
+    <tr>
+      {% for allocation in market_strategy.marketstrategyallocation_set.all %}
+        <td>
+        <table style="width: 300px;">
+          <tr>
+            <th>Name:</th>
+            <td>
+              {{ allocation.get_name_display }}
+            </td>
+          </tr>
+          <tr>
+            <th>Focus:</th>
+            <td>
+              <pre>{{ allocation.focus }}</pre>
+            </td>
+          </tr>
+          <tr>
+            <th>Ignore:</th>
+            <td>
+              <pre>{{ allocation.ignore }}</pre>
+            </td>
+          </tr>
+        </table>
+        </td>
+      {% endfor %}
+    </tr>
+
+  </table>
+</div>

@@ -1,0 +1,68 @@
+<div id="monthly" class="padbot3em">
+  <h1>Monthly analysis (Day 1-3)</h1>
+  <div>
+    <table>
+      <tr>
+        <td class="tool_view">
+          <fieldset class="module aligned">
+            <h2>Market analysis</h2>
+          </fieldset>
+          <table>
+            <tr>
+              <td>
+                <h2>
+                  Economics Review <span class="webix_icon fa-university"></span>
+                </h2>
+                <p>
+                  When you analysis economics data indicators, you know how the
+                  market is doing. Mostly good economics, market will not crash.
+                  Flash crash still possible when event happen. But if economics
+                  not change, then price will sure back to its previous state.
+                  (Advantage: Large)
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:opinion_marketmontheconomic_changelist' %}" class="link_button" target="_blank">
+                  Month Economics
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
+                  Statement analysis <span class="webix_icon fa-bar-chart"></span>
+                </h2>
+                <p>
+                  By doing statement analysis, you will know more about you trading.
+                  NAV analysis explain your account doing over time.
+                  Holding analysis explain everything about your holding.
+                  Trade analysis, the most important part, explain your trading
+                  method, profit/loss, timing, asset, <b>fee</b> and etc.
+                  (Advantage: Medium)
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'admin:ib_ibstatement_changelist' %}" class="link_button" target="_blank">
+                  IB Statement
+                </a><br>
+                <a href="{% url 'admin:opinion_ibmonthstatement_changelist' %}" class="link_button" target="_blank">
+                  IB Analysis
+                </a>
+              </td>
+            </tr>
+
+
+          </table>
+        </td>
+        <td class="tool_view">
+          <fieldset class="module aligned">
+            <h2>Nothing yet</h2>
+          </fieldset>
+          <table>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

@@ -1,128 +1,210 @@
 from django.contrib import admin
 from django.core.urlresolvers import reverse
-from base.admin import StartStopForm, DateForm
+from django.forms import fields_for_model
+
 from broker.ib.models import *
 from broker.ib.views import ib_statement_import, ib_statement_imports
 
 
+class IBStatementInline(admin.TabularInline):
+    model = IBStatement
+    extra = 0
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 class IBStatementNameAdmin(admin.ModelAdmin):
-    def ib_imports(self):
-        return '<a href="{link}">Imports</a>'.format(
-            link=reverse('admin:ib_statement_imports', kwargs={
-                'ib_path': self.path
-            })
+    # inlines = (IBStatementInline, )
+
+    def ib_import(self, obj):
+        return '{truncate} | {imports} | {report}'.format(
+            imports='<a href="%s" target="_blank">Imports</a>' % reverse(
+                'ib_statement_imports', kwargs={'ib_path': obj.path}
+            ),
+            report='<a href="%s" target="_blank">Csv</a>' % reverse(
+                'ib_statement_create_csv', kwargs={'obj_id': obj.id}
+            ),
+            truncate='<a href="%s" target="_blank" %s>Truncate</a>' % (
+                reverse('ib_statement_truncate', kwargs={'obj_id': obj.id}),
+                """
+                onclick = "return confirm('Are your sure?')"
+                """
+            ),
         )
 
-    ib_imports.short_description = ''
-    ib_imports.allow_tags = True
+    ib_import.short_description = 'Statement'
+    ib_import.allow_tags = True
+
+    def pos_manage(self, obj):
+        return '{create} | {remove}'.format(
+            create='<a href="%s" target="_blank">Create</a>' % reverse(
+                'ib_position_create', kwargs={'obj_id': obj.id}
+            ),
+            remove='<a href="%s" target="_blank">Remove</a>' % reverse(
+                'ib_position_remove', kwargs={'obj_id': obj.id}
+            ),
+        )
+
+    pos_manage.short_description = 'Position'
+    pos_manage.allow_tags = True
 
     list_display = (
-        'name', 'broker_id', 'path', 'account_type', 'customer_type', 'capability', ib_imports
+        'title', 'real_name', 'broker', 'account_id', 'path', 'capability',
+        'ib_import', 'pos_manage'
     )
     fieldsets = (
-        ('Primary', {'fields': ('name', 'broker_id', 'start', 'stop')}),
+        ('Primary', {'fields': (
+            'title', 'real_name', 'broker', 'account_id', 'start', 'stop'
+        )}),
         ('Detail', {'fields': (
             'path', 'account_type', 'customer_type', 'capability', 'description'
         )}),
     )
 
-    search_fields = ('name', 'broker_id', 'description')
+    search_fields = ('title', 'real_name', 'broker', 'account_id', 'description')
     list_filter = ('account_type', 'customer_type')
     list_per_page = 20
 
 
+class StatementAdminInline(admin.TabularInline):
+    extra = 0
+    can_delete = False
+    editable_fields = []
+    readonly_fields = []
+    exclude = ('statement',)
+
+    def get_readonly_fields(self, request, obj=None):
+        return list(self.readonly_fields) + \
+               [field.name for field in self.model._meta.fields
+                if field.name not in self.editable_fields and
+                field.name not in self.exclude]
+
+    def has_add_permission(self, request):
+        return False
+
+
+class IBNetAssetValueInline(StatementAdminInline):
+    model = IBNetAssetValue
+
+
+class IBMarkToMarketInline(StatementAdminInline):
+    model = IBMarkToMarket
+    # readonly_fields = fields_for_model(IBMarkToMarket).keys()
+
+
+class IBPerformanceInline(StatementAdminInline):
+    model = IBPerformance
+
+
+class IBProfitLossInline(StatementAdminInline):
+    model = IBProfitLoss
+
+
+class IBCashReportInline(StatementAdminInline):
+    model = IBCashReport
+
+
+class IBOpenPositionInline(StatementAdminInline):
+    model = IBOpenPosition
+
+
+class IBPositionTradeInline(StatementAdminInline):
+    model = IBPositionTrade
+
+
+class IBFinancialInfoInline(StatementAdminInline):
+    model = IBFinancialInfo
+
+
+class IBInterestAccrualInline(StatementAdminInline):
+    model = IBInterestAccrual
+
+
 class IBStatementAdmin(admin.ModelAdmin):
-    def ib_import(self):
-        return '<a href="{link}">Import</a>'.format(
-            link=reverse('admin:ib_statement_import', kwargs={
-                'broker_id': self.name.broker_id, 'date': self.date.strftime('%Y-%m-%d')
-            })
+    inlines = [
+        IBNetAssetValueInline, IBMarkToMarketInline, IBPerformanceInline,
+        IBProfitLossInline, IBCashReportInline, IBOpenPositionInline,
+        IBPositionTradeInline, IBFinancialInfoInline, IBInterestAccrualInline
+    ]
+
+    def ib_import(self, obj):
+        return '{link} | {xray}'.format(
+            link='<a href="%s" target="_blank">Import</a>' % reverse(
+                'ib_statement_import', kwargs={'obj_id': obj.statement_name.id}
+            ),
+            xray='<a href="%s" target="_blank">X-ray</a>' % reverse(
+                'ib_statement_csv_symbol', kwargs={'obj_id': obj.id}
+            )
         )
+
     ib_import.short_description = ''
     ib_import.allow_tags = True
 
     list_display = (
-        'name', 'date', 'nav_start', 'nav_mark', 'nav_fee', 'nav_value', ib_import
+        'statement_name', 'date', 'stock_end', 'option_end', 'ib_import'
     )
     fieldsets = (
-        ('Primary', {'fields': ('name', 'date')}),
-        ('Net Asset Value', {'fields': ('nav_start', 'nav_mark', 'nav_fee', 'nav_value')}),
+        ('Primary', {'fields': ('statement_name', 'date')}),
+        ('Net Asset Value', {'fields': (
+            'stock_prior', 'stock_trans', 'stock_pl_mtm_prior', 'stock_pl_mtm_trans', 'stock_end',
+            'option_prior', 'option_trans', 'option_pl_mtm_prior', 'option_pl_mtm_trans', 'option_end',
+        )}),
 
     )
 
-    search_fields = ('name__name', 'date')
-    list_filter = ('name', 'name__name',)
+    search_fields = ('statement_name__title', 'date')
+    list_filter = ('statement_name__title',)
     list_per_page = 20
 
 
-class IBNetAssetValueAdmin(admin.ModelAdmin):
+class IBPositionAdmin(admin.ModelAdmin):
+    inlines = [
+        IBMarkToMarketInline, IBPerformanceInline,
+        IBProfitLossInline, IBOpenPositionInline,
+        IBPositionTradeInline, IBFinancialInfoInline
+    ]
+
+    def report(self, obj):
+        return '{report}'.format(
+            report='<a href="%s" target="_blank">Report</a>' % reverse(
+                'ib_position_report', kwargs={'obj_id': obj.id}
+            ),
+        )
+
+    report.short_description = ''
+    report.allow_tags = True
+
     list_display = (
-        'statement', 'asset', 'total0', 'total1', 'short_sum', 'long_sum', 'change'
+        'symbol', 'date0', 'date1', 'status', 'statement_name', 'report'
     )
     fieldsets = (
-        ('Foreign', {'fields': ('statement', )}),
-        ('Detail', {'fields': (
-            'asset', 'total0', 'total1', 'short_sum', 'long_sum', 'change'
+        ('Primary', {'fields': (
+            'statement_name', 'symbol', 'date0', 'date1', 'status',
         )}),
+        ('Main (auto)', {'fields': (
+            'fee', 'options', 'perform', 'total'
+        )}),
+        ('Main (select)', {'fields': (
+            'updated', 'adjust', 'qty_multiply', 'move', 'side', 'account',
+            'name', 'spread', 'strikes'
+        )}),
+
     )
 
-    search_fields = ('statement__name__name', )
-    list_filter = ('asset', )
+    search_fields = ('statement_name__title', 'symbol')
+    list_filter = ('statement_name__title', 'status')
     list_per_page = 20
 
-
-class IBMarkToMarketAdmin(admin.ModelAdmin):
-    list_display = (
-        'symbol', 'statement', 'qty0', 'qty1', 'price0', 'price1', 'pl_total'
-    )
-    fieldsets = (
-        ('Foreign', {'fields': ('statement',)}),
-        ('Position', {'fields': (
-            'symbol', 'qty0', 'qty1', 'price0', 'price1',
-        )}),
-        ('Profit Loss', {'fields': (
-            'pl_pos', 'pl_trans', 'pl_fee', 'pl_other', 'pl_total'
-        )}),
-    )
-
-    search_fields = ('statement__name__name', 'symbol')
-    list_filter = ()
-    list_per_page = 20
-
-
-class IBPerformanceAdmin(admin.ModelAdmin):
-    list_display = (
-        'symbol', 'statement', 'cost_adj', 'real_total', 'unreal_total', 'total'
-    )
-    fieldsets = (
-        ('Foreign', {'fields': ('statement',)}),
-        ('Performance', {'fields': (
-            'symbol', 'cost_adj', 'total'
-        )}),
-        ('Realized Profit/Loss', {'fields': (
-            'real_st_profit', 'real_st_loss', 'real_lt_profit', 'real_lt_loss', 'real_total',
-        )}),
-        ('Unrealized Profit/Loss', {'fields': (
-            'unreal_st_profit', 'unreal_st_loss', 'unreal_lt_profit', 'unreal_lt_loss', 'unreal_total',
-        )}),
-    )
-
-    search_fields = ('statement__name__name', 'symbol')
-    list_filter = ()
-    list_per_page = 20
+    readonly_fields = ('statement_name', )
 
 
 admin.site.register(IBStatementName, IBStatementNameAdmin)
 admin.site.register(IBStatement, IBStatementAdmin)
-admin.site.register(IBNetAssetValue, IBNetAssetValueAdmin)
-admin.site.register(IBMarkToMarket, IBMarkToMarketAdmin)
-admin.site.register(IBPerformance, IBPerformanceAdmin)
-
-admin.site.register_view(
-    'broker/ib/date/(?P<broker_id>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
-    urlname='ib_statement_import', view=ib_statement_import
-)
-admin.site.register_view(
-    'broker/ib/import/(?P<ib_path>\w+)/$',
-    urlname='ib_statement_imports', view=ib_statement_imports
-)
+admin.site.register(IBPosition, IBPositionAdmin)

@@ -1,13 +1,4 @@
-from opinion.group.market.models import MarketMonthEconomic, MarketWeek, MarketWeekFund, \
-    MarketWeekFundNetCash, MarketWeekCommitment
-import operator
-
-g = [
-    ('bull', 'Bull - 8/2 or 7/3 long/short pos'),
-    ('neutral', 'Neutral - 7/3 or 6/4 long/short pos'),
-    ('bear', 'Bear - 6/4 or 5/5 long/short pos'),
-    ('crash', 'Crash - depend on period, start 2/8, recover 9/1'),
-]
+from opinion.group.market.models import *
 
 
 class ReportMarketMonthEconomic(object):
@@ -44,9 +35,6 @@ class ReportMarketMonthEconomic(object):
         return []
 
 
-# todo: weekly sentiment, monthly review, daily
-
-
 class ReportMarketWeek(object):
     def __init__(self, market_week):
         self.market_week = market_week
@@ -61,10 +49,6 @@ class ReportMarketWeek(object):
 
         self.commitment = self.ReportMarketWeekCommitment(
             self.market_week.marketweekcommitment_set
-        )
-
-        self.relocation = self.ReportMarketWeekRelocation(
-            self.market_week.marketweekrelocation
         )
 
     class ReportMarketWeekFund(object):
@@ -353,27 +337,3 @@ class ReportMarketWeek(object):
                     )),
                 ],
             }
-
-    class ReportMarketWeekRelocation(object):
-        def __init__(self, relocation):
-            self.relocation = relocation
-
-        def create(self):
-            return
-
-        def explain(self):
-            return
-
-
-
-
-
-
-
-
-
-
-
-
-
-

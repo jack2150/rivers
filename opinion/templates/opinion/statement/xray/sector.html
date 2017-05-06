@@ -1,0 +1,25 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthxraysector_set.all as sectors %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Sector distribution
+      </h2>
+    </fieldset>
+    <table>
+      {% for sector in sectors %}
+        <tr>
+          <th>Sector:</th>
+          <td>{{ sector.get_sector_display }}</td>
+          <th>Exposure:</th>
+          <td>{{ sector.get_exposure_display }}</td>
+          <th>Hold:</th>
+          <td>{{ sector.hold }}</td>
+          <th>Benchmark:</th>
+          <td>{{ sector.benchmark }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endwith %}

@@ -1,0 +1,66 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthtradeother as trade_other %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Trade others
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <td>
+          <table>
+            <tr>
+              <th>Hour filled:</th>
+              <td>{{ trade_other.get_hour_filled_display }}</td>
+            </tr>
+            <tr>
+              <th>Hour order:</th>
+              <td>{{ trade_other.hour_order }}</td>
+            </tr>
+            <tr>
+              <th>Symbols:</th>
+              <td>{{ trade_other.symbols }}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          {% if trade_other.hour_chart %}
+            <a href="{{ trade_other.hour_chart.url }}" target="_blank">
+              <img src="{{ trade_other.hour_chart.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if trade_other.cash_chart %}
+            <a href="{{ trade_other.cash_chart.url }}" target="_blank">
+              <img src="{{ trade_other.cash_chart.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if trade_other.exchange_chart %}
+            <a href="{{ trade_other.exchange_chart.url }}" target="_blank">
+              <img src="{{ trade_other.exchange_chart.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          <br>
+          {% if trade_other.trade_chart0 %}
+            <a href="{{ trade_other.trade_chart0.url }}" target="_blank">
+              <img src="{{ trade_other.trade_chart0.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if trade_other.trade_chart1 %}
+            <a href="{{ trade_other.trade_chart1.url }}" target="_blank">
+              <img src="{{ trade_other.trade_chart1.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+          {% if trade_other.trade_chart2 %}
+            <a href="{{ trade_other.trade_chart2.url }}" target="_blank">
+              <img src="{{ trade_other.trade_chart2.url }}" title="chart" class="width220">
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endwith %}

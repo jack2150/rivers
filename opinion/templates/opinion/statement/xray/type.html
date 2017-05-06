@@ -1,0 +1,25 @@
+{% load base %}
+
+{% with ib_month_statement.ibmonthxraystocktype_set.all as stocktypes %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Stock type
+      </h2>
+    </fieldset>
+    <table>
+      {% for stocktype in stocktypes %}
+        <tr>
+          <th>Stock type:</th>
+          <td>{{ stocktype.get_stock_type_display }}</td>
+          <th>Exposure:</th>
+          <td>{{ stocktype.get_exposure_display }}</td>
+          <th>Hold:</th>
+          <td>{{ stocktype.hold }}</td>
+          <th>Benchmark:</th>
+          <td>{{ stocktype.benchmark }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endwith %}

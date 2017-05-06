@@ -83,18 +83,3 @@ class OptionTimeSaleAdmin(admin.ModelAdmin):
 
 
 admin.site.register(OptionTimeSale, OptionTimeSaleAdmin)
-
-admin.site.register_view(
-    'subtool/optiontimesale/input', urlname='timesale_insert_view', view=timesale_insert_view
-)
-admin.site.register_view(
-    'subtool/optiontimesale/summary/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
-    urlname='timesale_report_view', view=timesale_report_view
-)
-admin.site.register_view(
-    'subtool/live/excel_rtd/create', urlname='excel_rtd_create', view=excel_rtd_create
-)
-admin.site.register_view(
-    'subtool/ticker/minute1/si/report/(?P<symbol>\w+)/(?P<date>\d{4}-\d{2}-\d{2})/$',
-    urlname='minute1_si_report', view=minute1_si_report
-)

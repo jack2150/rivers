@@ -310,6 +310,11 @@ class MarketWeek(models.Model):
         default='Write down weekly comment & expectation', null=True, blank=True
     )
 
+    def __unicode__(self):
+        return 'MarketWeek {date}'.format(
+            date=self.date
+        )
+
 
 # fund relocation
 class MarketWeekRelocation(models.Model):
@@ -980,3 +985,102 @@ class MarketWeekEtfFlow(models.Model):
         ),
         max_length=20, help_text='Sector move', default='neutral', blank=True
     )
+
+
+# month to week decision
+class MarketStrategy(models.Model):
+    date = models.DateField(help_text='Weekly', unique=True, default=datetime.datetime.today)
+
+    economic = models.CharField(
+        choices=(
+            ('good', 'Good - economics is making higher'),
+            ('normal', 'Neutral - economics move sideway'),
+            ('bad', 'Bad - economics is moving lower'),
+        ),
+        max_length=20, help_text='Economics condition (report)'
+    )
+    week_movement = models.CharField(
+        choices=(
+            ('bull', 'Bull - market bullish; making higher'),
+            ('neutral', 'Neutral - market neutral; trading in range'),
+            ('bear', 'Bear - market bearish; making lower'),
+        ),
+        max_length=50, help_text='Month to week market movement (expectation)'
+    )
+
+    def __unicode__(self):
+        return 'MarketStrategy {date}'.format(
+            date=self.date
+        )
+
+
+class MarketStrategyOpportunity(models.Model):
+    market_strategy = models.ForeignKey(MarketStrategy)
+
+    name = models.CharField(
+        choices=(
+            ('buy', 'Buy - good economics, market bull; embrace, keep buy'),
+            ('hold', 'Hold - good economics, market neutral; buy support & sell resist'),
+            ('strong_buy', 'Strong buy - good economics, market bear; collect, aggressive buy'),
+            ('hold', 'Hold - normal economics, market bull; ignore, wait for opportunity'),
+            ('hold', 'Hold - normal economics, market neutral; buy support & sell resist'),
+            ('buy', 'Hold - normal economics, market bear; caution buy'),
+            ('strong_sell', 'Strong sell - bad economics, market bull; reject, aggressive short'),
+            ('hold', 'Hold - bad economics, market neutral; buy support & sell resist'),
+            ('sell', 'Sell - bad economics, market bear; follow, caution short'),
+        ),
+        max_length=50, help_text='Opportunity'
+    )
+    resist = models.FloatField(default=0, blank=True)
+    support = models.FloatField(default=0, blank=True)
+
+    unique_together = (('week_strategy', 'name'), )
+
+
+class MarketStrategyAllocation(models.Model):
+    market_strategy = models.ForeignKey(MarketStrategy)
+
+    name = models.CharField(
+        choices=(
+            ('usa_large', 'USA - Money in USA over World; large over small cap'),
+            ('usa_small', 'USA - Money in USA over World; small over large cap'),
+            ('usa_bond', 'USA - Money in USA over World; in Bond, not stock'),
+            ('world_stock', 'World - Money in World over USA; Worldwide equity'),
+            ('world_bond', 'World - Money in World over USA; Worldwide bond'),
+            ('others', 'Others - like REIT, material, commodity and etc')
+        ),
+        max_length=50, help_text='Money flow allocation'
+    )
+
+    focus = models.TextField(default='', blank=True)
+    ignore = models.TextField(default='', blank=True)
+
+    unique_together = (('week_strategy', 'name'),)
+
+
+class MarketStrategyDistribution(models.Model):
+    market_strategy = models.ForeignKey(MarketStrategy)
+
+    name = models.CharField(
+        choices=(
+            ('primary', 'Primary distribution'),
+            ('secondary', 'Secondary distribution'),
+            ('others', 'Others distribution'),
+        ),
+        max_length=50, help_text='Distribution, total 10 positions'
+    )
+
+    long_pos = models.IntegerField(default=0, help_text='Long position')
+    neutral_long_pos = models.IntegerField(default=0, help_text='Neutral to Long position')
+    neutral_pos = models.IntegerField(default=10, help_text='Neutral position')
+    neutral_short_pos = models.IntegerField(default=0, help_text='Neutral to short position')
+    short_pos = models.IntegerField(default=0, help_text='Short position')
+
+    weight = models.BooleanField(default=False, help_text='Follow sector weighting?')
+
+    unique_together = (('week_strategy', 'name'),)
+
+
+
+
+
