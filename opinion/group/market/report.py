@@ -272,7 +272,7 @@ class ReportMarketWeek(object):
             """:type: MarketWeekCommitment"""
             self.gold = self.commitment.get(name='gold')
             """:type: MarketWeekCommitment"""
-            self.bond30y = self.commitment.get(name='bond30y')
+            self.bond10y = self.commitment.get(name='bond10y')
             """:type: MarketWeekCommitment"""
             self.bond2y = self.commitment.get(name='bond2y')
             """:type: MarketWeekCommitment"""
@@ -290,7 +290,7 @@ class ReportMarketWeek(object):
 
             gold_chg = self.gold.change / float(self.gold.open_interest) * 100
 
-            bond30y_chg = self.bond30y.change / float(self.bond30y.open_interest) * 100
+            bond30y_chg = self.bond10y.change / float(self.bond10y.open_interest) * 100
             bond2y_chg = self.bond2y.change / float(self.bond2y.open_interest) * 100
 
             dollar_chg = self.dollar.change / float(self.dollar.open_interest) * 100
@@ -325,7 +325,7 @@ class ReportMarketWeek(object):
                 ],
                 'finance': [
                     ('bond30y', '%d/%d (%+.1f%%)' % (
-                        self.bond30y.change, self.bond30y.open_interest, bond30y_chg
+                        self.bond10y.change, self.bond10y.open_interest, bond30y_chg
                     )),
                     ('bond2y', '%d/%d (%+.1f%%)' % (
                         self.bond2y.change, self.bond2y.open_interest, bond2y_chg

@@ -1,15 +1,12 @@
 from django.core.urlresolvers import reverse
 
 from base.utests import TestUnitSetUp
-from opinion.group.report.models import ReportEnter
+from opinion.group.report.models import UnderlyingReport
 from opinion.group.stock.report import ReportStockProfile, ReportUnderlyingArticle
 import pandas as pd
 
 
 class TestStockOpinion(TestUnitSetUp):
-    def test_ownership_price(self):
-        self.client.get(reverse('ownership_price', kwargs={'symbol': 'LUV'}))
-
     def test_earning_report(self):
         # self.client.get(reverse('report_earning', kwargs={'symbol': 'LUV'}))
         self.client.get(reverse('report_earning', kwargs={'symbol': 'AIG'}))
@@ -21,11 +18,11 @@ class TestStockReport(TestUnitSetUp):
         self.symbol = 'LUV'
         self.date = '2017-02-24'
 
-        self.report_enter = ReportEnter.objects.get(
+        self.report_opinion = UnderlyingReport.objects.get(
             symbol=self.symbol, date=self.date
         )
 
-        self.stock_report = ReportStockProfile(self.report_enter)
+        self.stock_report = ReportStockProfile(self.report_opinion)
 
     def test_fundamental_report(self):
         """
@@ -142,7 +139,7 @@ class TestUnderlyingArticleReport(TestUnitSetUp):
         self.symbol = 'LUV'
         self.date = '2017-02-24'
 
-        self.report_enter = ReportEnter.objects.get(
+        self.report_opinion = UnderlyingReport.objects.get(
             symbol=self.symbol, date=self.date
         )
 
@@ -151,7 +148,7 @@ class TestUnderlyingArticleReport(TestUnitSetUp):
 
         :return:
         """
-        article = ReportUnderlyingArticle(self.report_enter)
+        article = ReportUnderlyingArticle(self.report_opinion)
         result = article.create()
 
         print result['article']

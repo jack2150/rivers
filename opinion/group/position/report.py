@@ -1,14 +1,11 @@
-from opinion.group.position.models import *
-
-
 class ReportOpinionPosition(object):
-    def __init__(self, report_enter):
-        self.report_enter = report_enter
-        """:type: ReportEnter """
+    def __init__(self, report):
+        self.report = report
+        """:type: UnderlyingReport """
 
         self.pos_enter = self.ReportPositionEnter(
-            self.report_enter.symbol,
-            self.report_enter.positionenter
+            self.report.symbol,
+            self.report.positionenter
         )
 
     class ReportPositionEnter(object):
@@ -216,4 +213,3 @@ class ReportOpinionPosition(object):
                     explain = 'No crossing any events within hold period.'
 
             return signal, explain
-

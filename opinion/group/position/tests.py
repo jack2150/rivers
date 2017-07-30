@@ -5,7 +5,7 @@ from django.test import TestCase
 # Create your tests here.
 from base.utests import TestUnitSetUp
 from opinion.group.position.report import ReportOpinionPosition
-from opinion.group.report.models import ReportEnter
+from opinion.group.report.models import UnderlyingReport
 
 
 class TestPositionReport(TestUnitSetUp):
@@ -14,11 +14,11 @@ class TestPositionReport(TestUnitSetUp):
         self.symbol = 'LUV'
         self.date = '2017-02-24'
 
-        self.report_enter = ReportEnter.objects.get(
+        self.report_opinion = UnderlyingReport.objects.get(
             symbol=self.symbol, date=self.date
         )
 
-        self.pos_report = ReportOpinionPosition(self.report_enter)
+        self.pos_report = ReportOpinionPosition(self.report_opinion)
 
     def test_pos_enter(self):
         """

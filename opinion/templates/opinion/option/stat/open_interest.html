@@ -1,0 +1,41 @@
+{% load base %}
+{% if option_stat.optionstatopeninterest_set.all|length %}
+<div class="padbot2em">
+  <fieldset class="module aligned">
+    <h2>
+      Open interest (Top 3)
+    </h2>
+  </fieldset>
+  <table>
+    {% for open_interest in option_stat.optionstatopeninterest_set.all %}
+    <tr>
+      <th>EX Date:</th>
+      <td>{{ open_interest.ex_date }}</td>
+      <th>Strike:</th>
+      <td>{{ open_interest.strike }}</td>
+      <th>Open interest:</th>
+      <td>{{ open_interest.open_interest }}</td>
+      <th>Name:</th>
+      <td>{{ open_interest.get_name_display }}</td>
+      <th>Side:</th>
+      <td>{{ open_interest.get_side_display }}</td>
+      <th>Volume:</th>
+      <td>{{ open_interest.get_volume_display }}</td>
+      <th>Direction:</th>
+      <td>{{ open_interest.get_direction_display }}</td>
+      <td>
+        {% if open_interest.direction == 'bull' %}
+          <span class="webix_icon fa-arrow-up"></span>
+        {% elif open_interest.direction == 'neutral' %}
+          <span class="webix_icon fa-exchange"></span>
+        {% else %}
+          <span class="webix_icon fa-arrow-down"></span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+
+
+  </table>
+</div>
+{% endif %}

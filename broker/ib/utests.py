@@ -14,7 +14,7 @@ class TestIBStatementNameCreateCSV(TestUnitSetUp):
 
         self.ib_statement_name = IBStatementName.objects.get(title='U1917852 Real money')
         self.ib_statements = self.ib_statement_name.ibstatement_set.filter(
-            date__range=[self.ib_statement_name.start, self.ib_statement_name.stop]
+            date__range=[self.ib_statement_name.move_dist, self.ib_statement_name.stop]
         ).order_by('date')
 
     def test_views(self):

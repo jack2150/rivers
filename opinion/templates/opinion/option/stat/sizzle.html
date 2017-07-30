@@ -1,0 +1,111 @@
+{% load base %}
+{% if option_stat.optionstatsizzle %}
+
+  {% with option_stat.optionstatsizzle as sizzle %}
+    <div class="padbot2em">
+      <fieldset class="module aligned">
+        <h2>
+          Sizzle
+        </h2>
+      </fieldset>
+      <table>
+        <tr>
+          <th class="width80">Sizzle index:</th>
+          <td>{{ sizzle.index }}</td>
+          {% if sizzle.index >= 1.5 %}
+            <td><span class="webix_icon fa-question"></span></td>
+            <td class="width660">
+              Higher than usually option volume. Something must have happen or not yet happen.
+              You should check the news, price action or event to understand what is going on.
+              After that, only you know it is bullish or neutral or bearish sentiment.
+            </td>
+          {% else %}
+            <td></td>
+            <td>Average option contract volume.</td>
+          {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>Call sizzle:</th>
+          <td>{{ sizzle.call }}</td>
+          {% if sizzle.call >= 1.5 %}
+            <td><span class="webix_icon fa-arrow-up"></span></td>
+            <td>
+            Higher than usually call contract volume compare to previous 5-days average.
+            A lot of call have been bought or sold. It is indicate a bullish sentiment.
+            </td>
+          {% else %}
+            <td></td>
+            <td>Average call contract volume.</td>
+          {% endif %}
+        </tr>
+        <tr>
+          <th>Put sizzle:</th>
+          <td>{{ sizzle.put }}</td>
+          {% if sizzle.put >= 1.5 %}
+            <td><span class="webix_icon fa-arrow-down"></span></td>
+            <td>
+            Higher than usually put contract volume compare to previous 5-days average.
+            A lot of protection have been bought. It is indicate a bearish sentiment.
+            </td>
+          {% else %}
+            <td></td>
+            <td>Average put contract volume.</td>
+          {% endif %}
+        </tr>
+        <tr>
+          <th>IV sizzle:</th>
+          <td>{{ sizzle.iv }}</td>
+          {% if sizzle.iv >= 1.5 %}
+            <td><span class="webix_icon fa-arrow-down"></span></td>
+            <td>
+            Implied volatility spike up. ATM option contract have change
+            from previous strike to current strike. Option price still not yet update.
+            Short option call/put (any strategy) is recommend if you want to trade.
+            </td>
+          {% else %}
+            <td></td>
+            <td>
+            Implied volatility in neutral range. It mean ATM option contract
+            do not change and stick in a price range.
+            </td>
+          {% endif %}
+        </tr>
+        <tr>
+          <th>Stock sizzle:</th>
+          <td>{{ sizzle.stock }}</td>
+          {% if sizzle.stock >= 2 %}
+            <td><span class="webix_icon fa-question"></span></td>
+            <td>
+            More than average volume change hand today. A large volume enter the market.
+            Either is bullish or bearish, the trend most likely will continue.
+            </td>
+          {% else %}
+            <td></td>
+            <td>Usual trading volume. No indicate anything.</td>
+          {% endif %}
+        </tr>
+        <tr>
+          <th>Put call ratio:</th>
+          <td>{{ sizzle.pc_ratio }}</td>
+          {% if sizzle.pc_ratio >= 1.5 %}
+            <td><span class="webix_icon fa-arrow-down"></span></td>
+            <td>
+            Very high put call ratio, which mean a lot of protection being bought
+            because investor think gonna go down.
+            </td>
+          {% elif sizzle.pc_ratio >= 0.5 %}
+            <td></td>
+            <td>Put and call have similar open interest. It is indicate a neutral market.</td>
+          {% else %}
+            <td><span class="webix_icon fa-arrow-up"></span></td>
+            <td>
+            Very low put contract vs call. It mean a lot of investor are bullish.
+            Either is covered call or single call, all indicate bullish market.
+            </td>
+          {% endif %}
+        </tr>
+      </table>
+    </div>
+  {% endwith %}
+{% endif %}

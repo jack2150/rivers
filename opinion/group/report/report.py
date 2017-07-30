@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from pandas.tseries.offsets import Day, BDay
 from opinion.group.technical.models import TechnicalMarketedge, TechnicalBarchart, TechnicalChartmill
 

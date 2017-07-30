@@ -127,8 +127,18 @@
       <td>
         <h2>Preparation</h2>
         <ol>
-          <li><a href="{% url 'quote_reference' symbol %}" target="_blank">
-            Reference links
+          <li><a
+              href="https://eresearch.fidelity.com/eresearch/evaluate/fundamentals/earnings.jhtml?symbols={{ symbol }}"
+              target="_blank">
+            Earning download
+          </a></li>
+          <li><a
+              href="https://eresearch.fidelity.com/eresearch/evaluate/fundamentals/dividends.jhtml?symbols={{ symbol }}"
+              target="_blank">
+            Dividend download
+          </a></li>
+          <li><a href="{% url 'admin:html_event_import' symbol %}">
+            Import earning/dividend
           </a></li>
           <li><a href="{% url 'admin:update_underlying' symbol %}" target="_blank">
             Update underlying
@@ -150,9 +160,6 @@
 
         <h2>Full Clean Process</h2>
         <ol>
-          <li><a href="{% url 'admin:html_event_import' symbol %}" target="_blank">
-            Import earning/dividend
-          </a></li>
           <li><a href="{% url 'admin:import_option_h5' symbol %}" 
                  title="Data for backtest/analysis" target="_blank">
             Import stocks/options
@@ -252,22 +259,22 @@
       <td>
         <h2>Display raw data</h2>
         <ol>
-          <li><a href="{% url 'admin:raw_stock_data' symbol 'google' %}">
+          <li><a href="{% url 'admin:raw_stock_data' symbol 'google' %}" target="_blank">
             Stock (google)
           </a></li>
-          <li><a href="{% url 'admin:raw_stock_data' symbol 'yahoo' %}">
+          <li><a href="{% url 'admin:raw_stock_data' symbol 'yahoo' %}" target="_blank">
             Stock (yahoo)
           </a></li>
-          <li><a href="{% url 'admin:raw_stock_data' symbol 'thinkback' %}">
+          <li><a href="{% url 'admin:raw_stock_data' symbol 'thinkback' %}" target="_blank">
             Stock (thinkback)
           </a></li>
-          <li><a href="{% url 'admin:raw_event_data' symbol 'earning' %}">
+          <li><a href="{% url 'admin:raw_event_data' symbol 'earning' %}" target="_blank">
             Earning
           </a></li>
-          <li><a href="{% url 'admin:raw_event_data' symbol 'dividend' %}">
+          <li><a href="{% url 'admin:raw_event_data' symbol 'dividend' %}" target="_blank">
             Dividend
           </a></li>
-          <li><a href="{% url 'admin:raw_iv_data' symbol %}">
+          <li><a href="{% url 'admin:raw_iv_data' symbol %}" target="_blank">
             Implied Volatility
           </a></li>
         </ol>

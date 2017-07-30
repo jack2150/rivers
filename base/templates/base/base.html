@@ -20,6 +20,14 @@
   {% block extrascript %}{% endblock %}
   {% block extrastyle %}{% endblock %}
 
+  <style>
+    pre {
+      padding: 0;
+      margin: 0;
+      font-size: 1em;
+      line-height: 1.5em;
+    }
+  </style>
 </head>
 <body class=" dashboard">
 <!-- Header -->
@@ -59,8 +67,9 @@
   <div id="webix-content"></div>
 </div>
 
-
 {% block webix-script %}{% endblock %}
+
+{% block other-script %}{% endblock %}
 
 </body>
 </html>

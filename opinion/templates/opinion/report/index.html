@@ -23,14 +23,13 @@
             data: [
               {id: 100, title: "< Back"},
               {id: 1, title: "1. Position idea"},
-              {id: 2, title: "2. Technical rank"},
-              {id: 3, title: "3. Technical opinion"},
-              {id: 4, title: "4. Stock profile"},
-              {id: 5, title: "5. Underlying article"},
-              {id: 6, title: "6. Position enter"},
-              {id: 7, title: "7. Subtool opinion"},
-              {id: 8, title: "8. Position decision"},
-              {id: 101, title: "Summary report"},
+              {id: 4, title: "2. Stock profile"},
+              {id: 5, title: "3. Underlying article"},
+              {id: 2, title: "4. Technical rank"},
+              {id: 6, title: "5. Position enter"},
+              {id: 7, title: "6. Subtool opinion"},
+              {id: 8, title: "7. Position decision"},
+              {id: 101, title: "Summary report"}
 
             ]
           },
@@ -88,7 +87,7 @@
           $$('ref-link').define("src", "{% url 'report_enter_link' report_enter.id 'positiondecision' %}");
         }
         else if (id == 100) {
-          webix.send("{% url 'admin:opinion_reportenter_changelist' %}", null, "GET");
+          webix.send("{% url 'admin:opinion_underlyingreport_changelist' %}", null, "GET");
         }
         else if (id == 101) {
           webix.send("{% url 'report_enter_summary' report_enter.id %}", null, "GET");

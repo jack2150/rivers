@@ -3,17 +3,19 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.shortcuts import render
 from pandas.tseries.offsets import BDay
-
 from opinion.group.position.report import ReportOpinionPosition
 from opinion.group.stock.models import StockProfile, UnderlyingArticle
 from opinion.group.stock.report import ReportStockProfile, ReportUnderlyingArticle
 from opinion.group.position.models import PositionIdea, PositionEnter, PositionDecision
-from opinion.group.report.models import ReportEnter
+from opinion.group.report.models import UnderlyingReport
 from opinion.group.technical.report import ReportTechnicalRank
 from opinion.group.technical.models import TechnicalRank, TechnicalOpinion
 from opinion.group.market.views import *
+from opinion.group.quest.views import *
 from opinion.group.stock.views import *
 from opinion.group.statement.views import *
+from opinion.group.option.views import *
+from opinion.group.stat.views import *
 
 
 MODEL_OBJ = {
@@ -25,36 +27,6 @@ MODEL_OBJ = {
     'positionenter': PositionEnter,
     'positiondecision': PositionDecision,
 }
-
-"""
-STOCK_OBJ = {
-    'stockfundamental': StockFundamental,
-    'stockownership': StockOwnership,
-    'stocksnsider': StockInsider,
-    'stockshortinterest': StockShortInterest,
-    'stockindustry': StockIndustry,
-}
-"""
-
-
-def opinion_link(request, symbol):
-    """
-
-    :param request:
-    :param symbol:
-    :return:
-    """
-    symbol = symbol.upper()
-
-    template = 'opinion/opinion_link.html'
-
-    parameters = dict(
-        site_title='Opinion links',
-        title='{symbol} opinions links'.format(symbol=symbol),
-        symbol=symbol
-    )
-
-    return render(request, template, parameters)
 
 
 def report_enter_create(request, symbol, date=''):
@@ -76,7 +48,7 @@ def report_enter_create(request, symbol, date=''):
         date = datetime.datetime.strptime(date, '%Y-%m-%d')
 
     # 1. create stock report, if exist open it
-    report_enter, exists = ReportEnter.objects.get_or_create(
+    report_enter, exists = UnderlyingReport.objects.get_or_create(
         symbol=symbol, date=date
     )
     # print date, report_enter, exists
@@ -102,7 +74,7 @@ def report_enter_create(request, symbol, date=''):
     model_data['stockreport'] = {
         'data': report_enter,
         'url': reverse(
-            'admin:opinion_reportenter_change', args=(report_enter.id,)
+            'admin:opinion_underlyingreport_change', args=(report_enter.id,)
         )
     }
 
@@ -127,7 +99,7 @@ def report_enter_link(request, report_id, model):
     :param model:
     :return:
     """
-    report_enter = ReportEnter.objects.get(id=report_id)
+    report_enter = UnderlyingReport.objects.get(id=report_id)
     symbol = report_enter.symbol.upper()
 
     # summary
@@ -154,9 +126,9 @@ def report_enter_link(request, report_id, model):
 
 
 class OpinionExists(object):
-    def __init__(self, report_enter):
-        self.report_enter = report_enter
-        """:type: ReportEnter """
+    def __init__(self, underlying_report):
+        self.underlying_report = underlying_report
+        """:type: UnderlyingReport """
 
     @staticmethod
     def exists(parent, rel_obj):
@@ -168,44 +140,44 @@ class OpinionExists(object):
 
     def created(self):
         stock_profile = False
-        if self.exists(self.report_enter, 'stockprofile'):
-            if self.exists(self.report_enter.stockprofile, 'stockfundamental'):
-                if self.report_enter.stockprofile.stockfundamental.tp_mean > 0:
+        if self.exists(self.underlying_report, 'stockprofile'):
+            if self.exists(self.underlying_report.stockprofile, 'stockfundamental'):
+                if self.underlying_report.stockprofile.stockfundamental.tp_mean > 0:
                     stock_profile = True
 
         pos_idea = False
-        if self.exists(self.report_enter, 'positionidea'):
-            if self.report_enter.positionidea.target_price > 0:
+        if self.exists(self.underlying_report, 'positionidea'):
+            if self.underlying_report.positionidea.target_price > 0:
                 pos_idea = True
 
         pos_enter = False
-        if self.exists(self.report_enter, 'positionenter'):
-            if self.report_enter.positionenter.target_price > 0:
+        if self.exists(self.underlying_report, 'positionenter'):
+            if self.underlying_report.positionenter.target_price > 0:
                 pos_enter = True
 
         pos_dc = False
-        if self.exists(self.report_enter, 'positiondecision'):
-            if len(self.report_enter.positiondecision.desc):
+        if self.exists(self.underlying_report, 'positiondecision'):
+            if len(self.underlying_report.positiondecision.desc):
                 pos_dc = True
 
         tech_me = False
-        if self.exists(self.report_enter.technicalrank, 'technicalmarketedge'):
-            if self.report_enter.technicalrank.technicalmarketedge.fprice:
+        if self.exists(self.underlying_report.technicalrank, 'technicalmarketedge'):
+            if self.underlying_report.technicalrank.technicalmarketedge.fprice:
                 tech_me = True
 
         tech_bc = False
-        if self.exists(self.report_enter.technicalrank, 'technicalbarchart'):
-            if self.report_enter.technicalrank.technicalbarchart.strength:
+        if self.exists(self.underlying_report.technicalrank, 'technicalbarchart'):
+            if self.underlying_report.technicalrank.technicalbarchart.strength:
                 tech_bc = True
 
         tech_cm = False
-        if self.exists(self.report_enter.technicalrank, 'technicalchartmill'):
-            if self.report_enter.technicalrank.technicalchartmill.rank:
+        if self.exists(self.underlying_report.technicalrank, 'technicalchartmill'):
+            if self.underlying_report.technicalrank.technicalchartmill.rank:
                 tech_cm = True
 
         article = False
-        if self.exists(self.report_enter, 'underlyingarticle'):
-            if len(self.report_enter.underlyingarticle.name):
+        if self.exists(self.underlying_report, 'underlyingarticle'):
+            if len(self.underlying_report.underlyingarticle.name):
                 article = True
 
         opinions = [
@@ -214,10 +186,10 @@ class OpinionExists(object):
             'TechnicalTTM', 'TechnicalPivot', 'TechnicalFreeMove', 'TechnicalZigZag',
         ]
         tech_op = []
-        if self.report_enter.technicalopinion.id:
+        if self.underlying_report.technicalopinion.id:
             for op in opinions:
                 created = 'Waiting...'
-                if self.exists(self.report_enter.technicalopinion, op.lower()):
+                if self.exists(self.underlying_report.technicalopinion, op.lower()):
                     created = 'Yes'
 
                 tech_op.append('%s %s' % (op.replace('Technical', ''), created))
@@ -244,7 +216,7 @@ def report_enter_summary(request, report_id):
     :param report_id: int
     :return: render
     """
-    report_enter = ReportEnter.objects.get(id=report_id)
+    report_enter = UnderlyingReport.objects.get(id=report_id)
     tech_rank_report = ReportTechnicalRank(report_enter.technicalrank, report_enter.close)
     fd_report = ReportStockProfile(report_enter)
     news_report = ReportUnderlyingArticle(report_enter)

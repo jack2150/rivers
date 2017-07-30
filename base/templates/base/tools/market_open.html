@@ -30,6 +30,27 @@
             <tr>
               <td>
                 <h2>
+                  Questline tracker <span class="webix_icon fa-database"></span>
+                </h2>
+                <p>
+                  In order to achieve your goal, you need to keep track on what you doing.
+                  Sometime you do thing outside of your plan.
+                  Which most of the time it happen. We need to control what we do,
+                  so we can focus on the plan to get certain result.
+                </p>
+              </td>
+              <td class="link_cell">
+                <a href="{% url 'report_questline' 0 %}" class="link_button" target="_blank">
+                  Report
+                </a><br>
+                <a href="{% url 'admin:opinion_questline_changelist' %}" class="link_button" target="_blank">
+                  Questline
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <h2>
                   Holding <span class="webix_icon fa-cube"></span>
                 </h2>
                 <p>
@@ -68,7 +89,6 @@
                 </a>
               </td>
             </tr>
-
           </table>
         </td>
         <td class="tool_view">
@@ -87,12 +107,22 @@
                   Doing enter report will let you re-evaluate the instrument you want
                   to trade. From fundamental to technical, the enter report include
                   everything that you can find in the market/web.
+                  You should also check past historical position & report you made.
+                  Sometime a symbol just not profit no matter how you trade,
+                  you should avoid them.
+
                   (Advantage: Large)
                 </p>
               </td>
               <td class="link_cell">
-                <a href="{% url 'admin:opinion_reportenter_changelist' %}" class="link_button" target="_blank">
+                <a href="{% url 'admin:opinion_underlyingreport_changelist' %}" class="link_button" target="_blank">
                   Report enter
+                </a><br>
+                <a href="{% url 'admin:ib_ibposition_changelist' %}" class="link_button" target="_blank">
+                  Pre-position
+                </a><br>
+                <a href="{% url 'admin:opinion_underlyingreport_changelist' %}" class="link_button" target="_blank">
+                  Pre-report
                 </a>
               </td>
             </tr>

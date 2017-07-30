@@ -30,9 +30,6 @@ urlpatterns = [
         views.market_strategy_report, name='market_strategy_report'),
 
     # stock
-    url(r'^stock/ownership/date_price/(?P<symbol>\w+)/$',
-        views.ownership_price, name='ownership_price'),
-
     url(r'^stock/earning/report/(?P<symbol>\w+)/$',
         views.report_earning, name='report_earning'),
 
@@ -44,5 +41,23 @@ urlpatterns = [
     url('mindsetnote/(?P<category>\w+)/$',
         trade_note, name='trade_note'),
     url('mindsetnote/(?P<date>\d{4}-\d{2}-\d{2})/$',
-        behavior_profile, name='behavior_profile')
+        behavior_profile, name='behavior_profile'),
+
+    # questline
+    url(r'^questline/report/(?P<obj_id>\d+)/$',
+        views.report_questline, name='report_questline'),
+
+    # option
+    url(r'^optionstat/timesale/create/(?P<obj_id>\d+)/$',
+        views.timesale_create, name='timesale_create'),
+    url(r'optionstat/timesale/report/(?P<obj_id>\d+)/$',
+        views.timesale_report, name='timesale_report'),
+    url(r'optionstat/report/(?P<obj_id>\d+)/$',
+        views.report_option_stat, name='report_option_stat'),
+
+    # stat
+    url(r'pricestat/report/basic/(?P<symbol>\w+)/$',
+        views.report_statprice, name='report_statprice'),
+    url(r'pricestat/report/stem/(?P<symbol>\w+)/(?P<percent>-?\d+)/(?P<bdays>\d+)/$',
+        views.report_statstem, name='report_statstem'),
 ]

@@ -602,7 +602,7 @@ class TestStatementController(TestSetUp):
             self.assertGreater(position.cashbalance_set.count(), 0)
             self.assertGreater(position.accountorder_set.count(), 0)
             self.assertGreater(position.accounttrade_set.count(), 0)
-            if position.start != position.stop:  # day trade maybe no pl because multi positions
+            if position.move_dist != position.stop:  # day trade maybe no pl because multi positions
                 self.assertTrue(position.holdingequity_set.exists() or position.holdingoption_set.exists())
                 self.assertGreater(position.profitloss_set.count(), 0)
 

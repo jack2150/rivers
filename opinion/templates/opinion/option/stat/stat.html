@@ -1,0 +1,108 @@
+{% load base %}
+<div class="padbot2em">
+  <fieldset class="module aligned">
+    <h2>
+      Greek chart
+    </h2>
+  </fieldset>
+  <table>
+    <tr>
+      <th>Symbol:</th>
+      <td>{{ option_stat.symbol }}</td>
+    </tr>
+    <tr>
+      <th>Date:</th>
+      <td>{{ option_stat.date }}</td>
+    </tr>
+    <tr>
+      <th>IV & Stat:</th>
+      <td>
+        {% if option_stat.iv_move_chart %}
+          <a href="{{ option_stat.iv_move_chart.url }}" target="_blank">
+            <img src="{{ option_stat.iv_move_chart.url }}" title="iv_move_chart" class="width220">
+          </a>
+        {% endif %}
+        {% if option_stat.stat_image %}
+          <a href="{{ option_stat.stat_image.url }}" target="_blank">
+            <img src="{{ option_stat.stat_image.url }}" title="stat_image" class="width220">
+          </a>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <th>IV term:</th>
+      <td>{{ option_stat.iv_term }}</td>
+    </tr>
+    <tr>
+      <th>IV skew:</th>
+      <td>{{ option_stat.iv_skew }}</td>
+    </tr>
+    <tr>
+      <th>Theta skew:</th>
+      <td>{{ option_stat.theta_skew }}</td>
+    </tr>
+    <tr>
+      <th>Vega skew:</th>
+      <td>{{ option_stat.vega_skew }}</td>
+    </tr>
+    <tr>
+      <th>Charts:</th>
+      <td>
+        <div style="float: left; margin-right: 1em;">
+          <h3>IV cycle:</h3>
+          {% if option_stat.iv_cycle_chart %}
+            <a href="{{ option_stat.iv_cycle_chart.url }}" target="_blank">
+              <img src="{{ option_stat.iv_cycle_chart.url }}" title="iv_cycle_chart" class="width220">
+            </a>
+          {% endif %}
+        </div>
+
+        <div style="float: left; margin-right: 1em;">
+          <h3>Theta:</h3>
+          {% if option_stat.theta_chart %}
+            <a href="{{ option_stat.theta_chart.url }}" target="_blank">
+              <img src="{{ option_stat.theta_chart.url }}" title="theta_chart" class="width220">
+            </a>
+          {% endif %}
+        </div>
+
+        <div style="float: left; margin-right: 1em;">
+          <h3>Vega:</h3>
+          {% if option_stat.vega_chart %}
+            <a href="{{ option_stat.vega_chart.url }}" target="_blank">
+              <img src="{{ option_stat.vega_chart.url }}" title="vega_chart" class="width220">
+            </a>
+          {% endif %}
+        </div>
+        <br>
+
+        <div style="float: left; margin-right: 1em;">
+          <h3>Covered:</h3>
+          {% if option_stat.covered_chart %}
+            <a href="{{ option_stat.covered_chart.url }}" target="_blank">
+              <img src="{{ option_stat.covered_chart.url }}" title="covered_chart" class="width220">
+            </a>
+          {% endif %}
+        </div>
+
+        <div style="float: left; margin-right: 1em;">
+          <h3>Open interest:</h3>
+          {% if option_stat.interest_chart %}
+            <a href="{{ option_stat.interest_chart.url }}" target="_blank">
+              <img src="{{ option_stat.interest_chart.url }}" title="interest_chart" class="width220">
+            </a>
+          {% endif %}
+        </div>
+
+        <div style="float: left; margin-right: 1em;">
+          <h3>Volume:</h3>
+          {% if option_stat.volume_chart %}
+            <a href="{{ option_stat.volume_chart.url }}" target="_blank">
+              <img src="{{ option_stat.volume_chart.url }}" title="volume_chart" class="width220">
+            </a>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>

@@ -1,5 +1,4 @@
 from cdecimal import Decimal
-from datetime import datetime
 from data.get_data import GetData
 from opinion.group.stock.models import *
 
@@ -7,7 +6,7 @@ from opinion.group.stock.models import *
 class ReportStockProfile(object):
     def __init__(self, report):
         self.report = report
-        """:type: ReportEnter """
+        """:type: UnderlyingReport """
 
         self.fundamental = self.ReportStockFundamental(
             self.report.stockprofile.stockfundamental, self.report.close
@@ -742,7 +741,7 @@ class ReportStockProfile(object):
 class ReportUnderlyingArticle(object):
     def __init__(self, report):
         self.report = report
-        """:type: ReportEnter """
+        """:type: UnderlyingReport """
 
         self.article = self.report.underlyingarticle
         """:type: UnderlyingArticle"""

@@ -126,8 +126,8 @@
     <tr>
       <td style="width: 660px">
         <h2>Performance & Mark to market</h2>
-        <div id="testA"></div>
-        <div id="paging_here" style="margin-top: 1em;"></div>
+        <div id="perform-table"></div>
+        <div id="perform-pager" style="margin-top: 1em;"></div>
       </td>
       <td>
         <h2>Trade orders</h2>
@@ -210,12 +210,12 @@
       }, webix.ui.datafilter.summColumn);
 
       webix.ui({
-        container: "testA",
+        container: "perform-table",
         view: "datatable",
         headerRowHeight: 36,
         select: "row",
         pager: {
-          container: "paging_here",// the container where the pager controls will be placed into
+          container: "perform-pager",// the container where the pager controls will be placed into
           size: 10, // the number of records per a page
           group: 5   // the number of pages in the pager
         },

@@ -7,11 +7,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.shortcuts import render, redirect
 from pandas_datareader.data import get_data_google, get_data_yahoo
-import pandas.io.data as web
 from data.models import Underlying, Treasury
 from rivers.settings import QUOTE_DIR, DB_DIR
 import numpy as np
 import pandas as pd
+
+# todo: yahoo current not work, wait for pandas update
 
 
 logger = logging.getLogger('views')

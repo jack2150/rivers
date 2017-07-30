@@ -1,7 +1,7 @@
 import datetime
 from django.db import models
 
-from opinion.group.report.models import ReportEnter
+from opinion.group.report.models import UnderlyingReport
 
 
 class TechnicalRank(models.Model):
@@ -9,7 +9,7 @@ class TechnicalRank(models.Model):
     Technical analysis opinion, daily update
     """
     # Weak-Form Hypothesis - third party ranking provider
-    report = models.OneToOneField(ReportEnter, null=True, blank=True)
+    report = models.OneToOneField(UnderlyingReport, null=True, blank=True)
 
     def __unicode__(self):
         if self.report:
@@ -131,7 +131,7 @@ class TechnicalOpinion(models.Model):
     Technical analysis opinion, daily update
     """
     # Weak-Form Hypothesis
-    report = models.OneToOneField(ReportEnter, null=True, blank=True)
+    report = models.OneToOneField(UnderlyingReport, null=True, blank=True)
     timeframe = models.CharField(
         choices=(('minute', 'Minute'), ('hour', 'Hour'), ('Day', 'Day'),
                  ('week', 'Week'), ('month', 'Month')),
@@ -392,7 +392,7 @@ class TechnicalTTM(models.Model):
         ),
         help_text='Bband to Keltners Channels (price move outside band)',
         default='hold', max_length=20,
-    )  # todo: to be cont
+    )
     ttm_wave = models.IntegerField(
         choices=((1, 'Bear & big gap'), (2, 'Bear & small gap'),
                  (3, 'No & big gap'), (3, 'No & small gap'),
@@ -489,5 +489,5 @@ class TechnicalZigZag(models.Model):
     bear_chance = models.IntegerField(default=16, help_text='Price move bearish')
 
 
-# todo: report class
+# todo: report class, without backtest, technical is useless
 # todo: cont next, technical for volume weight, momentum agressive, screw squeeze job,

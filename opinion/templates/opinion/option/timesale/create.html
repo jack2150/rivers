@@ -1,0 +1,15 @@
+{% extends "base/basic_form.html" %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+    <a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a> &rsaquo;
+    <a href="{% url 'admin:opinion_optionstat_changelist' %}">
+      Option stats
+    </a> &rsaquo;
+    <a href="{% url 'admin:opinion_optionstat_change' option_stat.id %}">
+      {{ option_stat }}
+    </a> &rsaquo;
+    Timesale Create
+  </div>
+{% endblock %}

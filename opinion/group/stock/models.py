@@ -1,14 +1,14 @@
 import datetime
 from django.db import models
 from base.ufunc import UploadRenameImage
-from opinion.group.report.models import ReportEnter
+from opinion.group.report.models import UnderlyingReport
 
 
 class StockProfile(models.Model):
     """
     Overall stock profile
     """
-    report = models.OneToOneField(ReportEnter, null=True, blank=True)
+    report = models.OneToOneField(UnderlyingReport, null=True, blank=True)
 
     def __unicode__(self):
         return 'StockProfile <{symbol}>'.format(symbol=self.report.symbol)
@@ -135,7 +135,7 @@ class StockOwnership(models.Model):
     excel_report = models.FileField(
         upload_to=UploadRenameImage('report/stock/ownership/excel'),
         default=None, null=True, blank=True
-    )  # todo: excel chart
+    )
     desc = models.TextField(
         blank=True, null=True, default='',
         help_text='Using ownership history, careful analysis price move and explain'
@@ -222,7 +222,7 @@ class UnderlyingArticle(models.Model):
     """
     Primary use for tracking story telling or irrational move
     """
-    report = models.OneToOneField(ReportEnter, null=True, blank=True)
+    report = models.OneToOneField(UnderlyingReport, null=True, blank=True)
 
     # Semi-Strong Form
     category = models.CharField(

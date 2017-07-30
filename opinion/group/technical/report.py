@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from pandas.tseries.offsets import Day, BDay
 from models import TechnicalMarketedge, TechnicalBarchart, TechnicalChartmill
 
@@ -36,7 +36,7 @@ class ReportTechnicalRank(object):
             Create marketedge report dict
             """
             # date
-            today = datetime.today().date()
+            today = datetime.datetime.today().date()
             long_ex_date0 = (self.market_edge.date + Day(60)).date()
             long_ex_date1 = (self.market_edge.date + Day(90)).date()
             day_pass = (today - self.market_edge.date).days

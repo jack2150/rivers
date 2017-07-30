@@ -237,18 +237,18 @@ def position_report(request, id, date=None):
     position = Position.objects.get(id=id)
 
     if date:
-        date_query1 = {'start': position.start, 'stop': date}
-        date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=date)
+        date_query1 = {'start': position.move_dist, 'stop': date}
+        date_query2 = Q(statement__date__gte=position.move_dist) & Q(statement__date__lte=date)
     else:
         if position.stop:
-            date_query1 = {'start': position.start, 'stop': position.stop}
-            date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=position.stop)
+            date_query1 = {'start': position.move_dist, 'stop': position.stop}
+            date_query2 = Q(statement__date__gte=position.move_dist) & Q(statement__date__lte=position.stop)
             date = position.stop.strftime('%Y-%m-%d')
         else:
             date = position.profitloss_set.order_by('statement__date')\
                 .last().statement.date.strftime('%Y-%m-%d')
-            date_query1 = {'start': position.start, 'stop': date}
-            date_query2 = Q(statement__date__gte=position.start) & Q(statement__date__lte=date)
+            date_query1 = {'start': position.move_dist, 'stop': date}
+            date_query2 = Q(statement__date__gte=position.move_dist) & Q(statement__date__lte=date)
 
     try:
         stocks = Underlying.objects.get(symbol=position.symbol).get_stock(
@@ -283,8 +283,8 @@ def position_report(request, id, date=None):
     date0 = datetime.strptime(date, '%Y-%m-%d').date()
     basic['open'] = stocks.ix[stocks.index[-1]]['open']  # stocks.last().open
     basic['close'] = stocks.ix[stocks.index[-1]]['close']  # float(stocks.last().close)
-    basic['holding_day'] = (date0 - position.start.date()).days
-    basic['start_date'] = position.start.date()
+    basic['holding_day'] = (date0 - position.move_dist.date()).days
+    basic['start_date'] = position.move_dist.date()
     basic['stop_date'] = date0
     basic['expire_date'] = None
     basic['dte'] = None

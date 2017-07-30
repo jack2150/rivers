@@ -32,6 +32,7 @@ class PortfolioReviewAdmin(admin.ModelAdmin):
         'emotion', 'position', 'movement', 'expectation', 'research'
     )
     list_filter = ('performance', )
+    ordering = ('-date',)
 
     list_per_page = 20
 
@@ -266,12 +267,19 @@ class PositionDecisionAdmin(OpinionAdmin):
     fieldsets = (
         ('Primary', {
             'fields': (
-                'report',
+                'report', 'period', 'action',
+            )
+        }),
+        ('Probability', {
+            'fields': (
+                'bull_chance', 'bull_explain',
+                'neutral_chance', 'neutral_explain',
+                'bear_chance', 'bear_explain',
             )
         }),
         ('Decision', {
             'fields': (
-                'period', 'action', 'desc', 'dec_desc', 'adv_desc'
+                'desc', 'disadvantage', 'advantage'
             )
         }),
     )

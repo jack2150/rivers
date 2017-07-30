@@ -1,0 +1,153 @@
+{% load base %}
+{% if option_stat.optionstatbidask_set %}
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Bid-ask spread
+      </h2>
+    </fieldset>
+    <table>
+      {% for bidask in option_stat.optionstatbidask_set.all %}
+        <tr>
+          <th class="width120">Name:</th>
+          <td>{{ bidask.name|upper }}</td>
+          <th class="width120">Volume:</th>
+          <td>{{ bidask.volume }}</td>
+          <th class="width120">Bid below:</th>
+          <td>{{ bidask.bid_below }}%</td>
+          <th class="width120">Ask above:</th>
+          <td>{{ bidask.ask_above }}%</td>
+          <th class="width120">Between market:</th>
+          <td>{{ bidask.between_market }}%</td>
+        </tr>
+        <tr>
+          <th class="width120">Delta 0%-20%:</th>
+          <td>{{ bidask.delta_0_20 }}%</td>
+          <th class="width120">Delta 20%-40%:</th>
+          <td>{{ bidask.delta_20_40 }}%</td>
+          <th class="width120">Delta 40%-60%:</th>
+          <td>{{ bidask.delta_40_60 }}%</td>
+          <th class="width120">Delta 60%-80%:</th>
+          <td>{{ bidask.delta_60_80 }}%</td>
+          <th class="width120">Delta 80%-100%:</th>
+          <td>{{ bidask.delta_80_100 }}%</td>
+        </tr>
+        <tr>
+          <td colspan="10">
+            <ul>
+              {% if bidask.name == 'call' %}
+
+
+
+
+                {% if bidask.delta_0_20 > 20 %}
+                  <li>
+                    Large call volume of 0% < delta < 20% OTM naked call open interest.
+                    Which mean a lot of naked, strangle or straddle strategy.
+                    <span class="webix_icon fa-arrow-down"></span>
+                  </li>
+                {% endif %}
+                {% if bidask.delta_20_40 > 20 %}
+                  <li>
+                    Large call volume of 20% < delta < 40% OTM naked call open interest.
+                    Which mean a lot of naked, strangle or straddle or covered strategy.
+                    <span class="webix_icon fa-arrow-down"></span>
+                  </li>
+                {% endif %}
+                {% if bidask.delta_40_60 > 20 %}
+                  <li>
+                    Large call volume of 40% < delta < 60% OTM naked call open interest.
+                    Which mean a lot of covered or vertical strategy.
+                    <span class="webix_icon fa-arrow-up"></span>
+                  </li>
+                {% endif %}
+                {% if bidask.delta_60_80 > 20 %}
+                  <li>
+                    Large volume of 60% < delta < 80% ITM calls.
+                    Maybe is trader previously own long call or covered or vertical strategy.
+                    <span class="webix_icon fa-arrow-up"></span>
+                  </li>
+                {% endif %}
+                {% if bidask.delta_80_100 > 20 %}
+                  <li>
+                    Large call volume of 80% < delta < 100% ITM calls.
+                    Maybe is trader previously own covered or vertical strategy.
+                    <span class="webix_icon fa-exchange"></span>
+                  </li>
+                {% endif %}
+              {% elif bidask.name == 'put' %}
+                {% if bidask.delta_0_20 > 20 %}
+                  <li>
+                    Large put volume of 0% < delta < 20% OTM naked call open interest.
+                    Which mean a lot of naked, strangle or straddle strategy.
+                    <span class="webix_icon fa-arrow-up"></span>
+                  </li>
+                {% endif %}
+                {% if bidask.delta_20_40 > 20 %}
+                  <li>
+                    Large put volume of 20% < delta < 40% OTM naked call open interest.
+                    Which mean a lot of naked, strangle or straddle or covered strategy.
+                    <span class="webix_icon fa-arrow-up"></span>
+                  </li>
+                {% endif %}
+                {% if bidask.delta_40_60 > 20 %}
+                  <li>
+                    Large put volume of 40% < delta < 60% OTM naked call open interest.
+                    Which mean a lot of protection put.
+                    <span class="webix_icon fa-exchange"></span>
+                  </li>
+                {% endif %}
+                {% if bidask.delta_60_80 > 20 %}
+                  <li>
+                    Large put volume of 60% < delta < 80% ITM calls.
+                    Maybe is trader previously own protection or vertical.
+                    <span class="webix_icon fa-arrow-down"></span>
+                  </li>
+                {% endif %}
+                {% if bidask.delta_80_100 > 20 %}
+                  <li>
+                    Large put volume of 80% < delta < 100% ITM calls.
+                    Maybe is trader previously own protection.
+                    <span class="webix_icon fa-arrow-down"></span>
+                  </li>
+                {% endif %}
+              {% else %}
+                {% if bidask.volume >= 10000 %}
+                  <li>
+                    A lot of volume for daily activity.
+                    Option will most likely be liquid and easy to trade.
+                    Bid-ask spread are tight which is good for enter or exit.
+                    <span class="webix_icon fa-thumbs-up"></span>
+                  </li>
+                {% else %}
+                  <li>
+                    No enough daily option volume activity.
+                    Option is not liquid enough and hard to trade.
+                    Bid-ask spread are wide which is hard for enter or exit.
+                    <span class="webix_icon fa-thumbs-down"></span>
+                  </li>
+                {% endif %}
+
+                {% if bidask.bid_below > bidask.between_market or  bidask.ask_above > bidask.between_market %}
+                  <li>
+                    Very hard to fill between bid to ask price.
+                    You need to have patient if you want to fill them.
+                    Bid-ask spread gad are tight and very close.
+                    <span class="webix_icon fa-thumbs-up"></span>
+                  </li>
+                {% else %}
+                  <li>
+                    Price easy to fill between bid to ask price.
+                    Bid-ask spread gap are wide and easy to fill.
+                    <span class="webix_icon fa-thumbs-down"></span>
+                  </li>
+                {% endif %}
+              {% endif %}
+            </ul>
+          </td>
+        </tr>
+      {% endfor %}
+
+    </table>
+  </div>
+{% endif %}

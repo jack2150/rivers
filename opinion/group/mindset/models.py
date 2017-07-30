@@ -193,14 +193,3 @@ class MindsetLossExcuse(models.Model):
     response_now = models.BooleanField(
         default=True, help_text='I will be quickly to adjust this trade now'
     )
-
-# todo: a view that show all recent opinion on a given symbol
-
-
-
-
-
-
-
-
-

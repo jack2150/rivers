@@ -6,7 +6,7 @@ from django.db import models
 from django.utils.deconstruct import deconstructible
 
 from base.ufunc import UploadRenameImage
-from opinion.group.report.models import ReportEnter
+from opinion.group.report.models import UnderlyingReport
 
 
 class PortfolioReview(models.Model):
@@ -53,7 +53,7 @@ class PositionComment(models.Model):
 
 
 class PositionIdea(models.Model):
-    report = models.OneToOneField(ReportEnter, null=True, blank=True)
+    report = models.OneToOneField(UnderlyingReport, null=True, blank=True)
     direction = models.CharField(
         max_length=20, help_text='Estimate direction',
         choices=(('bear', 'Bear'), ('neutral', 'Neutral'), ('bull', 'Bull'))
@@ -67,7 +67,7 @@ class PositionEnter(models.Model):
     """
     Position opinion, only create when enter new position
     """
-    report = models.OneToOneField(ReportEnter, null=True, blank=True)
+    report = models.OneToOneField(UnderlyingReport, null=True, blank=True)
 
     # trade signal
     direction = models.CharField(
@@ -457,22 +457,27 @@ class PositionDecision(models.Model):
     """
     Final decision for enter, buy more, cut percent, exit
     """
-    report = models.OneToOneField(ReportEnter, null=True, blank=True)
+    report = models.OneToOneField(UnderlyingReport, null=True, blank=True)
 
     period = models.CharField(
         choices=(('enter', 'Enter'), ('hold', 'Hold'), ('exit', 'Exit')),
         max_length=20, default='enter', help_text='Period of trading process'
     )
-    action = models.BooleanField(default=False, help_text='Do you do it?')
+    action = models.BooleanField(default=False, help_text='Do you want to enter trade?')
+
+    bull_chance = models.IntegerField(default=16, help_text='Price move bullish')
+    bull_explain = models.TextField(blank=True, default='', null=True, help_text='Why bull?')
+    neutral_chance = models.IntegerField(default=68, help_text='Price in IV range')
+    neutral_explain = models.TextField(blank=True, default='', null=True, help_text='Why neutral?')
+    bear_chance = models.IntegerField(default=16, help_text='Price move bearish')
+    bear_explain = models.TextField(blank=True, default='', null=True, help_text='Why bear?')
+
     desc = models.TextField(
-        help_text='Describe why the decision make?'
+        blank=True, default='', null=True, help_text='Describe why the decision make?'
     )
-    dec_desc = models.TextField(
-        help_text='Is there too many disadvantage?'
+    disadvantage = models.TextField(
+        blank=True, default='', null=True, help_text='Is there too many disadvantage?'
     )
-    adv_desc = models.TextField(
-        help_text='Do you have enough advantage?'
+    advantage = models.TextField(
+        blank=True, default='', null=True, help_text='Do you have enough advantage?'
     )
-
-
-# todo: a new model for price estimate, above, mid, down & chance, sub model for decision

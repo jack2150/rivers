@@ -62,12 +62,16 @@
           path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/institutional-holdings"
         },
         {
-          id: "4.2", image: "", site: "Gurufocus", tool: "Ownership history",
+          id: "4.2.1", image: "", site: "Gurufocus", tool: "Ownership history",
           path: "http://www.gurufocus.com/ownership/{{ symbol }}"
         },
         {
+          id: "4.2.2", image: "fa-file-excel-o", site: "Excel", tool: "Ownership report",
+          path: "#"
+        },
+        {
           id: "4.3", image: "", site: "System", tool: "Season price",
-          path: "{% url 'ownership_price' symbol %}"
+          path: "{% url 'excel_date_price' %}"
         },
         {
           id: "5.1", site: "Nasdaq", tool: "Insider trade", image: "",
@@ -79,11 +83,11 @@
                 "symbol={{ symbol|lower }}&date_from=2010-01-01&date_to={{ report_enter.date }}&submit=+GO+"
         },
         {
-          id: "6.1", site: "ShortSqueeze", tool: "Data", image: "",
+          id: "6.1.1", site: "ShortSqueeze", tool: "Data", image: "",
           path: "http://shortsqueeze.com/?symbol={{ symbol|lower }}"
         },
         {
-          id: "6.2", site: "Excel", tool: "IB Data & Chart", image: "fa-area-chart",
+          id: "6.1.2", site: "Excel", tool: "IB Data & Chart", image: "fa-file-excel-o",
           path: "http://127.0.0.1:8000/base/date_price/"
         },
         {
@@ -149,11 +153,7 @@
       stockreport: [
         {
           id: "1", image: "fa-star-o", site: "Rivers", tool: "Ready Excel RTD",
-          path: "{% url 'admin:excel_rtd_create' %}"
-        },
-        {
-          id: "2", image: "fa-star-o", site: "Rivers", tool: "Options timesale",
-          path: "{% url 'admin:timesale_insert_view' %}"
+          path: "{% url 'excel_rtd_create' %}"
         },
         {
           id: "3", image: "fa-star-o", site: "Rivers", tool: "Ticker Minute1",
@@ -191,7 +191,7 @@
           gravity: 1,
           template: "<span class='webix_icon #image# ref_icon'></span>" +
                     "<a href='#path#' target='_blank'>#id#. #site#: #tool#</a>",
-          data: ref_data.{{ model }},
+          data: ref_data.{{ model }}
         },
         {
           // editable: false,

@@ -4,7 +4,7 @@ from django.db import models
 from django.forms import Textarea
 
 from opinion.group.stock.models import StockFundamental, StockIndustry, UnderlyingArticle
-from opinion.group.report.models import ReportEnter, SubtoolOpinion
+from opinion.group.report.models import UnderlyingReport
 
 
 class OpinionAdmin(admin.ModelAdmin):
@@ -34,14 +34,7 @@ class UnderlyingArticleInline(admin.TabularInline):
     extra = 1
 
 
-class SubtoolOpinionInline(admin.TabularInline):
-    model = SubtoolOpinion
-    extra = 3
-
-
-class ReportEnterAdmin(admin.ModelAdmin):
-    inlines = (SubtoolOpinionInline, )
-
+class UnderlyingReportAdmin(admin.ModelAdmin):
     # noinspection PyMethodMayBeStatic
     def report_link(self):
         links = [
@@ -73,4 +66,4 @@ class ReportEnterAdmin(admin.ModelAdmin):
     list_per_page = 20
 
 
-admin.site.register(ReportEnter, ReportEnterAdmin)
+admin.site.register(UnderlyingReport, UnderlyingReportAdmin)

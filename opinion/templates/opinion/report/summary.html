@@ -46,7 +46,7 @@
   <div class="breadcrumbs">
     <a href="{% url 'admin:index' %}">Home</a> >
     <a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a> >
-    <a href="{% url 'admin:opinion_reportenter_change' report_enter.id %}">Report enters</a> >
+    <a href="{% url 'admin:opinion_underlyingreport_change' report_enter.id %}">Report enters</a> >
     Report summary
   </div>
 {% endblock %}
@@ -63,15 +63,10 @@
       </ol>
     </td>
     <td>
-
       {% include 'opinion/report/position/index.html' %}
-
-      {% if 0 %}
-        {% include 'opinion/report/stock/underlying_article.html' %}
-        {% include 'opinion/report/stock/index.html' %}
-        {% include 'opinion/report/technical/rank/index.html' %}
-      {% endif %}
-
+      {% include 'opinion/report/stock/underlying_article.html' %}
+      {% include 'opinion/report/stock/index.html' %}
+      {% include 'opinion/report/technical/rank/index.html' %}
     </td>
   </tr>
   </table>

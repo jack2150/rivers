@@ -1,0 +1,111 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block extrastyle %}
+  <style>
+
+  </style>
+{% endblock %}
+
+{% block extrascript %}
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts.js' %}"></script>
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts-more.js' %}"></script>
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts-3d.js' %}"></script>
+{% endblock %}
+
+{% block normal-content %}
+  <h1>After ({{ percent|add:-1 }}, {{ percent }}] then hold {{ bdays }} bdays for % return</h1>
+  <table id="dist">
+    <tr>
+      <td>
+        <div id="stem_table"></div>
+      </td>
+      <td>
+        <div id="bell_curve" style="width: 700px; height: 400px;"></div>
+        <div id="sum_chart" style="width: 700px; height: 400px;"></div>
+      </td>
+    </tr>
+  </table>
+
+  <script type="text/javascript">
+    var move = {{ stem_columns.move|safe }};
+    var count = {{ stem_columns.count|safe }};
+    var sum = {{ stem_columns.sum|safe }};
+
+    var dist_chart = new Highcharts.Chart({
+      title: {
+        text: '({{ percent|add:-1 }}, {{ percent }}] % chance distribution'
+      },
+      subtitle: {
+        text: '{{ bdays }} bdays'
+      },
+      yAxis: {
+        title: {
+          text: 'Count %'
+        },
+      },
+      chart: {
+        renderTo: 'bell_curve',
+        type: 'column',
+        zoomType: 'xy'
+      },
+      xAxis: {
+        categories: move
+      },
+      series: [{
+        data: count,
+        name: 'Count %'
+      }]
+    });
+    var sum_chart = new Highcharts.Chart({
+      title: {
+        text: '({{ percent|add:-1 }}, {{ percent }}] % sum distribution'
+      },
+      subtitle: {
+        text: '{{ bdays }} bdays'
+      },
+      yAxis: {
+        title: {
+          text: 'Return sum'
+        },
+      },
+      chart: {
+        renderTo: 'sum_chart',
+        type: 'column',
+        zoomType: 'xy'
+      },
+      xAxis: {
+        categories: move
+      },
+      series: [{
+        data: sum,
+        name: 'Count %',
+        color: '#2ECC71'
+      }]
+    });
+
+    webix.ready(function () {
+      var stem_table = webix.ui({
+        container: "stem_table",
+        view: "datatable",
+        headerRowHeight: 36,
+        select: "row",
+        columns: [
+          {id: "range", header: "Range", width: 100},
+          {id: "close", header: "Count", width: 60},
+          {id: "chance", header: "Chance", width: 60},
+          {id: "roll-sum", header: "Roll Sum", width: 60},
+          {id: "op_in", header: "Prob In", width: 60, template: "#op_in#%"},
+          {id: "op_out", header: "Prob ex", width: 60, template: "#op_out#%"},
+          {id: "sum", header: "Sum", width: 60},
+          {id: "mean", header: "Mean", width: 60},
+          {id: "std", header: "Std", width: 60, template: "+-#std#"}
+        ],
+        autoheight: true,
+        autowidth: true,
+        data: {{ stem_data|safe }}
+      });
+    });
+
+  </script>
+{% endblock %}

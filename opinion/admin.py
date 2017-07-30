@@ -8,9 +8,5 @@ from opinion.group.position.admin import *
 from opinion.group.technical.admin import *
 from opinion.group.statement.admin import *
 from opinion.group.report.admin import *
-
-
-admin.site.register_view(
-    'opinion/profile/link/(?P<symbol>\w+)/$',
-    urlname='opinion_link', view=opinion_link
-)
+from opinion.group.option.admin import *
+from opinion.group.stat.admin import *

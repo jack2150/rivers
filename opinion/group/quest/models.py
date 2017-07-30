@@ -144,17 +144,20 @@ class QuestPart(models.Model):
     )
     start = models.DateField()
     stop = models.DateField(blank=True, null=True)
-    desc = models.CharField(
-        null=True, blank=True, default='', max_length=300
-    )
+    desc = models.TextField(null=True, blank=True, default='', max_length=300)
 
     # result
     progress = models.CharField(
         choices=(('complete', 'Complete'), ('partial', 'Partial'), ('fail', 'Fail'),
                  ('abandon', 'Abandon')),
-        max_length=50, blank=True, null=True, default=''
+        max_length=50, blank=True, null=True, default='partial'
     )
-    context = models.CharField(null=True, blank=True, default='', max_length=300)
+    result = models.CharField(
+        choices=(('good', 'Good'), ('normal', 'Normal'), ('bad', 'Bad'),
+                 ('unknown', 'Unknown')),
+        max_length=50, blank=True, null=True, default='unknown'
+    )
+    context = models.TextField(null=True, blank=True, default='', max_length=300)
 
     def __unicode__(self):
         return '{name} ({stop})'.format(name=self.name, stop=self.stop)

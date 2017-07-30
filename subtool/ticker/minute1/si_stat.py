@@ -58,8 +58,6 @@ class SimpleIndicatorStat(object):
             'std': round(df['mover'].std(), 2),
         }
 
-        # todo: cont after eat
-
         return
 
     def volume_based(self):

@@ -2,7 +2,7 @@ import datetime
 from django.db import models
 
 
-class ReportEnter(models.Model):
+class UnderlyingReport(models.Model):
     """
     A stock report contain of
     fundamental, industry, tech rank, tech opinion,
@@ -10,44 +10,23 @@ class ReportEnter(models.Model):
     """
     symbol = models.CharField(max_length=10)
     date = models.DateField(default=datetime.datetime.now)
-    unique_together = (('symbol', 'date'),)
+    asset = models.CharField(
+        choices=(('stock', 'Stock'), ('etf', 'ETF')),
+        max_length=20, default='stock'
+    )
+    group = models.CharField(
+        choices=(('enter', 'Enter'), ('hold', 'Hold'), ('exit', 'Exit')),
+        max_length=20, default='enter'
+    )
+    unique_together = (('symbol', 'date', 'group'),)
 
     close = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __unicode__(self):
-        return 'ReportEnter <{symbol}> {date}'.format(
-            symbol=self.symbol, date=self.date
+        return 'Report{group} <{symbol}> {date}'.format(
+            group=self.group.capitalize(), symbol=self.symbol, date=self.date
         )
 
-    # todo: add backtest
 
-
-class SubtoolOpinion(models.Model):
-    """
-    Use for summarize sub tool result
-    """
-    report_enter = models.ForeignKey(ReportEnter, null=True, blank=True)
-
-    name = models.CharField(
-        choices=(
-            ('excel', 'Excel'), ('op_timesale', 'Options timesale'), ('minute1', 'Minute1')
-        ),  # more will be add later
-        max_length=20, help_text='Subtool name', default='excel'
-    )
-    hour = models.IntegerField(default=12)
-    unique_together = (('name', 'hour'),)  # every hour only 1 report
-    direction = models.CharField(
-        choices=(('bull', 'Bull'), ('range', 'Range'), ('bear', 'Bear')),
-        max_length=20, help_text='Estimate result direction', default='range'
-    )
-
-
-
-
-
-
-
-
-
-
-
+# todo: ('excel', 'Excel'), ('minute1', 'Minute1')
+# todo: report for hold, exit

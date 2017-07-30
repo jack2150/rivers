@@ -40,7 +40,9 @@
             {% endif %}
           </div>
         </td>
-        <td>
+      </tr>
+      <tr>
+        <td colspan="2">
           <h3>Monetary policy</h3>
           <pre>{{ month_eco.monetary }}</pre>
 
@@ -265,7 +267,7 @@
             {% if month_eco.dollar_chart2 %}
               <a href="{{ month_eco.dollar_chart2.url }}" target="_blank">
                 <img src="{{ month_eco.dollar_chart2.url }}" title="usd/jpy" class="width220">
-              </a>
+              </a><br>
             {% endif %}
             {% if month_eco.dollar_chart3 %}
               <a href="{{ month_eco.dollar_chart3.url }}" target="_blank">
@@ -281,9 +283,5 @@
         </td>
       </tr>
     </table>
-
-
-
   </div>
-
 </div>

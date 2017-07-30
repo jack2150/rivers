@@ -1,6 +1,5 @@
 import datetime
 from django.db import models
-
 from base.ufunc import UploadRenameImage
 
 
@@ -326,7 +325,7 @@ class MarketWeekRelocation(models.Model):
     tlt = models.BooleanField(default=False, help_text='Buy more bond than stock?')
     gld = models.BooleanField(default=False, help_text='Buy more gold than stock?')
     veu = models.BooleanField(default=False, help_text='Buy more global than stock?')
-    eem = models.BooleanField(default=False, help_text='Buy more global than stock?')
+    eem = models.BooleanField(default=False, help_text='Buy more emerging than stock?')
 
     chart_image = models.ImageField(
         blank=True, null=True, default=None, help_text='SPY to TLT/GLD/VEU/EEM ratio',
@@ -341,6 +340,12 @@ class MarketWeekSector(models.Model):
     """
     market_week = models.OneToOneField(MarketWeek, null=True, default=None)
 
+    """
+    sector_price = models.ImageField(
+        blank=True, null=True, default=None, help_text='Sector price (mix)',
+        upload_to=UploadRenameImage('market/week/sector/price'),
+    )
+    """
     join_chart = models.ImageField(
         blank=True, null=True, default=None, help_text='Sector chart (mix)',
         upload_to=UploadRenameImage('market/week/sector/main0'),
@@ -396,15 +401,25 @@ class MarketWeekSectorItem(models.Model):
     change = models.FloatField(default=0, help_text='Weight change in %')
     move = models.CharField(
         choices=(
-            ('bull', 'Bull - price move breakout last week range'),
-            ('neutral', 'Neutral - price move within last week range'),
-            ('bear', 'Bear - price move breakdown last week range'),
+            ('bull', 'Bull - up last week range'),
+            ('neutral', 'Neutral -within last week range'),
+            ('bear', 'Bear - down last week range'),
         ),
         max_length=20, help_text='Sector move', default='neutral'
     )
     chart = models.ImageField(
         blank=True, null=True, default=None, help_text='Sector chart',
         upload_to=UploadRenameImage('market/week/sector/sub'),
+    )
+
+    # market grader
+    mg_sentiment = models.CharField(
+        choices=(
+            ('optimism', 'Extreme optimism'),
+            ('bullish', 'Bullish sentiment'),
+            ('pessimism', 'Excessive pessimism '),
+        ),
+        max_length=20, help_text='Marketgrade - sector sentiment', default='optimism'
     )
 
     unique_together = (('market_week', 'name'),)
@@ -662,10 +677,10 @@ class MarketWeekFundNetCash(models.Model):
         max_length=20, help_text='Fund category'
     )
     value_chg = models.FloatField(
-        default=0, blank=True, help_text='value change (Mil)'
+        default=1, blank=True, help_text='value change (Mil)', null=True
     )
     total_asset = models.FloatField(
-        default=0, blank=True, help_text='total asset (Bil or 1000 Mil)'
+        default=1, blank=True, help_text='total asset (Bil or 1000 Mil)', null=True
     )
     signal = models.CharField(
         choices=(
@@ -696,11 +711,12 @@ class MarketWeekCommitment(models.Model):
             ('oil', 'Crude oil'),
             ('gas', 'Natural gas'),
             ('gold', 'Gold'),
-            ('bond30y', 'Bond 30 years'),
+            ('bond10y', 'Bond 10 years'),
             ('bond2y', 'Bond 2 years'),
             ('dollar', 'USD dollar'),
+            ('coffee', 'Coffee'),
         ),
-        max_length=20, help_text='Country name'
+        max_length=20, help_text='Commodity name'
     )
     open_interest = models.IntegerField(default=0, blank=True)
     change = models.IntegerField(default=0, blank=True)
@@ -783,6 +799,23 @@ class MarketWeekSentiment(models.Model):
 
 class MarketWeekValuation(models.Model):
     market_week = models.OneToOneField(MarketWeek, null=True, default=None)
+
+    # market grader
+    mg_market_call = models.CharField(
+        choices=(
+            ('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell'),
+        ),
+        max_length=20, help_text='Marketgrader - market call', default='hold'
+    )
+
+    mg_sentiment = models.CharField(
+        choices=(
+            ('optimism', 'Extreme optimism'),
+            ('bullish', 'Bullish sentiment'),
+            ('pessimism', 'Excessive pessimism '),
+        ),
+        max_length=20, help_text='Marketgrade - contrarian indicator', default='optimism'
+    )
 
     # third party
     sentiment = models.CharField(
@@ -1081,6 +1114,5 @@ class MarketStrategyDistribution(models.Model):
     unique_together = (('week_strategy', 'name'),)
 
 
-
-
-
+# todo: remove market global commodity sector country with image, faster
+# todo: screw you index

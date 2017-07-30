@@ -79,7 +79,6 @@ def custom_view_json(custom_list):
     return json.dumps(data)
 
 
-
 @register.filter
 def changelist_item(item):
     html = lxml.html.fromstring(item)
@@ -247,9 +246,37 @@ def fieldset_json(fieldset):
         # data.append(fields)
     data = fields
 
-
-
-
     return json.dumps(data, default=date_handler)
 
 
+@register.filter()
+def minus(obj0, obj1):
+    """
+    json date handler
+    :param obj1: int/float
+    :param obj0: int/float
+    :return: int/float
+    """
+    return obj0 - obj1
+
+
+@register.filter()
+def mean(obj0, obj1):
+    """
+    Mean of 2 values
+    :param obj1: int/float
+    :param obj0: int/float
+    :return: int/float
+    """
+    return round((obj0 + obj1) / 2.0, 2)
+
+
+@register.filter()
+def multiply(obj0, obj1):
+    """
+    Mean of 2 values
+    :param obj1: int/float
+    :param obj0: int/float
+    :return: int/float
+    """
+    return obj0 * obj1

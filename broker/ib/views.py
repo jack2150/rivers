@@ -150,7 +150,7 @@ def ib_statement_create_csv(request, obj_id):
     """
     ib_statement_name = IBStatementName.objects.get(id=obj_id)
     ib_statements = ib_statement_name.ibstatement_set.filter(
-        date__range=[ib_statement_name.start, ib_statement_name.stop]
+        date__range=[ib_statement_name.move_dist, ib_statement_name.stop]
     ).order_by('date')
 
     if len(ib_statements):

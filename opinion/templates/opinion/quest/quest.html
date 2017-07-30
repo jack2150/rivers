@@ -1,0 +1,49 @@
+{% load base %}
+
+<div class="padtop3em" id="questline" style="padding-top: 0; margin-top: 0;">
+  <h1>Quest</h1>
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Quest
+      </h2>
+    </fieldset>
+    {% for quest in questline.questpart_set.all %}
+      <table class="marginbot3em">
+        <tr>
+          <th>Name:</th>
+          <td>{{ quest.name.upper }}</td>
+          <th>Category:</th>
+          <td>{{ quest.get_category_display }}</td>
+        </tr>
+        <tr>
+          <th>Start:</th>
+          <td>{{ quest.start }}</td>
+          <th>Stop:</th>
+          <td>{{ quest.stop }}</td>
+        </tr>
+        <tr>
+          <th>Progress:</th>
+          <td>{{ quest.get_progress_display }}</td>
+          <th>Result:</th>
+          <td>{{ quest.get_result_display }}</td>
+        </tr>
+        <tr>
+          <th>Desc:</th>
+          <td colspan="3">
+            <pre>{{ quest.desc }}</pre>
+          </td>
+        </tr>
+        {% if quest.context %}
+          <tr>
+            <th>Context:</th>
+            <td colspan="3">
+              <pre>{{ quest.context }}</pre>
+            </td>
+          </tr>
+        {% endif %}
+      </table>
+
+    {% endfor %}
+  </div>
+</div>

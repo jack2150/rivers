@@ -11,50 +11,6 @@ from data.get_data import GetData
 from rivers.settings import QUOTE_DIR
 
 
-def ownership_price(request, symbol):
-    """
-    Use for excel ownership price movement
-    :param request: request
-    :param symbol: str
-    :return: render
-    """
-    path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
-    db = pd.HDFStore(path)
-    try:
-        df_stock = db.select('/stock/google/')
-        """:type: pd.DataFrame"""
-    except KeyError:
-        df_stock = db.select('/stock/yahoo/')
-        """:type: pd.DataFrame"""
-
-    db.close()
-
-    months = [(3, 31), (6, 30), (9, 30), (12, 31)]
-
-    index = pd.date_range(start=df_stock.index.min(), end=df_stock.index.max(), name='date')
-    df_stock = df_stock.reindex(index)
-    df_stock = df_stock.fillna(method='pad')
-    df_stock = df_stock.sort_index(ascending=False).reset_index()
-
-    # slice
-    df_stock['match'] = df_stock['date'].apply(lambda x: (x.month, x.day))
-    df_stock = df_stock[df_stock['match'].isin(months)]
-    df_stock = df_stock.set_index('date')
-    df_stock = df_stock[['close']]
-
-    title = 'Ownership date price | %s' % symbol
-    template = 'base/raw_df.html'
-    parameters = dict(
-        site_title=title,
-        title=title,
-        symbol=symbol,
-        data=df_stock.to_string(line_width=1000),
-    )
-
-    return render(request, template, parameters)
-# todo: remove, replace with date price
-
-
 def report_earning(request, symbol):
     """
     Earning report price move estimate

@@ -1,0 +1,121 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block extrascript %}
+  {{ block.super }}
+{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+
+  <style>
+    .my_style {
+      font-size: 12px;
+    }
+
+  </style>
+
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+    <a href="{% url 'admin:app_list' 'opinion' %}">Opinion</a> &rsaquo;
+    <a href="{% url 'admin:opinion_optionstat_changelist' %}">
+      Option stats
+    </a> &rsaquo;
+    <a href="{% url 'admin:opinion_optionstat_change' option_stat.id %}">
+      {{ option_stat }}
+    </a> &rsaquo;
+    Timesale Report
+  </div>
+{% endblock %}
+
+{% block normal-content %}
+  <h1>Timesale by trades</h1>
+  <div id="ts-trade-table"></div>
+  <div id="pager" style="margin-bottom: 3em"></div>
+
+  <hr><br>
+
+  <h1 style="margin-top: 1em">Timesale by contracts</h1>
+  <div id="ts-contract-table" style="margin-bottom: 3em"></div>
+{% endblock %}
+
+{% block webix-script %}
+
+  <script type="text/javascript">
+    webix.ready(function () {
+      // contracts
+      var contract_data = {{ contracts|safe }};
+      webix.ui({
+        container: "ts-contract-table",
+        view: "datatable",
+        css: "my_style",
+        columns: [
+          {id: "option", header: "Option", width: 160, sort: "string"},
+          {id: "ex_date", header: ["Ex date", {content: "selectFilter"}], width: 120, sort: "string"},
+          {id: "strike", header: ["Strike", {content: "selectFilter"}], width: 80, sort: "int"},
+          {id: "name", header: ["Name", {content: "selectFilter"}], width: 80, sort: "string"},
+          {id: "qty", header: "Qty", width: 60, sort: "int", footer: {content: "summColumn"}},
+          {id: "bid", header: "Bid", width: 60, sort: "int"},
+          {id: "ask", header: "Ask", width: 60, sort: "int"},
+          {id: "mark", header: "Mark", width: 60, sort: "int"},
+          {id: "price", header: "Price", width: 60, sort: "int"},
+          {id: "buy", header: "Sell: select & 'Ctrl+C'", width: 360},
+          {id: "sell", header: "Buy: select & 'Ctrl+C'", width: 360}
+        ],
+        headerRowHeight: 36,
+        autoheight: true,
+        autowidth: true,
+        footer: true,
+        select: "cell",
+        clipboard: 'selection',
+        data: contract_data
+      });
+
+      // trade
+      var trade_data = {{ trades|safe }};
+      webix.ui({
+        container: "ts-trade-table",
+        view: "datatable",
+        css: "my_style",
+        columns: [
+          {id: "time", header: "Time", width: 80, sort: "string"},
+          // {id: "option", header: "Option", width: 120, sort: "string"},
+          {id: "ex_date", header: ["Ex date", {content: "selectFilter"}], width: 100, sort: "string"},
+          {id: "strike", header: ["Strike", {content: "selectFilter"}], width: 70, sort: "int"},
+          {id: "name", header: ["Name", {content: "selectFilter"}], width: 70, sort: "string"},
+          {id: "trade", header: ["Trade", {content: "selectFilter"}], width: 70, sort: "string"},
+          {id: "fill", header: ["Filled", {content: "selectFilter"}], width: 70, sort: "int"},
+          {id: "qty", header: "Qty", width: 60, sort: "int", footer: {content: "summColumn"}},
+          //{id: "bid", header: "Bid", width: 60, sort: "int"},
+          //{id: "ask", header: "Ask", width: 60, sort: "int"},
+          {id: "mark", header: "Mark", width: 60, sort: "int"},
+          {id: "price", header: "Price", width: 60, sort: "int"},
+          {id: "value", header: "Value", width: 80, sort: "int", footer: {content: "summColumn"}},
+          {id: "margin", header: "Margin", width: 80, sort: "int", footer: {content: "summColumn"}},
+          {id: "exchange", header: ["Exchange", {content: "selectFilter"}], width: 60, sort: "string"},
+          {id: "delta", header: "Delta", width: 60, sort: "int"},
+          {id: "iv", header: "IV", width: 60, sort: "int"},
+          // {id: "underlying_price", header: "Share P.", width: 60, sort: "int"},
+          {id: "condition", header: ["Condition", {content: "selectFilter"}], width: 90, sort: "string"},
+
+          {id: "order", header: "Order: select & 'Ctrl+C'", width: 360}
+        ],
+        headerRowHeight: 36,
+        autoheight: true,
+        autowidth: true,
+        footer: true,
+        select: "cell",
+        clipboard: 'selection',
+        pager: {
+          container: "pager",
+          size: 12,
+          group: 5
+        },
+        data: trade_data
+      });
+    });
+  </script>
+{% endblock %}

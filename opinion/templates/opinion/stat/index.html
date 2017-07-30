@@ -1,0 +1,500 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block extrastyle %}
+  <style>
+
+  </style>
+{% endblock %}
+
+{% block extrascript %}
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts.js' %}"></script>
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts-more.js' %}"></script>
+  <script src="{% static 'Highcharts-4.2.1/js/highcharts-3d.js' %}"></script>
+{% endblock %}
+
+{% block normal-content %}
+  <h1>Date: {{ date0 }} to {{ date1 }}</h1>
+  <table>
+    <tr>
+      <td style="width: 200px;">
+        <h2>Main statistics</h2>
+        <table>
+          <tr>
+            <th>Up:</th>
+            <td>{{ main_stat.up }}</td>
+          </tr>
+          <tr>
+            <th>Down:</th>
+            <td>{{ main_stat.down }}</td>
+          </tr>
+          <tr>
+            <th>Mean:</th>
+            <td>{{ main_stat.mean }}</td>
+          </tr>
+          <tr>
+            <th>Median:</th>
+            <td>{{ main_stat.median }}</td>
+          </tr>
+          <tr>
+            <th>Min:</th>
+            <td>{{ main_stat.min }}</td>
+          </tr>
+          <tr>
+            <th>Max:</th>
+            <td>{{ main_stat.max }}</td>
+          </tr>
+          <tr>
+            <th>Std:</th>
+            <td>{{ main_stat.std }}</td>
+          </tr>
+          <tr>
+            <th>Below std:</th>
+            <td>{{ main_stat.below_std }}</td>
+          </tr>
+          <tr>
+            <th>Above std:</th>
+            <td>{{ main_stat.above_std }}</td>
+          </tr>
+          <tr>
+            <th>Within std:</th>
+            <td>{{ main_stat.within_std }}</td>
+          </tr>
+        </table>
+      </td>
+      <td>
+        <h2>Distribution & Return in bdays</h2>
+        <div id="areaA" style="width: 1200px"></div>
+        <table id="dist">
+          <tr>
+            <td>
+              <div id="move_dist_table"></div>
+            </td>
+            <td>
+              <div id="bell_curve" style="width: 700px;"></div>
+              <div id="half_dist_chart" style="width: 700px;"></div>
+              <div id="half_dist_chart2" style="width: 700px;"></div>
+            </td>
+          </tr>
+        </table>
+
+        <table id="bdays5_area">
+          <tr>
+            <td>
+              <div id="bdays5_table"></div>
+            </td>
+            <td>
+              <div id="bdays5_hist" style="height: 1000px; width: 550px;"></div>
+            </td>
+          </tr>
+        </table>
+
+        <table id="bdays20_area">
+          <tr>
+            <td>
+              <div id="bdays20_table"></div>
+            </td>
+            <td>
+              <div id="bdays20_hist" style="height: 1000px; width: 550px;"></div>
+            </td>
+          </tr>
+        </table>
+
+        <table id="bdays60_area">
+          <tr>
+            <td>
+              <div id="bdays60_table"></div>
+            </td>
+            <td>
+              <div id="bdays60_hist" style="height: 1000px; width: 550px;"></div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <script type="text/javascript">
+    var move = {{ move_dist_columns.move|safe }};
+
+    var dist_chart = new Highcharts.Chart({
+      title: {
+        text: '% Move distribution'
+      },
+      subtitle: {
+        text: 'Current day only'
+      },
+      yAxis: {
+        title: {
+          text: 'Day counts'
+        },
+      },
+      chart: {
+        renderTo: 'bell_curve',
+        type: 'column',
+        zoomType: 'xy'
+      },
+      xAxis: {
+        categories: move
+      },
+      series: [{
+        data: {{ move_dist_columns.count|safe }},
+        name: '% Move'
+      }]
+    });
+    var half_dist_chart = new Highcharts.chart('half_dist_chart', {
+      chart: {
+        type: 'line'
+      },
+      title: {
+        text: 'Move count cumsum'
+      },
+      subtitle: {
+        text: 'Symbol: {{ symbol|upper }}'
+      },
+      xAxis: {
+        categories: move
+      },
+      yAxis: {
+        title: {
+          text: '% move'
+        }
+      },
+      plotOptions: {
+        line: {
+          dataLabels: {
+            enabled: true
+          },
+          enableMouseTracking: false
+        }
+      },
+      series: [{
+        name: 'Move count',
+        data: {{ move_dist_columns.cumsum|safe }}
+      }]
+    });
+
+    var bdays5hist = new Highcharts.Chart('bdays5_hist', {
+      chart: {
+        type: 'bar'
+      },
+      title: {
+        text: '5 Bdays move Up/Down'
+      },
+      subtitle: {
+        text: 'Symbol: {{ symbol|upper }}'
+      },
+      xAxis: {
+        categories: {{ bdays_charts.bdays5.move|safe }},
+        title: {
+          text: null
+        }
+      },
+      yAxis: {
+        min: 0,
+        title: {
+          text: 'Chance',
+          align: 'high'
+        },
+        labels: {
+          overflow: 'justify'
+        }
+      },
+      tooltip: {
+        valueSuffix: ' %'
+      },
+      plotOptions: {
+        bar: {
+          dataLabels: {
+            enabled: true
+          }
+        }
+      },
+      legend: {
+        layout: 'vertical',
+        align: 'right',
+        verticalAlign: 'top',
+        x: -40,
+        y: 80,
+        floating: true,
+        borderWidth: 1,
+        backgroundColor: ((Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'),
+        shadow: true
+      },
+      credits: {
+        enabled: false
+      },
+      series: [{
+        name: 'Up Chance',
+        data: {{ bdays_charts.bdays5.bull|safe }},
+        color: '#2ECC71',
+
+        dataLabels: {
+          enabled: true,
+          format: '{point.y}%'
+        }
+
+      }, {
+        name: 'Down Chance',
+        data: {{ bdays_charts.bdays5.bear|safe }},
+        color: '#EC7063',
+        dataLabels: {
+          enabled: true,
+          format: '{point.y}%'
+        }
+      }]
+    });
+    var bdays20hist = new Highcharts.Chart('bdays20_hist', {
+      chart: {
+        type: 'bar'
+      },
+      title: {
+        text: '20 Bdays move Up/Down'
+      },
+      subtitle: {
+        text: 'Symbol: {{ symbol|upper }}'
+      },
+      xAxis: {
+        categories: {{ bdays_charts.bdays20.move|safe }},
+        title: {
+          text: null
+        }
+      },
+      yAxis: {
+        min: 0,
+        title: {
+          text: 'Chance',
+          align: 'high'
+        },
+        labels: {
+          overflow: 'justify'
+        }
+      },
+      tooltip: {
+        valueSuffix: ' %'
+      },
+      plotOptions: {
+        bar: {
+          dataLabels: {
+            enabled: true
+          }
+        }
+      },
+      legend: {
+        layout: 'vertical',
+        align: 'right',
+        verticalAlign: 'top',
+        x: -40,
+        y: 80,
+        floating: true,
+        borderWidth: 1,
+        backgroundColor: ((Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'),
+        shadow: true
+      },
+      credits: {
+        enabled: false
+      },
+      series: [{
+        name: 'Up Chance',
+        data: {{ bdays_charts.bdays20.bull|safe }},
+        color: '#2ECC71',
+
+        dataLabels: {
+          enabled: true,
+          format: '{point.y}%'
+        }
+
+      }, {
+        name: 'Down Chance',
+        data: {{ bdays_charts.bdays20.bear|safe }},
+        color: '#EC7063',
+        dataLabels: {
+          enabled: true,
+          format: '{point.y}%'
+        }
+      }]
+    });
+    var bdays60hist = new Highcharts.Chart('bdays60_hist', {
+      chart: {
+        type: 'bar'
+      },
+      title: {
+        text: '60 Bdays move Up/Down'
+      },
+      subtitle: {
+        text: 'Symbol: {{ symbol|upper }}'
+      },
+      xAxis: {
+        categories: {{ bdays_charts.bdays60.move|safe }},
+        title: {
+          text: null
+        }
+      },
+      yAxis: {
+        min: 0,
+        title: {
+          text: 'Chance',
+          align: 'high'
+        },
+        labels: {
+          overflow: 'justify'
+        }
+      },
+      tooltip: {
+        valueSuffix: ' %'
+      },
+      plotOptions: {
+        bar: {
+          dataLabels: {
+            enabled: true
+          }
+        }
+      },
+      legend: {
+        layout: 'vertical',
+        align: 'right',
+        verticalAlign: 'top',
+        x: -40,
+        y: 80,
+        floating: true,
+        borderWidth: 1,
+        backgroundColor: ((Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'),
+        shadow: true
+      },
+      credits: {
+        enabled: false
+      },
+      series: [{
+        name: 'Up Chance',
+        data: {{ bdays_charts.bdays60.bull|safe }},
+        color: '#2ECC71',
+
+        dataLabels: {
+          enabled: true,
+          format: '{point.y}%'
+        }
+
+      }, {
+        name: 'Down Chance',
+        data: {{ bdays_charts.bdays60.bear|safe }},
+        color: '#EC7063',
+        dataLabels: {
+          enabled: true,
+          format: '{point.y}%'
+        }
+      }]
+    });
+
+    // webix
+    webix.ready(function () {
+      var move_dist_table = webix.ui({
+        container: "move_dist_table",
+        view: "datatable",
+        headerRowHeight: 36,
+        select: "row",
+        columns: [
+          {id: "range", header: "Range", width: 100},
+          {id: "close", header: "Count", width: 60},
+          {id: "chance", header: "Chance", width: 60},
+          {id: "roll-sum", header: "Roll Sum", width: 60},
+          {id: "prob-in", header: "Prob In", width: 60},
+          {id: "prob-ex", header: "Prob ex", width: 60}
+        ],
+        autoheight: true,
+        autowidth: true,
+        data: {{ move_dist_data|safe }}
+      });
+
+      // bday return 5
+      var bdays5_table = webix.ui({
+        container: "bdays5_table",
+        view: "datatable",
+        headerRowHeight: 36,
+        select: "row",
+        columns: [
+          {id: "range", header: "Range", width: 100},
+          {id: "close", header: "Count", width: 60},
+          {id: "d_mean", header: "Mean", width: 60},
+          {id: "d_median", header: "Median", width: 60},
+          {id: "d_std", header: "Std", width: 60},
+          {id: "d_bull", header: "Bull", width: 60},
+          {id: "d_bear", header: "Bear", width: 60},
+          {
+            id: "stem", header: "", width: 60,
+            template: "<a href='#stem#' target='_blank'>Stem</a>"
+          }
+        ],
+        autoheight: true,
+        autowidth: true,
+        data: {{ bdays_data.bdays5|safe }}
+      });
+
+
+      // bday return 20
+      var bdays20_table = webix.ui({
+        container: "bdays20_table",
+        view: "datatable",
+        headerRowHeight: 36,
+        select: "row",
+        columns: [
+          {id: "range", header: "Range", width: 100},
+          {id: "close", header: "Count", width: 60},
+          {id: "d_mean", header: "Mean", width: 60},
+          {id: "d_median", header: "Median", width: 60},
+          {id: "d_std", header: "Std", width: 60},
+          {id: "d_bull", header: "Bull", width: 60},
+          {id: "d_bear", header: "Bear", width: 60},
+          {
+            id: "stem", header: "", width: 60,
+            template: "<a href='#stem#' target='_blank'>Stem</a>"
+          }
+        ],
+        autoheight: true,
+        autowidth: true,
+        data: {{ bdays_data.bdays20|safe }}
+      });
+
+      // bday return 60
+      var bdays60_table = webix.ui({
+        container: "bdays60_table",
+        view: "datatable",
+        headerRowHeight: 36,
+        select: "row",
+        columns: [
+          {id: "range", header: "Range", width: 100},
+          {id: "close", header: "Count", width: 60},
+          {id: "d_mean", header: "Mean", width: 60},
+          {id: "d_median", header: "Median", width: 60},
+          {id: "d_std", header: "Std", width: 60},
+          {id: "d_bull", header: "Bull", width: 60},
+          {id: "d_bear", header: "Bear", width: 60},
+          {
+            id: "stem", header: "", width: 60,
+            template: "<a href='#stem#' target='_blank'>Stem</a>"
+          }
+        ],
+        autoheight: true,
+        autowidth: true,
+        data: {{ bdays_data.bdays60|safe }}
+      });
+
+      // tab view
+
+      webix.ui({
+        container: "areaA",
+        borderless: true,
+        view: "tabview",
+
+        cells: [
+          {id: "Distribution", content: "dist", scroll: true},
+          {id: "Days 5", content: "bdays5_area", scroll: true},
+          {id: "Days 20", content: "bdays20_area", scroll: true},
+          {id: "Days 60", content: "bdays60_area", scroll: true}
+        ]
+      });
+
+    });
+
+
+  </script>
+{% endblock %}

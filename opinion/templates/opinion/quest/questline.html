@@ -1,0 +1,121 @@
+{% load base %}
+
+<div class="padtop3em" id="questline" style="padding-top: 0; margin-top: 0;">
+  <h1>Questline</h1>
+  <div class="padbot2em">
+    <fieldset class="module aligned">
+      <h2>
+        Questline data
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Name:</th>
+        <td colspan="7">{{ questline.name|upper }}</td>
+      </tr>
+      <tr>
+        <th>Start:</th>
+        <td>{{ questline.start }}</td>
+        <th>Stop:</th>
+        <td>{{ questline.stop }}</td>
+        <th>Active:</th>
+        <td>{{ questline.active }}</td>
+      </tr>
+      <tr>
+        <th>Goal:</th>
+        <td>{{ questline.get_goal_display }}</td>
+        <th>Profit target:</th>
+        <td>{{ questline.profit_target }}</td>
+        <th>Loss drawdown:</th>
+        <td>{{ questline.loss_drawdown }}</td>
+      </tr>
+      <tr>
+        <th>Pos size0:</th>
+        <td>{{ questline.pos_size0 }}</td>
+        <th>Pos size1:</th>
+        <td>{{ questline.pos_size1 }}</td>
+        <th>Pos size2:</th>
+        <td>{{ questline.pos_size2 }}</td>
+      </tr>
+      <tr>
+        <th>Holding num:</th>
+        <td>{{ questline.holding_num }}</td>
+        <th>Risk profile:</th>
+        <td>{{ questline.get_risk_profile_display }}</td>
+      </tr>
+      <tr>
+        <th>Max loss:</th>
+        <td>{{ questline.max_loss }}</td>
+        <th>Max profit:</th>
+        <td>{{ questline.max_profit }}</td>
+      </tr>
+      <tr>
+        <th>Holding period:</th>
+        <td>{{ questline.get_holding_period_display }}</td>
+        <th>By term:</th>
+        <td>{{ questline.get_by_term_display }}</td>
+        <th>Term value:</th>
+        <td>{{ questline.term_value }}</td>
+      </tr>
+      <tr>
+        <th>Trade enter:</th>
+        <td>{{ questline.get_trade_enter_display }}</td>
+        <th>Trade exit:</th>
+        <td>{{ questline.get_trade_exit_display }}</td>
+      </tr>
+      <tr>
+        <th>Trade adjust:</th>
+        <td>{{ questline.get_trade_adjust_display }}</td>
+        <th>Plan result:</th>
+        <td>{{ questline.get_plan_result_display }}</td>
+        <th>Plan return:</th>
+        <td>{{ questline.plan_return }}</td>
+      </tr>
+    </table>
+    <fieldset class="module aligned" style="margin-top: 2em">
+      <h2>
+        Questline detail
+      </h2>
+    </fieldset>
+    <table>
+      <tr>
+        <th>Instrument:</th>
+        <td>{{ questline.get_instrument_display }}</td>
+      </tr>
+      <tr>
+        <th>Custom item:</th>
+        <td>{{ questline.custom_item }}</td>
+      </tr>
+      <tr>
+        <th>Symbols:</th>
+        <td>
+          <pre>{{ questline.symbols }}</pre>
+        </td>
+      </tr>
+      <tr>
+        <th>Description:</th>
+        <td>
+          <pre>{{ questline.description|capfirst }}</pre>
+        </td>
+      </tr>
+      <tr>
+        <th>Conclusion:</th>
+        <td>
+          <pre>{{ questline.conclusion|capfirst }}</pre>
+        </td>
+      </tr>
+      <tr>
+        <th>Advantage:</th>
+        <td>
+          <pre>{{ questline.advantage|capfirst }}</pre>
+        </td>
+      </tr>
+      <tr>
+        <th>Weakness:</th>
+        <td>
+          <pre>{{ questline.weakness|capfirst }}</pre>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

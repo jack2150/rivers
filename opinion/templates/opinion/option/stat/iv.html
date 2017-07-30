@@ -1,0 +1,89 @@
+{% load base %}
+{% if option_stat.optionstativ %}
+  {% with option_stat.optionstativ as iv %}
+    <div class="padbot2em">
+      <fieldset class="module aligned">
+        <h2>
+          IV statistics
+        </h2>
+      </fieldset>
+      <table>
+        <tr>
+          <th>IV 52W:</th>
+          <td>
+            {{ iv.iv_52w_low }} ~
+            {{ iv.iv_52w_high }}
+          </td>
+          <th>IV %:</th>
+          <td>
+            {{ iv.iv_current_pct }}
+
+          </td>
+          <th>IV:</th>
+          <td>
+            {{ iv.iv }}
+            (
+            {{ iv.iv|minus:iv.iv_52w_low }},
+            {{ iv.iv_52w_high|minus:iv.iv }}
+            )
+          </td>
+          <th></th>
+          <td></td>
+        </tr>
+        <tr>
+          <td colspan="6">
+            {% if iv.iv_current_pct < 50 %}
+              IV expect to up to a certain level next a few cycle.
+              Up from IV {{ iv.iv_current_pct }}% to 50%.
+              Favor on debit strategy over credit strategy.
+            {% elif iv.iv_current_pct > 50 %}
+              IV expect to down to a certain level next a few cycle.
+              Down from IV {{ iv.iv_current_pct }}% to 50%.
+              Favor on credit strategy over debit strategy.
+            {% else %}
+              IV is at the center. No bias and all strategy equal.
+            {% endif %}
+          </td>
+        </tr>
+        {% with iv.hv_52w_low|add:iv.hv_52w_high|multiply:iv.hv_current_pct|multiply:0.01 as hv %}
+          <tr>
+
+            <th>HV 52W:</th>
+            <td>
+              {{ iv.hv_52w_low }} ~ {{ iv.hv_52w_high }}
+            </td>
+            <th>HV %:</th>
+            <td>
+              {{ iv.hv_current_pct }}
+            </td>
+            <th>HV:</th>
+            <td>
+              {{ hv }}
+              (
+              {{ hv|minus:iv.hv_52w_low }},
+              {{ iv.hv_52w_high|minus:hv }}
+              )
+            </td>
+            <th>VWAP:</th>
+            <td>{{ iv.vwap }}</td>
+          </tr>
+          <tr>
+            <td colspan="6">
+              {% if iv.iv > hv %}
+                IV is currently higher than HV. Mean IV is given higher.
+                Market maker expect future price movement will be larger than historical.
+                Favor credit strategy.
+              {% elif iv.iv < hv %}
+                IV is currently lower than HV. Mean IV is given lower.
+                Market maker didn't expect price move so sharp.
+                Is time to take advantage over low IV, favor debit strategy.
+              {% else %}
+                IV is same as HV. No bias and all strategy equal.
+              {% endif %}
+            </td>
+          </tr>
+        {% endwith %}
+      </table>
+    </div>
+  {% endwith %}
+{% endif %}
