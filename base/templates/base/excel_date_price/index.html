@@ -7,13 +7,17 @@
     <div class="form-row">
       <div>
         <label for="data">Data</label>
-        <textarea id="data" cols="60" rows="10" disabled>{{ data }}</textarea>
+        <textarea id="data" cols="60" rows="10" readonly>{{ data }}</textarea>
       </div>
     </div>
       <div class="form-row">
         <div>
           <label for="closes">Closes</label>
           <textarea id="closes" cols="60" rows="10" onclick="this.select()" readonly>{{ closes }}</textarea>
+        </div>
+        <div>
+          <label for="dates">Dates</label>
+          <textarea id="dates" cols="60" rows="10" onclick="this.select()" readonly>{{ dates }}</textarea>
         </div>
       </div>
 

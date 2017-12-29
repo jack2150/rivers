@@ -1,0 +1,225 @@
+{% extends "base/empty.html" %}
+{% load static %}
+
+{% block extrastyle %}
+  <style>
+    #menu {
+      width: 15%;
+      float: left;
+    }
+
+    #menu ul {
+
+      padding: 1em 1em 1em 1.5em;
+    }
+
+    #menu ul li {
+      font-size: 0.9em;
+      list-style: none;
+    }
+
+
+    .menu-title {
+      margin: 1em 0 0 1.5em;
+    }
+
+    #proc_form {
+      position: absolute;
+      width: 70%;
+      height: 100%;
+    }
+
+    #link {
+      width: 15%;
+      overflow-y: scroll;
+      height: 100vh;
+      float: right;
+      font-size: 0.8em;
+    }
+
+    #link ul {
+      margin: 0;
+      padding: 0;
+    }
+
+    #link ul li {
+      list-style: none;
+      font-size: 1em;
+    }
+
+    #link ul li a {
+      text-decoration: underline;
+    }
+
+    .ref_link {
+      padding: 1em 0 1em 0;
+    }
+
+    .extra_link {
+      padding: 0 1em 0 1em;
+    }
+
+    .smaller {
+      font-size: 0.8em;
+      color: #333333;
+    }
+
+  </style>
+{% endblock %}
+
+{% block body-content %}
+  <div id="underlying_report_create">
+    <div id="menu">
+      <h3 class="menu-title">Helper</h3>
+      <ul>
+        <li>Date: Only use first date of the month because it is a monthly report.</li>
+        <li>Economics usually do not update often, so only keep track once per month.</li>
+        <li>Combine with weekly full report, you can easily make decision on market direction.</li>
+      </ul>
+    </div>
+
+    <div id="link">
+      <div class="ref_link extra_link">
+        <h3>Reference links</h3>
+        <h4>Economics</h4>
+        <ul>
+          <li>
+            <a href="https://www.businesscycle.com/ecri-reports-indexes/recession-recovery" target="_blank">
+              ECRI WLI & FIG
+            </a>
+          </li>
+        </ul>
+        <h4>Top 3 Indicators</h4>
+        <ul>
+          <li>
+            <a href="http://www.tradingeconomics.com/united-states/inflation-cpi" target="_blank">
+              Inflation Rate
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/categories/gdp" target="_blank">
+              GDP
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/categories/employment" target="_blank">
+              Unemployment rate
+            </a>
+          </li>
+        </ul>
+        <h4>Major Indicators</h4>
+        <ul>
+          <li>
+            <a href="https://research.stlouisfed.org/fred2/series/M2" target="_blank">
+              M2 Money Stock
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/categories/interest_rates" target="_blank">
+              Interest rate
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/categories/international_transactions" target="_blank">
+              Trade deficit
+            </a>
+          </li>
+        </ul>
+        <h4>Consumer Indicators</h4>
+        <ul>
+          <li>
+            <a href="https://ycharts.com/indicators/consumer_price_index" target="_blank">
+              CPI
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/consumer_sentiment" target="_blank">
+              Consumer sentiment
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/categories/retail_and_services" target="_blank">
+              Retail & services
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/housing_starts" target="_blank">
+              Housing starts
+            </a>
+          </li>
+        </ul>
+        <h4>Producer Indicators</h4>
+        <ul>
+          <li>
+            <a href="https://ycharts.com/indicators/categories/producer_prices" target="_blank">
+              Producer price
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/categories/industrial_production" target="_blank">
+              Industry production
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/us_total_business_inventories" target="_blank">
+              Total biz inventory
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/corporate_profits" target="_blank">
+              Corporate profit
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/categories/hours_and_wages" target="_blank">
+              Hours & wages
+            </a>
+          </li>
+        </ul>
+        <h4>Currency</h4>
+        <ul>
+          <li>
+            <a href="https://ycharts.com/indicators/euro_exchange_rate" target="_blank">
+              USD/EURO
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/canadian_dollar_exchange_rate" target="_blank">
+              USD/CAD
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/japanese_yen_exchange_rate" target="_blank">
+              USD/JPY
+            </a>
+          </li>
+          <li>
+            <a href="https://ycharts.com/indicators/chinese_yuan_exchange_rate" target="_blank">
+              USD/CNH
+            </a>
+          </li>
+          <li>
+            <a href="https://tradingeconomics.com/united-states/currency" target="_blank">
+              Dollar
+            </a>
+          </li>
+        </ul>
+        <h4>Policy</h4>
+        <ul>
+          <li>
+            <a href="https://ycharts.com/indicators/categories/monetary" target="_blank">
+              Monetary policy
+            </a>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <iframe id="proc_form" src="{% url 'admin:opinion_marketmontheconomic_change' month_eco.id %}" frameborder="0">
+    </iframe>
+  </div>
+
+
+
+{% endblock %}

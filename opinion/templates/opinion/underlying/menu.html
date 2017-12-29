@@ -1,0 +1,87 @@
+{% if obj_id == 0 %}
+  <h2 class="menu-title">Current phase: Starting</h2>
+{% else %}
+  <h3 class="menu-title">Primary</h3>
+{% endif %}
+
+<ol>
+  <li>
+    <a href="{% url 'underlying_report_create' obj_id 'underlyingreport' %}">Underlying Report</a>
+  </li>
+</ol>
+
+{% if obj_id > 0 %}
+  {% if underlying_report.phase == 'enter' %}
+    <h2 class="menu-title">Current phase: Enter</h2>
+  {% else %}
+    <h3 class="menu-title">Enter phase</h3>
+  {% endif %}
+
+  <ol>
+    <li>
+      <a href="{% url 'underlying_report_create' obj_id 'positionidea' %}">Position Idea</a>
+    </li>
+    <li>
+      <a href="{% url 'underlying_report_create' obj_id 'underlyingarticle' %}">Underlying Article</a>
+    </li>
+    {% if underlying_report.asset == 'stock' %}
+      <li>
+        <a href="{% url 'underlying_report_create' obj_id 'stockprofile' %}">Stock profile</a>
+      </li>
+    {% endif %}
+    <li>
+      <a href="{% url 'underlying_report_create' obj_id 'technicalrank' %}">Technical rank</a>
+    </li>
+    <li>
+      <a href="{% url 'underlying_report_create' obj_id 'positionenter' %}">Position Enter</a>
+    </li>
+    <li>
+      <a href="{% url 'underlying_report_create' obj_id 'positiondecision' %}">Position Decision</a>
+    </li>
+    <li>
+      <a href="#">Price stat</a>
+    </li>
+    <li>
+      <a href="#">Technical opinion & Stock backtest</a>
+    </li>
+    <li>
+      <a href="{% url 'underlying_report_create' obj_id 'optionstat' %}">Option stat</a>
+    </li>
+  </ol>
+
+  <hr>
+
+  {% if underlying_report.phase == 'hold' %}
+    <h2 class="menu-title">Current phase: Holding</h2>
+  {% else %}
+    <h3 class="menu-title">Holding phase</h3>
+  {% endif %}
+
+  <ol>
+    <li>
+      In development
+    </li>
+  </ol>
+
+  <hr>
+
+  {% if underlying_report.phase == 'exit' %}
+    <h2 class="menu-title">Current phase: Exit</h2>
+  {% else %}
+    <h3 class="menu-title">Exit phase</h3>
+  {% endif %}
+
+
+  <ol>
+    <li>
+      In development
+    </li>
+    <li>
+      <a href="{% url 'underlying_report_create' obj_id 'positionexit' %}">Position Exit</a>
+    </li>
+    <li>
+      <a href="{% url 'underlying_report_create' obj_id 'positionreview' %}">Position Review</a>
+    </li>
+  </ol>
+
+{% endif %}

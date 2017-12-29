@@ -1,0 +1,69 @@
+<div class="ref_link extra_link">
+  <h3>Helper</h3>
+  <h4>Timesale</h4>
+  <ul>
+    <li>
+      <a href="{% url 'timesale_create' underlying_report.optionstat.id %}">
+        Timesale create
+      </a>
+    </li>
+    <li>Copy thinkorswim daily timesale (>100) and import it.</li>
+    <li>
+      <a href="{% url 'timesale_report' underlying_report.optionstat.id %}">
+        Timesale report
+      </a>
+    </li>
+    <li>Review the today large volume as major today indicator for bull/bear.</li>
+  </ul>
+  <h4>Option stats</h4>
+  <ul>
+    <li>
+      <a href="{% url 'report_option_stat' underlying_report.optionstat.id %}">
+        Option stat report
+      </a>
+    </li>
+    <li>After you finish the report, review all today direction & long term direction.</li>
+    <li>
+      <br>
+    </li>
+    <li>
+      IV move chart: Compare IV with HV in stock price.
+    </li>
+    <li>
+      Stat image: Today option buy/sell statistics.
+    </li>
+  </ul>
+  <h4>Greek chart</h4>
+  <ul>
+    <li>
+      IV term: Is current iv in short term spike (after big move) or long term stable.
+    </li>
+    <li>
+      IV skew: Skew iv happen when ATM iv is lower than ITM or OTM.
+    </li>
+    <li>
+      Theta skew: Usually ATM theta will be lowest. If not, it is skew.
+    </li>
+    <li>
+      Vega skew: Usually ATM vega will be lowest. If not, it is skew.
+    </li>
+    <li>
+      Greek charts: Use thinkorswim option deep to create image and save it for analysis.
+    </li>
+  </ul>
+  <h4>Today options stats</h4>
+  <ul>
+    <li>Option stat iv: Basic options stats IV/HV for 52 weeks high/low.</li>
+    <li>Option sizzle: Compare call to put for today trading volume.</li>
+    <li>Option bid/ask: Today option traded bid/ask range for better enter/exit.</li>
+  </ul>
+  <h4>Special case</h4>
+  <ul style="margin-bottom: 2em">
+    <li>
+      Open interest: Use current open interest as major bull/bear indicator
+      because hedge fund only use them as protection.
+      More calls holding is bear protection or covered; more puts holding is call protection.
+    </li>
+  </ul>
+</div>
+

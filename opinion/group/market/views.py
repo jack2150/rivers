@@ -33,7 +33,7 @@ def market_month_economic_create(request, obj_id):
     """
     month_eco = MarketMonthEconomic.objects.get(id=obj_id)
 
-    template = 'opinion/market/month/economic/link.html'
+    template = 'opinion/market/month/economic/create.html'
 
     parameters = dict(
         site_title='Market month economic',
@@ -53,7 +53,7 @@ def market_month_report(request, obj_id):
     """
     month_eco = MarketMonthEconomic.objects.get(id=obj_id)
 
-    template = 'opinion/market/month/report.html'
+    template = 'opinion/market/month/economic/report.html'
 
     parameters = dict(
         site_title='Market month report',

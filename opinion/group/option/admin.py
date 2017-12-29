@@ -89,27 +89,26 @@ class OptionStatAdmin(OpinionAdmin):
     action.allow_tags = True
 
     list_display = (
-        'symbol', 'date', 'timesale', 'action'
+        'report', 'provide', 'date', 'timesale', 'action'
     )
     fieldsets = (
         ('Primary', {'fields': (
-            'symbol', 'date'
+            'report', 'date', 'provide'
         )}),
         ('Main chart', {'fields': (
             'iv_move_chart', 'stat_image',
         )}),
         ('Greek chart', {'fields': (
-            'iv_term', 'iv_skew', 'iv_cycle_chart',
-            'theta_skew', 'theta_chart',
-            'vega_skew', 'vega_chart',
-            'covered_chart', 'interest_chart', 'volume_chart'
-        )}),
-        ('Timesale', {'fields': (
+            'iv_term', 'iv_skew', 'iv_covered_chart',
+            'theta_skew', 'vega_skew', 'theta_vega_chart',
+            'vol_oi_chart',
+
             'raw_data',
-        )}),
+        )})
     )
 
-    search_fields = ('symbol', )
+    search_fields = ('report__symbol', )
+    list_filter = ('provide',)
     list_per_page = 20
 
 

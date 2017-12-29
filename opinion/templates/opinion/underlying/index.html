@@ -1,0 +1,82 @@
+{% extends "base/empty.html" %}
+{% load static %}
+
+{% block extrastyle %}
+  <style>
+  #menu {
+    width: 15%;
+    float: left;
+  }
+
+  #menu ol {
+    padding-top: 1em;
+  }
+
+  #menu ol li {
+    font-size: 1em;
+  }
+
+  .menu-title {
+    margin: 1em 0 0 1.5em;
+  }
+
+  #proc_form {
+    position: absolute;
+    width: 70%;
+    height: 100%;
+  }
+
+  #link {
+    width: 15%;
+    overflow-y: scroll;
+    height: 100vh;
+    float: right;
+    font-size: 0.8em;
+  }
+
+  #link ul {
+    margin: 0;
+    padding: 0;
+  }
+
+  #link ul li {
+    list-style: none;
+    font-size: 1em;
+  }
+
+  #link ul li a {
+    text-decoration: underline;
+  }
+
+  .ref_link {
+    padding: 1em 0 1em 0;
+  }
+
+  .extra_link {
+    padding: 0 1em 0 1em;
+  }
+
+  .smaller {
+    font-size: 0.8em;
+    color: #333333;
+  }
+
+  </style>
+{% endblock %}
+
+{% block body-content %}
+  <div id="underlying_report_create">
+    <div id="menu">
+      {% include "opinion/underlying/menu.html" %}
+    </div>
+
+    <div id="link">
+      {% include ref_link %}
+    </div>
+
+    <iframe id="proc_form" src="{{ frame_link }}" frameborder="0"></iframe>
+  </div>
+
+
+
+{% endblock %}

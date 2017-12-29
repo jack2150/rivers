@@ -41,7 +41,7 @@
 
     Highcharts.chart('earning_est_container', {
       title: {
-        text: 'Earning estimate EPS %'
+        text: 'Earning EPS'
       },
       xAxis: {
         type: 'datetime'
@@ -54,20 +54,18 @@
       tooltip: {
         crosshairs: true,
         shared: true,
-        valueSuffix: '%'
       },
       legend: {},
       series: [{
-        name: 'Estimate EPS/Actual EPS',
+        name: 'Adjusted EPS',
         data: averages,
         zIndex: 1,
         marker: {
-          fillColor: 'white',
           lineWidth: 1,
           lineColor: Highcharts.getOptions().colors[0]
         }
       }, {
-        name: 'High/Low Estimate EPS',
+        name: 'High/Low EPS',
         data: ranges,
         type: 'arearange',
         lineWidth: 0,
@@ -81,7 +79,7 @@
         zIndex: 2,
         marker: {
           fillColor: 'white',
-          lineWidth: 2,
+          lineWidth: 3,
           lineColor: Highcharts.getOptions().colors[4]
         }
       }]

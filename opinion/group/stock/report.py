@@ -18,26 +18,26 @@ class ReportStockProfile(object):
 
         self.outstanding = 0
         self.ownership = None
-        if self.report.stockprofile.stockownership.id:
+        if self.report.stockprofile.stockownership.provide:
             self.ownership = self.ReportStockOwnership(
                 self.report.stockprofile.stockownership, self.report.close
             )
             self.outstanding = self.report.stockprofile.stockownership.outstanding
 
         self.insider = None
-        if self.report.stockprofile.stockinsider.id:
+        if self.report.stockprofile.stockinsider.provide:
             self.insider = self.ReportStockInsider(
                 self.report.stockprofile.stockinsider, self.outstanding, self.report.close
             )
 
         self.short_interest = None
-        if self.report.stockprofile.stockshortinterest.id:
+        if self.report.stockprofile.stockshortinterest.provide:
             self.short_interest = self.ReportStockShortInterest(
                 self.report.stockprofile.stockshortinterest, self.outstanding, self.report.close
             )
 
         self.earning = None
-        if self.report.stockprofile.stockearning.id:
+        if hasattr(self.report.stockprofile, "stockearning"):
             self.earning = self.ReportStockEarning(
                 self.report.stockprofile.stockearning,
                 self.report.close

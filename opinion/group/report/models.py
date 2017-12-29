@@ -14,7 +14,7 @@ class UnderlyingReport(models.Model):
         choices=(('stock', 'Stock'), ('etf', 'ETF')),
         max_length=20, default='stock'
     )
-    group = models.CharField(
+    phase = models.CharField(
         choices=(('enter', 'Enter'), ('hold', 'Hold'), ('exit', 'Exit')),
         max_length=20, default='enter'
     )
@@ -24,9 +24,8 @@ class UnderlyingReport(models.Model):
 
     def __unicode__(self):
         return 'Report{group} <{symbol}> {date}'.format(
-            group=self.group.capitalize(), symbol=self.symbol, date=self.date
+            group=self.phase.capitalize(), symbol=self.symbol, date=self.date
         )
 
 
-# todo: ('excel', 'Excel'), ('minute1', 'Minute1')
-# todo: report for hold, exit
+# todo: report for hold into mutli model, exit

@@ -60,4 +60,8 @@ urlpatterns = [
         views.report_statprice, name='report_statprice'),
     url(r'pricestat/report/stem/(?P<symbol>\w+)/(?P<percent>-?\d+)/(?P<bdays>\d+)/$',
         views.report_statstem, name='report_statstem'),
+
+    # underlying
+    url(r'^underlying/report/(?P<obj_id>\d+)/(?P<process>\w+)/$',
+        views.underlying_report_create, name='underlying_report_create'),
 ]

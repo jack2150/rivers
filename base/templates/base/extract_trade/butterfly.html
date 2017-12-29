@@ -1,0 +1,15 @@
+{% extends "base/basic_form.html" %}
+
+{% block display-data %}
+  {% if data|length %}
+    <fieldset class="module aligned ">
+      <h2>Result - excel data</h2>
+      <div class="form-row">
+        <div>
+          <label for="data">Data</label>
+          <textarea id="data" cols="80" rows="10" readonly>{{ data }}</textarea>
+        </div>
+      </div>
+    </fieldset>
+  {% endif %}
+{% endblock %}

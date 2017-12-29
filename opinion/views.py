@@ -1,12 +1,14 @@
 import datetime
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
+from django.forms import ModelForm
 from django.shortcuts import render
 from pandas.tseries.offsets import BDay
 from opinion.group.position.report import ReportOpinionPosition
 from opinion.group.stock.models import StockProfile, UnderlyingArticle
 from opinion.group.stock.report import ReportStockProfile, ReportUnderlyingArticle
-from opinion.group.position.models import PositionIdea, PositionEnter, PositionDecision
+from opinion.group.position.models import PositionIdea, PositionEnter, PositionDecision, \
+    PositionExit, PositionReview
 from opinion.group.report.models import UnderlyingReport
 from opinion.group.technical.report import ReportTechnicalRank
 from opinion.group.technical.models import TechnicalRank, TechnicalOpinion
@@ -17,7 +19,6 @@ from opinion.group.statement.views import *
 from opinion.group.option.views import *
 from opinion.group.stat.views import *
 
-
 MODEL_OBJ = {
     'positionidea': PositionIdea,
     'technicalrank': TechnicalRank,
@@ -26,6 +27,9 @@ MODEL_OBJ = {
     'underlyingarticle': UnderlyingArticle,
     'positionenter': PositionEnter,
     'positiondecision': PositionDecision,
+    'positionexit': PositionExit,
+    'positionreview': PositionReview,
+    'optionstat': OptionStat
 }
 
 
@@ -59,6 +63,9 @@ def report_enter_create(request, symbol, date=''):
     model_data = {}
 
     for key, model in MODEL_OBJ.items():
+        if key in ('positionexit', 'positionreview'):
+            continue
+
         model_data[key] = {}
         try:
             model_data[key]['data'] = getattr(report_enter, key)
@@ -105,6 +112,7 @@ def report_enter_link(request, report_id, model):
     # summary
     model_data = {
         k: getattr(report_enter, k) for k, v in MODEL_OBJ.items()
+        if k not in ('positionexit', 'positionreview')
     }
 
     # todo: only check opinion item exists
@@ -255,27 +263,33 @@ def report_enter_summary(request, report_id):
             'explain': fd_report.industry.explain(),
             'object': fd_report.industry.industry,
         },
-        'ownership': {
-            'data': fd_report.ownership.create(),
-            'explain': fd_report.ownership.explain(),
-            'object': fd_report.ownership.ownership,
-        },
-        'insider': {
-            'data': fd_report.insider.create(),
-            'explain': fd_report.insider.explain(),
-            'object': fd_report.insider.insider,
-        },
-        'short_interest': {
-            'data': fd_report.short_interest.create(),
-            'explain': fd_report.short_interest.explain(),
-            'object': fd_report.short_interest.short_interest,
-        },
         'earning': {
             'data': fd_report.earning.create(),
             'explain': fd_report.earning.explain(),
             'object': fd_report.earning.earning
         },
     }
+
+    if report_enter.stockprofile.stockownership.provide:
+        reports['ownership'] = {
+            'data': fd_report.ownership.create(),
+            'explain': fd_report.ownership.explain(),
+            'object': fd_report.ownership.ownership,
+        }
+
+    if report_enter.stockprofile.stockinsider.provide:
+        reports['insider'] = {
+            'data': fd_report.insider.create(),
+            'explain': fd_report.insider.explain(),
+            'object': fd_report.insider.insider,
+        }
+
+    if report_enter.stockprofile.stockshortinterest.provide:
+        reports['short_interest'] = {
+            'data': fd_report.short_interest.create(),
+            'explain': fd_report.short_interest.explain(),
+            'object': fd_report.short_interest.short_interest,
+        }
 
     heatmap = {
         'marketedge': tech_rank_report.marketedge.to_heat(),
@@ -296,5 +310,91 @@ def report_enter_summary(request, report_id):
 
     return render(request, template, parameters)
 
-# todo: symbol date report, for all detail, position & technical
-# todo: quest date report, all market
+# todo: remake the report
+
+def create_related_obj(underlying_report, name):
+    """
+
+    :param underlying_report:
+    :param name:
+    :return:
+    """
+    try:
+        temp_obj = getattr(underlying_report, name)
+    except ObjectDoesNotExist:
+        temp_obj = MODEL_OBJ[name]()
+        temp_obj.report = underlying_report
+        temp_obj.save()
+
+    frame_link = reverse(
+        'admin:opinion_%s_change' % name,
+        args=(temp_obj.id,)
+    )
+
+    ref_link = "opinion/underlying/link/%s.html" % name
+
+    return temp_obj, frame_link, ref_link
+
+
+def underlying_report_create(request, obj_id, process):
+    """
+
+    :param obj_id:
+    :param process:
+    :param request:
+    :return:
+    """
+    obj_id = int(obj_id)
+    underlying_report = UnderlyingReport()
+    ref_link = 'opinion/underlying/link/%s.html' % process
+
+    if obj_id == 0:
+        if process != "underlyingreport":
+            return redirect("underlying_report_create", obj_id=obj_id, process="underlyingreport")
+
+        frame_link = reverse('admin:opinion_underlyingreport_add')
+        title = 'Underlying report'
+        symbol = ''
+    else:
+        underlying_report = UnderlyingReport.objects.get(id=obj_id)
+        title = 'Underlying report: %s %s' % (underlying_report.symbol, underlying_report.date)
+        symbol = underlying_report.symbol
+
+        if process == "underlyingreport":
+            frame_link = reverse(
+                'admin:opinion_underlyingreport_change',
+                args=(underlying_report.id,)
+            )
+
+        elif process == "positionidea":
+            _, frame_link, ref_link = create_related_obj(underlying_report, "positionidea")
+        elif process == "underlyingarticle":
+            _, frame_link, ref_link = create_related_obj(underlying_report, "underlyingarticle")
+        elif process == "positionenter":
+            _, frame_link, ref_link = create_related_obj(underlying_report, "positionenter")
+        elif process == "positiondecision":
+            _, frame_link, ref_link = create_related_obj(underlying_report, "positiondecision")
+        elif process == "stockprofile":
+            _, frame_link, ref_link = create_related_obj(underlying_report, "stockprofile")
+        elif process == "technicalrank":
+            _, frame_link, ref_link = create_related_obj(underlying_report, "technicalrank")
+        elif process == "optionstat":
+            _, frame_link, ref_link = create_related_obj(underlying_report, "optionstat")
+        else:
+            raise LookupError("No process for '%s'" % process)
+
+    template = 'opinion/underlying/index.html'
+    parameters = dict(
+        site_title=title,
+        title=title,
+        obj_id=obj_id,
+        symbol=symbol,
+        underlying_report=underlying_report,
+        frame_link=frame_link,
+        ref_link=ref_link,
+    )
+
+    return render(request, template, parameters)
+
+# todo: cont, add stat, option stat
+# todo: remake report class

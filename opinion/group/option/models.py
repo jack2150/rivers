@@ -1,15 +1,19 @@
 # option stat, top largest volume strategy, greek chart, etc...
+import datetime
 from django.db import models
 
 from base.ufunc import UploadRenameImage
+from opinion.group.report.models import UnderlyingReport
 
 
 class OptionStat(models.Model):
     """
     Daily update for option stat
     """
-    symbol = models.CharField(max_length=20)
-    date = models.DateField()
+    report = models.OneToOneField(UnderlyingReport, null=True, blank=True)
+
+    provide = models.BooleanField(default=False)
+    date = models.DateField(default=datetime.datetime.now)
 
     iv_move_chart = models.ImageField(
         blank=True, default=None, null=True, help_text='Stock price with hv/iv chart',
@@ -27,55 +31,37 @@ class OptionStat(models.Model):
     iv_skew = models.BooleanField(
         default=True, help_text='ATM strike IV are lowest? or OTM?'
     )
-    iv_cycle_chart = models.ImageField(
-        blank=True, default=None, null=True, help_text='Option statistics image',
-        upload_to=UploadRenameImage('option/iv_cycle')
+    iv_covered_chart = models.ImageField(
+        blank=True, default=None, null=True, help_text='IV & covered chart',
+        upload_to=UploadRenameImage('option/iv_covered')
     )
 
     # theta
     theta_skew = models.BooleanField(
         default=True, help_text='ATM strike theta are lowest?'
     )
-    theta_chart = models.ImageField(
-        blank=True, default=None, null=True, help_text='Theta statistics image',
-        upload_to=UploadRenameImage('option/theta')
-    )
-
-    # vega
     vega_skew = models.BooleanField(
         default=True, help_text='ATM strike vage are lowest?'
     )
-    vega_chart = models.ImageField(
-        blank=True, default=None, null=True, help_text='vega statistics image',
-        upload_to=UploadRenameImage('option/vega')
-    )
-
-    # covered return
-    covered_chart = models.ImageField(
-        blank=True, default=None, null=True, help_text='vega statistics image',
-        upload_to=UploadRenameImage('option/covered')
+    theta_vega_chart = models.ImageField(
+        blank=True, default=None, null=True, help_text='theta & vega statistics image',
+        upload_to=UploadRenameImage('option/theta_vega')
     )
 
     # open interest
-    interest_chart = models.ImageField(
-        blank=True, default=None, null=True, help_text='open interest chart image',
-        upload_to=UploadRenameImage('option/open_interest')
-    )
-
-    # volume
-    volume_chart = models.ImageField(
-        blank=True, default=None, null=True, help_text='daily volume image',
-        upload_to=UploadRenameImage('option/volume')
+    vol_oi_chart = models.ImageField(
+        blank=True, default=None, null=True, help_text='open interest & volume chart image',
+        upload_to=UploadRenameImage('option/vol_oi')
     )
 
     # timesale raw
     raw_data = models.TextField(default='', blank=True, null=True)
 
-    unique_together = (('symbol', 'date'),)
+    unique_together = (('report', 'date'),)
 
     def __unicode__(self):
         return 'OptionStat {symbol} {date}'.format(
-            symbol=self.symbol, date=self.date
+            symbol=self.report.symbol, date=self.date
         )
 
 
@@ -235,7 +221,7 @@ class OptionStatTimeSaleTrade(models.Model):
             self.trade.upper(),
             trade[str(self.trade)],
             self.qty,
-            self.option_stat.symbol.upper(),
+            self.option_stat.report.symbol.upper(),
             self.option,
             float(self.price)
         )
@@ -262,7 +248,7 @@ class OptionStatTimeSaleContract(models.Model):
     def __unicode__(self):
         return '%d %s 100 %s @%.2f LMT' % (
             self.qty,
-            self.option_stat.symbol.upper(),
+            self.option_stat.report.symbol.upper(),
             self.option,
             float(self.price)
         )

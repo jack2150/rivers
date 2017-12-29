@@ -42,7 +42,7 @@ class StockProfileAdmin(OpinionAdmin):
 
 class UnderlyingArticleAdmin(OpinionAdmin):
     list_display = (
-        'report', 'category', 'article_name', 'news_rank', 'news_effect',
+        'report', 'category', 'name', 'rank', 'effect',
         'bull_chance', 'range_chance', 'bear_chance',
     )
     fieldsets = (
@@ -72,9 +72,9 @@ class UnderlyingArticleAdmin(OpinionAdmin):
             )
         }),
     )
-    search_fields = ('report__symbol', 'report__date', 'article_name')
-    list_filter = ('category', 'article_name', 'article_story', 'period_state',
-                   'news_rank', 'news_effect',)
+    search_fields = ('report__symbol', 'report__date', 'name')
+    list_filter = ('category', 'story', 'period',
+                   'rank', 'effect',)
     readonly_fields = ('report', )
     list_per_page = 20
 

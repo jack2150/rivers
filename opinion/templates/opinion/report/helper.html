@@ -45,9 +45,13 @@
       ],
       stockprofile: [
         {
-          id: "1", image: "fa-star-o", site: "TD Ameritrade", tool: "Report",
+          id: "1.1", image: "fa-star-o", site: "TD Ameritrade", tool: "Report",
           path: "https://research.ameritrade.com/grid/wwws/research/stocks/" +
           "analystreports?c_name=invest_VENDOR&symbol={{ symbol|lower }}"
+        },
+        {
+          id: "1.2", image: "fa-star-o", site: "Zack rank", tool: "Report",
+          path: "https://www.zacks.com/stock/research/{{ symbol }}/brokerage-recommendations"
         },
         {
           id: "2", image: "fa-star-o", site: "Finviz", tool: "Upgrade/Downgrade",
@@ -57,6 +61,7 @@
           id: "3", image: "fa-star-o", site: "Financial Time", tool: "Forecast",
           path: "https://markets.ft.com/data/equities/tearsheet/forecasts?s={{ symbol }}:NYQ"
         },
+
         {
           id: "4.1", image: "", site: "Nasdaq", tool: "Institute Holding",
           path: "http://www.nasdaq.com/symbol/{{ symbol|lower }}/institutional-holdings"
@@ -67,7 +72,7 @@
         },
         {
           id: "4.2.2", image: "fa-file-excel-o", site: "Excel", tool: "Ownership report",
-          path: "#"
+          path: "{% url 'excel_date_price' %}"
         },
         {
           id: "4.3", image: "", site: "System", tool: "Season price",
@@ -88,7 +93,7 @@
         },
         {
           id: "6.1.2", site: "Excel", tool: "IB Data & Chart", image: "fa-file-excel-o",
-          path: "http://127.0.0.1:8000/base/date_price/"
+          path: "{% url 'excel_date_price' %}"
         },
         {
           id: "6.4", image: "", site: "Nasdaq", tool: "Short interest",

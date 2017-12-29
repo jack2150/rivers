@@ -199,12 +199,12 @@ def timesale_create(request, obj_id):
     else:
         form = OptionTimeSaleForm(
             initial={
-                'symbol': option_stat.symbol,
+                'symbol': option_stat.report.symbol,
                 'date': option_stat.date,
             }
         )
 
-    title = 'Timesale create <%s> %s' % (option_stat.symbol, option_stat.date)
+    title = 'Timesale create <%s> %s' % (option_stat.report.symbol, option_stat.date)
     template = 'opinion/option/timesale/create.html'
     parameters = dict(
         site_title=title,
@@ -242,13 +242,13 @@ def timesale_report(request, obj_id):
             'mark': '%.2f' % contract.mark,
             'buy': 'BUY +%d %s 100 %s @%.2f LMT' % (
                 contract.qty,
-                option_stat.symbol.upper(),
+                option_stat.report.symbol.upper(),
                 contract.option,
                 contract.price
             ),
             'sell': 'BUY +%d %s 100 %s @%.2f LMT' % (
                 contract.qty,
-                option_stat.symbol.upper(),
+                option_stat.report.symbol.upper(),
                 contract.option,
                 contract.price
             )
@@ -294,7 +294,7 @@ def timesale_report(request, obj_id):
                 trade.trade.upper(),
                 qty_mod[trade.trade],
                 trade.qty,
-                option_stat.symbol.upper(),
+                option_stat.report.symbol.upper(),
                 trade.option,
                 trade.price
             )
@@ -303,7 +303,7 @@ def timesale_report(request, obj_id):
     trades = json.dumps(trades)
 
     # template
-    title = 'Timesale report <%s> %s' % (option_stat.symbol, option_stat.date)
+    title = 'Timesale report <%s> %s' % (option_stat.report.symbol, option_stat.date)
     template = 'opinion/option/timesale/report.html'
     parameters = dict(
         site_title=title,
@@ -327,7 +327,7 @@ def report_option_stat(request, obj_id):
     # option_stat.optionstatopeninterest_set
 
     # template
-    title = 'Timesale report <%s> %s' % (option_stat.symbol, option_stat.date)
+    title = 'Timesale report <%s> %s' % (option_stat.report.symbol, option_stat.date)
     template = 'opinion/option/report.html'
     parameters = dict(
         site_title=title,
@@ -336,3 +336,5 @@ def report_option_stat(request, obj_id):
     )
 
     return render(request, template, parameters)
+
+# todo: this 1

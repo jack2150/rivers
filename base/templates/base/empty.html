@@ -21,7 +21,7 @@
 
 </head>
 <body class="dashboard">
-
+{% block body-content %}
 <div style="height: auto;">
   <div id="direct-content">
     {% block direct-content %}
@@ -30,8 +30,7 @@
   <div id="webix-content"></div>
 </div>
 
-
 {% block webix-script %}{% endblock %}
-
+{% endblock %}
 </body>
 </html>

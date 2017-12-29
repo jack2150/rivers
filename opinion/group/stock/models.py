@@ -14,6 +14,72 @@ class StockProfile(models.Model):
         return 'StockProfile <{symbol}>'.format(symbol=self.report.symbol)
 
 
+class UnderlyingArticle(models.Model):
+    """
+    Primary use for tracking story telling or irrational move
+    """
+    report = models.OneToOneField(UnderlyingReport, null=True, blank=True)
+
+    # Semi-Strong Form
+    category = models.CharField(
+        max_length=20, help_text='Type of this market story', default='title',
+        choices=(('title', 'Big title'), ('story', 'Story telling'), ('news', 'Simple News'))
+    )
+    name = models.CharField(
+        default='', max_length=200, help_text='Name of the story, news, title'
+    )
+    desc = models.TextField(default='', blank=True, null=True)
+    story = models.CharField(
+        max_length=20, help_text='Current state of article telling', default='good30',
+        choices=(
+            ('good90', 'Good story 90% chance, 88% follow'),
+            ('good30', 'Good story 30% chance, 78% follow'),
+            ('bad90', 'Bad story 90% chance, 38% follow'),
+            ('bad30', 'Bad story 30% chance, 7% follow')
+        )
+    )
+    period = models.CharField(
+        max_length=20, help_text='Current state of story telling', default='latest',
+        choices=(
+            ('latest', 'Latest 1 or 2 days'),
+            ('recent', 'Recent 1 week'),
+            ('forget', 'Pass 2 weeks')
+        )
+    )
+
+    # news summary
+    rank = models.CharField(
+        max_length=20, default=None, blank=True, null=True,
+        help_text='Benzinga pro news rank 14 days',
+        choices=(('good', 'Good'), ('neutral', 'Neutral'), ('bad', 'Bad')),
+    )
+    effect = models.CharField(
+        max_length=20, default='neutral', help_text='14 days price move with news',
+        choices=(('bull', 'Bull'), ('neutral', 'Neutral'), ('bear', 'Bear')),
+    )
+    good_news = models.IntegerField(default=0, help_text='Recent good news count')
+    bad_news = models.IntegerField(default=0, help_text='Recent good news count')
+
+    # behavior opinion
+    fundamental_effect = models.BooleanField(
+        default=True, help_text='This article have fundamental effect?'
+    )
+    rational = models.BooleanField(
+        default=True, help_text='This story is rational? yes or no, you only follow'
+    )
+    blind_follow = models.BooleanField(
+        default=True, help_text='Follow story? Short term follow? Long term reverse?'
+    )
+    reversed = models.BooleanField(
+        default=True, help_text='Is this bad news as good news? good news as bad news?'
+    )
+
+    # news effect price probability
+    bull_chance = models.FloatField(default=33, help_text='Chance of bull move by this news')
+    range_chance = models.FloatField(default=34, help_text='Chance of range move by this news')
+    bear_chance = models.FloatField(default=33, help_text='Chance of bear move by this news')
+
+
 class StockFundamental(models.Model):
     """
     Simple fundamental analysis, micro valuation for stock, weekly update
@@ -24,16 +90,17 @@ class StockFundamental(models.Model):
     # rank
     mean_rank = models.FloatField(default=3, help_text='Fundamental Mean Rank')
     accuracy = models.IntegerField(default=50, help_text='Upgrade/downgrade accuracy')
+    risk = models.CharField(
+        max_length=20, help_text='From S&P report', default='middle',
+        choices=(('low', 'Low'), ('middle', 'Middle'), ('high', 'High'))
+    )
+
     rank_change = models.CharField(
         max_length=20, help_text='Latest rank change', default='upgrade',
         choices=(('upgrade', 'Upgrade'), ('hold', 'Hold'), ('downgrade', 'Downgrade')),
     )
     report_date = models.DateField(
         null=True, blank=True, default=None, help_text='Latest rank change date'
-    )
-    risk = models.CharField(
-        max_length=20, help_text='From S&P report', default='middle',
-        choices=(('low', 'Low'), ('middle', 'Middle'), ('high', 'High'))
     )
 
     # target price
@@ -114,6 +181,7 @@ class StockOwnership(models.Model):
     """
     stock_profile = models.OneToOneField(StockProfile, null=True, default=None)
 
+    provide = models.BooleanField(default=True, help_text='Got ownership holding data?')
     # ownership change
     report_date = models.DateField(
         null=True, blank=True, default=None, help_text='Latest report filled date'
@@ -145,6 +213,7 @@ class StockOwnership(models.Model):
 class StockInsider(models.Model):
     stock_profile = models.OneToOneField(StockProfile, null=True, default=None)
 
+    provide = models.BooleanField(default=True, help_text='Got insider trading data?')
     report_date = models.DateField(
         null=True, blank=True, default=None, help_text='Latest report filled date'
     )
@@ -218,67 +287,3 @@ class StockEarning(models.Model):
     )
 
 
-class UnderlyingArticle(models.Model):
-    """
-    Primary use for tracking story telling or irrational move
-    """
-    report = models.OneToOneField(UnderlyingReport, null=True, blank=True)
-
-    # Semi-Strong Form
-    category = models.CharField(
-        max_length=20, help_text='Type of this market story', default='title',
-        choices=(('title', 'Big title'), ('story', 'Story telling'), ('news', 'Simple News'))
-    )
-    name = models.CharField(
-        default='', max_length=200, help_text='Name of the story, news, title'
-    )
-    desc = models.TextField(default='', blank=True, null=True)
-    story = models.CharField(
-        max_length=20, help_text='Current state of article telling', default='good30',
-        choices=(
-            ('good90', 'Good story 90% chance, 88% follow'),
-            ('good30', 'Good story 30% chance, 78% follow'),
-            ('bad90', 'Bad story 90% chance, 38% follow'),
-            ('bad30', 'Bad story 30% chance, 7% follow')
-        )
-    )
-    period = models.CharField(
-        max_length=20, help_text='Current state of story telling', default='latest',
-        choices=(
-            ('latest', 'Latest 1 or 2 days'),
-            ('recent', 'Recent 1 week'),
-            ('forget', 'Pass 2 weeks')
-        )
-    )
-
-    # news summary
-    rank = models.CharField(
-        max_length=20, default=None, blank=True, null=True,
-        help_text='Benzinga pro news rank 14 days',
-        choices=(('good', 'Good'), ('neutral', 'Neutral'), ('bad', 'Bad')),
-    )
-    effect = models.CharField(
-        max_length=20, default='neutral', help_text='14 days price move with news',
-        choices=(('bull', 'Bull'), ('neutral', 'Neutral'), ('bear', 'Bear')),
-    )
-    good_news = models.IntegerField(default=0, help_text='Recent good news count')
-    bad_news = models.IntegerField(default=0, help_text='Recent good news count')
-
-    # behavior opinion
-    fundamental_effect = models.BooleanField(
-        default=True, help_text='This article have fundamental effect?'
-    )
-    rational = models.BooleanField(
-        default=True, help_text='This story is rational? yes or no, you only follow'
-    )
-    blind_follow = models.BooleanField(
-        default=True, help_text='Follow story? Short term follow? Long term reverse?'
-    )
-    reversed = models.BooleanField(
-        default=True, help_text='Is this bad news as good news? good news as bad news?'
-    )
-
-    # news effect price probability
-    bull_chance = models.FloatField(default=33, help_text='Chance of bull move by this news')
-    range_chance = models.FloatField(default=34, help_text='Chance of range move by this news')
-    bear_chance = models.FloatField(default=33, help_text='Chance of bear move by this news')

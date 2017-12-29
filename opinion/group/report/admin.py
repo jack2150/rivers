@@ -39,7 +39,9 @@ class UnderlyingReportAdmin(admin.ModelAdmin):
     def report_link(self):
         links = [
             '<a href="{link}" target="_blank">Create report</a>'.format(
-                link=reverse('report_enter_create', kwargs={'symbol': self.symbol, 'date': self.date})
+                link=reverse('underlying_report_create', kwargs={
+                    'obj_id': self.id, 'process': "underlyingreport"
+                })
             ),
             '<a href="{link}" target="_blank">Report summary</a>'.format(
                 link=reverse('report_enter_summary', kwargs={'report_id': self.id})
@@ -52,10 +54,10 @@ class UnderlyingReportAdmin(admin.ModelAdmin):
     report_link.short_description = 'Action'
 
     list_display = (
-        'date', 'symbol', 'close', report_link
+        'date', 'symbol', 'asset', 'phase', 'close', report_link
     )
     fieldsets = (
-        ('Primary', {'fields': ('date', 'symbol', 'close')}),
+        ('Primary', {'fields': ('date', 'symbol', 'asset', 'phase', 'close')}),
     )
 
     search_fields = (

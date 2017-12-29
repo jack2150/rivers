@@ -6,7 +6,8 @@ from opinion.group.report.admin import OpinionStackedAdmin, OpinionAdmin
 
 class MarketMonthEconomicAdmin(OpinionAdmin):
     def market_review(self, obj):
-        return '<a href="{link}">Link</a> | <a href="{report}">Report</a>'.format(
+        return '<a href="{link}" target="_blank">Link</a> | ' \
+               '<a href="{report}"target="_blank">Report</a>'.format(
             link=reverse('market_month_economic_create', kwargs={'obj_id': obj.id}),
             report=reverse('market_month_report', kwargs={'obj_id': obj.id})
         )
@@ -24,7 +25,8 @@ class MarketMonthEconomicAdmin(OpinionAdmin):
         }),
         ('Economics', {
             'fields': (
-                'eco_cycle', 'eco_index', 'eco_chart0', 'eco_chart1'
+                'eco_cycle', 'eco_index', 'eco_chart0', 'eco_chart1',
+                'eco_chart2', 'eco_chart3', 'eco_chart4'
             )
         }),
         ('Top 3', {
@@ -78,33 +80,12 @@ class MarketWeekRelocationInline(admin.TabularInline):
     model = MarketWeekRelocation
 
 
+class MarketWeekPriceInline(admin.TabularInline):
+    model = MarketWeekPrice
+
+
 class MarketWeekSectorAdmin(admin.TabularInline):
     model = MarketWeekSector
-
-
-class MarketWeekSectorItemAdmin(admin.TabularInline):
-    model = MarketWeekSectorItem
-    extra = 0
-
-
-class MarketWeekIndicesAdmin(admin.TabularInline):
-    model = MarketWeekIndices
-    extra = 0
-
-
-class MarketWeekCommodityAdmin(admin.TabularInline):
-    model = MarketWeekCommodity
-    extra = 0
-
-
-class MarketWeekGlobalAdmin(admin.TabularInline):
-    model = MarketWeekGlobal
-    extra = 0
-
-
-class MarketWeekCountryAdmin(admin.TabularInline):
-    model = MarketWeekCountry
-    extra = 0
 
 
 class MarketWeekTechnicalAdmin(OpinionStackedAdmin):
@@ -114,11 +95,6 @@ class MarketWeekTechnicalAdmin(OpinionStackedAdmin):
 
 class MarketWeekFundAdmin(admin.TabularInline):
     model = MarketWeekFund
-
-
-class MarketWeekFundNetCashAdmin(admin.TabularInline):
-    model = MarketWeekFundNetCash
-    extra = 0
 
 
 class MarketWeekSentimentAdmin(admin.TabularInline):
@@ -161,19 +137,16 @@ class MarketWeekEtfFlowInline(admin.TabularInline):
 class MarketWeekAdmin(OpinionAdmin):
     inlines = [
         MarketDayEconomicInline, MarketWeekResearchInline, MarketWeekArticleInline,
-
+        MarketWeekPriceInline,
         MarketWeekCommitmentAdmin, MarketWeekRelocationInline,
-        MarketWeekFundAdmin, MarketWeekFundNetCashAdmin,
+        MarketWeekFundAdmin,
         MarketWeekEtfFlowInline,
 
         MarketWeekSentimentAdmin, MarketWeekValuationAdmin,
 
         MarketWeekTechnicalAdmin,
 
-        MarketWeekSectorAdmin, MarketWeekSectorItemAdmin,
-
-        MarketWeekIndicesAdmin, MarketWeekCommodityAdmin,
-        MarketWeekGlobalAdmin, MarketWeekCountryAdmin,
+        MarketWeekSectorAdmin,
         MarketWeekImplVolAdmin,
     ]
 

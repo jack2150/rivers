@@ -41,7 +41,19 @@ class MarketMonthEconomic(models.Model):
         upload_to=UploadRenameImage('market/month/eco/main/')
     )
     eco_chart1 = models.ImageField(
-        blank=True, null=True, default=None, help_text='Leading/coincident/lagging',
+        blank=True, null=True, default=None, help_text='WEEKLY INDEXES GROWTH RATES,%',
+        upload_to=UploadRenameImage('market/month/eco/main/')
+    )
+    eco_chart2 = models.ImageField(
+        blank=True, null=True, default=None, help_text='U.S. Weekly Leading Index (weekly)',
+        upload_to=UploadRenameImage('market/month/eco/main/')
+    )
+    eco_chart3 = models.ImageField(
+        blank=True, null=True, default=None, help_text='U.S. Coincident Index (monthly)',
+        upload_to=UploadRenameImage('market/month/eco/main/')
+    )
+    eco_chart4 = models.ImageField(
+        blank=True, null=True, default=None, help_text='U.S. Lagging Index',
         upload_to=UploadRenameImage('market/month/eco/main/')
     )
 
@@ -333,6 +345,35 @@ class MarketWeekRelocation(models.Model):
     )
 
 
+class MarketWeekPrice(models.Model):
+    """
+    Price for all watching items
+    """
+    market_week = models.OneToOneField(MarketWeek, null=True, default=None)
+
+    sector_price = models.ImageField(
+        blank=True, null=True, default=None, help_text='Sector price (mix)',
+        upload_to=UploadRenameImage('market/week/price/sector'),
+    )
+
+    indices_price = models.ImageField(
+        blank=True, null=True, default=None, help_text='Sector price (mix)',
+        upload_to=UploadRenameImage('market/week/price/sector'),
+    )
+    commodity_price = models.ImageField(
+        blank=True, null=True, default=None, help_text='Sector price (mix)',
+        upload_to=UploadRenameImage('market/week/price/sector'),
+    )
+    global_price = models.ImageField(
+        blank=True, null=True, default=None, help_text='Sector price (mix)',
+        upload_to=UploadRenameImage('market/week/price/sector'),
+    )
+    country_price = models.ImageField(
+        blank=True, null=True, default=None, help_text='Sector price (mix)',
+        upload_to=UploadRenameImage('market/week/price/sector'),
+    )
+
+
 # sector
 class MarketWeekSector(models.Model):
     """
@@ -340,12 +381,6 @@ class MarketWeekSector(models.Model):
     """
     market_week = models.OneToOneField(MarketWeek, null=True, default=None)
 
-    """
-    sector_price = models.ImageField(
-        blank=True, null=True, default=None, help_text='Sector price (mix)',
-        upload_to=UploadRenameImage('market/week/sector/price'),
-    )
-    """
     join_chart = models.ImageField(
         blank=True, null=True, default=None, help_text='Sector chart (mix)',
         upload_to=UploadRenameImage('market/week/sector/main0'),
@@ -362,221 +397,6 @@ class MarketWeekSector(models.Model):
         blank=True, null=True, default=None, help_text='Sector weight report',
         upload_to=UploadRenameImage('market/week/sector/weight/report'),
     )
-
-
-class MarketWeekSectorItem(models.Model):
-    market_week = models.ForeignKey(MarketWeek, null=True, default=None)
-
-    name = models.CharField(
-        choices=(
-            ('xly', 'XLY - Consumer discretionary'),
-            ('xlp', 'XLP - Consumer staples'),
-            ('xle', 'XLE - Energy'),
-            ('xlf', 'XLF - Financial'),
-            ('xlv', 'XLV - Healthcare'),
-            ('xli', 'XLI - Industry'),
-            ('xlb', 'XLB - Material'),
-            ('xlre', 'XLRE - Real estate'),
-            ('xlk', 'XLK - Technology'),
-            ('xlu', 'XLU - Utility'),
-        ),
-        max_length=20, help_text='Sector name'
-    )
-    weight = models.CharField(
-        choices=(
-            ('over', 'Overweight'),
-            ('market', 'Marketweight'),
-            ('under', 'Underweight'),
-        ),
-        max_length=20, help_text='Sector weight', default='market'
-    )
-    grade = models.CharField(
-        choices=(
-            ('upgrade', 'Upgrade'),
-            ('neutral', 'Neutral'),
-            ('downgrade', 'Downgrade'),
-        ),
-        max_length=20, help_text='Sector weight change', default='neutral'
-    )
-    change = models.FloatField(default=0, help_text='Weight change in %')
-    move = models.CharField(
-        choices=(
-            ('bull', 'Bull - up last week range'),
-            ('neutral', 'Neutral -within last week range'),
-            ('bear', 'Bear - down last week range'),
-        ),
-        max_length=20, help_text='Sector move', default='neutral'
-    )
-    chart = models.ImageField(
-        blank=True, null=True, default=None, help_text='Sector chart',
-        upload_to=UploadRenameImage('market/week/sector/sub'),
-    )
-
-    # market grader
-    mg_sentiment = models.CharField(
-        choices=(
-            ('optimism', 'Extreme optimism'),
-            ('bullish', 'Bullish sentiment'),
-            ('pessimism', 'Excessive pessimism '),
-        ),
-        max_length=20, help_text='Marketgrade - sector sentiment', default='optimism'
-    )
-
-    unique_together = (('market_week', 'name'),)
-
-
-# indices
-class MarketWeekIndices(models.Model):
-    market_week = models.ForeignKey(MarketWeek, null=True, default=None)
-
-    name = models.CharField(
-        choices=(
-            ('spy', 'SPY - S&P 500'),
-            ('qqq', 'QQQ - Nasdaq 100'),
-            ('dia', 'DIA - Dow Jones'),
-            ('iwm', 'IWM - Russell 2000'),
-        ),
-        max_length=20, help_text='Indices name'
-    )
-    change = models.FloatField(default=0, help_text='Weight change in %')
-    move = models.CharField(
-        choices=(
-            ('bull', 'Bull - price move breakout last week range'),
-            ('neutral', 'Neutral - price move within last week range'),
-            ('bear', 'Bear - price move breakdown last week range'),
-        ),
-        max_length=20, help_text='Indices move', default='neutral'
-    )
-    chart = models.ImageField(
-        blank=True, null=True, default=None, help_text='Sector chart',
-        upload_to=UploadRenameImage('market/week/indices'),
-    )
-    resistant = models.FloatField(default=0, help_text='Weekly resistant')
-    support = models.FloatField(default=0, help_text='Weekly support')
-
-    unique_together = (('market_week', 'name'),)
-
-
-class MarketWeekCommodity(models.Model):
-    market_week = models.ForeignKey(MarketWeek, null=True, default=None)
-
-    name = models.CharField(
-        choices=(
-            ('uso', 'USO - Crude oil'),
-            ('ung', 'UNG - Natural gas'),
-            ('gld', 'GLD - Gold'),
-            ('tlt', 'TLT - Bond 30 years'),
-            ('shy', 'SHY - Bond 2 years'),
-            ('uup', 'UUP - USD dollar'),
-
-            ('dba', 'DBA - Grain & soft'),
-            ('cow', 'COW - Meat'),
-        ),
-        max_length=20, help_text='Commodity name'
-    )
-    change = models.FloatField(default=0, help_text='% change', blank=True)
-    move = models.CharField(
-        choices=(
-            ('bull', 'Bull - price move breakout last week range'),
-            ('neutral', 'Neutral - price move within last week range'),
-            ('bear', 'Bear - price move breakdown last week range'),
-        ),
-        max_length=20, help_text='Sector move', default='neutral', blank=True
-    )
-    chart = models.ImageField(
-        blank=True, null=True, default=None, help_text='Sector chart',
-        upload_to=UploadRenameImage('market/week/commodity'),
-    )
-
-    unique_together = (('market_week', 'name'),)
-
-
-# Global
-class MarketWeekGlobal(models.Model):
-    market_week = models.ForeignKey(MarketWeek, null=True, default=None)
-
-    name = models.CharField(
-        choices=(
-            ('america', 'ILF - Latin America'),
-            ('europe', 'VGK - Europe'),
-            ('asia', 'VPL - Asia'),
-            ('africa', 'EZA - Africa'),
-            ('australia', 'EWA - Australia'),
-        ),
-        max_length=20, help_text='Global name'
-    )
-    weight = models.CharField(
-        choices=(
-            ('over', 'Overweight'),
-            ('market', 'Marketweight'),
-            ('under', 'Underweight'),
-        ),
-        max_length=20, help_text='Global weight', default='market', blank=True
-    )
-    change = models.FloatField(default=0, help_text='% change', blank=True)
-    move = models.CharField(
-        choices=(
-            ('bull', 'Bull - price move breakout last week range'),
-            ('neutral', 'Neutral - price move within last week range'),
-            ('bear', 'Bear - price move breakdown last week range'),
-        ),
-        max_length=20, help_text='Global move', default='neutral', blank=True
-    )
-    chart = models.ImageField(
-        blank=True, null=True, default=None, help_text='Global chart',
-        upload_to=UploadRenameImage('market/week/global'),
-    )
-
-    unique_together = (('market_week', 'name'),)
-
-
-class MarketWeekCountry(models.Model):
-    market_week = models.ForeignKey(MarketWeek, null=True, default=None)
-
-    name = models.CharField(
-        choices=(
-            ('england', 'EWU - England'),
-            ('germany', 'EWG - Germany'),
-            ('russia', 'RSX - Russia'),
-            ('mexico', 'EWW - Mexico'),
-            ('brazil', 'EWZ - Brazil'),
-            ('japan', 'EWJ - Japan'),
-            ('china', 'FXI - China'),
-            ('malaysia', 'EWM - Malaysia'),
-        ),
-        max_length=20, help_text='Country name'
-    )
-    weight = models.CharField(
-        choices=(
-            ('over', 'Overweight'),
-            ('market', 'Marketweight'),
-            ('under', 'Underweight'),
-        ),
-        max_length=20, help_text='Country weight', default='market', blank=True
-    )
-    grade = models.CharField(
-        choices=(
-            ('upgrade', 'Upgrade'),
-            ('neutral', 'Neutral'),
-            ('downgrade', 'Downgrade'),
-        ),
-        max_length=20, help_text='Country weight change', default='neutral', blank=True
-    )
-    change = models.FloatField(default=0, help_text='% change', blank=True)
-    move = models.CharField(
-        choices=(
-            ('bull', 'Bull - price move breakout last week range'),
-            ('neutral', 'Neutral - price move within last week range'),
-            ('bear', 'Bear - price move breakdown last week range'),
-        ),
-        max_length=20, help_text='Country move', default='neutral', blank=True
-    )
-    chart = models.ImageField(
-        blank=True, null=True, default=None, help_text='Country chart',
-        upload_to=UploadRenameImage('market/week/country'),
-    )
-
-    unique_together = (('market_week', 'name'),)
 
 
 # technical chart (SPY)
@@ -662,41 +482,10 @@ class MarketWeekFund(models.Model):
         max_length=20, help_text='Confidence Index'
     )
 
-
-class MarketWeekFundNetCash(models.Model):
-    market_week = models.ForeignKey(MarketWeek, null=True, default=None)
-
-    name = models.CharField(
-        choices=(
-            ('stock', 'Stock fund'),
-            ('hybrid', 'Hybrid fund'),
-            ('tax_bond', 'Tax bond'),
-            ('muni_bond', 'Muni bond'),
-            ('money', 'Money market')
-        ),
-        max_length=20, help_text='Fund category'
+    net_cash = models.ImageField(
+        blank=True, null=True, default=None, help_text='Fund net cash',
+        upload_to=UploadRenameImage('market/week/fund'),
     )
-    value_chg = models.FloatField(
-        default=1, blank=True, help_text='value change (Mil)', null=True
-    )
-    total_asset = models.FloatField(
-        default=1, blank=True, help_text='total asset (Bil or 1000 Mil)', null=True
-    )
-    signal = models.CharField(
-        choices=(
-            ('strong_buy', 'Strong buy - manager aggressive buying'),
-            ('buy', 'Buy - manager are slowly buying'),
-            ('hold', 'Hold - manager holding'),
-            ('sell', 'Sell - manager are slowly selling'),
-            ('strong_sell', 'Strong sell - manager aggressive selling')
-        ),
-        max_length=20, help_text='Stock net new cash flow', default='hold', blank=True
-    )
-
-    def __unicode__(self):
-        return '{name} {change}%'.format(
-            name=self.name, change=('%.2f' % float(self.value_chg/self.total_asset))
-        )
 
 
 class MarketWeekCommitment(models.Model):
@@ -1114,5 +903,4 @@ class MarketStrategyDistribution(models.Model):
     unique_together = (('week_strategy', 'name'),)
 
 
-# todo: remove market global commodity sector country with image, faster
 # todo: screw you index

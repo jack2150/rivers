@@ -1,0 +1,96 @@
+<div class="ref_link extra_link">
+  <h3>Helper</h3>
+  <h4>Fundamental</h4>
+  <ul>
+    <li>Mean rank & Report:
+      <a target="_blank" href="https://www.zacks.com/stock/research/{{ symbol }}/brokerage-recommendations">
+        Zack
+      </a>
+    </li>
+    <li>
+      Accuracy & Risk:
+      <a target="_blank"
+         href="https://research.ameritrade.com/grid/wwws/research/stocks/analystreports?c_name=invest_VENDOR&symbol={{ symbol|lower }}">
+        TD Ameritrade
+      </a>
+    </li>
+
+    <li>
+      Rank change & Report date: <br>
+      <a target="_blank" href="http://finviz.com/quote.ashx?t={{ symbol|lower }}">
+        Finviz grade
+      </a>
+    </li>
+    <li>
+      Target price:
+      <a target="_blank" href="https://markets.ft.com/data/equities/tearsheet/forecasts?s={{ symbol }}:NYQ">
+        Financial Time
+      </a>
+    </li>
+  </ul>
+
+  <h4>Sector & Industry</h4>
+  <ul>
+    <li>
+      Full Data:
+      <a href="http://www.zacks.com/stock/research/{{ symbol }}/industry-comparison">Zack</a>
+    </li>
+  </ul>
+
+  <h4>Institute Holding</h4>
+  <ul>
+    <li>
+      Holding:
+      <a target="_blank" href="http://www.nasdaq.com/symbol/{{ symbol|lower }}/institutional-holdings">
+        Nasdaq
+      </a>
+    </li>
+    <li>
+      Copy paste:
+      <a target="_blank" href="http://www.gurufocus.com/ownership/{{ symbol }}">Gurufocus</a>
+    </li>
+    <li>
+      Excel:
+      <a target="_blank" href="{% url 'excel_date_price' %}">Date price</a>
+    </li>
+  </ul>
+
+  <h4>Insider Trading</h4>
+  <ul>
+    <li>
+      Filing:
+      <a target="_blank" href="http://www.nasdaq.com/symbol/{{ symbol|lower }}/insider-trades">Nasdaq</a>
+    </li>
+    <li>
+      Extra listing:
+      <a target="_blank" href="http://insidertrading.org/index.php?sort_by=transaction_date&asc=&symbol={{ symbol|lower }}&date_from=2010-01-01&date_to={{ report_enter.date }}&submit=+GO+">
+        InsiderTrading
+      </a>
+    </li>
+  </ul>
+
+  <h4>Short Interest</h4>
+  <ul>
+    <li>
+      Data:
+      <a target="_blank" href="http://shortsqueeze.com/?symbol={{ symbol|lower }}">ShortSqueeze</a><br>
+    </li>
+    <li>
+      Copy paste:
+      <a target="_blank" href="#">IB Data & Chart</a>
+    </li>
+    <li>
+      Excel:
+      <a target="_blank" href="{% url 'excel_date_price' %}">Date price</a>
+    </li>
+  </ul>
+
+  <h4>Earning</h4>
+  <ul>
+    <li>
+      Data:
+      <a target="_blank" href="{% url 'report_earning' symbol|lower %}">Earning report</a><br>
+      <span class="smaller">Remember to import!</span>
+    </li>
+  </ul>
+</div>

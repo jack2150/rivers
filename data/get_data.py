@@ -15,14 +15,23 @@ class GetData(object):
         path = os.path.join(QUOTE_DIR, '%s.h5' % symbol.lower())
         db = pd.HDFStore(path)
         try:
-            df_stock = db.select('/stock/google/')
+            df_google = db.select('/stock/google/')
             """:type: pd.DataFrame"""
         except KeyError:
-            try:
-                df_stock = db.select('/stock/yahoo/')
-                """:type: pd.DataFrame"""
-            except KeyError:
-                raise KeyError('No df_stock data')
+            df_google = pd.DataFrame()
+
+        try:
+            df_yahoo = db.select('/stock/yahoo/')
+            """:type: pd.DataFrame"""
+        except KeyError:
+            df_yahoo = pd.DataFrame()
+
+        if len(df_google) >= len(df_yahoo) and len(df_google) > 0:
+            df_stock = df_google
+        elif len(df_google) < len(df_yahoo) and len(df_yahoo) > 0:
+            df_stock = df_yahoo
+        else:
+            raise KeyError('No stock data from google/yahoo for symbol %s' % symbol)
 
         db.close()
 

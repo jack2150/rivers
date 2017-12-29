@@ -122,19 +122,17 @@ def report_earning(request, symbol):
     price_move = []
     for index, data in df_data.iterrows():
         dt = time.mktime(data['actual_date'].to_datetime().timetuple()) * 1000
-        est_hl.append([
-            dt,
-            round((data['est_low'] / data['estimate_eps'] - 1) * 100, 2),
-            round((data['est_high'] / data['estimate_eps'] - 1) * 100, 2)
-        ])
-        est_mean.append([
-            dt,
-            round((data['adjusted_eps'] / data['estimate_eps'] - 1) * 100, 2)
-        ])
-        price_move.append([
-            dt,
-            round((data['close1'] / data['close0'] - 1) * 100, 2)
-        ])
+
+        est_hl.append([dt, data['est_high'], data['est_low']])
+
+        est_mean.append([dt, data['adjusted_eps']])
+
+        try:
+            price_move0 = round((data['close1'] / data['close0'] - 1), 2)
+        except ZeroDivisionError:
+            price_move0 = 0
+
+        price_move.append([dt, price_move0])
 
     # print est_hl
 

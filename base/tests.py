@@ -15,3 +15,20 @@ class TestExcelDatePrice(TestUnitSetUp):
                 7/13/2016
             """
         })
+
+
+class TestExtractTradeInfo(TestUnitSetUp):
+    def test_view(self):
+        response = self.client.post(reverse('extract_trade_butterfly'), data={
+            'trade': """
+                        BUY +3 BUTTERFLY JPM 100 15 SEP 17 85/90/97.5 CALL @.60 LMT
+                    """
+        })
+        print response.context['data']
+
+        response = self.client.post(reverse('extract_trade_butterfly'), data={
+            'trade': """
+                        SELL -3 BUTTERFLY JPM 100 15 SEP 17 85/90/97.5 CALL @.60 LMT
+                    """
+        })
+        print response.context['data']
