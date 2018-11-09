@@ -1,2 +1,2 @@
 # rivers
-# Built by Ong Jin Yang, Malaysia KL 2016
+Built by Jack Ong, Malaysia KL 2016
